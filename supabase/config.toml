@@ -1,0 +1,69 @@
+# -----------------------------------------------------------------------------
+# STUDY OS · configuración de Supabase local
+#
+# EC-011 · «Cambios de esquema como migraciones versionadas en repo»
+# REQ-A03 · entornos separados
+#
+# Este fichero configura únicamente el entorno LOCAL. Staging y producción se
+# configuran en el panel de Supabase de cada proyecto. Ningún secreto aquí.
+# -----------------------------------------------------------------------------
+
+project_id = "study-os"
+
+[api]
+enabled = true
+port = 54321
+# Esquemas expuestos por el Data API.
+#
+# En Phase 0 solo `public`, que contiene exclusivamente `profiles`.
+#
+# INV-101 / SD-007 (PROPOSED): `answer_key_versions` y toda marca de corrección
+# quedarán fuera de esta lista cuando existan. Añadir un esquema aquí es una
+# decisión de exposición, no un detalle de configuración.
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.migrations]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+# Captura de correo local: permite probar alta y confirmación sin enviar correo real.
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+# En local se omite la confirmación para que el E2E de alta y login sea ejecutable
+# sin buzón. En staging y producción la confirmación permanece activa.
+enable_confirmations = false
+double_confirm_changes = true
+secure_password_change = true
+
+[auth.email.template]
+# Sin plantillas personalizadas en Phase 0.
+
+[analytics]
+enabled = false
+
+[edge_runtime]
+enabled = true

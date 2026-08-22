@@ -1,0 +1,52 @@
+{
+  "name": "study-os",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Study OS · sistema de estudio adaptativo. TAI es el primer pack de contenido.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @study-os/web",
+    "build": "npm run build --workspace @study-os/web",
+    "start": "npm run start --workspace @study-os/web",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:rls": "vitest run --project rls",
+    "test:e2e": "playwright test",
+    "schema-drift": "node tools/guards/schema-drift.mjs",
+    "secret-scan": "node tools/guards/secret-scan.mjs",
+    "client-authority-guard": "node tools/guards/client-authority-guard.mjs",
+    "guard:primary-spaces": "vitest run --project unit tests/unit/primarySpaces.frozen.spec.ts",
+    "guard:tai-literal": "node tools/guards/tai-literal.mjs",
+    "guard:import": "node tools/guards/import-guard.mjs",
+    "guard:auth-authority": "node tools/guards/auth-authority-guard.mjs",
+    "guards": "npm run guard:import && npm run guard:tai-literal && npm run guard:auth-authority && npm run client-authority-guard",
+    "verify": "node tools/verify.mjs",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:diff": "supabase db diff"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.39.5",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "^4.1.11"
+  }
+}

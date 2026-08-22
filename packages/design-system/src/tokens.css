@@ -1,0 +1,184 @@
+/* ---------------------------------------------------------------------------
+ * STUDY OS · tokens.css
+ *
+ * Espejo en CSS de `tokens.ts`. `tests/unit/tokens.contract.spec.ts` compara ambos
+ * ficheros: si divergen, el test falla. No editar uno sin el otro.
+ *
+ * REQ-A06 · P0-S7
+ * --------------------------------------------------------------------------- */
+
+:root {
+  /* Espaciado — base 4 */
+  --so-space-none: 0px;
+  --so-space-xs: 4px;
+  --so-space-sm: 8px;
+  --so-space-md: 12px;
+  --so-space-lg: 16px;
+  --so-space-xl: 24px;
+  --so-space-2xl: 32px;
+  --so-space-3xl: 48px;
+  --so-space-4xl: 64px;
+
+  /* Radio */
+  --so-radius-none: 0px;
+  --so-radius-sm: 4px;
+  --so-radius-md: 8px;
+  --so-radius-lg: 12px;
+  --so-radius-xl: 16px;
+  --so-radius-full: 9999px;
+
+  /* Diana táctil mínima — REQ-A06, Manifest §20 */
+  --so-touch-target-min: 44px;
+
+  /* Tipografía */
+  --so-font-reading: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --so-font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --so-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  --so-text-xs: 12px;
+  --so-text-sm: 14px;
+  --so-text-base: 16px;
+  --so-text-lg: 18px;
+  --so-text-xl: 20px;
+  --so-text-2xl: 24px;
+  --so-text-3xl: 30px;
+  --so-text-4xl: 38px;
+
+  --so-leading-tight: 1.2;
+  --so-leading-snug: 1.35;
+  --so-leading-normal: 1.5;
+  --so-leading-reading: 1.65;
+
+  --so-weight-regular: 400;
+  --so-weight-medium: 500;
+  --so-weight-semibold: 600;
+  --so-weight-bold: 700;
+
+  /* Movimiento */
+  --so-motion-instant: 0ms;
+  --so-motion-fast: 120ms;
+  --so-motion-base: 200ms;
+  --so-motion-slow: 320ms;
+
+  /* Color · tema claro (por defecto) */
+  --so-color-surface: #fbfbfd;
+  --so-color-surface-raised: #ffffff;
+  --so-color-surface-sunken: #f1f2f6;
+  --so-color-text-primary: #14181f;
+  --so-color-text-secondary: #4a5260;
+  --so-color-text-on-accent: #ffffff;
+  --so-color-border: #dde0e7;
+  --so-color-border-strong: #6b7280;
+  --so-color-accent: #2a4fbf;
+  --so-color-accent-pressed: #1e3a93;
+  --so-color-focus-ring: #1e3a93;
+  --so-color-success: #1b6b45;
+  --so-color-warning: #7a5200;
+  --so-color-danger: #a82318;
+  --so-color-info: #1a5a85;
+
+  color-scheme: light dark;
+}
+
+/* El tema se resuelve por preferencia del sistema y puede forzarse con
+   `data-theme` en el elemento raíz. Ambas direcciones deben funcionar. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --so-color-surface: #101318;
+    --so-color-surface-raised: #171b22;
+    --so-color-surface-sunken: #0b0e12;
+    --so-color-text-primary: #eef1f6;
+    --so-color-text-secondary: #b3bccb;
+    --so-color-text-on-accent: #0b0e12;
+    --so-color-border: #2a303a;
+    --so-color-border-strong: #8c97a8;
+    --so-color-accent: #9db8ff;
+    --so-color-accent-pressed: #7e9ef0;
+    --so-color-focus-ring: #9db8ff;
+    --so-color-success: #6fd3a2;
+    --so-color-warning: #e5b65c;
+    --so-color-danger: #f09189;
+    --so-color-info: #7fc1e8;
+  }
+}
+
+:root[data-theme='dark'] {
+  --so-color-surface: #101318;
+  --so-color-surface-raised: #171b22;
+  --so-color-surface-sunken: #0b0e12;
+  --so-color-text-primary: #eef1f6;
+  --so-color-text-secondary: #b3bccb;
+  --so-color-text-on-accent: #0b0e12;
+  --so-color-border: #2a303a;
+  --so-color-border-strong: #8c97a8;
+  --so-color-accent: #9db8ff;
+  --so-color-accent-pressed: #7e9ef0;
+  --so-color-focus-ring: #9db8ff;
+  --so-color-success: #6fd3a2;
+  --so-color-warning: #e5b65c;
+  --so-color-danger: #f09189;
+  --so-color-info: #7fc1e8;
+}
+
+/* Base mínima. Ninguna pantalla de producto se construye en Phase 0. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--so-color-surface);
+  color: var(--so-color-text-primary);
+  font-family: var(--so-font-ui);
+  font-size: var(--so-text-base);
+  line-height: var(--so-leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Foco siempre visible — Manifest §20 */
+:focus-visible {
+  outline: 2px solid var(--so-color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Toda diana táctil respeta el mínimo */
+button,
+[role='button'],
+a[href],
+input,
+select,
+textarea {
+  min-height: var(--so-touch-target-min);
+}
+
+/* Enlace de salto: invisible hasta recibir foco. Manifest §20 (navegación por teclado) */
+.so-skip-link {
+  position: absolute;
+  left: var(--so-space-sm);
+  top: calc(var(--so-space-sm) * -1);
+  transform: translateY(-200%);
+  z-index: 100;
+  padding: var(--so-space-sm) var(--so-space-lg);
+  background: var(--so-color-surface-raised);
+  color: var(--so-color-text-primary);
+  border: 1px solid var(--so-color-border-strong);
+  border-radius: var(--so-radius-md);
+  text-decoration: none;
+}
+
+.so-skip-link:focus-visible {
+  transform: translateY(calc(var(--so-space-sm) * 2));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

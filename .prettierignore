@@ -1,0 +1,15 @@
+# Los artefactos de Phase −1 se importan byte a byte y su hash está registrado en
+# docs/PROVENANCE.md. Reformatearlos rompería la verificación de integridad.
+spec/
+architecture/
+docs/
+
+_handoff/
+node_modules/
+.next/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+supabase/migrations/.lock.json

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "useUnknownInCatchVariables": true,
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noEmit": true,
+
+    "paths": {
+      "@study-os/design-system": ["./packages/design-system/src/index.ts"],
+      "@study-os/design-system/*": ["./packages/design-system/src/*"],
+      "@study-os/config": ["./packages/config/src/index.ts"],
+      "@study-os/config/*": ["./packages/config/src/*"],
+      "@study-os/domain": ["./packages/domain/src/index.ts"],
+      "@study-os/domain/internal/identity": ["./packages/domain/src/identity.ts"],
+      "@study-os/domain/*": ["./packages/domain/src/*"]
+    }
+  }
+}

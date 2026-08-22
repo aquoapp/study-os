@@ -1,0 +1,130 @@
+name: CI
+
+# Los nueve checks bloqueantes de Phase 0 (Execution Plan §4).
+#
+# `main` está protegida: no se empuja a ella. Este pipeline corre sobre las ramas de
+# fase y sobre los PR hacia `main`, y su verde es condición para el merge.
+#
+# EC-020 · «Fase completa solo con gates ejecutables en verde».
+
+on:
+  push:
+    branches: ['phase/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20.x'
+  # Valores locales de Supabase. La clave anónima y la de servicio de una instancia
+  # local son constantes públicas del CLI, no secretos: no otorgan acceso a ningún
+  # dato real. Ningún secreto de staging o producción entra en este pipeline.
+  NEXT_PUBLIC_ENVIRONMENT: local
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Checks que no necesitan base de datos.
+  # ---------------------------------------------------------------------------
+  static:
+    name: Estático · typecheck, lint, unit, guardas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: lint
+        run: npm run lint
+
+      - name: format
+        run: npm run format
+
+      - name: test:unit
+        run: npm run test:unit
+
+      - name: guardas de invariante
+        run: npm run guards
+
+      - name: build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_LOCAL_ANON_KEY || 'anon-placeholder-para-build' }}
+
+      # El escaneo del bundle exige que el build exista: por eso va después.
+      - name: secret-scan
+        run: npm run secret-scan
+
+      - name: client-authority-guard
+        run: npm run client-authority-guard
+
+  # ---------------------------------------------------------------------------
+  # Checks contra una instancia real de Supabase.
+  # ---------------------------------------------------------------------------
+  database:
+    name: Base de datos · migraciones, integración, RLS, E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - run: npm ci
+
+      - name: Levantar Supabase local
+        run: supabase start
+
+      - name: Publicar claves locales en el entorno del job
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+
+      - name: Aplicar migraciones desde cero
+        run: supabase db reset
+
+      - name: schema-drift
+        run: npm run schema-drift
+
+      - name: test:integration
+        run: npm run test:integration
+
+      - name: test:rls
+        run: npm run test:rls
+
+      - name: Instalar navegadores de Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: test:e2e
+        run: npm run test:e2e
+
+      - name: Publicar informe de E2E
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Detener Supabase
+        if: always()
+        run: supabase stop

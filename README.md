@@ -21,14 +21,14 @@ con aprobación humana (EC-019, ADR Policy v1.0).
 
 ## Disciplina de ramas
 
-| Rama | Regla |
-|---|---|
-| `main` | **Protegida.** No se trabaja directamente sobre ella. Solo recibe merges por PR con gates en verde y revisión humana. |
-| `phase/<n>-<nombre>` | Rama de trabajo obligatoria por fase. Parte siempre de `main`. |
+| Rama                 | Regla                                                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `main`               | **Protegida.** No se trabaja directamente sobre ella. Solo recibe merges por PR con gates en verde y revisión humana. |
+| `phase/<n>-<nombre>` | Rama de trabajo obligatoria por fase. Parte siempre de `main`.                                                        |
 
 Flujo por fase: rama de fase → commits → CI en verde → PR → revisión humana → merge → tag.
 
-> La protección de `main` es una regla de la *forge* (GitHub/GitLab). Mientras el remoto no
+> La protección de `main` es una regla de la _forge_ (GitHub/GitLab). Mientras el remoto no
 > exista (**MI-05a**), la protección es una política documentada, no un control mecánico.
 > Ver `docs/PHASE_0_CHECKPOINT.md` → deuda conocida.
 
