@@ -1,0 +1,63 @@
+# ---------------------------------------------------------------------------
+# STUDY OS · .gitignore
+# EC-010 · los secretos de servicio/proveedor nunca entran al repositorio
+# ---------------------------------------------------------------------------
+
+# Dependencias
+node_modules/
+.pnp/
+.pnp.js
+
+# Build
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+
+# Test / cobertura
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# Entornos y secretos — NUNCA versionados (EC-010, Manifest §14)
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+.secrets/
+
+# Supabase local (estado efímero de Docker, no el esquema)
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# Editor / SO
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Handoff: material de origen, NO forma parte definitiva del repositorio.
+# Se conserva fuera del control de versiones; su trazabilidad vive en
+# docs/PROVENANCE.md (hashes SHA-256) y en spec/authority-map.md.
+_handoff/
+
+# Artefactos temporales de verificación
+.tmp/
+*.tmp
