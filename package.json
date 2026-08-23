@@ -25,7 +25,7 @@
     "test:rls": "vitest run --project rls",
     "test:e2e": "playwright test",
     "schema-drift": "node tools/guards/schema-drift.mjs",
-    "secret-scan": "node tools/guards/secret-scan.mjs",
+    "secret-scan": "node tools/guards/secret-scan.mjs --build",
     "client-authority-guard": "node tools/guards/client-authority-guard.mjs",
     "guard:primary-spaces": "vitest run --project unit tests/unit/primarySpaces.frozen.spec.ts",
     "guard:tai-literal": "node tools/guards/tai-literal.mjs",
@@ -37,7 +37,8 @@
     "db:stop": "node tools/db.mjs stop",
     "db:reset": "node tools/db.mjs reset",
     "db:diff": "node tools/db.mjs diff",
-    "db:status": "node tools/db.mjs status"
+    "db:status": "node tools/db.mjs status",
+    "secret-scan:no-build": "node tools/guards/secret-scan.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

@@ -52,23 +52,22 @@ jobs:
       - name: format
         run: npm run format
 
-      - name: test:unit
-        run: npm run test:unit
-
+      # `guards` ya incluye client-authority-guard: no se repite como paso aparte.
       - name: guardas de invariante
         run: npm run guards
 
-      - name: build
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_LOCAL_ANON_KEY || 'anon-placeholder-para-build' }}
-
-      # El escaneo del bundle exige que el build exista: por eso va después.
+      # secret-scan construye por sí mismo, inyectando un centinela como valor de
+      # las variables de servidor, y comprueba que no aparece ni en los artefactos
+      # de cliente ni en la salida renderizada. No depende de un build anterior.
       - name: secret-scan
         run: npm run secret-scan
+        env:
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: anon-placeholder-para-escaneo
 
-      - name: client-authority-guard
-        run: npm run client-authority-guard
+      - name: test:unit
+        run: npm run test:unit
+        env:
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: anon-placeholder-para-escaneo
 
   # ---------------------------------------------------------------------------
   # Checks contra una instancia real de Supabase.

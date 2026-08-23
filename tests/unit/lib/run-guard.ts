@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,14 +14,19 @@ export interface GuardResult {
 export function runGuard(
   script: string,
   env: Record<string, string | undefined> = {},
+  args: string[] = [],
 ): GuardResult {
   try {
-    const output = execFileSync(process.execPath, [join(REPO_ROOT, 'tools', 'guards', script)], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-      env: { ...process.env, ...env },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    const output = execFileSync(
+      process.execPath,
+      [join(REPO_ROOT, 'tools', 'guards', script), ...args],
+      {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        env: { ...process.env, ...env },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
     return { exitCode: 0, output };
   } catch (error) {
     const err = error as { status?: number; stdout?: string; stderr?: string };
@@ -52,6 +57,25 @@ export function withViolation<T>(relativePath: string, contents: string, body: (
  * infracción. Con un solo fichero no puede demostrarse que la guarda sigue el grafo
  * de módulos en lugar de mirar únicamente el fichero marcado.
  */
+/**
+ * Sustituye temporalmente el contenido de un fichero que **ya existe** y lo
+ * restaura al terminar, pase lo que pase.
+ *
+ * `withViolation` no sirve para esto: borra el fichero al final. Hace falta para
+ * las pruebas que necesitan que una ruta real filtre algo, no que aparezca una
+ * ruta nueva.
+ */
+export function withReplacedFile<T>(relativePath: string, contents: string, body: () => T): T {
+  const absolute = join(REPO_ROOT, relativePath);
+  const original = readFileSync(absolute, 'utf8');
+  writeFileSync(absolute, contents, 'utf8');
+  try {
+    return body();
+  } finally {
+    writeFileSync(absolute, original, 'utf8');
+  }
+}
+
 export function withViolations<T>(files: Record<string, string>, body: () => T): T {
   const written: string[] = [];
   try {

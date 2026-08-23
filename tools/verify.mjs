@@ -61,7 +61,14 @@ const CHECKS = [
     requires: ['SUPABASE_DB_URL'],
     covers: 'EC-011 · REQ-A04',
   },
-  { id: 'secret-scan', script: 'secret-scan', covers: 'EC-010 · REQ-A05 · gate P0-G3' },
+  {
+    id: 'secret-scan',
+    // Construye por sí mismo con un centinela de servidor: `npm run verify` es
+    // reproducible desde un checkout limpio y no depende de que alguien haya
+    // ejecutado `npm run build` antes en esa máquina.
+    script: 'secret-scan',
+    covers: 'EC-010 · REQ-A05 · gate P0-G3',
+  },
   {
     id: 'client-authority-guard',
     script: 'client-authority-guard',

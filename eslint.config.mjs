@@ -105,7 +105,18 @@ export default tseslint.config(
   {
     files: ['tools/**/*.mjs'],
     languageOptions: {
-      globals: { process: 'readonly', console: 'readonly', URL: 'readonly', Buffer: 'readonly' },
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        URL: 'readonly',
+        Buffer: 'readonly',
+        // Node 24: `fetch` y los temporizadores son globales de la plataforma.
+        // Los usa `secret-scan` para inspeccionar la salida renderizada.
+        fetch: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        Response: 'readonly',
+      },
     },
     rules: {
       'no-console': 'off',

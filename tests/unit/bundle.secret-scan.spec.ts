@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { PUBLIC_ENV_ALLOWLIST } from '@study-os/config';
 import { SERVER_ONLY_ENV_KEYS } from '@study-os/config/server-env-keys';
 
-import { REPO_ROOT, runGuard, withViolation } from './lib/run-guard';
+import { REPO_ROOT, runGuard, withReplacedFile, withViolation } from './lib/run-guard';
 
 /**
  * `bundle.secret-scan.spec` · prueba del check `secret-scan`.
@@ -17,8 +17,6 @@ import { REPO_ROOT, runGuard, withViolation } from './lib/run-guard';
  * a propósito: un escáner que se auto-exime deja de ser un control. Aquí se
  * verifica exactamente esa propiedad además del comportamiento sobre la fuente.
  */
-
-const BUNDLE_DIR = join(REPO_ROOT, 'apps', 'web', '.next');
 
 describe('bundle.secret-scan · EC-010 · REQ-A05 · gate P0-G3', () => {
   it('la allowlist del escáner coincide con la de packages/config', () => {
@@ -89,31 +87,61 @@ describe('bundle.secret-scan · EC-010 · REQ-A05 · gate P0-G3', () => {
     expect(result.output).toContain('service role');
   });
 
-  const describeBundle = existsSync(BUNDLE_DIR) ? describe : describe.skip;
-
-  describeBundle('con bundle construido', () => {
-    it('no hay hallazgos en apps/web/.next/static', () => {
-      const result = runGuard('secret-scan.mjs');
-      expect(result.output, result.output).toContain('sin hallazgos');
-      expect(result.exitCode).toBe(0);
-    });
-  });
-
-  it('sin bundle, el check falla en lugar de omitirse', () => {
-    // Solo puede comprobarse cuando efectivamente no hay build. Si lo hay, la
-    // propiedad la garantiza la rama anterior y esta aserción documenta la regla.
-    if (existsSync(BUNDLE_DIR)) {
-      // La ausencia de bundle se registra como hallazgo, de modo que el check
-      // termina en rojo por la vía normal de `report()` en lugar de salir antes
-      // de tiempo y perderse los hallazgos de la pasada sobre la fuente.
-      const scanner = readFileSync(join(REPO_ROOT, 'tools/guards/secret-scan.mjs'), 'utf8');
-      expect(scanner).toContain('no puede omitirse');
-      expect(scanner).toContain("file: 'apps/web/.next'");
-      return;
-    }
-
+  it('sin --build no se da por bueno: el propio check lo declara como hallazgo', () => {
+    // Ejecutarlo sin construir no inyecta centinela ni inspecciona el renderizado.
+    // Terminar en verde en ese caso sería un falso positivo del control.
     const result = runGuard('secret-scan.mjs');
     expect(result.exitCode).toBe(1);
-    expect(result.output).toContain('no existe apps/web/.next');
+    expect(result.output).toContain('Ejecutado sin --build');
   });
+
+  it('el check construye por sí mismo: no depende de un build anterior', () => {
+    const scanner = readFileSync(join(REPO_ROOT, 'tools/guards/secret-scan.mjs'), 'utf8');
+    expect(scanner).toContain('Reproducible desde un checkout limpio');
+    expect(scanner).toContain("'build'");
+
+    const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+    expect(pkg.scripts['secret-scan']).toContain('--build');
+  });
+
+  /**
+   * La prueba que hace significativo todo lo anterior.
+   *
+   * Comprobar que un centinela **no** aparece solo dice algo si sabemos que
+   * aparecería en caso de fuga. Aquí se provoca la fuga realista —un Server
+   * Component que serializa el valor hacia la salida renderizada— y se exige que el
+   * escáner la encuentre.
+   *
+   * Es lenta (dos builds completos) y aun así vale la pena: es la diferencia entre
+   * un control y un adorno. Gate P0-G3.
+   */
+  it(
+    'P0-G3 · detecta el centinela cuando una ruta lo filtra al renderizar',
+    { timeout: 600_000 },
+    () => {
+      const leaking = [
+        "export const metadata = { title: 'Sin conexión · Study OS' };",
+        '',
+        'export default function OfflinePage() {',
+        '  const leaked = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";',
+        '  return (',
+        '    <div data-testid="offline-page">',
+        '      <h1>Sin conexión</h1>',
+        '      <p data-leak={leaked}>{leaked}</p>',
+        '    </div>',
+        '  );',
+        '}',
+      ].join('\n');
+
+      const result = withReplacedFile('apps/web/src/app/offline/page.tsx', leaking, () =>
+        runGuard('secret-scan.mjs', { SECRET_SCAN_PORT: '3211' }, ['--build']),
+      );
+
+      expect(result.exitCode, result.output).toBe(1);
+      expect(result.output).toContain('centinela');
+      expect(result.output).toContain('SUPABASE_SERVICE_ROLE_KEY');
+    },
+  );
 });
