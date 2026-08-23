@@ -1,60 +1,62 @@
 #!/usr/bin/env node
 /**
- * GUARDA 4 · Identidad verificada en servidor · **procedencia positiva**.
+ * GUARDA 4 · Identidad verificada en servidor · **procedencia por símbolo**.
  *
  * INV-116 (SD-016) · REQ-A07 · EC-009 · Manifest §14 «never trust user-supplied
  * user_id without auth context». Alcance: `apps/**` y `packages/**`.
  *
  * ---------------------------------------------------------------------------
- * Por qué se invirtió la pregunta
+ * La regla
  *
- * La primera versión hacía **propagación de contaminación**: marcaba lo que venía
- * de la petición y lo perseguía hasta los sumideros. Eso obliga a enumerar de dónde
- * puede venir un dato sucio, y esa lista nunca está completa: bastaba con no llamar
- * `body` a la variable.
- *
- * Ahora la pregunta es la contraria y la carga de la prueba cambia de lado: un valor
- * usado como `user_id`, `owner_id` o `profile_id` **solo es válido si se puede
+ * Un valor usado como `user_id`, `owner_id` o `profile_id` **solo vale si se puede
  * demostrar que deriva del verificador de servidor**. Todo lo demás se rechaza,
  * incluido lo que la guarda no sabe interpretar.
  *
  * ---------------------------------------------------------------------------
- * Lo que la segunda auditoría demostró que seguía pasando
+ * Qué cambió: de nombres a símbolos
  *
- * **1 · Confiaba en el nombre, no en el origen.** Cualquier función llamada
- * `getVerifiedIdentity` valía, la definiera quien la definiera:
+ * La versión anterior confiaba en la **importación**: si el fichero importaba
+ * `getVerifiedIdentity` del módulo canónico, cualquier llamada con ese nombre valía.
+ * Eso deja abierto el sombreado, que es la evasión de menos esfuerzo que existe:
  *
- *     function getVerifiedIdentity(r: Request) {      // factory falso
- *       return { userId: r.headers.get('x-user') };
+ *     import { getVerifiedIdentity } from '../server/auth/identity';
+ *
+ *     export async function handler(getVerifiedIdentity: () => any, db: any) {
+ *       const identity = getVerifiedIdentity();      // el parámetro, no el import
+ *       return db.from('t').select().eq('user_id', identity.userId);
  *     }
  *
- * Ahora un nombre solo es fuente verificada si se ha **importado y resuelto** desde
- * el módulo canónico de identidad. Se admite el renombrado en la importación —lo que
- * importa es de dónde viene, no cómo se llame aquí— y el espacio de nombres
- * (`import * as auth`), pero un `auth.getVerifiedIdentity()` sobre un objeto
- * cualquiera ya no cuela.
+ * Y dejaba abierta la reasignación: una variable verificada que después recibe otra
+ * cosa seguía contando como verificada durante todo el fichero.
  *
- * **2 · Solo miraba dentro de literales.** Un payload, un filtro o una lista
- * guardados en una variable pasaban sin inspección:
+ * Ahora cada identificador se resuelve a **la declaración que lo introduce**
+ * —`tools/guards/lib/scope.mjs`—, y la confianza se guarda por declaración, no por
+ * nombre:
  *
- *     await db.from('t').insert(payload);             // ¿qué trae payload?
- *     await db.from('t').select().in('user_id', ids);  // ¿qué trae ids?
- *     await db.rpc('f', args);                         // ¿qué trae args?
- *
- * Ahora un payload, una lista o unos argumentos de RPC que no se puedan resolver a
- * un literal **en el mismo fichero** son un hallazgo. No es que se sepa que traen
- * una columna de identidad: es que no se puede demostrar que no.
+ *   · el verificador vale si el símbolo invocado resuelve al **especificador de
+ *     importación** del módulo canónico, con el nombre exportado correcto. Un
+ *     parámetro, una variable o una función local que se llamen igual resuelven a
+ *     otra declaración y no valen;
+ *   · una declaración verificada se **envenena** si en cualquier punto del fichero
+ *     recibe una expresión que no se puede demostrar verificada. Envenenar gana
+ *     siempre: el orden textual no debe decidir la seguridad;
+ *   · los métodos de consulta se reconocen tanto invocados directamente como
+ *     extraídos —`const eq = q.eq; eq('user_id', v)`— y tanto por acceso a
+ *     propiedad como por acceso computado que resuelva a un literal;
+ *   · una **columna de filtro** que no se resuelve a un literal es un hallazgo: si
+ *     no se puede saber qué columna es, no se puede descartar que sea de identidad.
  * ---------------------------------------------------------------------------
  */
 
 import { read, report } from './lib/walk.mjs';
-import { lineOfNode, parseSource, stringArg, ts, walkAst } from './lib/ast.mjs';
+import { lineOfNode, parseSource, ts, walkAst } from './lib/ast.mjs';
+import { buildScopeTable, DECL_KINDS } from './lib/scope.mjs';
 import { collectSourceFiles, resolveModule } from './lib/client-surface.mjs';
 
 /** Único fichero autorizado a construir una identidad verificada. */
 const IDENTITY_FACTORY_OWNER = 'apps/web/src/server/auth/identity.ts';
 
-/** El módulo donde se define el propio constructor. */
+/** El módulo donde se define el propio constructor de la marca. */
 const IDENTITY_TYPE_MODULE = 'packages/domain/src/identity.ts';
 
 /** Nombres exportados por el módulo canónico cuya salida es identidad verificada. */
@@ -66,8 +68,14 @@ const IDENTITY_COLUMNS = new Set(['user_id', 'owner_id', 'profile_id']);
 /** Propiedades de una identidad verificada que siguen siendo de confianza. */
 const IDENTITY_FIELDS = new Set(['userId', 'email', 'method']);
 
-/** Métodos que reciben un payload que puede llevar una columna de identidad. */
+/** Filtros con la columna en la posición 0 y el valor en la 1. */
+const COLUMN_VALUE_METHODS = new Set(['eq', 'neq', 'is']);
+
+/** Métodos que reciben un objeto que puede llevar una columna de identidad. */
 const PAYLOAD_METHODS = new Set(['insert', 'update', 'upsert', 'match']);
+
+/** Todo lo que esta guarda vigila, para reconocerlo también extraído. */
+const SINK_METHODS = new Set([...COLUMN_VALUE_METHODS, ...PAYLOAD_METHODS, 'filter', 'in', 'rpc']);
 
 const findings = [];
 
@@ -76,52 +84,98 @@ for (const file of collectSourceFiles()) {
   if (source === '') continue;
 
   const sourceFile = parseSource(file, source);
+  const { resolve } = buildScopeTable(sourceFile);
 
-  // ============================================ qué nombres son fuente verificada
-  /**
-   * Un nombre solo cuenta si se ha importado del módulo canónico y se ha resuelto
-   * a ese fichero. Llamarse `getVerifiedIdentity` no basta: eso es exactamente lo
-   * que permitía el factory falso.
-   */
-  const verifiedSourceNames = new Set();
-  const verifiedNamespaces = new Set();
+  const push = (node, message) => {
+    findings.push({ file, line: lineOfNode(sourceFile, node), message });
+  };
 
-  if (file === IDENTITY_FACTORY_OWNER) {
-    // En su propio módulo, las funciones son las de verdad.
-    for (const name of VERIFIED_EXPORTS) verifiedSourceNames.add(name);
-  }
+  // ======================================================= constantes por símbolo
+  const constantValues = new Map();
+  const constantPoisoned = new Set();
 
-  for (const statement of sourceFile.statements) {
-    if (
-      !ts.isImportDeclaration(statement) ||
-      !statement.importClause ||
-      !ts.isStringLiteralLike(statement.moduleSpecifier)
-    ) {
-      continue;
-    }
-
-    const target = resolveModule(file, statement.moduleSpecifier.text);
-    if (target !== IDENTITY_FACTORY_OWNER) continue;
-
-    const bindings = statement.importClause.namedBindings;
-    if (bindings && ts.isNamespaceImport(bindings)) {
-      verifiedNamespaces.add(bindings.name.text);
-    }
-    if (bindings && ts.isNamedImports(bindings)) {
-      for (const element of bindings.elements) {
-        // `import { getVerifiedIdentity as gvi }` · lo que se comprueba es el
-        // nombre exportado, no el local.
-        const exported = (element.propertyName ?? element.name).text;
-        if (VERIFIED_EXPORTS.has(exported)) verifiedSourceNames.add(element.name.text);
-      }
-    }
-  }
-
-  // =========================================================== marca falsificada
   walkAst(sourceFile, (node) => {
     if (
-      // El módulo que **define** la marca es el único que puede colocarla: ahí el
-      // cast es la implementación del tipo, no una forma de saltárselo.
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      ts.isStringLiteralLike(node.initializer)
+    ) {
+      constantValues.set(node, node.initializer.text);
+      return;
+    }
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isIdentifier(node.left)
+    ) {
+      const binding = resolve(node.left);
+      if (binding) constantPoisoned.add(binding.declaration);
+    }
+  });
+
+  const resolveString = (node) => {
+    if (!node) return null;
+    if (ts.isStringLiteralLike(node)) return node.text;
+    if (ts.isParenthesizedExpression(node)) return resolveString(node.expression);
+    if (ts.isAsExpression(node)) return resolveString(node.expression);
+    if (ts.isIdentifier(node)) {
+      const binding = resolve(node);
+      if (!binding || constantPoisoned.has(binding.declaration)) return null;
+      return constantValues.get(binding.declaration) ?? null;
+    }
+    return null;
+  };
+
+  // ==================================================== el verificador canónico
+  /**
+   * ¿Este identificador resuelve al export canónico del verificador?
+   *
+   * Tiene que ser un especificador de importación —no un parámetro, ni una
+   * variable, ni una función local— de un módulo que resuelva al fichero canónico,
+   * y con el nombre **exportado** correcto. El alias local da igual.
+   */
+  const isCanonicalVerifier = (identifier) => {
+    const binding = resolve(identifier);
+
+    if (!binding) {
+      // Sin declaración local: en el propio módulo canónico eso no puede pasar
+      // —las funciones están declaradas—, y fuera de él un global con ese nombre
+      // no es el verificador.
+      return false;
+    }
+
+    if (binding.kind === DECL_KINDS.IMPORT_NAMED) {
+      return (
+        VERIFIED_EXPORTS.has(binding.exportedName ?? '') &&
+        binding.importedFrom !== null &&
+        binding.importedFrom !== undefined &&
+        resolveModule(file, binding.importedFrom) === IDENTITY_FACTORY_OWNER
+      );
+    }
+
+    // Dentro del módulo canónico, sus propias funciones son las de verdad.
+    if (binding.kind === DECL_KINDS.FUNCTION && file === IDENTITY_FACTORY_OWNER) {
+      return VERIFIED_EXPORTS.has(binding.name);
+    }
+
+    return false;
+  };
+
+  /** ¿Este identificador es el espacio de nombres del módulo canónico? */
+  const isCanonicalNamespace = (identifier) => {
+    const binding = resolve(identifier);
+    return Boolean(
+      binding &&
+      binding.kind === DECL_KINDS.IMPORT_NAMESPACE &&
+      binding.importedFrom &&
+      resolveModule(file, binding.importedFrom) === IDENTITY_FACTORY_OWNER,
+    );
+  };
+
+  // ========================================================= marca falsificada
+  walkAst(sourceFile, (node) => {
+    if (
       file !== IDENTITY_TYPE_MODULE &&
       (ts.isAsExpression(node) ||
         ts.isSatisfiesExpression(node) ||
@@ -132,15 +186,13 @@ for (const file of collectSourceFiles()) {
       node.type.typeName.text === 'VerifiedIdentity'
     ) {
       const kind = ts.isSatisfiesExpression(node) ? 'satisfies' : 'as';
-      findings.push({
-        file,
-        line: lineOfNode(sourceFile, node),
-        message:
-          '`' +
+      push(
+        node,
+        '`' +
           kind +
           ' VerifiedIdentity`: la marca se afirma en lugar de obtenerse. Una identidad ' +
           'verificada solo puede salir del verificador de servidor (INV-116).',
-      });
+      );
     }
 
     if (
@@ -149,15 +201,13 @@ for (const file of collectSourceFiles()) {
       file !== IDENTITY_FACTORY_OWNER &&
       file !== IDENTITY_TYPE_MODULE
     ) {
-      findings.push({
-        file,
-        line: lineOfNode(sourceFile, node),
-        message:
-          'Solo "' +
+      push(
+        node,
+        'Solo "' +
           IDENTITY_FACTORY_OWNER +
           '" puede construir una identidad verificada. Fuera de ahí, la marca deja de ' +
           'demostrar que hubo verificación.',
-      });
+      );
     }
 
     if (
@@ -165,26 +215,31 @@ for (const file of collectSourceFiles()) {
       ts.isPropertyAccessExpression(node.expression) &&
       node.expression.name.text === 'getSession'
     ) {
-      findings.push({
-        file,
-        line: lineOfNode(sourceFile, node),
-        message:
-          'Uso de getSession(). No valida la firma del token: no puede ser la base de una ' +
+      push(
+        node,
+        'Uso de getSession(). No valida la firma del token: no puede ser la base de una ' +
           'decisión de acceso. Usa getClaims() o getUser() (INV-116).',
-      });
+      );
     }
   });
 
-  // ====================================================== procedencia positiva
-  /** Identificadores que se ha demostrado que derivan del verificador. */
+  // ================================================= procedencia por declaración
+  /** Declaraciones cuyo valor deriva del verificador. */
   const verified = new Set();
-  /** Funciones locales cuyo valor de retorno deriva del verificador. */
+  /** Declaraciones que en algún punto reciben algo no demostrable. Gana siempre. */
+  const poisoned = new Set();
+  /** Funciones locales cuyos retornos son todos verificados. */
   const verifiedFunctions = new Set();
+
+  const declarationOf = (identifier) => resolve(identifier)?.declaration ?? null;
 
   function isVerifiedExpression(node) {
     if (!node) return false;
 
-    if (ts.isIdentifier(node)) return verified.has(node.text);
+    if (ts.isIdentifier(node)) {
+      const declaration = declarationOf(node);
+      return Boolean(declaration && verified.has(declaration) && !poisoned.has(declaration));
+    }
 
     if (ts.isAwaitExpression(node)) return isVerifiedExpression(node.expression);
     if (ts.isParenthesizedExpression(node)) return isVerifiedExpression(node.expression);
@@ -195,39 +250,35 @@ for (const file of collectSourceFiles()) {
       return isVerifiedExpression(node.expression);
     }
 
-    // `identity.userId`, `identity['userId']`
     if (ts.isPropertyAccessExpression(node)) {
       return IDENTITY_FIELDS.has(node.name.text) && isVerifiedExpression(node.expression);
     }
     if (ts.isElementAccessExpression(node)) {
-      const key = ts.isStringLiteralLike(node.argumentExpression)
-        ? node.argumentExpression.text
-        : null;
+      const key = resolveString(node.argumentExpression);
       return key !== null && IDENTITY_FIELDS.has(key) && isVerifiedExpression(node.expression);
     }
 
     if (ts.isCallExpression(node)) {
-      // Fuente verificada importada del módulo canónico, con el nombre que sea.
-      if (ts.isIdentifier(node.expression) && verifiedSourceNames.has(node.expression.text)) {
-        return true;
+      const callee = node.expression;
+
+      if (ts.isIdentifier(callee)) {
+        if (isCanonicalVerifier(callee)) return true;
+        const declaration = declarationOf(callee);
+        return Boolean(declaration && verifiedFunctions.has(declaration));
       }
-      // `auth.getVerifiedIdentity()` solo si `auth` ES el módulo canónico.
+
+      // `identidad.getVerifiedIdentity()` solo si `identidad` ES el módulo canónico
       if (
-        ts.isPropertyAccessExpression(node.expression) &&
-        ts.isIdentifier(node.expression.expression) &&
-        verifiedNamespaces.has(node.expression.expression.text) &&
-        VERIFIED_EXPORTS.has(node.expression.name.text)
+        ts.isPropertyAccessExpression(callee) &&
+        ts.isIdentifier(callee.expression) &&
+        isCanonicalNamespace(callee.expression) &&
+        VERIFIED_EXPORTS.has(callee.name.text)
       ) {
-        return true;
-      }
-      // Helper local cuyo retorno se demostró verificado.
-      if (ts.isIdentifier(node.expression) && verifiedFunctions.has(node.expression.text)) {
         return true;
       }
       return false;
     }
 
-    // `a ?? b` y `a ? b : c` solo son de confianza si ambas ramas lo son.
     if (
       ts.isBinaryExpression(node) &&
       node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
@@ -241,25 +292,28 @@ for (const file of collectSourceFiles()) {
     return false;
   }
 
-  function markVerifiedBinding(name) {
-    if (ts.isIdentifier(name)) {
-      verified.add(name.text);
+  const markVerifiedBinding = (nameNode) => {
+    if (!nameNode) return;
+    if (ts.isIdentifier(nameNode)) {
+      const declaration = declarationOf(nameNode);
+      if (declaration) verified.add(declaration);
       return;
     }
-    if (ts.isObjectBindingPattern(name)) {
-      for (const element of name.elements) {
-        const property = element.propertyName ?? element.name;
-        const key =
-          ts.isIdentifier(property) || ts.isStringLiteralLike(property) ? property.text : null;
+    if (ts.isObjectBindingPattern(nameNode)) {
+      for (const element of nameNode.elements) {
+        if (!ts.isBindingElement(element)) continue;
+        const source = element.propertyName ?? element.name;
+        const key = ts.isIdentifier(source) || ts.isStringLiteralLike(source) ? source.text : null;
         // Solo los campos de la identidad conservan la confianza.
         if (key !== null && IDENTITY_FIELDS.has(key)) markVerifiedBinding(element.name);
       }
     }
-  }
+  };
 
-  // Punto fijo: el orden textual no debe decidir qué se considera verificado.
-  for (let pass = 0; pass < 5; pass += 1) {
-    const before = verified.size + verifiedFunctions.size;
+  // Punto fijo. Envenenar y verificar se recalculan juntos hasta estabilizar,
+  // porque envenenar un símbolo puede dejar de verificar a otro.
+  for (let pass = 0; pass < 6; pass += 1) {
+    const before = verified.size + poisoned.size + verifiedFunctions.size;
 
     walkAst(sourceFile, (node) => {
       if (ts.isVariableDeclaration(node) && node.initializer) {
@@ -267,17 +321,20 @@ for (const file of collectSourceFiles()) {
         return;
       }
 
+      // Reasignación. Si lo que entra no es demostrable, el símbolo queda
+      // envenenado para todo el fichero, hubiera sido verificado antes o no.
       if (
         ts.isBinaryExpression(node) &&
         node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-        ts.isIdentifier(node.left) &&
-        isVerifiedExpression(node.right)
+        ts.isIdentifier(node.left)
       ) {
-        verified.add(node.left.text);
+        const declaration = declarationOf(node.left);
+        if (!declaration) return;
+        if (isVerifiedExpression(node.right)) verified.add(declaration);
+        else poisoned.add(declaration);
         return;
       }
 
-      // Una función local es «verificada» si TODOS sus retornos lo son.
       const isFunction =
         ts.isFunctionDeclaration(node) ||
         (ts.isVariableDeclaration(node) &&
@@ -285,48 +342,52 @@ for (const file of collectSourceFiles()) {
           (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)));
 
       if (isFunction) {
-        const name = ts.isFunctionDeclaration(node)
-          ? node.name?.text
+        const declaration = ts.isFunctionDeclaration(node)
+          ? node
           : ts.isIdentifier(node.name)
-            ? node.name.text
+            ? node
             : null;
         const body = ts.isFunctionDeclaration(node) ? node.body : node.initializer?.body;
-        if (!name || !body) return;
+        if (!declaration || !body) return;
 
         const returns = [];
         walkAst(body, (inner) => {
           if (ts.isReturnStatement(inner) && inner.expression) returns.push(inner.expression);
         });
-        // Cuerpo de flecha con expresión directa.
         if (!ts.isBlock(body)) returns.push(body);
 
         if (returns.length > 0 && returns.every((expression) => isVerifiedExpression(expression))) {
-          verifiedFunctions.add(name);
+          verifiedFunctions.add(declaration);
         }
       }
     });
 
-    if (verified.size + verifiedFunctions.size === before) break;
+    if (verified.size + poisoned.size + verifiedFunctions.size === before) break;
   }
 
   // ================================================ resolución de literales locales
-  /**
-   * Iniciadores de las variables del fichero, para poder seguir un payload guardado
-   * en una variable hasta el literal que lo construye. Si hay dos declaraciones con
-   * el mismo nombre, no se resuelve ninguna: la ambigüedad se trata como falta de
-   * prueba, no como permiso.
-   */
   const initializers = new Map();
   const ambiguous = new Set();
 
   walkAst(sourceFile, (node) => {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
-      if (initializers.has(node.name.text)) ambiguous.add(node.name.text);
-      initializers.set(node.name.text, node.initializer);
+      const declaration = declarationOf(node.name);
+      if (!declaration) return;
+      if (initializers.has(declaration)) ambiguous.add(declaration);
+      initializers.set(declaration, node.initializer);
+    }
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isIdentifier(node.left)
+    ) {
+      // Reasignado: lo que hubiera en la declaración ya no describe el símbolo.
+      const declaration = declarationOf(node.left);
+      if (declaration) ambiguous.add(declaration);
     }
   });
 
-  function unwrap(node) {
+  const unwrap = (node) => {
     let current = node;
     while (
       current &&
@@ -339,9 +400,8 @@ for (const file of collectSourceFiles()) {
       current = current.expression;
     }
     return current;
-  }
+  };
 
-  /** Sigue un identificador hasta el literal que lo inicializa, si lo hay. */
   function resolveLiteral(node, depth = 0) {
     const current = unwrap(node);
     if (!current || depth > 4) return null;
@@ -353,24 +413,60 @@ for (const file of collectSourceFiles()) {
       return current;
     }
     if (ts.isNewExpression(current) && ts.isIdentifier(current.expression)) {
-      // `new RegExp(...)` no es un payload: es el caso legítimo de String.match.
       return current.expression.text === 'RegExp' ? current : null;
     }
     if (ts.isIdentifier(current)) {
-      if (ambiguous.has(current.text)) return null;
-      const initializer = initializers.get(current.text);
+      const declaration = declarationOf(current);
+      if (!declaration || ambiguous.has(declaration)) return null;
+      const initializer = initializers.get(declaration);
       return initializer ? resolveLiteral(initializer, depth + 1) : null;
     }
     return null;
   }
 
-  // ============================================================== sumideros
-  function reportSink(node, column, detail, valueText) {
-    findings.push({
-      file,
-      line: lineOfNode(sourceFile, node),
-      message:
-        '"' +
+  // ============================================================== métodos extraídos
+  /** Declaraciones que guardan un método de consulta: `const eq = q.eq`. */
+  const aliasedSinks = new Map();
+
+  const memberNameOf = (access) => {
+    if (ts.isPropertyAccessExpression(access)) return access.name.text;
+    if (ts.isElementAccessExpression(access)) return resolveString(access.argumentExpression);
+    return null;
+  };
+
+  walkAst(sourceFile, (node) => {
+    if (!ts.isVariableDeclaration(node) || !ts.isIdentifier(node.name) || !node.initializer) return;
+
+    let source = unwrap(node.initializer);
+    // `q.eq.bind(q)` conserva la posición de los argumentos.
+    if (
+      ts.isCallExpression(source) &&
+      ts.isPropertyAccessExpression(source.expression) &&
+      source.expression.name.text === 'bind'
+    ) {
+      source = source.expression.expression;
+    }
+
+    if (!ts.isPropertyAccessExpression(source) && !ts.isElementAccessExpression(source)) return;
+
+    const member = memberNameOf(source);
+    if (member !== null && SINK_METHODS.has(member)) {
+      const declaration = declarationOf(node.name);
+      if (declaration) aliasedSinks.set(declaration, member);
+    }
+  });
+
+  // ================================================================== sumideros
+  const describeValue = (node) => {
+    if (!node) return 'un valor ausente';
+    const text = node.getText(sourceFile).replace(/\s+/g, ' ');
+    return '`' + (text.length > 48 ? text.slice(0, 45) + '…' : text) + '`';
+  };
+
+  const reportSink = (node, column, detail, valueText) => {
+    push(
+      node,
+      '"' +
         column +
         '" recibe ' +
         valueText +
@@ -378,39 +474,56 @@ for (const file of collectSourceFiles()) {
         detail +
         ', y no se puede demostrar que derive del verificador de identidad de servidor. ' +
         'La identidad viene de la verificación en servidor, nunca del cliente (Manifest §14).',
-    });
-  }
+    );
+  };
 
-  function reportOpaque(node, detail, valueText) {
-    findings.push({
-      file,
-      line: lineOfNode(sourceFile, node),
-      message:
-        detail +
+  const reportOpaque = (node, detail, valueText) => {
+    push(
+      node,
+      detail +
         ' recibe ' +
         valueText +
         ', que no se resuelve a un literal en este fichero. Puede llevar user_id, owner_id ' +
         'o profile_id sin verificar: no poder demostrar que no los lleva no equivale a que ' +
         'no los lleve (INV-116). Construye el objeto campo a campo en el punto de uso.',
-    });
-  }
+    );
+  };
 
-  function describeValue(node) {
-    if (!node) return 'un valor ausente';
-    const text = node.getText(sourceFile).replace(/\s+/g, ' ');
-    return '`' + (text.length > 48 ? text.slice(0, 45) + '…' : text) + '`';
-  }
+  const reportOpaqueColumn = (node, detail, valueText) => {
+    push(
+      node,
+      detail +
+        ' filtra por la columna ' +
+        valueText +
+        ', que no se resuelve a un literal en este fichero. Si no se puede saber qué columna ' +
+        'es, no se puede descartar que sea user_id, owner_id o profile_id (INV-116).',
+    );
+  };
 
-  function checkPayloadObject(objectLiteral, detail) {
+  const isHarmlessPrimitive = (node) => {
+    const current = unwrap(node);
+    if (!current) return false;
+    return (
+      ts.isStringLiteralLike(current) ||
+      ts.isNumericLiteral(current) ||
+      ts.isRegularExpressionLiteral(current) ||
+      current.kind === ts.SyntaxKind.TrueKeyword ||
+      current.kind === ts.SyntaxKind.FalseKeyword ||
+      current.kind === ts.SyntaxKind.NullKeyword
+    );
+  };
+
+  const checkPayloadObject = (objectLiteral, detail) => {
     for (const property of objectLiteral.properties) {
-      // { user_id: valor }
       if (ts.isPropertyAssignment(property)) {
         const key =
           ts.isIdentifier(property.name) || ts.isStringLiteralLike(property.name)
             ? property.name.text
-            : null;
+            : ts.isComputedPropertyName(property.name)
+              ? resolveString(property.name.expression)
+              : null;
+
         if (key === null) {
-          // `{ [loQueSea]: valor }` · no se puede saber qué columna es.
           reportOpaque(property, detail + ' con clave computada', describeValue(property.name));
           continue;
         }
@@ -420,42 +533,54 @@ for (const file of collectSourceFiles()) {
         continue;
       }
 
-      // { user_id }  · shorthand
       if (ts.isShorthandPropertyAssignment(property)) {
         const key = property.name.text;
-        if (IDENTITY_COLUMNS.has(key) && !verified.has(key)) {
+        const declaration = declarationOf(property.name);
+        const trusted = Boolean(
+          declaration && verified.has(declaration) && !poisoned.has(declaration),
+        );
+        if (IDENTITY_COLUMNS.has(key) && !trusted) {
           reportSink(property, key, detail + ' (shorthand)', '`' + key + '`');
         }
         continue;
       }
 
-      // { ...algo } · no se puede saber qué trae
-      if (ts.isSpreadAssignment(property)) {
-        if (!isVerifiedExpression(property.expression)) {
-          findings.push({
-            file,
-            line: lineOfNode(sourceFile, property),
-            message:
-              'Spread ' +
-              describeValue(property.expression) +
-              ' en ' +
-              detail +
-              ': puede arrastrar una columna de identidad sin verificar. Construye el ' +
-              'objeto campo a campo.',
-          });
-        }
+      if (ts.isSpreadAssignment(property) && !isVerifiedExpression(property.expression)) {
+        push(
+          property,
+          'Spread ' +
+            describeValue(property.expression) +
+            ' en ' +
+            detail +
+            ': puede arrastrar una columna de identidad sin verificar. Construye el objeto ' +
+            'campo a campo.',
+        );
       }
     }
-  }
+  };
 
-  /**
-   * ¿La cadena de llamadas pasa por un `.from(...)`?
-   *
-   * Es la única evidencia barata de que se está construyendo una consulta PostgREST
-   * y no llamando a `String.prototype.match` o a la Cache Storage API. Se usa solo
-   * para `.match()`, que es el nombre que comparten los tres.
-   */
-  function chainHasFrom(call) {
+  const checkPayloadArgument = (argument, detail, opaqueCounts = true) => {
+    if (!argument) return;
+    if (isHarmlessPrimitive(argument)) return;
+
+    const literal = resolveLiteral(argument);
+
+    if (literal === null) {
+      if (opaqueCounts) reportOpaque(argument, detail, describeValue(argument));
+      return;
+    }
+    if (ts.isRegularExpressionLiteral(literal) || ts.isNewExpression(literal)) return;
+    if (ts.isArrayLiteralExpression(literal)) {
+      for (const element of literal.elements) {
+        checkPayloadArgument(element, detail + ' (elemento)', opaqueCounts);
+      }
+      return;
+    }
+    checkPayloadObject(literal, detail);
+  };
+
+  /** ¿La cadena pasa por un `.from(...)`? Única evidencia barata de PostgREST. */
+  const chainHasFrom = (call) => {
     let current = call.expression;
     while (current) {
       if (ts.isCallExpression(current)) {
@@ -475,77 +600,47 @@ for (const file of collectSourceFiles()) {
       return false;
     }
     return false;
-  }
+  };
 
-  /** Un valor que por construcción no puede llevar una columna de identidad. */
-  function isHarmlessPrimitive(node) {
-    const current = unwrap(node);
-    if (!current) return false;
-    return (
-      ts.isStringLiteralLike(current) ||
-      ts.isNumericLiteral(current) ||
-      ts.isRegularExpressionLiteral(current) ||
-      current.kind === ts.SyntaxKind.TrueKeyword ||
-      current.kind === ts.SyntaxKind.FalseKeyword ||
-      current.kind === ts.SyntaxKind.NullKeyword
-    );
-  }
+  const checkSinkCall = (node, method) => {
+    const label = '.' + method + '()';
 
-  /** Comprueba un payload que debería ser un objeto, resolviéndolo si hace falta. */
-  function checkPayloadArgument(argument, detail, opaqueCounts = true) {
-    if (!argument) return;
-    if (isHarmlessPrimitive(argument)) return;
-
-    const literal = resolveLiteral(argument);
-
-    if (literal === null) {
-      if (opaqueCounts) reportOpaque(argument, detail, describeValue(argument));
-      return;
-    }
-    if (ts.isRegularExpressionLiteral(literal) || ts.isNewExpression(literal)) {
-      // String.prototype.match: no es una consulta.
-      return;
-    }
-    if (ts.isArrayLiteralExpression(literal)) {
-      for (const element of literal.elements) {
-        checkPayloadArgument(element, detail + ' (elemento)', opaqueCounts);
+    if (COLUMN_VALUE_METHODS.has(method)) {
+      const column = resolveString(node.arguments[0]);
+      if (column === null) {
+        reportOpaqueColumn(node, label, describeValue(node.arguments[0]));
+        return;
       }
-      return;
-    }
-    checkPayloadObject(literal, detail);
-  }
-
-  walkAst(sourceFile, (node) => {
-    if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) return;
-
-    const method = node.expression.name.text;
-
-    // `.eq('user_id', valor)` · `.neq` · `.is`
-    if (method === 'eq' || method === 'neq' || method === 'is') {
-      const column = stringArg(node, 0);
-      if (column && IDENTITY_COLUMNS.has(column) && !isVerifiedExpression(node.arguments[1])) {
-        reportSink(node, column, '.' + method + '()', describeValue(node.arguments[1]));
+      if (IDENTITY_COLUMNS.has(column) && !isVerifiedExpression(node.arguments[1])) {
+        reportSink(node, column, label, describeValue(node.arguments[1]));
       }
       return;
     }
 
-    // `.filter('user_id', 'eq', valor)`
     if (method === 'filter') {
-      const column = stringArg(node, 0);
-      if (column && IDENTITY_COLUMNS.has(column) && !isVerifiedExpression(node.arguments[2])) {
-        reportSink(node, column, '.filter()', describeValue(node.arguments[2]));
+      // `Array.prototype.filter` lleva uno o dos argumentos; el de PostgREST, tres.
+      if (node.arguments.length < 3) return;
+      const column = resolveString(node.arguments[0]);
+      if (column === null) {
+        reportOpaqueColumn(node, label, describeValue(node.arguments[0]));
+        return;
+      }
+      if (IDENTITY_COLUMNS.has(column) && !isVerifiedExpression(node.arguments[2])) {
+        reportSink(node, column, label, describeValue(node.arguments[2]));
       }
       return;
     }
 
-    // `.in('user_id', [...])` · la lista puede estar en una variable
     if (method === 'in') {
-      const column = stringArg(node, 0);
-      if (!column || !IDENTITY_COLUMNS.has(column)) return;
+      const column = resolveString(node.arguments[0]);
+      if (column === null) {
+        reportOpaqueColumn(node, label, describeValue(node.arguments[0]));
+        return;
+      }
+      if (!IDENTITY_COLUMNS.has(column)) return;
 
       const list = node.arguments[1];
       const literal = resolveLiteral(list);
-
       if (literal === null || !ts.isArrayLiteralExpression(literal)) {
         reportOpaque(list ?? node, '.in("' + column + '")', describeValue(list));
         return;
@@ -558,28 +653,43 @@ for (const file of collectSourceFiles()) {
       return;
     }
 
-    // `.match({...})` · `.insert({...})` · `.update({...})` · `.upsert({...})`
     if (PAYLOAD_METHODS.has(method)) {
       // `.match()` lo comparten PostgREST, String.prototype y la Cache Storage API.
-      // Un payload opaco solo cuenta como hallazgo si la cadena pasa por `.from()`;
-      // un objeto literal se inspecciona siempre, cueste lo que cueste el nombre.
       const opaqueCounts = method !== 'match' || chainHasFrom(node);
-      checkPayloadArgument(node.arguments[0], '.' + method + '()', opaqueCounts);
+      checkPayloadArgument(node.arguments[0], label, opaqueCounts);
       return;
     }
 
-    // `.rpc('nombre', argumentos)`
-    if (method === 'rpc') {
-      const payload = node.arguments[1];
-      if (payload) checkPayloadArgument(payload, '.rpc()');
+    if (method === 'rpc' && node.arguments[1]) {
+      checkPayloadArgument(node.arguments[1], label);
+    }
+  };
+
+  walkAst(sourceFile, (node) => {
+    if (!ts.isCallExpression(node)) return;
+
+    const callee = node.expression;
+
+    // Invocación directa: `q.eq(...)` y `q['eq'](...)`
+    if (ts.isPropertyAccessExpression(callee) || ts.isElementAccessExpression(callee)) {
+      const method = memberNameOf(callee);
+      if (method !== null && SINK_METHODS.has(method)) checkSinkCall(node, method);
+      return;
+    }
+
+    // Método extraído: `const eq = q.eq; eq('user_id', v)`
+    if (ts.isIdentifier(callee)) {
+      const declaration = declarationOf(callee);
+      const method = declaration ? aliasedSinks.get(declaration) : undefined;
+      if (method) checkSinkCall(node, method);
     }
   });
 }
 
 console.log(
-  '  (procedencia positiva: solo ' +
+  '  (procedencia por símbolo y ámbito: solo ' +
     [...VERIFIED_EXPORTS].join(' y ') +
-    ', importadas y resueltas desde ' +
+    ', resueltas al export real de ' +
     IDENTITY_FACTORY_OWNER +
     ', producen identidad válida)',
 );
@@ -588,13 +698,14 @@ report(
   'auth-authority-guard',
   findings,
   'INV-116 (SD-016) · REQ-A07 · Manifest §14. La identidad se obtiene con\n' +
-    '`getVerifiedIdentity()` / `requireVerifiedIdentity()` importadas del módulo\n' +
-    'canónico "' +
+    '`getVerifiedIdentity()` / `requireVerifiedIdentity()` resueltas al export real del\n' +
+    'módulo canónico "' +
     IDENTITY_FACTORY_OWNER +
-    '". Llamarse así no basta: la guarda resuelve la\n' +
-    'importación. La carga de la prueba está del lado de quien usa el valor: lo que no\n' +
-    'se puede demostrar verificado se rechaza, y eso incluye un payload, una lista o\n' +
-    'unos argumentos de RPC que no se resuelvan a un literal.\n' +
-    'RLS protege los datos; esta guarda protege la capa de aplicación, que es la que\n' +
-    'queda expuesta cuando la lógica no atraviesa RLS.',
+    '". Llamarse así no basta, y un parámetro o\n' +
+    'una variable local que sombreen la importación tampoco. La confianza se guarda por\n' +
+    'símbolo: reasignar una variable verificada la invalida. Lo que no se puede demostrar\n' +
+    'verificado se rechaza, y eso incluye un payload, una lista, unos argumentos de RPC o\n' +
+    'una columna de filtro que no se resuelvan a un literal.\n' +
+    'RLS protege los datos; esta guarda protege la capa de aplicación, que es la que queda\n' +
+    'expuesta cuando la lógica no atraviesa RLS.',
 );

@@ -44,7 +44,10 @@ describe('L1 · client-authority · separar el método de su llamada', () => {
     );
 
     expect(result.exitCode, result.output).toBe(1);
-    expect(result.output).toContain('Alias de ".update"');
+    // El mensaje pasó a describir el acceso, no la declaración: la guarda ya no
+    // razona sobre la forma de la asignación sino sobre el símbolo tocado.
+    expect(result.output).toContain('El miembro ".update"');
+    expect(result.output).toContain('se guarda en una variable');
   });
 
   it('2 · rechaza el alias de .rpc por desestructuración, y su llamada', () => {
