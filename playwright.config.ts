@@ -19,6 +19,11 @@ export default defineConfig({
   testDir: './tests/e2e',
   testMatch: /.*\.(e2e|spec)\.ts$/,
 
+  // Los E2E crean usuarios reales a través de la interfaz. El setup deniega el
+  // arranque contra un entorno que no lo admita; el teardown borra lo creado.
+  globalSetup: './tests/e2e/global-setup.ts',
+  globalTeardown: './tests/e2e/global-teardown.ts',
+
   fullyParallel: false,
   forbidOnly: Boolean(process.env['CI']),
   retries: process.env['CI'] ? 1 : 0,

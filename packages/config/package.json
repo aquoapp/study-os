@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./server": "./src/server.ts",
     "./client": "./src/client.ts",
-    "./server-env-keys": "./src/server-env-keys.ts"
+    "./server-env-keys": "./src/server-env-keys.ts",
+    "./destructive": "./src/destructive.ts"
   }
 }

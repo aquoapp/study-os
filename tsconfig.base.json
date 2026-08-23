@@ -27,6 +27,7 @@
       "@study-os/design-system": ["./packages/design-system/src/index.ts"],
       "@study-os/design-system/*": ["./packages/design-system/src/*"],
       "@study-os/config": ["./packages/config/src/index.ts"],
+      "@study-os/config/destructive": ["./packages/config/src/destructive.ts"],
       "@study-os/config/server-env-keys": ["./packages/config/src/server-env-keys.ts"],
       "@study-os/config/*": ["./packages/config/src/*"],
       "@study-os/domain": ["./packages/domain/src/index.ts"],

@@ -11,8 +11,20 @@ import 'server-only';
  */
 
 import { readPublicConfig, type PublicConfig } from './client';
+import {
+  AUTHORIZATION_ENV_VAR,
+  assertDestructiveOperationAllowed as assertDestructiveOperationAllowedIn,
+} from './destructive';
 
 export { SERVER_ONLY_ENV_KEYS, type ServerOnlyEnvKey } from './server-env-keys';
+export {
+  AUTHORIZATION_ENV_VAR,
+  DestructiveOperationDenied,
+  assertAutomatedTestsAllowed,
+  authorizationTokenFor,
+  destructivePolicyFor,
+  isLoopbackUrl,
+} from './destructive';
 
 export interface ServerConfig extends PublicConfig {
   /**
@@ -45,15 +57,15 @@ export function readServerConfig(): ServerConfig {
 }
 
 /**
- * Guarda operativa: impide que una herramienta destructiva se ejecute contra un
- * entorno que no lo admite. Se apoya en el dato del entorno, no en recordar un flag.
+ * Guarda operativa: impide que una operación destructiva se ejecute contra un
+ * entorno que no la admite.
+ *
+ * Delega en `./destructive`, que es donde vive la regla, para que la misma
+ * decisión pueda tomarla también `tools/db.mjs` y el arranque de los tests. Antes
+ * la lógica estaba aquí dentro, tras `import 'server-only'`, lo que la hacía
+ * inalcanzable desde esos dos sitios y en la práctica dejaba la función sin usar.
  */
 export function assertDestructiveOperationAllowed(operation: string): void {
-  const { policy, environment } = readPublicConfig();
-  if (!policy.allowsDestructiveReset) {
-    throw new Error(
-      `Operación destructiva "${operation}" bloqueada en el entorno "${environment}". ` +
-        'Requiere aprobación humana explícita (Engineering Constitution · human approval required).',
-    );
-  }
+  const { environment } = readPublicConfig();
+  assertDestructiveOperationAllowedIn(operation, environment, process.env[AUTHORIZATION_ENV_VAR]);
 }

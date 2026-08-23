@@ -13,3 +13,8 @@ coverage/
 playwright-report/
 test-results/
 supabase/migrations/.lock.json
+
+# Lo regenera `next build` en cada ejecución y el propio fichero dice que no debe
+# editarse. Formatearlo crea un bucle: build lo reescribe, prettier lo revierte y
+# el check de formato falla justo después de construir.
+apps/web/next-env.d.ts

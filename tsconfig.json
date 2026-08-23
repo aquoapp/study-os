@@ -20,7 +20,8 @@
     "tools/**/*.ts",
     "*.ts",
     "apps/web/next-env.d.ts",
-    "*.mts"
+    "*.mts",
+    "tools/**/*.mts"
   ],
   "exclude": ["node_modules", "**/node_modules", "**/.next", "**/dist", "_handoff"]
 }

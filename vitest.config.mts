@@ -19,6 +19,10 @@ export default defineConfig({
         import.meta.url,
       ).pathname,
       '@study-os/domain': new URL('./packages/domain/src/index.ts', import.meta.url).pathname,
+      '@study-os/config/destructive': new URL(
+        './packages/config/src/destructive.ts',
+        import.meta.url,
+      ).pathname,
       '@study-os/config/server-env-keys': new URL(
         './packages/config/src/server-env-keys.ts',
         import.meta.url,

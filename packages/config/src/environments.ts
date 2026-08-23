@@ -9,6 +9,8 @@
  * los valores viven en el gestor de secretos de cada entorno.
  */
 
+import policies from './environment-policies.json';
+
 export const ENVIRONMENTS = ['local', 'staging', 'production'] as const;
 
 export type Environment = (typeof ENVIRONMENTS)[number];
@@ -52,32 +54,33 @@ export interface EnvironmentPolicy {
   readonly environment: Environment;
   /** Un reset destructivo de base de datos es aceptable en este entorno. */
   readonly allowsDestructiveReset: boolean;
+  /** Aun admitiéndola, la operación exige autorización explícita en el entorno. */
+  readonly requiresExplicitAuthorization: boolean;
   /** Los datos de este entorno son datos reales de personas. */
   readonly holdsRealUserData: boolean;
   /** Se exige HTTPS y cookies `Secure`. */
   readonly requiresSecureTransport: boolean;
+  /** Pueden ejecutarse tests que crean y borran usuarios. */
+  readonly allowsAutomatedTests: boolean;
 }
 
-export const ENVIRONMENT_POLICIES: Readonly<Record<Environment, EnvironmentPolicy>> = {
-  local: {
-    environment: 'local',
-    allowsDestructiveReset: true,
-    holdsRealUserData: false,
-    requiresSecureTransport: false,
-  },
-  staging: {
-    environment: 'staging',
-    allowsDestructiveReset: true,
-    holdsRealUserData: false,
-    requiresSecureTransport: true,
-  },
-  production: {
-    environment: 'production',
-    allowsDestructiveReset: false,
-    holdsRealUserData: true,
-    requiresSecureTransport: true,
-  },
-};
+/**
+ * Los valores viven en `environment-policies.json` y no aquí.
+ *
+ * `tools/db.mjs` es un script de Node sin resolutor de TypeScript y necesita
+ * exactamente las mismas reglas para decidir si un `db reset` puede ejecutarse.
+ * Con dos tablas, la del código y la de la herramienta se separan a la primera
+ * modificación, y la que decide en la línea de comandos es justo la que protege
+ * los datos.
+ */
+export const ENVIRONMENT_POLICIES: Readonly<Record<Environment, EnvironmentPolicy>> = Object.freeze(
+  Object.fromEntries(
+    ENVIRONMENTS.map((environment) => {
+      const raw = policies.environments[environment];
+      return [environment, { environment, ...raw }];
+    }),
+  ) as Record<Environment, EnvironmentPolicy>,
+);
 
 export function policyFor(environment: Environment): EnvironmentPolicy {
   const policy = ENVIRONMENT_POLICIES[environment];
