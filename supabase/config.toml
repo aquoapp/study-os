@@ -36,8 +36,10 @@ enabled = true
 enabled = true
 port = 54323
 
-[inbucket]
+[local_smtp]
 # Captura de correo local: permite probar alta y confirmación sin enviar correo real.
+# El CLI 2.115 renombró [inbucket] a [local_smtp]; usar el nombre antiguo emite un aviso
+# de obsolescencia en cada invocación.
 enabled = true
 port = 54324
 

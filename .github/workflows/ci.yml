@@ -19,7 +19,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20.x'
   # Valores locales de Supabase. La clave anónima y la de servicio de una instancia
   # local son constantes públicas del CLI, no secretos: no otorgan acceso a ningún
   # dato real. Ningún secreto de staging o producción entra en este pipeline.
@@ -39,7 +38,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
@@ -82,25 +81,28 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: .nvmrc
           cache: npm
 
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
+      # El CLI de Supabase NO se instala con `supabase/setup-cli@v1 · version: latest`:
+      # una herramienta que decide el esquema no puede cambiar de versión sola. Viene
+      # del lockfile como devDependency con versión exacta, igual que en local.
       - run: npm ci
 
-      - name: Levantar Supabase local
-        run: supabase start
+      - name: Levantar Supabase local (CLI fijado por el lockfile)
+        run: npm run db:start
 
       - name: Publicar claves locales en el entorno del job
         run: |
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
-          echo "SUPABASE_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(npm run --silent db:status -- --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(npm run --silent db:status -- --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
 
       - name: Aplicar migraciones desde cero
-        run: supabase db reset
+        env:
+          # `db:reset` es destructivo: la guarda de tools/db.mjs exige que el entorno
+          # lo admita y, fuera de local, una autorización explícita.
+          NEXT_PUBLIC_ENVIRONMENT: local
+        run: npm run db:reset
 
       - name: schema-drift
         run: npm run schema-drift
@@ -127,4 +129,4 @@ jobs:
 
       - name: Detener Supabase
         if: always()
-        run: supabase stop
+        run: npm run db:stop

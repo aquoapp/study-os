@@ -25,10 +25,10 @@
 
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 
 import { REPO_ROOT, read, walk } from './lib/walk.mjs';
+import { assertPinnedCli, runSupabase } from '../supabase-cli.mjs';
 
 const MIGRATIONS_DIR = join(REPO_ROOT, 'supabase', 'migrations');
 const LOCK_PATH = join(MIGRATIONS_DIR, '.lock.json');
@@ -104,6 +104,16 @@ if (existsSync(LOCK_PATH)) {
   console.log('  (registro de huellas creado: supabase/migrations/.lock.json)');
 }
 
+// -------------------------------------------------- nivel A · CLI reproducible
+// El diff lo produce el CLI de Supabase. Si su versión no está controlada, el
+// resultado del check tampoco lo está.
+try {
+  const { pinned, installed } = assertPinnedCli();
+  console.log(`  (CLI de Supabase fijado: ${pinned}, instalado: ${installed})`);
+} catch (error) {
+  problems.push(error instanceof Error ? error.message : String(error));
+}
+
 // ---------------------------------------------------------------- nivel B
 const dbUrl = process.env.SUPABASE_DB_URL;
 
@@ -115,11 +125,7 @@ if (!dbUrl) {
   );
 } else {
   try {
-    const output = execFileSync(
-      'npx',
-      ['--yes', 'supabase', 'db', 'diff', '--db-url', dbUrl, '--schema', 'public'],
-      { encoding: 'utf8', cwd: REPO_ROOT, stdio: ['ignore', 'pipe', 'pipe'] },
-    );
+    const output = runSupabase(['db', 'diff', '--db-url', dbUrl, '--schema', 'public']);
 
     const meaningful = output
       .split('\n')
