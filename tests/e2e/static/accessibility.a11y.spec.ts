@@ -23,6 +23,19 @@ import { expect, test, type Page } from '@playwright/test';
  *
  * La diana táctil se mide con `boundingBox()`, que es la caja real tras el layout,
  * no la altura declarada en CSS.
+ *
+ * ---------------------------------------------------------------------------
+ * Y por qué hay un fixture negativo
+ *
+ * Una prueba de accesibilidad que nunca se ha visto fallar no demuestra nada. La
+ * ausencia de hallazgos puede significar que la interfaz está bien o que el
+ * recolector no mira donde debe, y desde fuera las dos se ven igual.
+ *
+ * El último bloque de este fichero construye una página rota a propósito —`slate`
+ * sobre `canvas`, texto sobre `teal`, un control de 24×24— y ejecuta contra ella
+ * **las mismas funciones de auditoría** que usan las rutas reales, exigiendo que
+ * encuentren exactamente esos defectos. Se ejecuta en cada pasada, sin tocar
+ * ningún fichero del producto y sin intervención manual.
  * ---------------------------------------------------------------------------
  */
 
@@ -81,7 +94,8 @@ function hex({ r, g, b }: Rgb): string {
 
 /**
  * WCAG 2.1: «texto grande» es ≥18pt (24px) o ≥14pt (18.66px) en negrita. Solo el
- * texto grande puede bajar a 3:1; el resto necesita 4.5:1.
+ * texto grande puede bajar a 3:1; **todo texto normal exige 4.5:1**, sin excepción
+ * por ser secundario, de apoyo o descriptivo.
  */
 function isLargeText(sample: TextSample): boolean {
   return sample.fontSizePx >= 24 || (sample.fontSizePx >= 18.66 && sample.fontWeight >= 700);
@@ -218,6 +232,92 @@ async function collectControls(page: Page): Promise<ControlSample[]> {
   }) as Promise<ControlSample[]>;
 }
 
+// ---------------------------------------------------------------------------
+// Auditorías. Se extraen a funciones para que el fixture negativo pueda ejecutar
+// exactamente el mismo código contra una página rota a propósito.
+// ---------------------------------------------------------------------------
+
+interface ContrastFailure {
+  readonly selector: string;
+  readonly text: string;
+  readonly ratio: number;
+  readonly required: number;
+  readonly description: string;
+}
+
+function auditContrast(samples: readonly TextSample[]): ContrastFailure[] {
+  const failures: ContrastFailure[] = [];
+
+  for (const sample of samples) {
+    const required = isLargeText(sample) ? 3 : 4.5;
+    const ratio = contrast(sample.color, sample.background);
+    if (ratio >= required) continue;
+
+    failures.push({
+      selector: sample.selector,
+      text: sample.text,
+      ratio,
+      required,
+      description:
+        `${sample.selector} · «${sample.text}»\n` +
+        `      color ${hex(sample.color)} sobre ${hex(sample.background)} ` +
+        `(fondo de: ${sample.backgroundFrom})\n` +
+        `      ${ratio.toFixed(2)}:1 · exigido ${required}:1 ` +
+        `(${sample.fontSizePx}px, peso ${sample.fontWeight})`,
+    });
+  }
+
+  return failures;
+}
+
+function auditSlateOnCanvas(samples: readonly TextSample[]): TextSample[] {
+  return samples.filter(
+    (sample) =>
+      sameColor(sample.color, FROZEN.slate) && sameColor(sample.background, FROZEN.canvas),
+  );
+}
+
+function auditTextOnForbiddenBackground(samples: readonly TextSample[]): TextSample[] {
+  return samples.filter(
+    (sample) =>
+      sameColor(sample.background, FROZEN.teal) || sameColor(sample.background, FROZEN.amber),
+  );
+}
+
+function auditSlateOffSurface(samples: readonly TextSample[]): TextSample[] {
+  return samples
+    .filter((sample) => sameColor(sample.color, FROZEN.slate))
+    .filter((sample) => !sameColor(sample.background, FROZEN.surface));
+}
+
+const CONTROL_SELECTOR = 'a[href], button, input, select, textarea, [role="button"]';
+
+/** Mide cada control con `boundingBox()`, que es la caja real tras el layout. */
+async function auditTargets(page: Page): Promise<string[]> {
+  const failures: string[] = [];
+
+  for (const handle of await page.locator(CONTROL_SELECTOR).all()) {
+    if (!(await handle.isVisible())) continue;
+    const box = await handle.boundingBox();
+    if (!box) continue;
+    // El enlace de salto vive fuera de la pantalla hasta recibir foco.
+    if (box.y + box.height < 0) continue;
+
+    if (box.width < 44 || box.height < 44) {
+      const description =
+        (await handle.getAttribute('data-testid')) ??
+        (await handle.textContent())?.trim().slice(0, 40) ??
+        (await handle.getAttribute('name')) ??
+        'sin nombre';
+      failures.push(
+        `«${description}» · ${box.width.toFixed(1)}×${box.height.toFixed(1)} px · exigido 44×44`,
+      );
+    }
+  }
+
+  return failures;
+}
+
 test.describe('accesibilidad renderizada · REQ-A06 · Design System §14 · SD-019 opción A', () => {
   for (const { path: route, hasControls } of ROUTES) {
     test.describe(route, () => {
@@ -227,22 +327,7 @@ test.describe('accesibilidad renderizada · REQ-A06 · Design System §14 · SD-
 
         expect(samples.length, `${route} no tiene texto visible que medir`).toBeGreaterThan(0);
 
-        const failures: string[] = [];
-
-        for (const sample of samples) {
-          const required = isLargeText(sample) ? 3 : 4.5;
-          const ratio = contrast(sample.color, sample.background);
-
-          if (ratio < required) {
-            failures.push(
-              `${sample.selector} · «${sample.text}»\n` +
-                `      color ${hex(sample.color)} sobre ${hex(sample.background)} ` +
-                `(fondo de: ${sample.backgroundFrom})\n` +
-                `      ${ratio.toFixed(2)}:1 · exigido ${required}:1 ` +
-                `(${sample.fontSizePx}px, peso ${sample.fontWeight})`,
-            );
-          }
-        }
+        const failures = auditContrast(samples).map((failure) => failure.description);
 
         expect(
           failures,
@@ -256,21 +341,15 @@ test.describe('accesibilidad renderizada · REQ-A06 · Design System §14 · SD-
         await page.goto(route);
         const samples = await collectTextSamples(page);
 
-        const slateOnCanvas = samples.filter(
-          (sample) =>
-            sameColor(sample.color, FROZEN.slate) && sameColor(sample.background, FROZEN.canvas),
-        );
         expect(
-          slateOnCanvas.map((sample) => `${sample.selector} · «${sample.text}»`),
+          auditSlateOnCanvas(samples).map((sample) => `${sample.selector} · «${sample.text}»`),
           'slate sobre canvas da 4.31:1 · SD-019 opción A lo prohíbe',
         ).toEqual([]);
 
-        const onForbiddenBackground = samples.filter(
-          (sample) =>
-            sameColor(sample.background, FROZEN.teal) || sameColor(sample.background, FROZEN.amber),
-        );
         expect(
-          onForbiddenBackground.map((sample) => `${sample.selector} · «${sample.text}»`),
+          auditTextOnForbiddenBackground(samples).map(
+            (sample) => `${sample.selector} · «${sample.text}»`,
+          ),
           'teal y amber no admiten texto normal · SD-019 opción A',
         ).toEqual([]);
       });
@@ -279,12 +358,10 @@ test.describe('accesibilidad renderizada · REQ-A06 · Design System §14 · SD-
         await page.goto(route);
         const samples = await collectTextSamples(page);
 
-        const misplaced = samples
-          .filter((sample) => sameColor(sample.color, FROZEN.slate))
-          .filter((sample) => !sameColor(sample.background, FROZEN.surface));
-
         expect(
-          misplaced.map((sample) => `${sample.selector} sobre ${hex(sample.background)}`),
+          auditSlateOffSurface(samples).map(
+            (sample) => `${sample.selector} sobre ${hex(sample.background)}`,
+          ),
           'slate como texto solo alcanza AA sobre surface',
         ).toEqual([]);
       });
@@ -299,30 +376,7 @@ test.describe('accesibilidad renderizada · REQ-A06 · Design System §14 · SD-
           expect(controls.length, `${route} no debería tener controles`).toBe(0);
         }
 
-        const failures: string[] = [];
-
-        // Se mide con `boundingBox()` sobre cada control real, no sobre el CSS.
-        const selector = 'a[href], button, input, select, textarea, [role="button"]';
-        const handles = await page.locator(selector).all();
-
-        for (const handle of handles) {
-          if (!(await handle.isVisible())) continue;
-          const box = await handle.boundingBox();
-          if (!box) continue;
-          // El enlace de salto vive fuera de la pantalla hasta recibir foco.
-          if (box.y + box.height < 0) continue;
-
-          if (box.width < 44 || box.height < 44) {
-            const description =
-              (await handle.getAttribute('data-testid')) ??
-              (await handle.textContent())?.trim().slice(0, 40) ??
-              (await handle.getAttribute('name')) ??
-              'sin nombre';
-            failures.push(
-              `«${description}» · ${box.width.toFixed(1)}×${box.height.toFixed(1)} px · exigido 44×44`,
-            );
-          }
-        }
+        const failures = await auditTargets(page);
 
         expect(
           failures,
@@ -344,5 +398,118 @@ test.describe('accesibilidad renderizada · REQ-A06 · Design System §14 · SD-
     expect(box, 'el enlace de salto no tiene caja').not.toBeNull();
     expect(box!.height, `alto ${box!.height}`).toBeGreaterThanOrEqual(44);
     expect(box!.width, `ancho ${box!.width}`).toBeGreaterThanOrEqual(44);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fixture negativo
+// ---------------------------------------------------------------------------
+
+/**
+ * Página rota a propósito, con los colores congelados escritos como valores.
+ *
+ * No importa ningún token ni ninguna hoja de estilo del producto: si la paleta
+ * cambiara, esta página seguiría representando el defecto histórico que SD-019
+ * describe, y el fixture seguiría midiendo lo que dice medir.
+ */
+const BROKEN_PAGE = `
+<main style="background: rgb(247, 243, 234); padding: 24px; font-family: system-ui">
+  <p data-testid="slate-en-canvas" style="color: rgb(102, 117, 124); font-size: 16px">
+    Texto secundario en slate sobre canvas
+  </p>
+  <p data-testid="texto-en-teal"
+     style="background: rgb(43, 140, 140); color: rgb(255, 253, 249); font-size: 16px">
+    Texto normal sobre teal
+  </p>
+  <p data-testid="texto-en-amber"
+     style="background: rgb(165, 106, 24); color: rgb(255, 253, 249); font-size: 16px">
+    Texto normal sobre amber
+  </p>
+  <button data-testid="control-pequeno"
+          style="width: 24px; height: 24px; padding: 0; font-size: 10px">
+    x
+  </button>
+</main>
+`;
+
+test.describe('fixture negativo · la prueba de accesibilidad no está vacía', () => {
+  test('slate sobre canvas hace fallar la medición de contraste', async ({ page }) => {
+    await page.setContent(BROKEN_PAGE);
+    const samples = await collectTextSamples(page);
+
+    const failures = auditContrast(samples);
+    const slate = failures.find((failure) => failure.selector.includes('slate-en-canvas'));
+
+    expect(
+      slate,
+      `el contraste no detectó slate sobre canvas · ${JSON.stringify(failures)}`,
+    ).toBeDefined();
+    expect(slate!.required, 'texto de 16px exige 4.5:1').toBe(4.5);
+    // 4.31:1 · por encima de 3 y por debajo de 4.5: es exactamente el caso que
+    // distingue «texto grande» de «texto normal». Si el umbral se relajara a 3:1,
+    // este caso dejaría de detectarse y esta comprobación lo diría.
+    expect(slate!.ratio).toBeGreaterThan(3);
+    expect(slate!.ratio).toBeLessThan(4.5);
+    expect(Number(slate!.ratio.toFixed(2))).toBe(4.31);
+  });
+
+  test('slate sobre canvas hace fallar la regla de SD-019', async ({ page }) => {
+    await page.setContent(BROKEN_PAGE);
+    const samples = await collectTextSamples(page);
+
+    expect(auditSlateOnCanvas(samples).map((sample) => sample.selector)).toEqual([
+      'p[data-testid="slate-en-canvas"]',
+    ]);
+    expect(auditSlateOffSurface(samples)).toHaveLength(1);
+  });
+
+  test('el texto sobre teal y sobre amber hace fallar la regla de SD-019', async ({ page }) => {
+    await page.setContent(BROKEN_PAGE);
+    const samples = await collectTextSamples(page);
+
+    expect(
+      auditTextOnForbiddenBackground(samples)
+        .map((sample) => sample.selector)
+        .sort(),
+    ).toEqual(['p[data-testid="texto-en-amber"]', 'p[data-testid="texto-en-teal"]']);
+  });
+
+  test('un control de 24×24 hace fallar la medición de diana táctil', async ({ page }) => {
+    await page.setContent(BROKEN_PAGE);
+
+    const failures = await auditTargets(page);
+
+    expect(failures, 'no se detectó el control pequeño').toHaveLength(1);
+    expect(failures[0]).toContain('control-pequeno');
+    expect(failures[0]).toContain('24.0×24.0');
+    expect(failures[0]).toContain('exigido 44×44');
+  });
+
+  test('la misma auditoría no encuentra nada en una página correcta', async ({ page }) => {
+    // El control: si las funciones devolvieran hallazgos con cualquier entrada, el
+    // fixture negativo pasaría sin demostrar nada.
+    await page.setContent(`
+      <main style="background: rgb(255, 253, 249); padding: 24px; font-family: system-ui">
+        <p data-testid="ink-en-surface" style="color: rgb(26, 26, 26); font-size: 16px">
+          Texto normal sobre surface
+        </p>
+        <p data-testid="slate-en-surface" style="color: rgb(102, 117, 124); font-size: 16px">
+          Texto secundario en slate sobre surface
+        </p>
+        <button data-testid="control-correcto"
+                style="min-width: 44px; min-height: 44px; color: rgb(11, 42, 74)">
+          Aceptar
+        </button>
+      </main>
+    `);
+
+    const samples = await collectTextSamples(page);
+
+    expect(samples.length, 'la página de control no tiene texto que medir').toBeGreaterThan(0);
+    expect(auditContrast(samples).map((failure) => failure.description)).toEqual([]);
+    expect(auditSlateOnCanvas(samples)).toEqual([]);
+    expect(auditTextOnForbiddenBackground(samples)).toEqual([]);
+    expect(auditSlateOffSurface(samples)).toEqual([]);
+    expect(await auditTargets(page)).toEqual([]);
   });
 });
