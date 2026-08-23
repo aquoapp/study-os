@@ -51,6 +51,42 @@
     }
   },
 
+  "readOnlyRpcs": {
+    "$comment": [
+      "Allowlist EXPLÍCITA de RPC que la superficie de cliente puede invocar.",
+      "",
+      "Política conservadora: la guarda rechaza CUALQUIER .rpc() desde cliente salvo",
+      "las que estén aquí. La lista vacía no es un descuido: en Phase 0 no existe",
+      "ninguna función de dominio, así que no hay nada que permitir.",
+      "",
+      "Añadir una entrada es una decisión de frontera de autoridad y exige la misma",
+      "revisión que INV-113 (EC-019). Una RPC solo puede entrar aquí si es",
+      "estrictamente de lectura: no escribe ninguna tabla, no emite eventos y no",
+      "modifica ninguna proyección. Si hay duda, no entra."
+    ],
+    "names": []
+  },
+
+  "browserApiReceivers": {
+    "$comment": [
+      "Globales del navegador cuyos métodos .delete() no son escrituras de datos de",
+      "usuario. caches.delete(key) es la Cache Storage API, no una tabla.",
+      "",
+      "Es la única excepción a la política conservadora y está acotada a identificadores",
+      "GLOBALES: un objeto local llamado 'cache' no queda exento. Ampliar esta lista",
+      "exige la misma revisión que el resto del registro."
+    ],
+    "names": [
+      "caches",
+      "localStorage",
+      "sessionStorage",
+      "indexedDB",
+      "window",
+      "document",
+      "navigator"
+    ]
+  },
+
   "writeMethods": {
     "$comment": "Métodos de PostgREST que persisten. Un .select() no es una escritura.",
     "names": ["insert", "update", "upsert", "delete"]

@@ -46,7 +46,10 @@ describe('client.no-authoritative-write · INV-113 · REQ-A08', () => {
     );
 
     expect(result.exitCode).toBe(1);
-    expect(result.output).toContain('concept_mastery');
+    // La política conservadora ya no necesita nombrar la tabla: rechaza la
+    // escritura sea cual sea el destino.
+    expect(result.output).toContain('.upsert()');
+    expect(result.output).toContain('_violation-check.tsx');
   });
 
   it('P0-G5 · la guarda falla si un fichero de cliente nombra la clave de rol de servicio', () => {

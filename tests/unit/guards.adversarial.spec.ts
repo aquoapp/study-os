@@ -41,7 +41,7 @@ describe('P0-G5 · A1 · escritura autoritativa desde un componente de cliente e
     );
 
     expect(result.exitCode, result.output).toBe(1);
-    expect(result.output).toContain('concept_mastery');
+    expect(result.output).toContain('.upsert()');
     expect(result.output).toContain('packages/design-system/src/_adversarial-write.tsx');
     expect(result.output).toContain('INV-113');
   });
@@ -68,7 +68,7 @@ describe('P0-G5 · A1 · escritura autoritativa desde un componente de cliente e
     );
 
     expect(result.exitCode, result.output).toBe(1);
-    expect(result.output).toContain('exam_readiness');
+    expect(result.output).toContain('.update()');
     expect(result.output).toContain('alcanzado desde');
   });
 });
@@ -98,9 +98,11 @@ describe('P0-G5 · A2 · RPC autoritativa invocada desde cliente', () => {
     expect(result.output).toContain('EC-002');
   });
 
-  it('no marca una RPC que no está en el registro', () => {
-    // El registro es explícito a propósito: prohibir toda RPC convertiría la
-    // guarda en un obstáculo y acabaría desactivada.
+  it('también rechaza una RPC que no está en el registro autoritativo', () => {
+    // La política pasó a ser conservadora tras la segunda auditoría: desde cliente
+    // no se invoca ninguna RPC que no esté en la allowlist explícita de solo
+    // lectura, por inofensivo que suene su nombre. Estar fuera del registro
+    // autoritativo no es lo mismo que estar autorizada.
     const result = withViolation(
       'apps/web/src/app/_adversarial-rpc-ok.tsx',
       [
@@ -113,7 +115,8 @@ describe('P0-G5 · A2 · RPC autoritativa invocada desde cliente', () => {
       () => runGuard('client-authority-guard.mjs'),
     );
 
-    expect(result.exitCode, result.output).toBe(0);
+    expect(result.exitCode, result.output).toBe(1);
+    expect(result.output).toContain('allowlist');
   });
 });
 
