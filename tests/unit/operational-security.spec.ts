@@ -205,7 +205,7 @@ describe('usuarios de prueba', () => {
     // Solo debe borrar los de ESTA ejecución. Borrar todos los de prueba era peor
     // que la fuga que corregía: contra una instancia compartida, una ejecución se
     // llevaba por delante los usuarios que otra estaba usando.
-    expect(source).toContain('selectUsersToPurge(users, runId)');
+    expect(source).toContain('selectUsersToPurge(all, runId)');
     expect(source).toContain('if (isEmailOfRun(user.email, runId)) toDelete.push(user);');
   });
 
@@ -213,7 +213,7 @@ describe('usuarios de prueba', () => {
     // La suite de auth es la única que crea usuarios, y es la única con teardown.
     const config = read('playwright.auth.config.ts');
     expect(config).toContain("globalTeardown: './tests/e2e/auth/global-teardown.ts'");
-    expect(read('tests/e2e/auth/global-teardown.ts')).toContain('purgeTestUsers');
+    expect(read('tests/e2e/auth/global-teardown.ts')).toContain('purgeRunUsers(directory, runId)');
   });
 
   it('Playwright deniega el arranque contra un entorno no autorizado', () => {

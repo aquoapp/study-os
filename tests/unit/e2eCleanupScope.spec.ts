@@ -223,7 +223,7 @@ describe('el arranque y la limpieza aplican el contrato', () => {
   });
 
   it('la limpieza se hace con el identificador de esta ejecución', () => {
-    expect(teardown).toContain('purgeTestUsers(env, runId)');
+    expect(teardown).toContain('purgeRunUsers(directory, runId)');
   });
 
   it('la limpieza comprueba que no queda ninguno suyo', () => {
@@ -233,8 +233,10 @@ describe('el arranque y la limpieza aplican el contrato', () => {
 
   it('la limpieza comprueba también que no borró de más', () => {
     // Sin esta comprobación, borrar los usuarios de otra ejecución sería invisible.
-    expect(teardown).toContain('vanished');
-    expect(teardown).toContain('NO eran de esta ejecución');
+    // Se hace sobre las peticiones reales de borrado, no sobre una instantánea
+    // global: ver `e2eConcurrentRuns.spec` para por qué lo segundo era una carrera.
+    expect(teardown).toContain('report.requested.filter');
+    expect(teardown).toContain('NO son de la ejecución');
   });
 
   it('no queda ninguna limpieza indiscriminada por prefijo', () => {
@@ -243,6 +245,7 @@ describe('el arranque y la limpieza aplican el contrato', () => {
     // de lo que se borra ya no puede apoyarse solo en él.
     expect(source).toContain('if (isEmailOfRun(user.email, runId)) toDelete.push(user);');
     expect(source).not.toContain('if (!isTestEmail(user.email)) continue;');
+    expect(source).toContain('const all = await listAllUsers(directory);');
   });
 
   it('los E2E que crean usuarios los marcan, y se detienen si no pueden', () => {

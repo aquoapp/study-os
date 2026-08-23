@@ -211,9 +211,9 @@ describe('E2E de auth · la limpieza es obligatoria', () => {
     expect(teardown).toContain('throw new Error');
   });
 
-  it('falla si queda algún usuario de prueba después de limpiar', () => {
+  it('falla si queda algún usuario de ESTA ejecución después de limpiar', () => {
     expect(teardown).toContain('La limpieza dejó');
-    expect(teardown).toContain('se marca en rojo');
+    expect(teardown).toContain('isEmailOfRun(user.email, runId)');
   });
 
   it('falla si la suite corrió sin que el setup se completara', () => {
@@ -224,6 +224,6 @@ describe('E2E de auth · la limpieza es obligatoria', () => {
   });
 
   it('la verificación posterior vuelve a listar, no se fía del borrado', () => {
-    expect(teardown).toContain('No basta con haber intentado borrar');
+    expect(teardown).toContain('const remaining = (await listAllUsers(directory))');
   });
 });

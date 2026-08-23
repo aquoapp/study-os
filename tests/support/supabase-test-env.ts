@@ -251,6 +251,67 @@ export async function deleteTestUser(env: TestEnv, userId: string): Promise<void
   await admin.auth.admin.deleteUser(userId);
 }
 
+/** Páginas que se listan como máximo. Un tope de seguridad, no un límite real. */
+export const MAX_LIST_PAGES = 50;
+export const LIST_PAGE_SIZE = 200;
+
+export interface ListedUser {
+  readonly id: string;
+  readonly email?: string | undefined;
+}
+
+/**
+ * Lo mínimo que la limpieza necesita de un directorio de usuarios.
+ *
+ * Existe para que la lógica de limpieza pueda ejecutarse contra un doble en
+ * memoria. No es una abstracción por gusto: es lo que permite probar la
+ * concurrencia entre dos ejecuciones sin levantar dos instancias de Supabase.
+ */
+export interface UserDirectory {
+  listPage(page: number, perPage: number): Promise<{ users: ListedUser[] }>;
+  deleteUser(id: string): Promise<void>;
+}
+
+export interface PurgeReport {
+  /** Los que se pidió borrar, con el correo que tenían al listarlos. */
+  readonly requested: readonly ListedUser[];
+  readonly deleted: readonly string[];
+  readonly preserved: number;
+  readonly scanned: number;
+}
+
+/**
+ * Lista **todas** las páginas antes de borrar nada.
+ *
+ * Paginar mientras se borra recorre una colección que encoge: cada borrado
+ * desplaza a los siguientes y la página siguiente se salta usuarios. El síntoma es
+ * una limpieza que dice haber terminado y deja cuentas detrás.
+ *
+ * Si se alcanza el tope de páginas con la última llena, **falla cerrado**: no se
+ * puede afirmar que se ha visto todo, y una limpieza que no ha visto todo no puede
+ * declararse completa.
+ */
+export async function listAllUsers(directory: UserDirectory): Promise<ListedUser[]> {
+  const all: ListedUser[] = [];
+
+  for (let page = 1; page <= MAX_LIST_PAGES; page += 1) {
+    const { users } = await directory.listPage(page, LIST_PAGE_SIZE);
+    all.push(...users);
+
+    if (users.length < LIST_PAGE_SIZE) return all;
+
+    if (page === MAX_LIST_PAGES) {
+      throw new Error(
+        `Se alcanzó el tope de ${MAX_LIST_PAGES} páginas (${all.length} usuarios) y la última ` +
+          'seguía llena. No se puede afirmar que se hayan visto todos los usuarios, así que ' +
+          'la limpieza no se declara completa: falla cerrado.',
+      );
+    }
+  }
+
+  return all;
+}
+
 /**
  * Borra los usuarios de prueba **de una ejecución concreta**.
  *
@@ -259,20 +320,19 @@ export async function deleteTestUser(env: TestEnv, userId: string): Promise<void
  *
  * La versión anterior borraba todo lo que llevara el prefijo de prueba. Contra una
  * instancia local de una sola persona eso parece inofensivo; contra CI con dos
- * trabajos en paralelo, o contra una instancia compartida, significa que una
- * ejecución borra los usuarios que otra está usando. El síntoma es un fallo
- * intermitente en la ejecución **ajena**, que es la clase de fallo que más tarda en
- * atribuirse a su causa.
+ * trabajos en paralelo, o contra un stack compartido, significa que una ejecución
+ * borra los usuarios que otra está usando. El síntoma es un fallo intermitente en
+ * la ejecución **ajena**, que es la clase de fallo que más tarda en atribuirse a su
+ * causa.
  *
- * Ahora solo se borra lo que lleva la marca de esta ejecución. Todo lo demás se
- * cuenta como preservado y se informa, para que la limpieza sea observable y no un
- * efecto invisible.
+ * Se listan todas las páginas primero y se borra después. Y se devuelve la lista de
+ * lo que se **pidió** borrar, no solo cuántos: es lo que permite comprobar «no toqué
+ * nada ajeno» mirando las peticiones reales, en lugar de mirar si algo desapareció
+ * de una instantánea global —que es exactamente la comprobación que otra ejecución
+ * legítima puede hacer fallar—.
  * ---------------------------------------------------------------------------
  */
-export async function purgeTestUsers(
-  env: TestEnv,
-  runId: string,
-): Promise<{ deleted: number; preserved: number; scanned: number }> {
+export async function purgeRunUsers(directory: UserDirectory, runId: string): Promise<PurgeReport> {
   if (!isValidRunId(runId)) {
     throw new Error(
       `No se puede limpiar sin un identificador de ejecución válido (recibido: "${runId}"). ` +
@@ -280,29 +340,34 @@ export async function purgeTestUsers(
     );
   }
 
-  const admin = adminClient(env);
-  let deleted = 0;
-  let preserved = 0;
-  let scanned = 0;
+  const all = await listAllUsers(directory);
+  const { toDelete, preserved } = selectUsersToPurge(all, runId);
 
-  for (let page = 1; page <= 20; page += 1) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-    if (error) throw new Error(`No se pudieron listar los usuarios de prueba: ${error.message}`);
-
-    const users = data?.users ?? [];
-    if (users.length === 0) break;
-    scanned += users.length;
-
-    const selection = selectUsersToPurge(users, runId);
-    preserved += selection.preserved.length;
-
-    for (const user of selection.toDelete) {
-      await admin.auth.admin.deleteUser(user.id);
-      deleted += 1;
-    }
-
-    if (users.length < 200) break;
+  const deleted: string[] = [];
+  for (const user of toDelete) {
+    await directory.deleteUser(user.id);
+    deleted.push(user.id);
   }
 
-  return { deleted, preserved, scanned };
+  return { requested: toDelete, deleted, preserved: preserved.length, scanned: all.length };
+}
+
+/** Adapta el cliente con rol de servicio a la interfaz que usa la limpieza. */
+export function adminDirectory(env: TestEnv): UserDirectory {
+  const admin = adminClient(env);
+  return {
+    async listPage(page, perPage) {
+      const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+      if (error) throw new Error(`No se pudieron listar los usuarios de prueba: ${error.message}`);
+      return { users: (data?.users ?? []).map((user) => ({ id: user.id, email: user.email })) };
+    },
+    async deleteUser(id) {
+      const { error } = await admin.auth.admin.deleteUser(id);
+      if (error) throw new Error(`No se pudo borrar el usuario ${id}: ${error.message}`);
+    },
+  };
+}
+
+export async function purgeTestUsers(env: TestEnv, runId: string): Promise<PurgeReport> {
+  return purgeRunUsers(adminDirectory(env), runId);
 }

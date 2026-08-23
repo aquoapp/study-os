@@ -1,11 +1,13 @@
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 
 import {
-  adminClient,
+  adminDirectory,
   isEmailOfRun,
-  purgeTestUsers,
+  listAllUsers,
+  purgeRunUsers,
   readTestEnv,
   RUN_ID_ENV_VAR,
+  type ListedUser,
 } from '../../support/supabase-test-env';
 
 import { runMarkerPath, type RunMarker } from './global-setup';
@@ -18,26 +20,37 @@ import { runMarkerPath, type RunMarker } from './global-setup';
  *
  * La primera versión hacía `console.warn()` y `return` cuando faltaba la clave de
  * servicio. El resultado era una suite **en verde** que había dejado cuentas
- * huérfanas: exactamente el fallo que el aviso decía prevenir. Un aviso que nadie
- * lee en un CI en verde no es un control.
+ * huérfanas: exactamente el fallo que el aviso decía prevenir.
  *
  * ---------------------------------------------------------------------------
- * Y ahora tampoco hay limpieza de más
+ * Ni limpieza de más
  *
  * La segunda versión borraba **todo** usuario con el prefijo de prueba. Contra una
- * instancia compartida —CI con dos trabajos, dos personas contra el mismo stack—
- * eso significa borrar los usuarios de otra ejecución mientras los está usando. La
- * ejecución que sufre el fallo no es la que cometió el error, que es la peor forma
- * de fallar.
+ * instancia compartida eso significa borrar los usuarios de otra ejecución mientras
+ * los está usando.
  *
- * El contrato es ahora simétrico:
+ * ---------------------------------------------------------------------------
+ * Ni acusaciones falsas
  *
- *   · si falta el marcador de **esta** ejecución, la suite corrió sin autorización → error;
- *   · si la limpieza falla, → error;
- *   · si queda algún usuario **de esta ejecución**, → error;
- *   · si ha desaparecido algún usuario **preexistente**, → error. Borrar de más es
- *     un defecto tan reportable como borrar de menos, y sin esta comprobación sería
- *     invisible.
+ * La tercera versión corrigió el alcance del borrado pero verificaba mal: censaba
+ * los usuarios preexistentes al arrancar y, al terminar, exigía que **siguieran
+ * ahí**. Contra una instancia compartida eso es una carrera: si la ejecución A
+ * termina y borra legítimamente sus usuarios entre el censo de B y la verificación
+ * de B, B falla acusando de un borrado que no hizo nadie indebidamente. La
+ * ejecución que revienta no es la que hizo nada mal, y el fallo es intermitente.
+ *
+ * La comprobación correcta no mira el mundo: mira **lo que esta ejecución pidió**.
+ * `purgeRunUsers` devuelve la lista de identificadores enviados a `deleteUser`, y
+ * aquí se exige que todos y cada uno pertenezcan a esta ejecución. Eso es una
+ * propiedad de la ejecución, no del estado global, y ninguna otra ejecución puede
+ * hacerla fallar.
+ *
+ * ---------------------------------------------------------------------------
+ * El marcador se conserva mientras algo pueda ir mal
+ *
+ * Se borra **al final**, cuando todas las verificaciones han pasado. Si la limpieza
+ * falla, el marcador sobrevive: es lo único que dice qué ejecución dejó qué, y
+ * borrarlo convertiría un fallo diagnosticable en un misterio.
  * ---------------------------------------------------------------------------
  */
 export default async function globalTeardown(): Promise<void> {
@@ -67,64 +80,52 @@ export default async function globalTeardown(): Promise<void> {
   }
 
   const env = readTestEnv();
+  const directory = adminDirectory(env);
 
-  let deleted = 0;
-  let preserved = 0;
+  let report;
   try {
-    ({ deleted, preserved } = await purgeTestUsers(env, runId));
+    report = await purgeRunUsers(directory, runId);
   } catch (error) {
+    // El marcador se queda. Es lo que permite reintentar sabiendo qué buscar.
     throw new Error(
-      `La limpieza de usuarios E2E falló: ${error instanceof Error ? error.message : String(error)}. ` +
-        'Los usuarios creados por esta ejecución siguen en la instancia.',
+      `La limpieza de usuarios E2E falló: ${error instanceof Error ? error.message : String(error)}\n` +
+        `El marcador de la ejecución se conserva en ${markerPath} para diagnóstico y reintento.`,
     );
   }
 
-  // Verificación posterior. No basta con haber intentado borrar: se vuelve a listar
-  // y se comprueban las dos direcciones del error.
-  const admin = adminClient(env);
-  const remaining: string[] = [];
-  const seen = new Set<string>();
+  // 1 · Nada ajeno. Se comprueba sobre lo que se PIDIÓ borrar, no sobre lo que
+  //     desapareció del mundo: lo segundo depende de las demás ejecuciones.
+  const ajenos: ListedUser[] = report.requested.filter((user) => !isEmailOfRun(user.email, runId));
 
-  for (let page = 1; page <= 20; page += 1) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-    if (error) {
-      throw new Error(`No se pudo verificar la limpieza: ${error.message}`);
-    }
-    const users = data?.users ?? [];
-    if (users.length === 0) break;
-    for (const user of users) {
-      seen.add(user.id);
-      if (isEmailOfRun(user.email, runId)) remaining.push(user.email ?? user.id);
-    }
-    if (users.length < 200) break;
+  if (ajenos.length > 0) {
+    throw new Error(
+      `La limpieza pidió borrar ${ajenos.length} usuario(s) que NO son de la ejecución ` +
+        `${runId}:\n  ${ajenos.map((user) => user.email ?? user.id).join('\n  ')}\n` +
+        `El marcador se conserva en ${markerPath}.`,
+    );
   }
 
-  const vanished = marker.preexisting.filter((user) => !seen.has(user.id));
-
-  rmSync(markerPath, { force: true });
+  // 2 · Nada propio pendiente. Se vuelve a listar y se miran solo los de esta
+  //     ejecución: los de otras pueden aparecer y desaparecer, y da igual.
+  const remaining = (await listAllUsers(directory))
+    .filter((user) => isEmailOfRun(user.email, runId))
+    .map((user) => user.email ?? user.id);
 
   if (remaining.length > 0) {
     throw new Error(
       `La limpieza dejó ${remaining.length} usuario(s) de la ejecución ${runId}:\n` +
         `  ${remaining.slice(0, 10).join('\n  ')}\n` +
-        'La suite se marca en rojo: crear usuarios y no borrarlos es un defecto.',
+        'Crear usuarios y no borrarlos es un defecto. ' +
+        `El marcador se conserva en ${markerPath}.`,
     );
   }
 
-  if (vanished.length > 0) {
-    throw new Error(
-      `La limpieza borró ${vanished.length} usuario(s) que NO eran de esta ejecución:\n` +
-        `  ${vanished
-          .slice(0, 10)
-          .map((user) => user.email || user.id)
-          .join('\n  ')}\n` +
-        'Borrar de más es tan reportable como borrar de menos: otra ejecución podía ' +
-        'estar usándolos.',
-    );
-  }
+  // Solo ahora. Antes de este punto el marcador es la única pista que quedaría.
+  rmSync(markerPath, { force: true });
 
   console.log(
-    `Limpieza de la ejecución ${runId}: ${deleted} usuario(s) borrados · 0 restantes · ` +
-      `${preserved} preservados (preexistentes o de ejecuciones concurrentes).`,
+    `Limpieza de la ejecución ${runId}: ${report.deleted.length} usuario(s) borrados · ` +
+      `0 restantes · ${report.preserved} preservados (preexistentes o de ejecuciones ` +
+      `concurrentes) sobre ${report.scanned} listados.`,
   );
 }
