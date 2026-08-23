@@ -62,6 +62,36 @@ npm run verify
 
 Ejecuta los nueve checks bloqueantes de CI. Ver `docs/PHASE_0_EXECUTION_PLAN.md` §4.
 
+Aparte, y **fuera** de esos nueve:
+
+```bash
+npm run verify:originals
+```
+
+Comprueba los catorce artefactos de `_handoff/originals/` contra el registro de
+`docs/governing-documents.json`. No se ejecuta en CI y no puede: los originales son
+material de entrada y no se versionan. Ningún test versionado los lee.
+
+## Reproducir desde un checkout limpio
+
+Todo lo que sigue funciona sobre `git archive HEAD` extraído en una carpeta vacía,
+sin `_handoff`, sin `node_modules` y sin ningún `.env`:
+
+```bash
+npm ci && npm run typecheck && npm run lint && npm run format && npm run test:unit && npm run guards && npm run secret-scan
+```
+
+`npm run build` y los E2E estáticos necesitan además la **configuración pública**.
+No son secretos —viajan al navegador por definición—, pero tampoco se inventan: sin
+ellos la aplicación falla en el arranque en lugar de asumir un entorno.
+
+```bash
+NEXT_PUBLIC_ENVIRONMENT=local NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 NEXT_PUBLIC_SUPABASE_ANON_KEY=clave-publishable npm run build
+```
+
+`npm run secret-scan` no necesita ese preámbulo: construye por sí mismo, con un
+centinela de servidor, precisamente para ser reproducible sin preparación previa.
+
 ## Secretos
 
 Ningún secreto se escribe en el repositorio ni en la conversación con el agente (EC-010,
