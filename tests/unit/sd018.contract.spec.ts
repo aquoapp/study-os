@@ -60,6 +60,53 @@ describe('SD-018 · el contrato dice lo que debe', () => {
     expect(log).toContain('Éxito idempotente falso');
   });
 
+  /**
+   * Triple coincidencia · lo que la última auditoría señaló que faltaba.
+   *
+   * El contrato decía que un `submitted_event_id` repetido era idempotente si
+   * coincidían usuario y pregunta. Falta la tercera: el payload. Dos envíos con el
+   * mismo identificador, el mismo usuario y la misma pregunta pueden llevar
+   * respuestas distintas, y aceptar el segundo como idempotente descarta una de las
+   * dos en silencio.
+   */
+  const tripleMatch: Array<[string, string]> = [
+    ['exige las tres coincidencias', 'coinciden **las tres**'],
+    ['la tercera es el payload canónico completo', 'payload canónico completo'],
+    ['se compara por hash canónico de la respuesta', 'answer_payload_hash'],
+    ['«completo» excluye un subconjunto de campos', 'no sobre un resumen ni sobre un subconjunto'],
+    ['cualquier diferencia es conflicto de integridad', 'es un **conflicto de integridad**'],
+    ['el conflicto revierte por completo', 'aborta y revierte por completo'],
+    ['el conflicto no consume attempt_number', 'no consume número de intento'],
+    [
+      'no se devuelve el intento antiguo como respuesta al envío nuevo',
+      'como si fuera la respuesta al envío nuevo',
+    ],
+    ['no se sobrescribe el intento original', 'intento original con el payload nuevo'],
+    [
+      'la canonicalización se fija antes de la primera migración',
+      'canonicalización debe estar fijada',
+    ],
+    ['la regla es simétrica con learning_events', 'Simetría con'],
+  ];
+
+  for (const [name, needle] of tripleMatch) {
+    it(`triple coincidencia · ${name}`, () => {
+      const section = log.slice(log.indexOf('### Triple coincidencia'));
+      expect(section.length, 'no existe la sección de triple coincidencia').toBeGreaterThan(0);
+      expect(section, `falta en el contrato: ${needle}`).toContain(needle);
+    });
+  }
+
+  it('las pruebas de la triple coincidencia están declaradas y ninguna existe', () => {
+    for (const spec of [
+      'attempts.tripleMatchRequired.spec',
+      'attempts.conflictDoesNotConsumeAttemptNumber.spec',
+      'attempts.canonicalHashIsDeterministic.spec',
+    ]) {
+      expect(log, `${spec} no está declarada en el contrato`).toContain(spec);
+    }
+  });
+
   it('sigue PROPOSED y sin aprobar', () => {
     const section = log.slice(log.indexOf('## SD-018 · **corrección del contrato**'));
     expect(section).toContain('NO IMPLEMENTADO');
@@ -127,6 +174,29 @@ describe('SD-018 · nada de esto está implementado', () => {
 
       expect(sql, `${migration} crea una secuencia global`).not.toContain('create sequence');
       expect(sql, `${migration} usa nextval`).not.toContain('nextval');
+    }
+  });
+
+  it('las suites de intentos declaradas en el contrato no existen todavía', () => {
+    // Declarar una prueba en el contrato no es escribirla. Si algún día aparecen,
+    // será porque SD-018 se implementó, y eso exige decisión humana antes.
+    const testsDir = join(REPO_ROOT, 'tests');
+    const existing = new Set<string>();
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) walk(join(dir, entry.name));
+        else existing.add(entry.name);
+      }
+    };
+    walk(testsDir);
+
+    for (const spec of [
+      'attempts.tripleMatchRequired.spec.ts',
+      'attempts.conflictDoesNotConsumeAttemptNumber.spec.ts',
+      'attempts.canonicalHashIsDeterministic.spec.ts',
+      'events.lockBeforeIdempotencyCheck.spec.ts',
+    ]) {
+      expect(existing.has(spec), `${spec} existe: SD-018 estaría implementándose`).toBe(false);
     }
   });
 

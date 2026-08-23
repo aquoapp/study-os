@@ -589,14 +589,65 @@ Todo dentro de **una sola transacción**:
 
 1. bloquear el contador del par `(user_id, question_id)`;
 2. comprobar si ya existe un intento con ese `submitted_event_id`;
-3. si existe, validar que corresponde al mismo usuario y a la misma pregunta y devolverlo,
-   **sin asignar `attempt_number` nuevo**;
+3. si existe, aplicar la **triple coincidencia** de la sección siguiente antes de devolver
+   nada, **sin asignar `attempt_number` nuevo**;
 4. si no existe, asignar `attempt_number` e insertar, en la misma transacción;
 5. sin `ON CONFLICT DO NOTHING` después de asignar.
 
 Asignar `attempt_number` antes de comprobar la idempotencia produce el mismo hueco, y
 además hace que un reintento consuma un número de intento que nadie usó — un dato que el
 usuario acabaría viendo.
+
+### Triple coincidencia · qué convierte un `submitted_event_id` repetido en idempotencia
+
+**Corrige** el punto 3 tal y como estaba redactado más arriba, que solo exigía «mismo
+usuario y misma pregunta». Es insuficiente, y de una forma concreta: dos envíos con el
+mismo `submitted_event_id`, el mismo usuario y la misma pregunta **pueden llevar respuestas
+distintas**. Aceptar el segundo como idempotente devuelve el intento antiguo y descarta en
+silencio la respuesta nueva; o, según qué lado se conserve, sobrescribe la evidencia
+original. Las dos lecturas son corrupción de evidencia, y ninguna de las dos deja rastro.
+
+Un `submitted_event_id` ya presente **solo** es idempotente si coinciden **las tres** cosas:
+
+1. **el mismo `user_id`**;
+2. **la misma `question_id`**;
+3. **el mismo payload canónico completo de la respuesta**, comparado por hash canónico
+   —`answer_payload_hash`— calculado sobre la forma canonicalizada de todo el payload de
+   respuesta, no sobre un resumen ni sobre un subconjunto de campos.
+
+«Completo» significa completo: la opción u opciones elegidas, el texto libre si lo hay, el
+orden presentado si la pregunta lo usa, la versión del ítem, la versión de la clave de
+respuesta vigente en el envío (EC-007) y cualquier otro campo que forme parte de la
+respuesta. Un hash sobre un subconjunto reintroduce el mismo defecto en pequeño: dos
+respuestas distintas que coinciden en los campos elegidos volverían a confundirse.
+
+La canonicalización debe estar fijada —orden de claves, normalización de cadenas, tratamiento
+de nulos y de colecciones— antes de la primera migración de eventos. Un hash canónico sin
+canonicalización fijada no es determinista, y entonces la comparación falla de forma
+intermitente en lugar de fallar siempre.
+
+**Si las tres coinciden:** se devuelve el intento existente, con su `attempt_number`
+original. No se asigna número nuevo, no se incrementa el contador, no se inserta nada.
+
+**Si difiere cualquiera de las tres:** es un **conflicto de integridad**. La transacción
+**aborta y revierte por completo**, incluido el bloqueo y cualquier reserva de
+`attempt_number`. El reintento **no consume número de intento**: el siguiente intento
+legítimo de ese par usuario/pregunta recibe el número que le tocaba, como si el envío en
+conflicto no hubiera existido. Nunca se reporta como éxito idempotente, nunca se devuelve
+el intento antiguo como si fuera la respuesta al envío nuevo, y nunca se sobrescribe el
+intento original con el payload nuevo.
+
+El error debe distinguir el caso —usuario distinto, pregunta distinta o payload distinto—
+porque las consecuencias operativas no son las mismas: un usuario distinto con el mismo
+`submitted_event_id` apunta a suplantación o a colisión de identificadores; un payload
+distinto apunta a un cliente que reutiliza el identificador entre envíos, que es un defecto
+del cliente y hay que corregirlo ahí.
+
+**Simetría con `learning_events`.** Es la misma regla del paso 3 de la sección anterior,
+con una columna más: allí se comparan `user_id` y `payload_hash`; aquí, `user_id`,
+`question_id` y `answer_payload_hash`. Que las dos reglas sean la misma no es estética:
+si divergen, el mismo reenvío puede ser idempotente en un nivel y conflictivo en el otro,
+y el estado resultante depende del orden en que se evalúen.
 
 ### Pruebas asociadas · ninguna implementada todavía
 
@@ -609,6 +660,12 @@ usuario acabaría viendo.
 - `events.noOnConflictDoNothing.spec` · la migración no contiene esa cláusula tras el
   incremento
 - `attempts.idempotentBeforeAttemptNumber.spec` · el mismo principio en `question_attempts`
+- `attempts.tripleMatchRequired.spec` · un `submitted_event_id` repetido solo es idempotente
+  si coinciden usuario, pregunta y payload canónico completo
+- `attempts.conflictDoesNotConsumeAttemptNumber.spec` · tras un conflicto de integridad, el
+  siguiente intento legítimo recibe el número que le tocaba
+- `attempts.canonicalHashIsDeterministic.spec` · la canonicalización produce el mismo hash
+  para el mismo payload escrito de dos formas equivalentes
 
 ### Qué NO se ha hecho
 
