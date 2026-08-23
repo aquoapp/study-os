@@ -16,13 +16,15 @@ inventan reglas para poder seguir escribiendo código.
 
 ## 1. Inventario verificado
 
-Los ocho documentos gobernantes están disponibles. Cada uno se verificó por hash y por
+Los ocho documentos gobernantes están disponibles (el nivel 2, la Engineering
+Constitution, llega como Markdown; los demás como PDF u OOXML). Cada uno se verificó por hash y por
 naturaleza real del contenido —cabecera del fichero, recuento de objetos de página y de
 imagen— y no por su extensión.
 
 | Documento | Origen | SHA-256 | Contenido verificado |
 | --- | --- | --- | --- |
 | Master Product Specification v1.0 | `.pdf` | `aa9ba0965e37daaa3a1f16138900b67e0b084a15b10f25fb98f160f7f59d1923` | PDF 1.4 · 31 págs · texto · 0 imágenes |
+| Engineering Constitution v1.0 | `.md` | `717c661a9f508ca05aea38a9264621d815caadf31d2ad083465a55b7a82f1544` | Markdown |
 | Canonical Data & Event Model v1.0 | `.pdf` | `08a8588f1bbd56a0d269b33d67add98897ada204ff12b735443beecdb3aac125` | PDF 1.4 · 25 págs · texto · 0 imágenes |
 | Builder Handoff Manifest v1.0 | `.pdf` | `0087c301d259e1aad27ffbb77ab4484d546959bceecfac993ee907153b8ee1c3` | PDF 1.4 · 19 págs · texto · 0 imágenes |
 | Technical Architecture v1.0 | `.docx` | `248eba10082ccd0dfa644362d4af77e9df7bd118df5b45e8c1c00ba81bdc3a5f` | OOXML · `word/document.xml` |
@@ -40,9 +42,19 @@ _handoff/originals/STUDY_OS_Functional_Closure_MVP_Scope_v0.1.pdf
 _handoff/originals/STUDY_OS_Onboarding_Edge_States_Visual_Spec_v1.0.pdf
 ```
 
-`tests/unit/designSystem.blocked.spec.ts` vuelve a calcular estos hashes en cada
-ejecución: si un documento cambia o desaparece, el test falla en lugar de dejar el
-repositorio citando un hash que ya no corresponde a nada.
+El registro legible por máquina es `docs/governing-documents.json`, y es la única fuente
+de verdad sobre nombres y hashes.
+
+**Dos comprobaciones separadas, y la separación importa:**
+
+| Comprobación | Qué verifica | Dónde |
+| --- | --- | --- |
+| `tests/unit/governingDocuments.registry.spec.ts` | El **contrato**: registro bien formado, sin duplicados, y que el código cita los mismos hashes | `test:unit` · solo el árbol Git |
+| `npm run verify:originals` | Los **ficheros reales** de `_handoff/originals/`: hash, tipo, páginas e imágenes | Local · **fuera** de los nueve checks y de CI |
+
+`_handoff/` está en `.gitignore`: no existe en un checkout limpio ni en CI. Un test
+versionado que lo leyera sería verde o rojo según la máquina, que es lo contrario de una
+prueba. Por eso el contrato y los ficheros se verifican por separado.
 
 ### AMB-01 · resuelto
 
@@ -131,12 +143,12 @@ Que un documento esté disponible no lo convierte en gobernante.
 1. Depositarlo en `_handoff/originals/` con su nombre de origen, sin normalizar.
 2. Calcular el SHA-256 y anotarlo en la tabla de §1 y en `docs/PROVENANCE.md`.
 3. Verificar la **naturaleza real** del contenido, no la extensión.
-4. Añadirlo a `ARRIVED_DOCUMENTS` en `tests/unit/designSystem.blocked.spec.ts` para que el
-   hash se comprueba en cada ejecución.
+4. Añadirlo a `docs/governing-documents.json`, que es lo que leen tanto el test de
+   contrato como `npm run verify:originals`.
 5. Reevaluar qué desbloquea y reemitir el checkpoint.
 
 ```bash
-sha256sum _handoff/originals/*
+npm run verify:originals
 ```
 
 Un documento sin hash registrado no es trazable y no debe usarse como autoridad.

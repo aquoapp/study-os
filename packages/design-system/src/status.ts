@@ -33,6 +33,7 @@ export const DESIGN_SYSTEM_SOURCE = {
   verifiedAs: 'PDF 1.4 · 11 páginas · texto con fuentes incrustadas · 0 imágenes',
   blocks: ['P0-S7', 'REQ-A06'],
   blockedBy: 'SD-019',
+  decision: 'SD-019 opción A · autorizada para Phase 0',
   trackedIn: 'docs/GOVERNING_DOCUMENTS.md',
 } as const;
 

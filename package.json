@@ -33,6 +33,7 @@
     "guard:auth-authority": "node tools/guards/auth-authority-guard.mjs",
     "guards": "npm run guard:import && npm run guard:tai-literal && npm run guard:auth-authority && npm run client-authority-guard",
     "verify": "node tools/verify.mjs",
+    "verify:originals": "node tools/verify-originals.mjs",
     "db:start": "node tools/db.mjs start",
     "db:stop": "node tools/db.mjs stop",
     "db:reset": "node tools/db.mjs reset",
