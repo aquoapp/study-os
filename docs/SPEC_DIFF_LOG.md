@@ -410,8 +410,10 @@ cualquier evidencia real**.
 §14 (Accessibility).
 **Origen:** verificación de contraste al incorporar el Design System, ronda correctiva.
 **Estado:** **PROPOSED en cuanto al cambio de especificación** · la **opción A queda
-AUTORIZADA para Phase 0** por decisión humana de 2026-08-23. Ningún color se ha
-modificado.
+AUTORIZADA para Phase 0** por decisión humana de 2026-08-23, y **aplicada y verificada en
+el navegador**. Ningún color se ha modificado. Bajo las restricciones de la opción A,
+`REQ-A06` y `P0-S7` **quedan satisfechos para Phase 0**; elegir entre B y C es una
+decisión **diferida**, con plazo antes de Phase 5.
 
 ### El conflicto
 
@@ -444,8 +446,8 @@ exactamente lo que EC-019 prohíbe.
 - el texto secundario se sitúa sobre `surface`, no sobre `canvas`;
 - `tokens.contrast.spec` fija los tres números medidos, de modo que si alguien cambia un
   color la contradicción no cambia de forma en silencio;
-- **`REQ-A06` y `P0-S7` quedan BLOQUEADOS**, porque el criterio de aceptación no se cumple
-  entero.
+- bajo esas restricciones, **todo texto renderizado alcanza el contraste que WCAG le
+  exige**, que es exactamente lo que pide el criterio de aceptación de `REQ-A06`.
 
 ### Opciones para la decisión humana
 
@@ -483,14 +485,18 @@ efectivo** —subiendo por los ancestros hasta el primero no transparente— y c
 contraste sobre esos valores. Exige 4.5:1, y 3:1 solo cuando el texto es grande según
 WCAG (≥24px, o ≥18.66px en negrita). Las dianas táctiles se miden con `boundingBox()`.
 
-**Resultado: 34/34 en verde**, 17 casos × 2 proyectos.
+**Resultado: 44/44 en verde**, 22 casos × 2 proyectos.
 
-Y se comprobó que detecta la regresión que dice detectar: al reintroducir
-deliberadamente `slate` sobre `canvas` y un enlace en línea, la prueba falló con
-«4.31:1 · exigido 4.5:1» y «slate sobre canvas da 4.31:1 · SD-019 opción A lo prohíbe».
-Una comprobación que solo pasa no demuestra nada.
+Y demuestra por sí sola que detecta lo que dice detectar. La primera versión de esa
+prueba se comprobó a mano —reintroducir el defecto, ver el fallo, restaurar el fichero—,
+lo cual demuestra algo una vez y nada la siguiente. Ahora el propio fichero incluye un
+**fixture negativo** que se ejecuta en cada pasada: construye una página con `slate`
+sobre `canvas`, texto sobre `teal` y sobre `amber` y un control de 24×24, y exige que
+las mismas funciones de auditoría encuentren exactamente esos defectos —incluido que el
+contraste medido sea 4.31:1, por encima de 3 y por debajo de 4.5—. Lleva además su propio
+control: la misma auditoría sobre una página correcta no encuentra nada.
 
-### Qué sigue abierto
+### Qué queda diferido, y por qué no bloquea Phase 0
 
 La opción A **acota el uso**; no resuelve la contradicción entre §2 y §14. Elegir entre
 **B** (oscurecer los tres colores, con ADR y v1.1 del Design System) y **C** (declarar en
@@ -498,8 +504,26 @@ La opción A **acota el uso**; no resuelve la contradicción entre §2 y §14. E
 debe decidirse **antes de Phase 5**, que es cuando existirán componentes que usen estos
 colores con texto encima.
 
-Por eso **REQ-A06 y P0-S7 siguen BLOQUEADOS**: el criterio de aceptación dice «contraste
-AA verificado», y lo verificado es que tres combinaciones de la paleta no lo alcanzan.
+**Diferido no es bloqueado, y la distinción no es cosmética.** El criterio de aceptación
+de `REQ-A06` es «Tokens conformes; contraste AA verificado». Bajo la opción A los tokens
+son los del documento, sin alterar, y el contraste está verificado en el navegador sobre
+el build de producción, en móvil y escritorio, con un fixture negativo que demuestra que
+la medición no está vacía. El criterio se cumple.
+
+Lo que no se cumple es una propiedad **más fuerte** que nadie exigió en Phase 0: que la
+paleta pueda usarse sin restricciones. Esa propiedad la necesitan las 18 familias de
+componentes de §16, que empiezan en Phase 5. Presentarla como bloqueo de Phase 0
+confundía «hay una decisión pendiente» con «hay un entregable sin hacer», y esa confusión
+tiene coste: obliga a repetir en cada checkpoint que algo está bloqueado cuando no lo
+está, y desgasta la palabra para cuando haga falta de verdad.
+
+Por eso **`REQ-A06` y `P0-S7` quedan satisfechos para Phase 0 bajo las restricciones de
+la opción A**, y la elección entre B y C queda registrada como decisión diferida con
+plazo antes de Phase 5.
+
+Las restricciones no son deuda oculta: las hace cumplir la prueba de accesibilidad
+renderizada en cada ejecución. Si alguien vuelve a poner `slate` sobre `canvas` o texto
+sobre `teal`, la suite falla.
 
 **Aprobación:** opción A autorizada para Phase 0. Cambio de especificación (B o C):
 pendiente.
@@ -706,7 +730,7 @@ head -174 docs/SPEC_DIFF_LOG.md | sha256sum
 
 | Decisión | Qué desbloquea |
 | --- | --- |
-| **SD-019 · elegir entre B y C** | El cierre de `REQ-A06` y `P0-S7`. La opción A acota el uso pero no resuelve la contradicción. Antes de Phase 5 |
+| **SD-019 · elegir entre B y C** | El uso de la paleta **sin restricciones**, que necesitan las 18 familias de componentes de §16. No condiciona ningún entregable de Phase 0: `REQ-A06` y `P0-S7` quedan satisfechos bajo la opción A. Antes de Phase 5 |
 | **SD-018 · aprobar el contrato** | Cualquier migración de eventos. Antes de ingerir evidencia real |
 | **SD-006 · SD-007** | La forma de las primeras migraciones de dominio |
 | **SD-017 · ERRATA** | La auditoría de Drive y la corrección de `authority-map.md` |

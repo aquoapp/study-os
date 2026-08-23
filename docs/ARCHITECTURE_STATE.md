@@ -45,7 +45,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | Proyecto Supabase | **NO EXISTE** | Ninguno de los tres entornos creado. MI-05a |
 | Migraciones | **2 escritas, 0 aplicadas** | `0000_init` (extensiones + enum `provenance_class`) y `0001_profiles`. Con rollback. Nunca ejecutadas: no hay base de datos |
 | Políticas RLS | **Escritas, sin verificar en ejecución** | `profiles` con `enable` + `force` y políticas de solo-propio. `test:rls` no se ha podido ejecutar |
-| `packages/design-system` | **EXISTE · BLOQUEADO** | Valores literales de `STUDY_OS_Design_System_v1.0` y defaults de implementación, separados en `TOKEN_PROVENANCE`. REQ-A06 no cierra por SD-019 |
+| `packages/design-system` | **EXISTE · satisfecho bajo SD-019 opción A** | Valores literales de `STUDY_OS_Design_System_v1.0` y defaults de implementación, separados en `TOKEN_PROVENANCE`. REQ-A06 se cumple bajo las restricciones de la opción A, verificadas en el navegador |
 | `packages/config` | **EXISTE** | Tres entornos, políticas, allowlist pública, frontera `server-only`, guardas destructivas |
 | `packages/domain` | **EXISTE** | `Projection<T>` (INV-113), `VerifiedIdentity` (INV-116), registro de autoridad |
 | `packages/learning-engine` | NO EXISTE | Phase 3 |
@@ -111,7 +111,7 @@ control suficiente»— deja de aplicarse a estos catorce. Sigue aplicándose al
 | SD-006 | SPEC_DIFF PROPOSED | Integridad de referencias polimórficas | `session_items` y `planner_items` |
 | SD-007 | SPEC_DIFF PROPOSED | Claves de respuesta fuera del Data API | Separación de esquemas |
 | **SD-018** | SPEC_DIFF PROPOSED | Orden de eventos por usuario · **sustituye a SD-015** | Migración 8 · antes de ingerir evidencia real |
-| **SD-019** | Opción A **autorizada e implementada** · el cambio de especificación sigue PROPOSED | La paleta congelada no alcanza el AA que exige §14 | **P0-S7 y REQ-A06** hasta elegir entre B y C |
+| **SD-019** | Opción A **autorizada, implementada y verificada** · el cambio de especificación (B o C) sigue PROPOSED y **diferido** | La paleta congelada no alcanza el AA que exige §14 | **Nada de Phase 0.** El uso sin restricciones de la paleta, que necesitan los componentes de §16 · antes de Phase 5 |
 | MI-01 | MISSING_INPUT | 6 PDF oficiales | PASS de **Phase 1** |
 | BD-03 | BLOCKED_DECISION | Escala de confianza 4 o 5 | Confirmada por el propio Design System §6 · Phases 3 y 5 |
 | BD-04 · BD-06 | BLOCKED_DECISION | Readiness por concepto · puntuación oficial | Phases 6 y 7 |
@@ -128,7 +128,7 @@ control suficiente»— deja de aplicarse a estos catorce. Sigue aplicándose al
 | D-04 | La familia tipográfica es de sistema | §2 da dirección, no nombre | Al decidirla |
 | D-05 | `next-env.d.ts` versionado y en `.prettierignore` | Lo regenera cada build; Next lo requiere para el typecheck | — |
 | D-06 | Listas espejo entre TypeScript y las herramientas `.mjs` | Las herramientas no pueden importar TS. Hay tests que comparan ambas | Aceptable |
-| D-07 | `teal` y `amber` no pueden llevar texto normal | Consecuencia medida de SD-019 opción A | Al elegir entre B y C |
+| D-07 | `teal` y `amber` no pueden llevar texto normal, y `slate` solo sobre `surface` | Restricciones de SD-019 opción A. No son deuda oculta: la prueba de accesibilidad renderizada las hace cumplir en cada ejecución | Al elegir entre B y C · antes de Phase 5 |
 | D-08 | Los E2E de auth no se han ejecutado nunca | Exigen servidor de Auth y credenciales de limpieza | Al disponer de instancia |
 
 **Deuda documental heredada:** 26 contradicciones registradas (C-01…C-26). SD-019
@@ -157,7 +157,7 @@ correctiva y están verificados por hash.
 **A:** ninguna. Phase 1 no arranca.
 
 Condición para reevaluar: MI-05a, entorno con Docker, y las decisiones SD-018,
-SD-019, BD-02, BD-05, SD-006 y SD-007. Con eso resuelto, el estado esperado es
+BD-02, BD-05, SD-006 y SD-007. Con eso resuelto, el estado esperado es
 **PASS WITH DEBT**. Detalle en `docs/PHASE_0_CHECKPOINT.md`.
 
 ---

@@ -282,8 +282,15 @@ export const CONTRAST_REQUIREMENTS: readonly ContrastRequirement[] = [
     minRatio: 4.5,
   },
   // Componentes de interfaz y contornos: 3:1 (WCAG 1.4.11).
+  //
+  // El umbral de 3:1 es EXCLUSIVAMENTE para elementos que no son texto: bordes,
+  // contornos de foco e indicadores gráficos. La redacción anterior decía «borde y
+  // metadato», y «metadato» es texto: un dato secundario sigue leyéndose, y leerlo
+  // exige 4.5:1 igual que cualquier otro texto normal. Esa palabra autorizaba de
+  // hecho slate sobre canvas —4.31:1— para texto de apoyo, que es justo el defecto
+  // que SD-019 describe.
   {
-    label: 'borde y metadato sobre canvas',
+    label: 'borde sobre canvas (elemento no textual)',
     foreground: 'slate',
     background: 'canvas',
     minRatio: 3,

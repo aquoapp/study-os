@@ -3,6 +3,7 @@ export {
   DESIGN_SYSTEM_SOURCE,
   DESIGN_SYSTEM_STATUS,
   PALETTE_PROVENANCE,
+  hasDeferredDesignDecision,
   isDesignSystemBlocked,
 } from './status';
 
