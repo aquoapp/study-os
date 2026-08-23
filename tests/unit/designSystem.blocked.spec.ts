@@ -72,6 +72,26 @@ describe('P0-S7 y REQ-A06 · estado y motivo', () => {
     expect(DESIGN_SYSTEM_COVERAGE.blocked.length).toBeGreaterThan(0);
   });
 
+  it('declara la evidencia renderizada, no solo la lista de tokens', () => {
+    const evidence = [...DESIGN_SYSTEM_COVERAGE.renderedEvidence].join(' ');
+    expect(evidence).toContain('boundingBox');
+    expect(evidence).toContain('computado real');
+    expect(evidence).toContain('detectada');
+  });
+
+  it('la prueba de accesibilidad renderizada existe y mide, no enumera', () => {
+    const spec = read('tests/e2e/static/accessibility.a11y.spec.ts');
+    expect(spec).toContain('getComputedStyle');
+    expect(spec).toContain('boundingBox()');
+    expect(spec).toContain('effectiveBackground');
+  });
+
+  it('sigue abierto elegir entre las opciones B y C de SD-019', () => {
+    // La opción A acota el uso; no resuelve la contradicción entre §2 y §14.
+    const blocked = [...DESIGN_SYSTEM_COVERAGE.blocked].join(' ');
+    expect(blocked).toContain('antes de Phase 5');
+  });
+
   it('SD-019 está registrado en el SPEC_DIFF_LOG con la opción autorizada', () => {
     const log = read('docs/SPEC_DIFF_LOG.md');
     expect(log).toContain('SD-019');

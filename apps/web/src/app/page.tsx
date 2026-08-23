@@ -13,25 +13,36 @@ export default async function HomePage() {
   const identity = await getVerifiedIdentity();
 
   return (
-    <div data-testid="app-root" style={{ maxWidth: 640, margin: '0 auto', padding: 24 }}>
+    <div data-testid="app-root" className="so-page">
       <h1 style={{ fontFamily: 'var(--so-font-reading)', lineHeight: 'var(--so-leading-tight)' }}>
         Study OS
       </h1>
 
       <p data-testid="phase-marker">Phase 0 · Foundation</p>
 
-      <p style={{ color: 'var(--so-color-slate)' }}>
-        Fundación de repositorio, entornos, migraciones, esqueleto de autenticación y tokens del
-        Design System. Todavía no existe contenido, ni motores, ni espacios de estudio.
-      </p>
+      {/* SD-019 opción A · el texto secundario vive sobre `surface`, no sobre `canvas`. */}
+      <div className="so-panel">
+        <p className="so-text-secondary" style={{ margin: 0 }}>
+          Fundación de repositorio, entornos, migraciones, esqueleto de autenticación y tokens del
+          Design System. Todavía no existe contenido, ni motores, ni espacios de estudio.
+        </p>
+      </div>
 
       {identity ? (
         <p data-testid="session-state" data-authenticated="true">
-          Sesión verificada en servidor. <Link href="/cuenta">Ir a mi cuenta</Link>
+          Sesión verificada en servidor.{' '}
+          <Link className="so-action" href="/cuenta">
+            Ir a mi cuenta
+          </Link>
         </p>
       ) : (
         <p data-testid="session-state" data-authenticated="false">
-          <Link href="/entrar">Entrar</Link> · <Link href="/registro">Crear cuenta</Link>
+          <Link className="so-action" href="/entrar">
+            Entrar
+          </Link>{' '}
+          <Link className="so-action" href="/registro">
+            Crear cuenta
+          </Link>
         </p>
       )}
     </div>

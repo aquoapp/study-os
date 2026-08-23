@@ -29,7 +29,7 @@ export default async function AccountPage() {
     .single();
 
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto', padding: 24 }}>
+    <div className="so-page">
       <h1>Mi cuenta</h1>
 
       <dl data-testid="identity-block">

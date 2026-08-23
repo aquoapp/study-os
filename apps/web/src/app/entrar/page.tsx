@@ -7,7 +7,7 @@ export const metadata = { title: 'Entrar · Study OS' };
 
 export default function SignInPage() {
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto', padding: 24 }}>
+    <div className="so-page">
       <h1>Entrar</h1>
       <CredentialsForm
         action={signInAction}
@@ -16,7 +16,10 @@ export default function SignInPage() {
         testId="signin-form"
       />
       <p style={{ marginTop: 24 }}>
-        ¿No tienes cuenta? <Link href="/registro">Crear cuenta</Link>
+        ¿No tienes cuenta?{' '}
+        <Link className="so-action" href="/registro">
+          Crear cuenta
+        </Link>
       </p>
     </div>
   );

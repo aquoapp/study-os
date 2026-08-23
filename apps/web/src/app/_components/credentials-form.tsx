@@ -42,7 +42,13 @@ export function CredentialsForm({
           required
           autoComplete="email"
           data-testid="email-input"
-          style={{ padding: 8, borderRadius: 8, border: '1px solid var(--so-color-slate)' }}
+          style={{
+            padding: 8,
+            borderRadius: 'var(--so-radius-micro)',
+            border: '1px solid var(--so-color-slate)',
+            background: 'var(--so-color-surface)',
+            color: 'var(--so-color-ink)',
+          }}
         />
       </label>
 
@@ -55,7 +61,13 @@ export function CredentialsForm({
           minLength={8}
           autoComplete={passwordAutoComplete}
           data-testid="password-input"
-          style={{ padding: 8, borderRadius: 8, border: '1px solid var(--so-color-slate)' }}
+          style={{
+            padding: 8,
+            borderRadius: 'var(--so-radius-micro)',
+            border: '1px solid var(--so-color-slate)',
+            background: 'var(--so-color-surface)',
+            color: 'var(--so-color-ink)',
+          }}
         />
       </label>
 

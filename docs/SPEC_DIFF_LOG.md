@@ -409,7 +409,9 @@ cualquier evidencia real**.
 **Documento afectado:** `STUDY_OS_Design_System_v1.0` §2 (Core tokens · Colour) frente a
 §14 (Accessibility).
 **Origen:** verificación de contraste al incorporar el Design System, ronda correctiva.
-**Estado:** **PROPOSED · no aplicado.** Ningún color se ha modificado.
+**Estado:** **PROPOSED en cuanto al cambio de especificación** · la **opción A queda
+AUTORIZADA para Phase 0** por decisión humana de 2026-08-23. Ningún color se ha
+modificado.
 
 ### El conflicto
 
@@ -453,11 +455,54 @@ exactamente lo que EC-019 prohíbe.
 | **B · Oscurecer los tres colores** lo justo para alcanzar 4.5 | Exige ADR y una v1.1 del Design System. Cambia la identidad visual, poco pero la cambia |
 | **C · Declarar en §14 que AA aplica al texto** y que estos tres son colores de indicador | Exige cambio de especificación. Es la opción que menos toca, si la intención original era esa |
 
-**Recomendación: A ahora, y decidir entre B y C antes de Phase 5**, que es cuando existirán
-componentes que usen estos colores con texto encima. Hasta entonces la opción A no cuesta
-nada, porque no hay pantallas de producto.
+### Decisión: **opción A, autorizada para Phase 0**
 
-**Aprobación:** pendiente.
+Términos exactos de la autorización:
+
+- no modificar ningún color congelado;
+- `teal` y `amber` no pueden contener texto normal;
+- `slate` solo puede utilizarse como texto normal sobre `surface`;
+- sobre `canvas`, utilizar `ink` o colocar el texto dentro de una superficie válida.
+
+### Qué se implementó
+
+| Superficie | Antes | Ahora |
+| --- | --- | --- |
+| `/` | Texto secundario `slate` sobre `canvas` · 4.31:1 | Dentro de `.so-panel` (`surface`) · 4.70:1 |
+| `/offline` | Ídem | Ídem |
+| `/entrar` · `/registro` · `/cuenta` | Enlaces en línea sin diana táctil | `.so-action`, 44×44 px reales |
+| Campos de formulario | Fondo y color heredados del navegador | `surface` e `ink` explícitos, medibles |
+
+`slate` sigue usándose como **borde**, donde el mínimo es 3:1 y lo cumple sobradamente.
+
+### Evidencia ejecutada, no declarada
+
+`tests/e2e/static/accessibility.a11y.spec.ts` recorre el DOM del build de producción en
+móvil y escritorio, lee el **color computado real** de cada texto visible y su **fondo
+efectivo** —subiendo por los ancestros hasta el primero no transparente— y calcula el
+contraste sobre esos valores. Exige 4.5:1, y 3:1 solo cuando el texto es grande según
+WCAG (≥24px, o ≥18.66px en negrita). Las dianas táctiles se miden con `boundingBox()`.
+
+**Resultado: 34/34 en verde**, 17 casos × 2 proyectos.
+
+Y se comprobó que detecta la regresión que dice detectar: al reintroducir
+deliberadamente `slate` sobre `canvas` y un enlace en línea, la prueba falló con
+«4.31:1 · exigido 4.5:1» y «slate sobre canvas da 4.31:1 · SD-019 opción A lo prohíbe».
+Una comprobación que solo pasa no demuestra nada.
+
+### Qué sigue abierto
+
+La opción A **acota el uso**; no resuelve la contradicción entre §2 y §14. Elegir entre
+**B** (oscurecer los tres colores, con ADR y v1.1 del Design System) y **C** (declarar en
+§14 que el AA aplica al texto y que estos tres son colores de indicador) sigue pendiente y
+debe decidirse **antes de Phase 5**, que es cuando existirán componentes que usen estos
+colores con texto encima.
+
+Por eso **REQ-A06 y P0-S7 siguen BLOQUEADOS**: el criterio de aceptación dice «contraste
+AA verificado», y lo verificado es que tres combinaciones de la paleta no lo alcanzan.
+
+**Aprobación:** opción A autorizada para Phase 0. Cambio de especificación (B o C):
+pendiente.
 
 ---
 

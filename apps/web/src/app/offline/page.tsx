@@ -27,10 +27,16 @@ export const metadata = { title: 'Sin conexión · Study OS' };
  */
 export default function OfflinePage() {
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto', padding: 24 }} data-testid="offline-page">
+    <div className="so-page" data-testid="offline-page">
       <h1>Sin conexión</h1>
       <p>Esta pantalla necesita conexión y ahora mismo no la hay.</p>
-      <p style={{ color: 'var(--so-color-slate)' }}>Vuelve a intentarlo cuando se restablezca.</p>
+
+      {/* SD-019 opción A · `slate` solo alcanza AA sobre `surface`. */}
+      <div className="so-panel">
+        <p className="so-text-secondary" style={{ margin: 0 }}>
+          Vuelve a intentarlo cuando se restablezca.
+        </p>
+      </div>
     </div>
   );
 }

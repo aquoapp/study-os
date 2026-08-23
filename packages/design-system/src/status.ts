@@ -58,9 +58,25 @@ export const DESIGN_SYSTEM_COVERAGE = {
     'coherencia entre tokens.ts y tokens.css',
     'trece pares de contraste que sí alcanzan el mínimo exigido',
   ],
+  /**
+   * Verificado en el navegador, no sobre una lista de tokens.
+   *
+   * `tests/e2e/static/accessibility.a11y.spec.ts` mide el color computado real de
+   * cada texto visible contra su fondo efectivo, y las dianas táctiles con
+   * `boundingBox()`. 34/34 en verde, y se comprobó que la prueba falla al
+   * reintroducir la violación.
+   */
+  renderedEvidence: [
+    'color computado real de cada texto medido en / · /entrar · /registro · /offline, en móvil y escritorio',
+    'umbral 4.5:1, y 3:1 solo para texto grande según WCAG',
+    'dianas táctiles de 44×44 px medidas con boundingBox()',
+    'regresión de slate sobre canvas y de enlace en línea: detectada',
+  ],
   /** Impide cerrar REQ-A06. */
   blocked: [
     'SD-019 · onDark sobre teal da 3.95 y sobre amber 4.42: por debajo del 4.5 de §14',
+    'SD-019 · la opción A acota el uso pero no resuelve el conflicto entre §2 y §14',
+    'SD-019 · elegir entre B (oscurecer) y C (cambiar §14) sigue pendiente · antes de Phase 5',
     'SD-019 · slate sobre canvas da 4.31: texto secundario sobre el fondo de página no alcanza AA',
     'SD-008 · el propio §6 dice «Four/five semantic levels» para la escala de confianza',
     'tema oscuro: el documento no lo especifica y no se inventa',

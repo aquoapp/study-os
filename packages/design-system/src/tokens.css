@@ -129,6 +129,51 @@ textarea {
   min-height: var(--so-touch-target-min);
 }
 
+/* ---------------------------------------------------------------------------
+ * SD-019 · opción A, autorizada para Phase 0
+ *
+ * No se modifica ningún color congelado. La restricción se aplica en el uso:
+ *
+ *   · `teal` y `amber` NO pueden llevar texto normal encima (3.95 y 4.42);
+ *   · `slate` solo es texto normal sobre `surface` (4.70), nunca sobre `canvas` (4.31);
+ *   · sobre `canvas` se usa `ink` (14.03) o se coloca el texto dentro de `.so-panel`.
+ *
+ * `tests/e2e/static/accessibility.a11y.spec.ts` mide el color computado real de cada
+ * texto visible contra su fondo efectivo, no una lista de tokens.
+ * --------------------------------------------------------------------------- */
+
+/* Contenedor de página. El fondo es `canvas`, heredado de body. */
+.so-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--so-space-xl);
+}
+
+/* Superficie válida para texto secundario. §2 Surface / Soft White · §6 Study Card. */
+.so-panel {
+  background: var(--so-color-surface);
+  border: 1px solid var(--so-color-slate);
+  border-radius: var(--so-radius-card);
+  padding: var(--so-space-lg);
+}
+
+/* Texto secundario. Solo legible dentro de `.so-panel`: sobre `canvas` no llega a AA. */
+.so-panel .so-text-secondary {
+  color: var(--so-color-slate);
+}
+
+/* Acción terciaria · §5. Diana táctil completa aunque el texto sea corto. */
+.so-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--so-touch-target-min);
+  min-width: var(--so-touch-target-min);
+  padding: 0 var(--so-space-sm);
+  color: var(--so-color-navy);
+  border-radius: var(--so-radius-micro);
+}
+
 /* Enlace de salto: invisible hasta recibir foco · §14 (navegación por teclado) */
 .so-skip-link {
   position: absolute;
