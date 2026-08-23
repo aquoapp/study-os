@@ -99,7 +99,14 @@ npm run verify
 ```
 
 Los nueve checks bloqueantes. Los que necesitan base de datos se reportan como
-**BLOQUEADO** si no la encuentran; nunca se omiten en silencio.
+**BLOQUEADO** si no la encuentran; nunca se omiten en silencio. `secret-scan`
+construye por sí mismo con un centinela de servidor, de modo que `verify` es
+reproducible desde un checkout limpio.
+
+El runtime es **Node 24** (`.nvmrc`) y el CLI de Supabase está fijado con versión
+exacta como `devDependency`: las operaciones de base de datos pasan siempre por
+`node tools/db.mjs`, que además deniega cualquier operación destructiva contra un
+entorno que no la admita.
 
 ## 9. Estado actual
 
@@ -109,4 +116,12 @@ pantalla de producto ni contenido canónico. Ver
 explícita de lo que **no** se hace en esta fase.
 
 Decisiones abiertas que condicionan el cierre de Phase 0: **BD-02, BD-05, SD-006,
-SD-007, SD-015, INV-101**. Ninguna impide el andamiaje; todas impiden declarar PASS.
+SD-007, SD-018** (que sustituye a SD-015) y **SD-019** (contraste de la paleta).
+Ninguna impide el andamiaje; todas impiden declarar PASS.
+
+**INV-101 ya no está abierto.** Ana lo aprobó, con su redacción congelada, en la
+autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante
+vigente, no como decisión pendiente. Lo mismo ocurre con **INV-113**.
+
+Estado real del repositorio: [`docs/ARCHITECTURE_STATE.md`](docs/ARCHITECTURE_STATE.md).
+Informe de fase: [`docs/PHASE_0_CHECKPOINT.md`](docs/PHASE_0_CHECKPOINT.md).

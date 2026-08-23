@@ -43,16 +43,27 @@ con los del paquete. Cualquier divergencia futura es una modificación y debe ju
 | `architecture/ADR-003-mastery-vs-readiness.md` | `4155d6d2b54caad99c9bc5ce4bd5c5e5fce9f5f66ec6f3410ff2942d52c3cf4a` |
 | `architecture/ADR-004-offline-reconciliation.md` | `f7a9833f787d2d3e939f54d9b758bf1ec0a8c9f7bbd97454b6529a5a0c4518fd` |
 | `architecture/ADR-005-provenance-and-official-versioning.md` | `aa5414eb34f024f03778ea4456e56a3159ce02e391d1fee3458d2cac5d833406` |
-| `docs/ARCHITECTURE_STATE.md` | `595437cca7ed13d09f78a0544fa26a8ad034d28b0cb8ecd97a71e08aff6b7fa1` |
+| `docs/ARCHITECTURE_STATE.md` | `595437cca7ed13d09f78a0544fa26a8ad034d28b0cb8ecd97a71e08aff6b7fa1` (**estado de importación**) |
 | `docs/PHASE_0_EXECUTION_PLAN.md` | `d7371a2e31cc7ea1ddbd5ef7505d962ad2625c9c81035520d7e386ac20164d57` |
 | `docs/PHASE_MINUS_1_INDEX.md` | `769c24175400db4e5fb5359025fbf509cbecd8e088fc09e3ca1a5cf79cd8b415` |
 | `docs/SPEC_DIFF_LOG.md` | `4a4ba01d3e211aa0c2200239826a14f3b56dbe788fe40064a5f0a087da6f2fd3` (**estado de importación**) |
 
-> **`SPEC_DIFF_LOG.md` es el único artefacto importado que se modifica en Phase 0**, y solo
-> por **adición** de entradas nuevas (`SD-016`, `SD-017`) y de una sección de erratas, tal como
-> autoriza el propio documento y la decisión humana de arranque de Phase 0. Las 18 entradas
-> anteriores quedan intactas. El hash de la tabla es el del estado en el momento de importar;
-> el fichero vivo diverge a partir de ahí por adición trazable.
+> **Dos artefactos importados divergen de su hash base, y solo dos.**
+>
+> **`ARCHITECTURE_STATE.md`** es una **copia viva**: su propia regla de mantenimiento
+> dice que «se actualiza en cada checkpoint» y que «si describe estado futuro o
+> intenciones, se está usando mal». La versión 1.2 describía un repositorio que no
+> existía; conservarla intacta la habría convertido en lo contrario de lo que dice
+> ser. La divergencia respecto al hash base queda registrada en su §0.
+>
+> **`SPEC_DIFF_LOG.md`** se modifica solo por **adición** de entradas nuevas y de una
+> sección de erratas, tal como autoriza el propio documento. Las 15 entradas congeladas quedan intactas: las primeras
+> 174 líneas del fichero conservan el hash
+> `4a4ba01d3e211aa0c2200239826a14f3b56dbe788fe40064a5f0a087da6f2fd3`, comprobable con
+> `head -174 docs/SPEC_DIFF_LOG.md | sha256sum`. Adenda actual: ERRATA P0-IN-1, SD-016,
+> SD-017, SD-018 y SD-019.
+>
+> Los otros 17 artefactos importados conservan su hash original sin excepción.
 
 ## 3. Documentos gobernantes de origen
 
@@ -70,30 +81,41 @@ material de entrada, y su lugar canónico es la auditoría de Drive `APP_OPOS`, 
 | `STUDY_OS_Checkpoint_Contract_v1.0.md` | `e94f10f1741b794d3953a7fd8da2becb4ad911febdcc36013a96b44ca948595c` | Markdown |
 | `STUDY_OS_ADR_Policy_v1.0.md` | `3e723d756c63144b09ee07935b44d7988bf1e69106005873318b77dcd0760a23` | Markdown |
 | `STUDY_OS_Phase_Minus_1_Specification_Compilation_v1.0.md` | `98279c50828608df23ac92bfcff1d82e030ac7ff92bf8a1eca939deac4fb8298` | Markdown |
-| `STUDY_OS_Founder_Portfolio_Master_Context_v0.1.md` | `6304f5957aba93c01f89563a834d1f2d5f0d86689278ac4daa7e8a19ba40613d` | Markdown · **no figura en `authority-map.md`** |
+| `STUDY_OS_Founder_Portfolio_Master_Context_v0.1.md` | `6304f5957aba93c01f89563a834d1f2d5f0d86689278ac4daa7e8a19ba40613d` | Markdown · **no figura en `authority-map.md`** · nivel 7, no gobierna |
+| `STUDY_OS_Design_System_v1.0.pdf` | `62a85885709cc2dc9ed4cffd71ed852ed1e54cf0962940ff53da93dd8c357aa4` | PDF 1.4 real · 11 páginas · texto · **0 imágenes** · llegó en la ronda correctiva |
+| `STUDY_OS_Functional_Closure_MVP_Scope_v0.1.pdf` | `6645bc17aca99a6070f7c958d07569857f596a07bac88fc285cf411918c07f3f` | PDF 1.4 real · 4 páginas · texto · **0 imágenes** · llegó en la ronda correctiva |
+| `STUDY_OS_Onboarding_Edge_States_Visual_Spec_v1.0.pdf` | `e7bb2e91ed114778b6a46b15eb75b89a33e2c7261c1f7eee3e6d2cbb59ca9078` | PDF 1.4 real · 12 páginas · texto · **0 imágenes** · llegó en la ronda correctiva |
 
-### 3.1 AMB-01 · resolución parcial contra los originales
+### 3.1 AMB-01 · **RESUELTO** · 8 de 8
 
 `spec/authority-map.md` §0a afirma que los ocho documentos gobernantes «llegan con extensión
 `.pdf` pero su contenido real es un **archivo ZIP de imágenes de página**». Contrastado contra
-`_handoff/originals/`, **esa afirmación no se sostiene para los cinco documentos presentes**:
-los tres `.pdf` son PDF 1.4 auténticos con texto y fuentes incrustadas (cero objetos
-`/Subtype /Image`, cero `/DCTDecode`), y los dos `.docx` son OOXML auténticos con
-`word/document.xml`. El texto es extraíble.
+`_handoff/originals/`, **esa afirmación no se sostiene para ninguno de los ocho**: los seis
+`.pdf` son PDF 1.4 auténticos con texto y fuentes incrustadas (cero objetos
+`/Subtype /Image`, cero `/DCTDecode`) y los dos `.docx` son OOXML auténticos con
+`word/document.xml`. El texto es extraíble en los ocho.
 
 | Documento gobernante | Extensión de origen | Estado AMB-01 |
 |---|---|---|
 | Master Product Specification v1.0 | `.pdf` | **RESUELTO** |
 | Canonical Data & Event Model v1.0 | `.pdf` | **RESUELTO** |
 | Builder Handoff Manifest v1.0 | `.pdf` | **RESUELTO** |
-| Technical Architecture v1.0 | `.docx` | **RESUELTO** (ya confirmado por la revisión) |
-| Source of Truth Index v1.0 | `.docx` | **RESUELTO** (ya confirmado por la revisión) |
-| Functional Closure / MVP Scope v0.1 | — | **ABIERTO** · ausente de `_handoff/originals/` |
-| Design System v1.0 | — | **ABIERTO** · ausente de `_handoff/originals/` |
-| Onboarding & Edge States Visual Spec v1.0 | — | **ABIERTO** · ausente de `_handoff/originals/` |
+| Technical Architecture v1.0 | `.docx` | **RESUELTO** |
+| Source of Truth Index v1.0 | `.docx` | **RESUELTO** |
+| Design System v1.0 | `.pdf` | **RESUELTO** · llegó en la ronda correctiva |
+| Functional Closure / MVP Scope v0.1 | `.pdf` | **RESUELTO** · llegó en la ronda correctiva |
+| Onboarding & Edge States Visual Spec v1.0 | `.pdf` | **RESUELTO** · llegó en la ronda correctiva |
 
-AMB-01 pasa de **8 documentos sin verificar** a **3**. La corrección de `authority-map.md`
-queda propuesta como `SD-017` en `docs/SPEC_DIFF_LOG.md`; no se aplica sin aprobación humana.
+Trazabilidad: AMB-01 pasó de **8 sin verificar** en el preflight, a **3** tras inspeccionar
+los originales disponibles, a **0** al llegar los tres que faltaban.
+
+La corrección de `spec/authority-map.md` sigue propuesta como `SD-017` y pendiente de
+aprobación humana. El artefacto congelado **no se ha editado**.
+
+Hallazgo adicional: `STUDY_OS_Founder_Portfolio_Master_Context_v0.1.md` está en los
+originales y **no figura en `authority-map.md`**. Propuesta en SD-017: nivel 7, material
+exploratorio, **no gobierna**. Que un documento esté disponible no lo convierte en autoridad.
+
 
 ## 4. Verificación programática ejecutada en el preflight
 
