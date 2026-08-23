@@ -3,8 +3,8 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 2.0 · copia viva
-**Última actualización:** 2026-08-23 · ronda correctiva de Phase 0
+**Versión:** 3.0 · copia viva
+**Última actualización:** 2026-08-23 · ronda correctiva final de Phase 0
 **Fase actual:** 0 · Foundation
 **Estado global:** **BLOCKED** · ver `docs/PHASE_0_CHECKPOINT.md`
 
@@ -45,15 +45,19 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | Proyecto Supabase | **NO EXISTE** | Ninguno de los tres entornos creado. MI-05a |
 | Migraciones | **2 escritas, 0 aplicadas** | `0000_init` (extensiones + enum `provenance_class`) y `0001_profiles`. Con rollback. Nunca ejecutadas: no hay base de datos |
 | Políticas RLS | **Escritas, sin verificar en ejecución** | `profiles` con `enable` + `force` y políticas de solo-propio. `test:rls` no se ha podido ejecutar |
-| `packages/design-system` | **EXISTE · BLOQUEADO** | Tokens con los valores literales de `STUDY_OS_Design_System_v1.0`. REQ-A06 no cierra por SD-019 |
+| `packages/design-system` | **EXISTE · BLOQUEADO** | Valores literales de `STUDY_OS_Design_System_v1.0` y defaults de implementación, separados en `TOKEN_PROVENANCE`. REQ-A06 no cierra por SD-019 |
 | `packages/config` | **EXISTE** | Tres entornos, políticas, allowlist pública, frontera `server-only`, guardas destructivas |
 | `packages/domain` | **EXISTE** | `Projection<T>` (INV-113), `VerifiedIdentity` (INV-116), registro de autoridad |
 | `packages/learning-engine` | NO EXISTE | Phase 3 |
 | `packages/planner-engine` | NO EXISTE | Phase 4 |
 | Capa de IA | NO EXISTE | Phase 8. MI-05b no se ha solicitado |
-| Tests | **281 escritos · 256 ejecutables aquí** | 256 unitarios en verde; 10 de integración, 12 de RLS y 3 E2E de auth bloqueados por falta de Supabase |
+| Tests unitarios | **364 · todos ejecutados y en verde** | 20 ficheros. Recuento verificable con `vitest --reporter=json` |
+| E2E estáticos | **60 · ejecutados y en verde** | arranque, PWA y accesibilidad renderizada · 30 casos × 2 proyectos. No tocan Supabase |
+| E2E de auth | **8 escritos · 0 ejecutados** | 5 + 3 casos. Exigen servidor de Auth y credenciales de limpieza |
+| Tests de integración | **10 escritos · 0 ejecutados** | Exigen instancia de Supabase |
+| Tests de RLS | **11 escritos · 0 ejecutados** | Exigen instancia de Supabase |
 | CI | **EXISTE · nunca ejecutado** | `.github/workflows/ci.yml`, dos jobs, nueve checks. Sin remoto no ha corrido |
-| Guardas de invariante | **5 activas, con prueba negativa** | import · tai-literal · secret-scan · client-authority · auth-authority |
+| Guardas de invariante | **5 activas, con política conservadora** | import · tai-literal · secret-scan · client-authority (0 escrituras permitidas) · auth-authority (procedencia positiva). 49 pruebas de evasión |
 | Contenido ingerido | NINGUNO | Ni siquiera de prueba. Execution Plan §9 |
 | Tablas de dominio | **NINGUNA** | Verificado por test: ninguna migración crea `learning_events`, `question_attempts`, `concept_mastery`, `exam_readiness`, `planner_*`, `canonical_questions`, `answer_key_versions`, `learning_units`, `sessions` ni `session_items` |
 | Artefactos de Phase −1 | **IMPORTADOS** | 19 ficheros, byte a byte, con SHA-256 en `docs/PROVENANCE.md` |
@@ -91,7 +95,7 @@ Ya no es «ninguno». Lo que sigue está **ejecutándose**, no solo escrito:
 | EC-020 | `verify` cuenta un check bloqueado como fallo, nunca como omisión | **Activo** |
 | INV-104 · INV-105 · INV-107 | Una acción primaria por vista; error con texto y `role="alert"`; copy sin atribución de fracaso | **Activo** |
 | INV-113 · REQ-A08 | `client-authority-guard` sobre AST, superficie de cliente transitiva en `apps/**` y `packages/**`, registro explícito de proyecciones y RPC | **Activo** |
-| INV-116 · REQ-A07 | Verificador único de identidad, ESLint, guarda con propagación de contaminación para `user_id` | **Activo** (estático) · rechazo de cookie forjada **bloqueado** |
+| INV-116 · REQ-A07 | Verificador único de identidad, ESLint, y guarda de **procedencia positiva**: un valor de identidad solo vale si deriva demostrablemente del verificador | **Activo** (estático) · rechazo de cookie forjada **bloqueado** |
 | INV-101 | **Aprobado por Ana.** Sin superficie que pueda violarlo todavía | N/A en Phase 0 |
 
 Lo que la Engineering Constitution advertía —«los documentos por sí solos no son
@@ -107,7 +111,7 @@ control suficiente»— deja de aplicarse a estos catorce. Sigue aplicándose al
 | SD-006 | SPEC_DIFF PROPOSED | Integridad de referencias polimórficas | `session_items` y `planner_items` |
 | SD-007 | SPEC_DIFF PROPOSED | Claves de respuesta fuera del Data API | Separación de esquemas |
 | **SD-018** | SPEC_DIFF PROPOSED | Orden de eventos por usuario · **sustituye a SD-015** | Migración 8 · antes de ingerir evidencia real |
-| **SD-019** | SPEC_DIFF PROPOSED | La paleta congelada no alcanza el AA que exige §14 | **P0-S7 y REQ-A06** |
+| **SD-019** | Opción A **autorizada e implementada** · el cambio de especificación sigue PROPOSED | La paleta congelada no alcanza el AA que exige §14 | **P0-S7 y REQ-A06** hasta elegir entre B y C |
 | MI-01 | MISSING_INPUT | 6 PDF oficiales | PASS de **Phase 1** |
 | BD-03 | BLOCKED_DECISION | Escala de confianza 4 o 5 | Confirmada por el propio Design System §6 · Phases 3 y 5 |
 | BD-04 · BD-06 | BLOCKED_DECISION | Readiness por concepto · puntuación oficial | Phases 6 y 7 |
@@ -124,6 +128,8 @@ control suficiente»— deja de aplicarse a estos catorce. Sigue aplicándose al
 | D-04 | La familia tipográfica es de sistema | §2 da dirección, no nombre | Al decidirla |
 | D-05 | `next-env.d.ts` versionado y en `.prettierignore` | Lo regenera cada build; Next lo requiere para el typecheck | — |
 | D-06 | Listas espejo entre TypeScript y las herramientas `.mjs` | Las herramientas no pueden importar TS. Hay tests que comparan ambas | Aceptable |
+| D-07 | `teal` y `amber` no pueden llevar texto normal | Consecuencia medida de SD-019 opción A | Al elegir entre B y C |
+| D-08 | Los E2E de auth no se han ejecutado nunca | Exigen servidor de Auth y credenciales de limpieza | Al disponer de instancia |
 
 **Deuda documental heredada:** 26 contradicciones registradas (C-01…C-26). SD-019
 añade una vigesimoséptima, detectada al incorporar el Design System.

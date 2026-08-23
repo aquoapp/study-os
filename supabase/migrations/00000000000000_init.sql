@@ -22,7 +22,7 @@
 --
 -- No declara los enums de dominio (estado de contenido, escala de confianza, tipo
 -- de ítem de sesión, estado de sincronización). Todos dependen de decisiones
--- abiertas —BD-02, BD-03, BD-05, SD-006, SD-015— y congelarlos aquí obligaría a
+-- abiertas —BD-02, BD-03, BD-05, SD-006, SD-018— y congelarlos aquí obligaría a
 -- migrarlos dos veces. El único enum que se declara es el que ya está congelado
 -- por la Engineering Constitution.
 -- ---------------------------------------------------------------------------

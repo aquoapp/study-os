@@ -8,16 +8,23 @@
  * REQ-A06 · P0-S7 · dirección visual: CALM INTELLIGENCE.
  *
  * ---------------------------------------------------------------------------
- * Todos los valores de este fichero están tomados del documento
+ * Dos clases de valor, y conviene no confundirlas
  *
- * La entrega anterior inventó una paleta porque el Design System no estaba
- * disponible, y la auditoría externa lo rechazó. El documento apareció en
- * `_handoff/originals/` durante esta ronda correctiva y se verificó: PDF 1.4
- * auténtico, 11 páginas, texto con fuentes incrustadas, cero imágenes.
+ * **DOCUMENT** · literal del Design System. Cambiarlo contradice un artefacto
+ * FROZEN y exige ADR más cambio de especificación versionado (EC-019).
  *
- * Nada de lo que sigue es una elección de diseño propia. Cuando el documento no
- * especifica algo —el caso más visible es el **tema oscuro**, que no menciona— aquí
- * no aparece. Añadirlo sería volver a inventar.
+ * **PROVISIONAL** · default de implementación que el documento **no** especifica.
+ * Existe porque el código necesita un valor para funcionar, es reversible sin ADR y
+ * se sustituye cuando la decisión se tome. Están enumerados en `TOKEN_PROVENANCE`.
+ *
+ * La entrega anterior afirmaba que «todos los valores proceden del documento». Era
+ * falso: el documento no nombra familias tipográficas, ni pesos, ni interlineados,
+ * ni anchos de ruptura, ni un color de papel sobre fondos oscuros. Presentar un
+ * default como si fuera decisión de marca es la misma clase de error que inventar
+ * la paleta, solo que más difícil de detectar.
+ *
+ * Cuando el documento no especifica algo y el código tampoco lo necesita —el caso
+ * más visible es el **tema oscuro**— aquí no aparece nada.
  * ---------------------------------------------------------------------------
  */
 
@@ -352,4 +359,53 @@ export const TOKEN_CONTRACT = {
     'orb',
     'glow',
   ] as const,
+} as const;
+
+/**
+ * Procedencia de cada valor.
+ *
+ * `DOCUMENT` es literal del Design System §2, §3 o §13: cambiarlo contradice un
+ * artefacto FROZEN y exige ADR más cambio de especificación versionado (EC-019).
+ *
+ * `PROVISIONAL` es un default de implementación que el documento **no** especifica.
+ * Existe porque el código necesita un valor, es reversible sin ADR y se sustituye
+ * cuando la decisión se tome.
+ *
+ * Está aquí para que la distinción sea legible por máquina y no dependa de que
+ * alguien recuerde qué salió del PDF. `tokens.provenance.spec` comprueba que la
+ * clasificación cubre todo lo exportado.
+ */
+export const TOKEN_PROVENANCE = {
+  document: {
+    'COLOR (los diez de §2)':
+      'canvas · surface · ink · navy · teal · magenta · forest · amber · brick · slate',
+    'SPACING (todos)': '4 · 8 · 12 · 16 · 24 · 32 · 48 · 64',
+    'RADIUS.micro/control/card/hero': '8 · 12 · 16 · 20',
+    TOUCH_TARGET_MIN_PX: '44 × 44 px · §2 y §14',
+    'TYPOGRAPHY.size (todos los rangos)': '12–13 · 14–15 · 16–18 · 20–24 · 28–34',
+    'TYPOGRAPHY.numericVariant': 'numerales tabulares · §2',
+    'MOTION (las once duraciones)': '§13',
+    'LAYOUT (columnas, márgenes, referencia móvil)': '§3',
+  },
+
+  provisional: {
+    'COLOR.onDark':
+      'El documento no nombra un color de papel sobre fondos oscuros. Se usa Soft White, que sí es suyo, pero el rol es una decisión de implementación.',
+    'RADIUS.none': 'Un sistema de radios necesita el caso cero. El documento no lo declara.',
+    'RADIUS.full': 'Caso píldora. El documento no lo declara.',
+    'SPACING.none': 'El cero de la escala. El documento empieza en 4.',
+    'TYPOGRAPHY.family':
+      '§2 pide «a modern humanist/grotesk sans» y no nombra ninguna. Las pilas son de sistema y se sustituyen al decidir la familia.',
+    'TYPOGRAPHY.weight': 'El documento no declara pesos. 400/500/600/700 es la escala habitual.',
+    'TYPOGRAPHY.lineHeight':
+      'El documento no declara interlineados. `reading: 1.65` responde a «editorial reading comfort» de §16, pero el número es propio.',
+    BREAKPOINTS:
+      '§3 describe tres contextos por columnas y márgenes, no por anchos. Los anchos son mínimos coherentes con la única referencia numérica que da (390 px).',
+    SEMANTIC_ROLES:
+      'El emparejamiento fondo/primer plano es una decisión de accesibilidad tomada al aplicar SD-019 opción A, no una tabla del documento.',
+    NON_TEXT_BACKGROUNDS:
+      'Consecuencia medida de SD-019: el documento no marca ningún color como no apto para texto.',
+    CONTRAST_REQUIREMENTS:
+      'La lista de pares a verificar la define este repositorio. §14 exige AA; qué pares comprobar es decisión de implementación.',
+  },
 } as const;

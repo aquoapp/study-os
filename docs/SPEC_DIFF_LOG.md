@@ -617,3 +617,40 @@ sigue siendo un contrato propuesto. **No debe darse por cerrada ni por aprobada 
 humana explícita.**
 
 **Aprobación:** pendiente.
+
+---
+
+## Estado de la adenda · al cierre de la ronda correctiva final
+
+Sustituye a los dos resúmenes anteriores, que quedaron desfasados al añadirse
+`SD-018` y `SD-019` y al autorizarse la opción A de esta última.
+
+| Entrada | Tipo | Estado |
+| --- | --- | --- |
+| **ERRATA P0-IN-1** | Errata documental | PROPOSED · el fichero congelado no se ha editado |
+| **SD-016** · INV-116 | Alta de invariante | Contenido aprobado por Ana · **implementado y verificado** |
+| **SD-017** · naturaleza real de los documentos gobernantes | Corrección documental | PROPOSED · `authority-map.md` no se ha editado |
+| **SD-018** · orden e idempotencia del stream de eventos | Sustituye a SD-015 | PROPOSED · **no implementado** · corregido en esta ronda |
+| **SD-019** · la paleta no alcanza el AA que exige §14 | Contradicción entre §2 y §14 | **Opción A autorizada e implementada** · el cambio de especificación (B o C) sigue PROPOSED |
+
+**Total: 19 entradas SPEC_DIFF** (15 congeladas + SD-016 … SD-019) **y 1 errata.**
+
+`SD-015` queda **superseded por SD-018**. Ninguna de las dos está implementada: no
+existe tabla de eventos, ni contador, ni watermark.
+
+El cuerpo congelado v1.2 conserva su hash en las primeras 174 líneas:
+
+```bash
+head -174 docs/SPEC_DIFF_LOG.md | sha256sum
+# 4a4ba01d3e211aa0c2200239826a14f3b56dbe788fe40064a5f0a087da6f2fd3
+```
+
+### Qué sigue necesitando decisión humana
+
+| Decisión | Qué desbloquea |
+| --- | --- |
+| **SD-019 · elegir entre B y C** | El cierre de `REQ-A06` y `P0-S7`. La opción A acota el uso pero no resuelve la contradicción. Antes de Phase 5 |
+| **SD-018 · aprobar el contrato** | Cualquier migración de eventos. Antes de ingerir evidencia real |
+| **SD-006 · SD-007** | La forma de las primeras migraciones de dominio |
+| **SD-017 · ERRATA** | La auditoría de Drive y la corrección de `authority-map.md` |
+| **BD-02 · BD-05** | Migraciones 3 y 5 |
