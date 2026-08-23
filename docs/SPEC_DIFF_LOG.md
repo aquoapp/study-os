@@ -518,3 +518,102 @@ pendiente.
 **Total tras la adenda: 19 entradas SPEC_DIFF (15 congeladas + SD-016 … SD-019) y 1
 errata.** `SD-015` queda **superseded por SD-018** sin haberse modificado en el cuerpo
 congelado.
+
+---
+
+## SD-018 · **corrección del contrato** · orden e idempotencia en la misma transacción
+
+**Corrige a:** la redacción de SD-018 publicada arriba, que sigue siendo válida en su
+estructura pero describía mal la interacción entre el contador de posición y la clave de
+idempotencia. Esta sección **sustituye** los puntos 2 y 4 de aquella redacción.
+
+**Estado:** **PROPOSED · NO IMPLEMENTADO.** No existe ninguna migración de eventos, ninguna
+tabla `learning_events`, ningún contador y ninguna función. Nada de esto está cerrado ni
+aprobado: exige decisión humana explícita.
+
+### Qué estaba mal
+
+La redacción anterior decía «`ON CONFLICT DO NOTHING` en ambos niveles». Combinado con un
+contador que se incrementa antes de insertar, eso produce dos defectos:
+
+1. **Huecos en el stream.** Si se reserva la posición y después el `INSERT` no hace nada
+   por conflicto de `event_id`, el contador ya avanzó. La posición reservada se pierde y el
+   stream deja de ser contiguo — justo la propiedad que SD-018 existe para garantizar, y de
+   la que depende el avance del watermark.
+2. **Éxito idempotente falso.** `ON CONFLICT DO NOTHING` no distingue «este evento ya
+   estaba, idéntico» de «alguien reutilizó un `event_id` con otro usuario o con otro
+   contenido». El segundo caso es un **conflicto de integridad** y debe fallar ruidosamente;
+   tratarlo como idempotencia acepta en silencio una suplantación o una corrupción.
+
+### Orden correcto de las operaciones
+
+Todo dentro de **una sola transacción**:
+
+1. **Bloquear el contador del usuario/stream.**
+   `SELECT next_position FROM user_event_counters WHERE user_id = $1 FOR UPDATE`.
+   Si no hay fila, se inserta con `next_position = 1` y se bloquea. Esto serializa las
+   inserciones concurrentes de ese usuario, y solo de ese usuario.
+
+2. **Después del bloqueo, comprobar `event_id`.**
+   `SELECT user_id, payload_hash, stream_position FROM learning_events WHERE event_id = $2`.
+   El orden importa: comprobar antes del bloqueo abre una ventana en la que dos
+   transacciones concurrentes ven «no existe» y ambas siguen adelante.
+
+3. **Si ya existe:**
+   - verificar que el `user_id` coincide **y** que el payload coincide por hash canónico;
+   - si coinciden, **devolver el evento existente y no incrementar el contador**. Es el
+     mismo hecho reenviado: idempotencia real;
+   - si **no** coinciden, **abortar con conflicto de integridad**. Mismo `event_id` con
+     distinto usuario o distinto contenido no es un reintento: es un error o un intento de
+     suplantación. Nunca se reporta como éxito idempotente.
+
+4. **Si no existe:** reservar la posición (`next_position`), incrementar el contador e
+   insertar el evento con esa posición, **en la misma transacción**.
+
+5. **Nada de `ON CONFLICT DO NOTHING` después de incrementar.** Ya no hace falta: el
+   bloqueo del paso 1 y la comprobación del paso 2 cubren la concurrencia. Y si se dejara,
+   volvería a producir el hueco del defecto 1.
+
+6. **Cualquier conflicto único inesperado aborta y revierte la transacción entera**,
+   incluido el incremento del contador. Es la propiedad que hace que no haya huecos: la
+   posición vive y muere con la transacción que la usa.
+
+7. **Tras el rollback puede recuperarse el evento existente y validarse** con el mismo
+   criterio del paso 3, en una transacción nueva. Un reintento legítimo termina devolviendo
+   el evento original; uno ilegítimo termina en conflicto de integridad.
+
+### El mismo principio para `question_attempts`
+
+`ADR-002` fija `submitted_event_id` como mecanismo principal de deduplicación del intento y
+`attempt_number` como contador derivado del servidor. Se aplica el mismo orden:
+
+1. bloquear el contador del par `(user_id, question_id)`;
+2. comprobar si ya existe un intento con ese `submitted_event_id`;
+3. si existe, validar que corresponde al mismo usuario y a la misma pregunta y devolverlo,
+   **sin asignar `attempt_number` nuevo**;
+4. si no existe, asignar `attempt_number` e insertar, en la misma transacción;
+5. sin `ON CONFLICT DO NOTHING` después de asignar.
+
+Asignar `attempt_number` antes de comprobar la idempotencia produce el mismo hueco, y
+además hace que un reintento consuma un número de intento que nadie usó — un dato que el
+usuario acabaría viendo.
+
+### Pruebas asociadas · ninguna implementada todavía
+
+- `events.lockBeforeIdempotencyCheck.spec` · el bloqueo precede a la comprobación
+- `events.duplicateEventIdReturnsExisting.spec` · mismo `event_id` y mismo payload devuelve
+  el existente y no incrementa el contador
+- `events.conflictingEventIdAborts.spec` · mismo `event_id` con otro usuario o con otro
+  payload aborta con conflicto de integridad, no con éxito
+- `events.noGapsUnderRollback.spec` · una transacción revertida no deja hueco en el stream
+- `events.noOnConflictDoNothing.spec` · la migración no contiene esa cláusula tras el
+  incremento
+- `attempts.idempotentBeforeAttemptNumber.spec` · el mismo principio en `question_attempts`
+
+### Qué NO se ha hecho
+
+No se ha creado ninguna migración, ninguna tabla, ninguna función ni ningún índice. SD-018
+sigue siendo un contrato propuesto. **No debe darse por cerrada ni por aprobada sin decisión
+humana explícita.**
+
+**Aprobación:** pendiente.

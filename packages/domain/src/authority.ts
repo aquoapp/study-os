@@ -50,7 +50,7 @@ export interface AuthoritativeProjection<T> {
   readonly value: T;
   /** Versión del motor que la produjo (EC-002, EC-003, EC-006). */
   readonly engineVersion: string;
-  /** `server_sequence` consumido — pendiente de SD-015 (ver nota abajo). */
+  /** `stream_position` del usuario consumida — pendiente de SD-018 (ver nota abajo). */
   readonly watermark: number;
 }
 
@@ -89,16 +89,20 @@ export function localProjection<T>(
 }
 
 /*
- * NOTA · SD-015 · PROPOSED, no aplicado.
+ * NOTA · SD-018 · PROPOSED, no implementado. Sustituye a SD-015.
  *
- * `watermark` está tipado como número porque la decisión de SD-015 lo define como
- * `learning_events.server_sequence`. **SD-015 sigue en PROPOSED** y debe revisarse
- * antes del checkpoint de Phase 0 y antes de crear cualquier migración de eventos:
- * posición monotónica transaccional por usuario/stream, `unique(user_id, stream_position)`,
- * asignación bajo bloqueo transaccional, watermark por usuario y proyección,
- * `event_id` como clave de idempotencia, `client_created_at` para semántica temporal,
- * y ninguna inferencia de ausencia definitiva mediante timeout.
+ * `watermark` está tipado como número porque SD-018 lo define como la posición del
+ * stream del usuario consumida por la proyección. **SD-018 sigue en PROPOSED** y
+ * debe aprobarse antes de crear cualquier migración de eventos: posición monotónica
+ * por usuario/stream, contador bloqueado en la misma transacción que inserta,
+ * `unique(user_id, stream_position)`, `event_id` como única clave de idempotencia
+ * —comprobada **después** del bloqueo—, watermark por usuario y proyección,
+ * `client_created_at` para la semántica temporal, y ninguna inferencia de ausencia
+ * definitiva mediante timeout.
+ *
+ * SD-015 queda superseded: proponía una secuencia global de PostgreSQL, que no es
+ * transaccional y deja huecos que después hay que gestionar.
  *
  * En Phase 0 no existe ninguna tabla de eventos y este tipo no se usa todavía en
- * ninguna ruta. Es andamiaje del contrato, no una implementación de SD-015.
+ * ninguna ruta. Es andamiaje del contrato, no una implementación.
  */
