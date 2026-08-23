@@ -208,22 +208,29 @@ describe('usuarios de prueba', () => {
   });
 
   it('Playwright ejecuta esa limpieza al terminar', () => {
-    const config = read('playwright.config.ts');
-    expect(config).toContain("globalTeardown: './tests/e2e/global-teardown.ts'");
-    expect(read('tests/e2e/global-teardown.ts')).toContain('purgeTestUsers');
+    // La suite de auth es la única que crea usuarios, y es la única con teardown.
+    const config = read('playwright.auth.config.ts');
+    expect(config).toContain("globalTeardown: './tests/e2e/auth/global-teardown.ts'");
+    expect(read('tests/e2e/auth/global-teardown.ts')).toContain('purgeTestUsers');
   });
 
   it('Playwright deniega el arranque contra un entorno no autorizado', () => {
-    const config = read('playwright.config.ts');
-    expect(config).toContain("globalSetup: './tests/e2e/global-setup.ts'");
+    const config = read('playwright.auth.config.ts');
+    expect(config).toContain("globalSetup: './tests/e2e/auth/global-setup.ts'");
 
-    const setup = read('tests/e2e/global-setup.ts');
+    const setup = read('tests/e2e/auth/global-setup.ts');
     expect(setup).toContain('assertAutomatedTestsAllowed');
     expect(setup).toContain('isLoopbackUrl');
   });
 
-  it('si no puede limpiar, lo dice en lugar de callarlo', () => {
-    expect(read('tests/e2e/global-teardown.ts')).toContain('Limpieza de usuarios E2E omitida');
+  it('si no puede limpiar, la suite no se ejecuta', () => {
+    // Antes avisaba y seguía en verde. Ahora la credencial se exige en el setup,
+    // antes de crear ningún usuario, y el teardown falla si queda alguno.
+    const setup = read('tests/e2e/auth/global-setup.ts');
+    expect(setup).toContain('NO se ejecutan sin credenciales de limpieza');
+
+    const teardown = read('tests/e2e/auth/global-teardown.ts');
+    expect(teardown).toContain('La limpieza dejó');
   });
 });
 

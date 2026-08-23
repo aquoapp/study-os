@@ -69,6 +69,16 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: anon-placeholder-para-escaneo
 
+      - name: Instalar navegadores de Playwright
+        run: npx playwright install --with-deps chromium
+
+      # Los E2E estáticos (arranque, PWA, accesibilidad) no tocan Supabase: se
+      # ejecutan aquí, sin base de datos.
+      - name: test:e2e:static
+        run: npm run test:e2e:static
+        env:
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: anon-placeholder-para-escaneo
+
   # ---------------------------------------------------------------------------
   # Checks contra una instancia real de Supabase.
   # ---------------------------------------------------------------------------
@@ -115,8 +125,10 @@ jobs:
       - name: Instalar navegadores de Playwright
         run: npx playwright install --with-deps chromium
 
-      - name: test:e2e
-        run: npm run test:e2e
+      # Los estáticos ya corrieron en el job anterior; aquí van los de auth, que sí
+      # necesitan Supabase y exigen credenciales de limpieza.
+      - name: test:e2e:auth
+        run: npm run test:e2e:auth
 
       - name: Publicar informe de E2E
         if: failure()

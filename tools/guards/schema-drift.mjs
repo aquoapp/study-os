@@ -24,7 +24,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { REPO_ROOT, read, walk } from './lib/walk.mjs';
@@ -80,8 +80,28 @@ const currentHashes = Object.fromEntries(
   ]),
 );
 
-if (existsSync(LOCK_PATH)) {
+/**
+ * Este check es **estrictamente de solo lectura**.
+ *
+ * Antes, si el lock no existía, lo creaba y seguía adelante. Eso convertía la
+ * primera ejecución en un pase automático: el check registraba como correcto
+ * cualquier estado que encontrase, incluido uno que nadie había revisado. Un
+ * control que se otorga a sí mismo la línea base no controla nada.
+ *
+ * Ahora la ausencia del lock es un fallo, y generarlo es un comando aparte y
+ * explícito: `npm run schema-drift:lock`.
+ */
+if (!existsSync(LOCK_PATH)) {
+  problems.push(
+    'No existe supabase/migrations/.lock.json.\n' +
+      '    El registro de huellas es la línea base contra la que se detecta una migración\n' +
+      '    editada después de aplicarse. Este check NO lo genera: hacerlo convertiría la\n' +
+      '    primera ejecución en un pase automático sobre un estado que nadie ha revisado.\n' +
+      '    Genéralo con `npm run schema-drift:lock` y revisa el diff antes de confirmarlo.',
+  );
+} else {
   const previous = JSON.parse(readFileSync(LOCK_PATH, 'utf8'));
+
   for (const [name, hash] of Object.entries(previous.migrations ?? {})) {
     if (!(name in currentHashes)) {
       problems.push(
@@ -95,13 +115,15 @@ if (existsSync(LOCK_PATH)) {
       );
     }
   }
-} else {
-  writeFileSync(
-    LOCK_PATH,
-    `${JSON.stringify({ version: 1, migrations: currentHashes }, null, 2)}\n`,
-    'utf8',
-  );
-  console.log('  (registro de huellas creado: supabase/migrations/.lock.json)');
+
+  for (const name of Object.keys(currentHashes)) {
+    if (!(name in (previous.migrations ?? {}))) {
+      problems.push(
+        `La migración ${name} no está en el registro de huellas. Añádela con ` +
+          '`npm run schema-drift:lock` y revisa el cambio antes de confirmarlo.',
+      );
+    }
+  }
 }
 
 // -------------------------------------------------- nivel A · CLI reproducible
