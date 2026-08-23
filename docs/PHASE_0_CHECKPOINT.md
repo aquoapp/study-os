@@ -76,8 +76,11 @@ reemisión, y **ocho** contando `3872a84`, que es el commit de la propia reemisi
 
 ## FILES CHANGED
 
-**Ocho commits** hasta la primera reemisión (`3872a84` incluido), y **seis** en esta
-ronda final:
+La ronda correctiva anterior produjo **siete** commits —`ad03070`, `fff6d3e`,
+`d9c7d58`, `d592809`, `1f265a9`, `7dbb444`, `0e80c25`— y **ocho** contando
+`3872a84`, que es el commit de la propia reemisión.
+
+Esta ronda final produce ocho, uno por preocupación más la reemisión:
 
 | Commit | Alcance |
 | --- | --- |
@@ -86,7 +89,9 @@ ronda final:
 | `2058d93` | Guardas conservadoras y procedencia positiva |
 | `9d5bc36` | Contrato de SD-018 corregido |
 | `0c62f06` | Seguridad operacional · suites separadas, reset local, lock read-only |
-| (este) | Veracidad documental y reemisión |
+| `d6b01be` | Veracidad documental · recuentos verificables y procedencia de tokens |
+| `576d48c` | Cómo reproducir los checks desde un checkout limpio |
+| (este) | Reemisión con la evidencia ya ejecutada |
 
 Ficheros nuevos de esta ronda:
 
@@ -137,18 +142,33 @@ Obtenido con `vitest run --project unit --reporter=json`, no a mano.
 
 ### Ejecutado · en verde
 
+Todo lo que sigue se ejecutó sobre `git archive HEAD` extraído en una carpeta vacía,
+**sin `_handoff`**, sin `node_modules` y sin ningún `.env`. La salida íntegra está en
+`AUDIT_EVIDENCE.md`.
+
 | Comando | Resultado |
 | --- | --- |
-| `npm ci` | **PASS** · 0 vulnerabilidades |
+| `npm ci` | **PASS** · 201 paquetes auditados, 0 vulnerabilidades |
 | `npm run typecheck` | **PASS** |
 | `npm run lint` | **PASS** |
 | `npm run format` | **PASS** |
 | `npm run build` | **PASS** · 8 rutas |
-| `npm run test:unit` | **PASS** · **364/364** |
+| `npm run test:unit` | **PASS** · **364/364** en 20 ficheros |
 | `npm run guards` | **PASS** · las cuatro sin hallazgos |
-| `npm run secret-scan` | **PASS** · centinela inyectado, 0 hallazgos |
+| `npm run secret-scan` | **PASS** · construye por sí mismo · 14 ficheros estáticos, 7 rutas, 10 recursos |
 | `npm run test:e2e:static` | **PASS** · **60/60** (30 casos × 2 proyectos) |
-| `npm run verify:originals` | **PASS** · 14/14 artefactos, ejecutado aparte |
+| Fixtures adversariales | **PASS** · **132/132** en 6 ficheros |
+
+Y fuera del checkout limpio, en el árbol de trabajo:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run verify:originals` | **PASS** · 14/14 artefactos |
+| `npm run verify:originals` sin originales | **FALLA con código 1** y dice qué falta |
+
+`npm run build` exige las tres variables `NEXT_PUBLIC_*`. No son secretos —viajan al
+navegador por definición— y la aplicación se niega a asumir un entorno en su lugar.
+El README lo documenta.
 
 ### Escrito · **no ejecutado**
 
