@@ -7,7 +7,13 @@ import {
   assertAutomatedTestsAllowed,
   isLoopbackUrl,
 } from '../../../packages/config/src/destructive';
-import { adminClient, isTestEmail, readTestEnv } from '../../support/supabase-test-env';
+import {
+  adminClient,
+  isTestEmail,
+  newRunId,
+  readTestEnv,
+  RUN_ID_ENV_VAR,
+} from '../../support/supabase-test-env';
 
 /**
  * Guarda de arranque de los E2E de autenticación.
@@ -25,11 +31,31 @@ import { adminClient, isTestEmail, readTestEnv } from '../../support/supabase-te
  *
  * También se comprueba que la limpieza **funciona**, no solo que la clave está
  * presente: una clave inválida daría exactamente el mismo resultado que ninguna.
+ *
+ * ---------------------------------------------------------------------------
+ * Cada ejecución se marca y solo se lleva lo suyo
+ *
+ * El arranque genera un identificador único, lo publica en el entorno para que los
+ * correos que cree el navegador lo lleven incrustado, y anota en un marcador
+ * **propio de esa ejecución** el censo de usuarios de prueba que ya estaban.
+ *
+ * Con un marcador de nombre fijo, dos ejecuciones simultáneas se pisaban el
+ * fichero y la segunda en terminar borraba los usuarios de la primera. El nombre
+ * lleva ahora el identificador, así que no hay fichero que compartir.
  * ---------------------------------------------------------------------------
  */
 
-/** Fichero donde el setup deja constancia para el teardown. */
-export const RUN_MARKER = join(tmpdir(), 'study-os-e2e-auth-run.json');
+/** Fichero donde el arranque deja constancia, uno por ejecución. */
+export function runMarkerPath(runId: string): string {
+  return join(tmpdir(), `study-os-e2e-auth-${runId}.json`);
+}
+
+export interface RunMarker {
+  readonly runId: string;
+  readonly startedAt: string;
+  /** Usuarios de prueba que ya estaban. Ninguno se toca. */
+  readonly preexisting: readonly { id: string; email: string }[];
+}
 
 export default async function globalSetup(): Promise<void> {
   const environment = process.env['NEXT_PUBLIC_ENVIRONMENT'] ?? '';
@@ -70,26 +96,33 @@ export default async function globalSetup(): Promise<void> {
   }
   void data;
 
-  // 4 · censo previo, para que el teardown distinga lo que creó esta ejecución
-  const existing: string[] = [];
+  // 4 · identificador de esta ejecución, publicado para los procesos de test
+  const runId = newRunId();
+  process.env[RUN_ID_ENV_VAR] = runId;
+
+  // 5 · censo previo. No es para borrarlo: es para comprobar al final que sigue ahí.
+  const preexisting: { id: string; email: string }[] = [];
   for (let page = 1; page <= 20; page += 1) {
     const listed = await admin.auth.admin.listUsers({ page, perPage: 200 });
     const users = listed.data?.users ?? [];
     if (users.length === 0) break;
     for (const user of users) {
-      if (isTestEmail(user.email)) existing.push(user.id);
+      if (isTestEmail(user.email)) preexisting.push({ id: user.id, email: user.email ?? '' });
     }
     if (users.length < 200) break;
   }
 
-  writeFileSync(
-    RUN_MARKER,
-    JSON.stringify({ startedAt: new Date().toISOString(), preexisting: existing }, null, 2),
-    'utf8',
-  );
+  const marker: RunMarker = {
+    runId,
+    startedAt: new Date().toISOString(),
+    preexisting,
+  };
+
+  writeFileSync(runMarkerPath(runId), JSON.stringify(marker, null, 2), 'utf8');
 
   console.log(
     `E2E de auth autorizados en "${environment}" (${supabaseUrl}). ` +
-      `Limpieza verificada. Usuarios de prueba preexistentes: ${existing.length}.`,
+      `Ejecución ${runId}. Limpieza verificada. ` +
+      `Usuarios de prueba preexistentes, que NO se tocarán: ${preexisting.length}.`,
   );
 }

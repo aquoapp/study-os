@@ -12,8 +12,29 @@ import { expect, test } from '@playwright/test';
  * REQ-A07 · EC-009 · Manifest §14.
  */
 
-function uniqueEmail(): string {
-  return `p0-forge-${Date.now()}-${Math.floor(Math.random() * 10_000)}@example.test`;
+import { RUN_ID_ENV_VAR, isValidRunId, runScopedEmail } from '../../support/supabase-test-env';
+
+/**
+ * Correo marcado con la ejecución en curso.
+ *
+ * Si el identificador no llegó, la suite se detiene aquí. Un correo sin marca no
+ * lo puede reclamar ninguna limpieza: quedaría huérfano, o —peor— lo borraría la
+ * limpieza de otra ejecución.
+ */
+let ordinal = 0;
+
+function uniqueEmail(label: string): string {
+  const runId = process.env[RUN_ID_ENV_VAR];
+  if (!isValidRunId(runId)) {
+    throw new Error(
+      'No hay identificador de ejecución (' +
+        RUN_ID_ENV_VAR +
+        '). El global-setup de auth es quien lo publica: sin él, los usuarios que cree ' +
+        'esta suite no se pueden atribuir a nadie y la limpieza no puede llevárselos.',
+    );
+  }
+  ordinal += 1;
+  return runScopedEmail(String(runId), label, ordinal);
 }
 
 const PASSWORD = 'Contrasena-De-Prueba-1!';
@@ -22,7 +43,7 @@ test.describe('auth.forgedCookieRejected · INV-116', () => {
   test('una cookie de sesión alterada no concede acceso', async ({ page, context }) => {
     // 1 · sesión legítima
     await page.goto('/registro');
-    await page.getByTestId('email-input').fill(uniqueEmail());
+    await page.getByTestId('email-input').fill(uniqueEmail('forge'));
     await page.getByTestId('password-input').fill(PASSWORD);
     await page.getByTestId('submit-button').click();
     await expect(page).toHaveURL(/\/cuenta/);

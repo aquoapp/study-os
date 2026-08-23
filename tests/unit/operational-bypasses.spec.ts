@@ -217,7 +217,10 @@ describe('E2E de auth · la limpieza es obligatoria', () => {
   });
 
   it('falla si la suite corrió sin que el setup se completara', () => {
-    expect(teardown).toContain('No hay marcador de ejecución');
+    // El marcador pasó a ser propio de cada ejecución, así que lo primero que se
+    // comprueba es que exista el identificador que lo nombra.
+    expect(teardown).toContain('No hay identificador de ejecución');
+    expect(teardown).toContain('No existe el marcador de la ejecución');
   });
 
   it('la verificación posterior vuelve a listar, no se fía del borrado', () => {

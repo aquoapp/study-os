@@ -8,15 +8,36 @@ import { expect, test } from '@playwright/test';
  * identidad mostrada procede de una verificación en servidor (INV-116).
  */
 
-function uniqueEmail(): string {
-  return `p0-e2e-${Date.now()}-${Math.floor(Math.random() * 10_000)}@example.test`;
+import { RUN_ID_ENV_VAR, isValidRunId, runScopedEmail } from '../../support/supabase-test-env';
+
+/**
+ * Correo marcado con la ejecución en curso.
+ *
+ * Si el identificador no llegó, la suite se detiene aquí. Un correo sin marca no
+ * lo puede reclamar ninguna limpieza: quedaría huérfano, o —peor— lo borraría la
+ * limpieza de otra ejecución.
+ */
+let ordinal = 0;
+
+function uniqueEmail(label: string): string {
+  const runId = process.env[RUN_ID_ENV_VAR];
+  if (!isValidRunId(runId)) {
+    throw new Error(
+      'No hay identificador de ejecución (' +
+        RUN_ID_ENV_VAR +
+        '). El global-setup de auth es quien lo publica: sin él, los usuarios que cree ' +
+        'esta suite no se pueden atribuir a nadie y la limpieza no puede llevárselos.',
+    );
+  }
+  ordinal += 1;
+  return runScopedEmail(String(runId), label, ordinal);
 }
 
 const PASSWORD = 'Contrasena-De-Prueba-1!';
 
 test.describe('auth.signup-login · REQ-A07 · INV-116', () => {
   test('alta, sesión verificada, cierre y vuelta a entrar', async ({ page }) => {
-    const email = uniqueEmail();
+    const email = uniqueEmail('e2e');
 
     // --- Alta ---------------------------------------------------------------
     await page.goto('/registro');
@@ -62,7 +83,7 @@ test.describe('auth.signup-login · REQ-A07 · INV-116', () => {
     page,
   }) => {
     await page.goto('/entrar');
-    await page.getByTestId('email-input').fill(uniqueEmail());
+    await page.getByTestId('email-input').fill(uniqueEmail('e2e'));
     await page.getByTestId('password-input').fill('contrasena-que-no-existe');
     await page.getByTestId('submit-button').click();
 
@@ -75,7 +96,7 @@ test.describe('auth.signup-login · REQ-A07 · INV-116', () => {
   });
 
   test('una sesión iniciada no se queda en las pantallas de autenticación', async ({ page }) => {
-    const email = uniqueEmail();
+    const email = uniqueEmail('e2e');
 
     await page.goto('/registro');
     await page.getByTestId('email-input').fill(email);

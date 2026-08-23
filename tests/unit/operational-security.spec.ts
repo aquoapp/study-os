@@ -199,12 +199,14 @@ describe('usuarios de prueba', () => {
     expect(isTestEmail(undefined)).toBe(false);
   });
 
-  it('existe una limpieza en bloque para los que crean los E2E', () => {
+  it('existe una limpieza acotada a la ejecución para los que crean los E2E', () => {
     const source = read('tests/support/supabase-test-env.ts');
     expect(source).toContain('export async function purgeTestUsers');
-    // Solo debe borrar los de prueba: un purgado indiscriminado sería peor que la
-    // fuga que corrige.
-    expect(source).toContain('if (!isTestEmail(user.email)) continue;');
+    // Solo debe borrar los de ESTA ejecución. Borrar todos los de prueba era peor
+    // que la fuga que corregía: contra una instancia compartida, una ejecución se
+    // llevaba por delante los usuarios que otra estaba usando.
+    expect(source).toContain('selectUsersToPurge(users, runId)');
+    expect(source).toContain('if (isEmailOfRun(user.email, runId)) toDelete.push(user);');
   });
 
   it('Playwright ejecuta esa limpieza al terminar', () => {

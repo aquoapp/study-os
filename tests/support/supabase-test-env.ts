@@ -92,15 +92,99 @@ export function anonClient(env: TestEnv): SupabaseClient {
  * Dominio reservado para los usuarios de prueba.
  *
  * `.test` es un TLD reservado por la RFC 2606: no resuelve y no puede pertenecer a
- * nadie. El prefijo permite además localizarlos y borrarlos en bloque.
+ * nadie. El prefijo permite además localizarlos.
  */
 export const TEST_EMAIL_DOMAIN = 'example.test';
 export const TEST_EMAIL_PREFIX = 'p0-';
+
+/**
+ * Variable donde el arranque publica el identificador de la ejecución en curso.
+ *
+ * Los tests corren en procesos distintos del setup: el identificador tiene que
+ * viajar por el entorno para que los correos que crea el navegador lleven la marca
+ * de **esta** ejecución y no de otra.
+ */
+export const RUN_ID_ENV_VAR = 'STUDY_OS_E2E_RUN_ID';
 
 export function isTestEmail(email: string | undefined): boolean {
   return Boolean(
     email && email.startsWith(TEST_EMAIL_PREFIX) && email.endsWith(`@${TEST_EMAIL_DOMAIN}`),
   );
+}
+
+/**
+ * Identificador único de ejecución.
+ *
+ * Marca de tiempo en base 36 más entropía. No pretende ser criptográfico: solo
+ * tiene que ser distinto del de cualquier otra ejecución que pueda estar corriendo
+ * a la vez contra la misma instancia.
+ */
+export function newRunId(): string {
+  const stamp = Date.now().toString(36);
+  const noise = Math.random().toString(36).slice(2, 10).padEnd(8, '0');
+  return `${stamp}${noise}`;
+}
+
+/** Forma admitida de un identificador de ejecución dentro de un correo. */
+const RUN_ID_SHAPE = /^[a-z0-9]{8,32}$/;
+
+export function isValidRunId(runId: string | undefined): boolean {
+  return typeof runId === 'string' && RUN_ID_SHAPE.test(runId);
+}
+
+/**
+ * Correo de prueba **marcado con la ejecución que lo creó**.
+ *
+ * Forma: `p0-<runId>-<etiqueta>-<n>@example.test`. El identificador va justo
+ * después del prefijo, en su propio segmento, para que la pertenencia pueda
+ * comprobarse sin ambigüedad: un correo de otra ejecución cuyo identificador
+ * empiece por el mismo texto no coincide, porque la comparación incluye el guion
+ * que cierra el segmento.
+ */
+export function runScopedEmail(runId: string, label: string, ordinal: number): string {
+  if (!isValidRunId(runId)) {
+    throw new Error(
+      `Identificador de ejecución inválido: "${runId}". Sin él no se puede saber qué ` +
+        'usuarios ha creado esta ejecución, y la limpieza pasaría a borrar los de otras.',
+    );
+  }
+  return `${TEST_EMAIL_PREFIX}${runId}-${label}-${ordinal}@${TEST_EMAIL_DOMAIN}`;
+}
+
+/** ¿Este correo lo creó **esta** ejecución? */
+export function isEmailOfRun(email: string | undefined, runId: string | undefined): boolean {
+  if (!isTestEmail(email) || !isValidRunId(runId)) return false;
+  return String(email).startsWith(`${TEST_EMAIL_PREFIX}${runId}-`);
+}
+
+export interface PurgeSelection<T> {
+  readonly toDelete: readonly T[];
+  readonly preserved: readonly T[];
+}
+
+/**
+ * Decide, sin tocar la red, qué usuarios borra la limpieza.
+ *
+ * Es una función pura a propósito. La regla de «solo los míos» es la parte que
+ * puede equivocarse de forma silenciosa y cara, y una regla que solo se ejecuta
+ * cuando hay una instancia de Supabase delante no se prueba nunca.
+ *
+ * Se **preserva** todo lo demás: los usuarios que ya estaban, los de ejecuciones
+ * concurrentes y cualquier cuenta que no sea de prueba.
+ */
+export function selectUsersToPurge<T extends { email?: string | undefined }>(
+  users: readonly T[],
+  runId: string,
+): PurgeSelection<T> {
+  const toDelete: T[] = [];
+  const preserved: T[] = [];
+
+  for (const user of users) {
+    if (isEmailOfRun(user.email, runId)) toDelete.push(user);
+    else preserved.push(user);
+  }
+
+  return { toDelete, preserved };
 }
 
 export interface TestUser {
@@ -113,6 +197,21 @@ export interface TestUser {
 let counter = 0;
 
 /**
+ * Identificador de la ejecución en curso.
+ *
+ * Lo publica el arranque de los E2E. Las suites de integración y de RLS no pasan
+ * por Playwright, así que generan uno al vuelo la primera vez: también ellas deben
+ * marcar lo que crean.
+ */
+export function currentRunId(): string {
+  const fromEnv = process.env[RUN_ID_ENV_VAR];
+  if (isValidRunId(fromEnv)) return String(fromEnv);
+  const generated = newRunId();
+  process.env[RUN_ID_ENV_VAR] = generated;
+  return generated;
+}
+
+/**
  * Crea un usuario confirmado y devuelve un cliente ya autenticado como él.
  *
  * El cliente se autentica de verdad (`signInWithPassword`), de modo que las
@@ -120,7 +219,7 @@ let counter = 0;
  */
 export async function createTestUser(env: TestEnv, label: string): Promise<TestUser> {
   counter += 1;
-  const email = `${TEST_EMAIL_PREFIX}${label}-${Date.now()}-${counter}@${TEST_EMAIL_DOMAIN}`;
+  const email = runScopedEmail(currentRunId(), label, counter);
   const password = `Prueba-${Math.random().toString(36).slice(2)}-${counter}A!`;
 
   const admin = adminClient(env);
@@ -153,19 +252,37 @@ export async function deleteTestUser(env: TestEnv, userId: string): Promise<void
 }
 
 /**
- * Borra **todos** los usuarios de prueba que queden en la instancia.
+ * Borra los usuarios de prueba **de una ejecución concreta**.
  *
- * Necesario porque los E2E dan de alta usuarios a través de la interfaz y no
- * pueden borrarlos por sí mismos: el navegador no tiene rol de servicio. Sin esta
- * limpieza, cada ejecución dejaba cuentas huérfanas acumulándose — un defecto que
- * el informe de checkpoint anterior describía como resuelto sin serlo.
+ * ---------------------------------------------------------------------------
+ * Por qué el alcance importa
  *
- * Solo toca correos con el prefijo y el dominio reservados. Devuelve cuántos borró
- * para que la limpieza sea observable y no un efecto invisible.
+ * La versión anterior borraba todo lo que llevara el prefijo de prueba. Contra una
+ * instancia local de una sola persona eso parece inofensivo; contra CI con dos
+ * trabajos en paralelo, o contra una instancia compartida, significa que una
+ * ejecución borra los usuarios que otra está usando. El síntoma es un fallo
+ * intermitente en la ejecución **ajena**, que es la clase de fallo que más tarda en
+ * atribuirse a su causa.
+ *
+ * Ahora solo se borra lo que lleva la marca de esta ejecución. Todo lo demás se
+ * cuenta como preservado y se informa, para que la limpieza sea observable y no un
+ * efecto invisible.
+ * ---------------------------------------------------------------------------
  */
-export async function purgeTestUsers(env: TestEnv): Promise<{ deleted: number; scanned: number }> {
+export async function purgeTestUsers(
+  env: TestEnv,
+  runId: string,
+): Promise<{ deleted: number; preserved: number; scanned: number }> {
+  if (!isValidRunId(runId)) {
+    throw new Error(
+      `No se puede limpiar sin un identificador de ejecución válido (recibido: "${runId}"). ` +
+        'Sin él, la limpieza no distingue sus usuarios de los de otra ejecución.',
+    );
+  }
+
   const admin = adminClient(env);
   let deleted = 0;
+  let preserved = 0;
   let scanned = 0;
 
   for (let page = 1; page <= 20; page += 1) {
@@ -176,8 +293,10 @@ export async function purgeTestUsers(env: TestEnv): Promise<{ deleted: number; s
     if (users.length === 0) break;
     scanned += users.length;
 
-    for (const user of users) {
-      if (!isTestEmail(user.email)) continue;
+    const selection = selectUsersToPurge(users, runId);
+    preserved += selection.preserved.length;
+
+    for (const user of selection.toDelete) {
       await admin.auth.admin.deleteUser(user.id);
       deleted += 1;
     }
@@ -185,5 +304,5 @@ export async function purgeTestUsers(env: TestEnv): Promise<{ deleted: number; s
     if (users.length < 200) break;
   }
 
-  return { deleted, scanned };
+  return { deleted, preserved, scanned };
 }
