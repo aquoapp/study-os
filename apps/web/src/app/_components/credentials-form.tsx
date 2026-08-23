@@ -42,7 +42,7 @@ export function CredentialsForm({
           required
           autoComplete="email"
           data-testid="email-input"
-          style={{ padding: 8, borderRadius: 8, border: '1px solid var(--so-color-border-strong)' }}
+          style={{ padding: 8, borderRadius: 8, border: '1px solid var(--so-color-slate)' }}
         />
       </label>
 
@@ -55,7 +55,7 @@ export function CredentialsForm({
           minLength={8}
           autoComplete={passwordAutoComplete}
           data-testid="password-input"
-          style={{ padding: 8, borderRadius: 8, border: '1px solid var(--so-color-border-strong)' }}
+          style={{ padding: 8, borderRadius: 8, border: '1px solid var(--so-color-slate)' }}
         />
       </label>
 
@@ -63,7 +63,7 @@ export function CredentialsForm({
         <p
           role="alert"
           data-testid="auth-error"
-          style={{ color: 'var(--so-color-danger)', margin: 0 }}
+          style={{ color: 'var(--so-color-brick)', margin: 0 }}
         >
           <span aria-hidden="true">⚠ </span>
           {state.error}
@@ -75,10 +75,10 @@ export function CredentialsForm({
         disabled={pending}
         data-testid="submit-button"
         style={{
-          background: 'var(--so-color-accent)',
-          color: 'var(--so-color-text-on-accent)',
+          background: 'var(--so-color-navy)',
+          color: 'var(--so-color-on-dark)',
           border: 'none',
-          borderRadius: 'var(--so-radius-md)',
+          borderRadius: 'var(--so-radius-control)',
           padding: '0 16px',
           minHeight: 'var(--so-touch-target-min)',
           cursor: pending ? 'progress' : 'pointer',

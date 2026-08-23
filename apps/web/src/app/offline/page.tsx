@@ -30,9 +30,7 @@ export default function OfflinePage() {
     <div style={{ maxWidth: 640, margin: '0 auto', padding: 24 }} data-testid="offline-page">
       <h1>Sin conexión</h1>
       <p>Esta pantalla necesita conexión y ahora mismo no la hay.</p>
-      <p style={{ color: 'var(--so-color-text-secondary)' }}>
-        Vuelve a intentarlo cuando se restablezca.
-      </p>
+      <p style={{ color: 'var(--so-color-slate)' }}>Vuelve a intentarlo cuando se restablezca.</p>
     </div>
   );
 }

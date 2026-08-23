@@ -1,28 +1,27 @@
 /**
- * Fundación de tokens del Design System.
+ * Tokens del Design System.
  *
- * REQ-A06 · «Tokens del Design System (color, espaciado, radio, tipografía, 44px)»
- * P0-S7   · «Paquete design-system con tokens y test de contraste»
- * DS-08 / INV-105 · ningún estado se comunica solo por color
+ * **Fuente:** `STUDY_OS_Design_System_v1.0` §2, §3, §13 — FROZEN FOR MVP HANDOFF.
+ * SHA-256 del documento: `62a85885709cc2dc9ed4cffd71ed852ed1e54cf0962940ff53da93dd8c357aa4`
+ * (registrado en `docs/PROVENANCE.md`).
+ *
+ * REQ-A06 · P0-S7 · dirección visual: CALM INTELLIGENCE.
  *
  * ---------------------------------------------------------------------------
- * ESTADO DE ESTOS VALORES
+ * Todos los valores de este fichero están tomados del documento
  *
- * `STUDY_OS_Design_System_v1.0` **no está disponible** en el material de origen
- * (ver `docs/PROVENANCE.md` §3.1 · AMB-01 abierto para ese documento). Por tanto:
+ * La entrega anterior inventó una paleta porque el Design System no estaba
+ * disponible, y la auditoría externa lo rechazó. El documento apareció en
+ * `_handoff/originals/` durante esta ronda correctiva y se verificó: PDF 1.4
+ * auténtico, 11 páginas, texto con fuentes incrustadas, cero imágenes.
  *
- *   - la **estructura** de tokens es la que exige REQ-A06 y es la que los tests
- *     verifican como contrato;
- *   - los **valores cromáticos concretos** son una base provisional coherente con
- *     la dirección «Calm Intelligence» declarada en Manifest §5 y §16, y quedan
- *     sujetos a sustitución cuando el Design System esté disponible.
- *
- * Sustituir un valor no exige ADR. Cambiar la **estructura** —quitar una escala,
- * romper un par de contraste, introducir tokens de gamificación (EC-017)— sí.
+ * Nada de lo que sigue es una elección de diseño propia. Cuando el documento no
+ * especifica algo —el caso más visible es el **tema oscuro**, que no menciona— aquí
+ * no aparece. Añadirlo sería volver a inventar.
  * ---------------------------------------------------------------------------
  */
 
-/** Escala de espaciado en píxeles. Base 4. */
+/** Escala de espaciado. §2 · «Spacing 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64». */
 export const SPACING = {
   none: 0,
   xs: 4,
@@ -37,51 +36,70 @@ export const SPACING = {
 
 export type SpacingToken = keyof typeof SPACING;
 
-/** Radios de esquina en píxeles. */
+/**
+ * Radios. §2 · «micro: 8 · control: 12 · card: 16 · hero/resume: 20».
+ *
+ * Los nombres son los del documento. `none` y `full` se añaden porque un sistema de
+ * radios necesita el caso cero y el caso píldora, y ninguno contradice nada.
+ */
 export const RADIUS = {
   none: 0,
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
+  micro: 8,
+  control: 12,
+  card: 16,
+  hero: 20,
   full: 9999,
 } as const;
 
 export type RadiusToken = keyof typeof RADIUS;
 
 /**
- * Tamaño mínimo de diana táctil.
+ * Diana táctil mínima.
  *
- * REQ-A06 lo nombra explícitamente (44px) y Manifest §20 lo exige como puerta de
- * accesibilidad. Es un mínimo, no una sugerencia.
+ * §2 · «Minimum interactive target: 44 × 44 px», reiterado en §14 como requisito
+ * P0 de accesibilidad.
  */
 export const TOUCH_TARGET_MIN_PX = 44 as const;
 
-/** Tipografía: familias, escala y pesos. Comodidad de lectura editorial (Manifest §16). */
+/**
+ * Tipografía. §2 · «Typography direction».
+ *
+ * El documento no nombra una familia concreta: pide «a modern humanist/grotesk sans
+ * with strong long-form readability». Las pilas de aquí son la lectura mínima de esa
+ * instrucción con fuentes de sistema; **no** son una elección de marca y se
+ * sustituyen cuando se decida la familia.
+ *
+ * Los tamaños sí son del documento, que los da como rangos. Se conservan como
+ * rangos en lugar de elegir un punto intermedio arbitrario.
+ */
 export const TYPOGRAPHY = {
   family: {
-    /** Texto largo y contenido de estudio. */
-    reading: "'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif",
+    /** Texto largo y contenido de estudio · §2 «strong long-form readability». */
+    reading:
+      "'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif",
     /** Interfaz, etiquetas y datos. */
     ui: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-    /** Código y valores técnicos. */
+    /** §2 · «Use tabular numerals for timers, readiness and numeric study data». */
+    numeric: "'Segoe UI', system-ui, ui-sans-serif, sans-serif",
     mono: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
   },
+  /** §2 · rangos declarados por el documento. */
   size: {
-    xs: 12,
-    sm: 14,
-    base: 16,
-    lg: 18,
-    xl: 20,
-    '2xl': 24,
-    '3xl': 30,
-    '4xl': 38,
+    metadataMin: 12,
+    metadataMax: 13,
+    secondaryMin: 14,
+    secondaryMax: 15,
+    bodyMin: 16,
+    bodyMax: 18,
+    titleMin: 20,
+    titleMax: 24,
+    headlineMin: 28,
+    headlineMax: 34,
   },
   lineHeight: {
     tight: 1.2,
     snug: 1.35,
     normal: 1.5,
-    /** Lectura larga: interlineado generoso. */
     reading: 1.65,
   },
   weight: {
@@ -90,211 +108,236 @@ export const TYPOGRAPHY = {
     semibold: 600,
     bold: 700,
   },
+  /** §2 · numerales tabulares para temporizadores y datos numéricos. */
+  numericVariant: 'tabular-nums',
 } as const;
 
 /**
- * Color.
+ * Paleta. §2 · «Core tokens · Colour».
  *
- * Cada tema declara los mismos roles. Un rol ausente en un tema es un fallo de
- * tipos, no un problema descubierto en producción.
+ * Los diez valores son literales del documento. El nombre de cada rol conserva el
+ * del documento para que la trazabilidad sea directa.
+ *
+ * El documento define **una sola paleta**. No especifica tema oscuro, así que aquí
+ * no hay ninguno: un tema oscuro exigiría decidir diez colores más, y eso es una
+ * decisión de diseño que no corresponde tomar aquí.
  */
-export interface ColorScale {
-  /** Fondo de página. */
-  readonly surface: string;
-  /** Fondo de superficie elevada (tarjeta, panel). */
-  readonly surfaceRaised: string;
-  /** Fondo hundido (campo, zona de lectura). */
-  readonly surfaceSunken: string;
-  /** Texto principal sobre `surface` / `surfaceRaised`. */
-  readonly textPrimary: string;
-  /** Texto secundario sobre `surface` / `surfaceRaised`. */
-  readonly textSecondary: string;
-  /** Texto sobre fondos de acento y semánticos. */
-  readonly textOnAccent: string;
-  /** Separadores no interactivos. */
-  readonly border: string;
-  /** Bordes de componentes interactivos y contornos de foco. */
-  readonly borderStrong: string;
-  /** Acento de acción primaria. */
-  readonly accent: string;
-  /** Acento en estado presionado. */
-  readonly accentPressed: string;
-  /** Anillo de foco. */
-  readonly focusRing: string;
-  readonly success: string;
-  readonly warning: string;
-  readonly danger: string;
-  readonly info: string;
-}
-
-export const COLOR: Readonly<Record<'light' | 'dark', ColorScale>> = {
-  light: {
-    surface: '#FBFBFD',
-    surfaceRaised: '#FFFFFF',
-    surfaceSunken: '#F1F2F6',
-    textPrimary: '#14181F',
-    textSecondary: '#4A5260',
-    textOnAccent: '#FFFFFF',
-    border: '#DDE0E7',
-    borderStrong: '#6B7280',
-    accent: '#2A4FBF',
-    accentPressed: '#1E3A93',
-    focusRing: '#1E3A93',
-    success: '#1B6B45',
-    warning: '#7A5200',
-    danger: '#A82318',
-    info: '#1A5A85',
-  },
-  dark: {
-    surface: '#101318',
-    surfaceRaised: '#171B22',
-    surfaceSunken: '#0B0E12',
-    textPrimary: '#EEF1F6',
-    textSecondary: '#B3BCCB',
-    textOnAccent: '#0B0E12',
-    border: '#2A303A',
-    borderStrong: '#8C97A8',
-    accent: '#9DB8FF',
-    accentPressed: '#7E9EF0',
-    focusRing: '#9DB8FF',
-    success: '#6FD3A2',
-    warning: '#E5B65C',
-    danger: '#F09189',
-    info: '#7FC1E8',
-  },
+export const COLOR = {
+  /** Fondo de página · Canvas / Warm Ivory. */
+  canvas: '#F7F3EA',
+  /** Superficie elevada · Surface / Soft White. */
+  surface: '#FFFDF9',
+  /** Texto principal · Deep Ink. */
+  ink: '#17262D',
+  /** Acción primaria · Primary / Deep Navy. */
+  navy: '#0B2D3A',
+  /** Adaptación y estados de aprendizaje · Adaptive / Teal. */
+  teal: '#2B8C8C',
+  /** Micro-acento, y solo eso · Signature / Magenta. */
+  magenta: '#C13A8B',
+  /** Éxito · Success / Forest. */
+  forest: '#2F6B57',
+  /** Aviso · Warning / Amber. */
+  amber: '#A56A18',
+  /** Error · Error / Brick. */
+  brick: '#A8473F',
+  /** Texto secundario y bordes · Muted / Slate. */
+  slate: '#66757C',
+  /** Papel sobre fondos oscuros. No es un token de marca de §2: es Soft White. */
+  onDark: '#FFFDF9',
 } as const;
 
-export type ThemeName = keyof typeof COLOR;
+export type ColorToken = keyof typeof COLOR;
 
 /**
- * Pares de contraste que el test `tokens.contrast.spec` verifica.
+ * Roles semánticos sobre la paleta.
  *
- * `minRatio` sigue WCAG 2.1 AA: 4.5 para texto normal, 3.0 para texto grande y para
- * componentes de interfaz y contornos de foco (1.4.11).
+ * §2 · «No semantic state may depend on colour alone», reiterado en §14. Cada rol
+ * declara el primer plano que sí alcanza el contraste exigido: el color acompaña a
+ * la etiqueta y al icono, nunca los sustituye.
+ */
+export const SEMANTIC_ROLES = {
+  accent: { background: 'navy', foreground: 'onDark' },
+  success: { background: 'forest', foreground: 'onDark' },
+  error: { background: 'brick', foreground: 'onDark' },
+  signature: { background: 'magenta', foreground: 'onDark' },
+} as const satisfies Record<string, { background: ColorToken; foreground: ColorToken }>;
+
+/**
+ * Colores que **no** pueden llevar texto normal encima.
+ *
+ * Con la paleta congelada, ningún primer plano alcanza 4.5:1 sobre ellos:
+ * `onDark` sobre `teal` da 3.95 y sobre `amber` 4.42. Se acotan aquí a superficies
+ * no textuales —indicadores, bordes, iconografía, texto grande— para que la
+ * limitación sea explícita y no se descubra en una auditoría de accesibilidad.
+ *
+ * La contradicción entre §2 (paleta) y §14 (AA como P0) está registrada como
+ * **SD-019** y bloquea el cierre de REQ-A06.
+ */
+export const NON_TEXT_BACKGROUNDS = ['teal', 'amber'] as const;
+
+export type NonTextBackground = (typeof NON_TEXT_BACKGROUNDS)[number];
+
+/** Movimiento, en milisegundos. §13. */
+export const MOTION = {
+  answerSubmitMin: 150,
+  answerSubmitMax: 220,
+  sessionResumeMin: 200,
+  sessionResumeMax: 300,
+  replanMin: 250,
+  replanMax: 350,
+  masteryStateChange: 200,
+  drawerMin: 180,
+  drawerMax: 240,
+  progressRevealMin: 250,
+  progressRevealMax: 400,
+} as const;
+
+/**
+ * Retícula. §3 · «Layout».
+ *
+ * El documento describe tres contextos por número de columnas y márgenes, no por
+ * anchos de ruptura. Los anchos de `BREAKPOINTS` son los mínimos coherentes con la
+ * única referencia numérica que da: 390 px lógicos en móvil.
+ */
+export const LAYOUT = {
+  mobile: {
+    referenceWidth: 390,
+    referenceHeight: 844,
+    columns: 4,
+    marginMin: 16,
+    marginMax: 20,
+    gutter: 12,
+  },
+  tablet: { columns: 8, marginMin: 24 },
+  desktop: { columns: 12, marginMin: 32, marginMax: 48 },
+} as const;
+
+export const BREAKPOINTS = {
+  mobile: 390,
+  tablet: 768,
+  desktop: 1024,
+  wide: 1280,
+} as const;
+
+/**
+ * Pares de contraste verificados por `tokens.contrast.spec`.
+ *
+ * WCAG 2.1 AA: 4.5 para texto normal; 3.0 para texto grande, componentes de
+ * interfaz y contornos de foco (1.4.11). §14 lo exige como P0.
  */
 export interface ContrastRequirement {
   readonly label: string;
-  readonly foreground: keyof ColorScale;
-  readonly background: keyof ColorScale;
+  readonly foreground: ColorToken;
+  readonly background: ColorToken;
   readonly minRatio: number;
 }
 
 export const CONTRAST_REQUIREMENTS: readonly ContrastRequirement[] = [
+  { label: 'texto principal sobre canvas', foreground: 'ink', background: 'canvas', minRatio: 4.5 },
   {
-    label: 'texto principal sobre fondo',
-    foreground: 'textPrimary',
+    label: 'texto principal sobre superficie',
+    foreground: 'ink',
     background: 'surface',
     minRatio: 4.5,
   },
   {
-    label: 'texto principal sobre superficie elevada',
-    foreground: 'textPrimary',
-    background: 'surfaceRaised',
-    minRatio: 4.5,
-  },
-  {
-    label: 'texto principal sobre superficie hundida',
-    foreground: 'textPrimary',
-    background: 'surfaceSunken',
-    minRatio: 4.5,
-  },
-  {
-    label: 'texto secundario sobre fondo',
-    foreground: 'textSecondary',
+    label: 'texto secundario sobre superficie',
+    foreground: 'slate',
     background: 'surface',
     minRatio: 4.5,
   },
   {
-    label: 'texto secundario sobre superficie elevada',
-    foreground: 'textSecondary',
-    background: 'surfaceRaised',
+    label: 'texto sobre acción primaria',
+    foreground: 'onDark',
+    background: 'navy',
     minRatio: 4.5,
   },
-  { label: 'texto sobre acento', foreground: 'textOnAccent', background: 'accent', minRatio: 4.5 },
+  { label: 'texto sobre éxito', foreground: 'onDark', background: 'forest', minRatio: 4.5 },
+  { label: 'texto sobre error', foreground: 'onDark', background: 'brick', minRatio: 4.5 },
+  { label: 'texto sobre micro-acento', foreground: 'onDark', background: 'magenta', minRatio: 4.5 },
   {
-    label: 'texto sobre acento presionado',
-    foreground: 'textOnAccent',
-    background: 'accentPressed',
-    minRatio: 4.5,
-  },
-  { label: 'texto sobre éxito', foreground: 'textOnAccent', background: 'success', minRatio: 4.5 },
-  { label: 'texto sobre aviso', foreground: 'textOnAccent', background: 'warning', minRatio: 4.5 },
-  { label: 'texto sobre error', foreground: 'textOnAccent', background: 'danger', minRatio: 4.5 },
-  {
-    label: 'texto sobre información',
-    foreground: 'textOnAccent',
-    background: 'info',
+    label: 'acción primaria como texto sobre canvas',
+    foreground: 'navy',
+    background: 'canvas',
     minRatio: 4.5,
   },
   {
-    label: 'borde interactivo sobre fondo',
-    foreground: 'borderStrong',
+    label: 'éxito como texto sobre canvas',
+    foreground: 'forest',
+    background: 'canvas',
+    minRatio: 4.5,
+  },
+  {
+    label: 'error como texto sobre canvas',
+    foreground: 'brick',
+    background: 'canvas',
+    minRatio: 4.5,
+  },
+  // Componentes de interfaz y contornos: 3:1 (WCAG 1.4.11).
+  {
+    label: 'borde y metadato sobre canvas',
+    foreground: 'slate',
+    background: 'canvas',
+    minRatio: 3,
+  },
+  { label: 'contorno de foco sobre canvas', foreground: 'navy', background: 'canvas', minRatio: 3 },
+  {
+    label: 'contorno de foco sobre superficie',
+    foreground: 'navy',
     background: 'surface',
     minRatio: 3,
   },
   {
-    label: 'anillo de foco sobre fondo',
-    foreground: 'focusRing',
-    background: 'surface',
+    label: 'indicador adaptativo sobre canvas',
+    foreground: 'teal',
+    background: 'canvas',
     minRatio: 3,
   },
   {
-    label: 'anillo de foco sobre superficie elevada',
-    foreground: 'focusRing',
-    background: 'surfaceRaised',
+    label: 'aviso como indicador sobre canvas',
+    foreground: 'amber',
+    background: 'canvas',
+    minRatio: 3,
+  },
+  {
+    label: 'micro-acento como indicador sobre canvas',
+    foreground: 'magenta',
+    background: 'canvas',
     minRatio: 3,
   },
 ] as const;
 
-/**
- * Duraciones de movimiento. Toda animación debe respetar `prefers-reduced-motion`
- * (Manifest §20).
- */
-export const MOTION = {
-  instant: 0,
-  fast: 120,
-  base: 200,
-  slow: 320,
-} as const;
-
-/** Puntos de ruptura responsive, en píxeles. Móvil primero. */
-export const BREAKPOINTS = {
-  sm: 480,
-  md: 768,
-  lg: 1024,
-  xl: 1280,
-} as const;
-
-/**
- * Contrato de tokens que `tokens.contract.spec` verifica.
- *
- * Existe para que quitar una escala completa sea un fallo de test y no un
- * descubrimiento tardío en una pantalla.
- */
+/** Contrato de tokens que `tokens.contract.spec` verifica. */
 export const TOKEN_CONTRACT = {
-  requiredScales: ['SPACING', 'RADIUS', 'TYPOGRAPHY', 'COLOR', 'MOTION', 'BREAKPOINTS'] as const,
-  requiredColorRoles: [
-    'surface',
-    'surfaceRaised',
-    'surfaceSunken',
-    'textPrimary',
-    'textSecondary',
-    'textOnAccent',
-    'border',
-    'borderStrong',
-    'accent',
-    'accentPressed',
-    'focusRing',
-    'success',
-    'warning',
-    'danger',
-    'info',
+  source: 'STUDY_OS_Design_System_v1.0',
+  requiredScales: [
+    'SPACING',
+    'RADIUS',
+    'TYPOGRAPHY',
+    'COLOR',
+    'MOTION',
+    'BREAKPOINTS',
+    'LAYOUT',
   ] as const,
-  themes: ['light', 'dark'] as const,
+  /** Los diez colores de §2, más el papel para fondos oscuros. */
+  requiredColorTokens: [
+    'canvas',
+    'surface',
+    'ink',
+    'navy',
+    'teal',
+    'magenta',
+    'forest',
+    'amber',
+    'brick',
+    'slate',
+    'onDark',
+  ] as const,
   touchTargetMinPx: TOUCH_TARGET_MIN_PX,
   /**
-   * EC-017 · sin XP, monedas, ranking ni economía de rachas. Ningún token puede
-   * nombrar estos conceptos.
+   * §15 · anti-patrones prohibidos, y EC-017 · sin economía de compromiso. Ningún
+   * token puede nombrar estos conceptos.
    */
   forbiddenTokenSubstrings: [
     'xp',
@@ -304,5 +347,9 @@ export const TOKEN_CONTRACT = {
     'badge',
     'trophy',
     'confetti',
+    'sparkle',
+    'mascot',
+    'orb',
+    'glow',
   ] as const,
 } as const;

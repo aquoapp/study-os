@@ -4,11 +4,12 @@
  * Espejo en CSS de `tokens.ts`. `tests/unit/tokens.contract.spec.ts` compara ambos
  * ficheros: si divergen, el test falla. No editar uno sin el otro.
  *
- * REQ-A06 · P0-S7
+ * Fuente de los valores: `STUDY_OS_Design_System_v1.0` §2, §3, §13.
+ * REQ-A06 · P0-S7 · dirección visual: CALM INTELLIGENCE.
  * --------------------------------------------------------------------------- */
 
 :root {
-  /* Espaciado — base 4 */
+  /* Espaciado · §2 */
   --so-space-none: 0px;
   --so-space-xs: 4px;
   --so-space-sm: 8px;
@@ -19,30 +20,34 @@
   --so-space-3xl: 48px;
   --so-space-4xl: 64px;
 
-  /* Radio */
+  /* Radio · §2 */
   --so-radius-none: 0px;
-  --so-radius-sm: 4px;
-  --so-radius-md: 8px;
-  --so-radius-lg: 12px;
-  --so-radius-xl: 16px;
+  --so-radius-micro: 8px;
+  --so-radius-control: 12px;
+  --so-radius-card: 16px;
+  --so-radius-hero: 20px;
   --so-radius-full: 9999px;
 
-  /* Diana táctil mínima — REQ-A06, Manifest §20 */
+  /* Diana táctil mínima · §2 y §14 */
   --so-touch-target-min: 44px;
 
-  /* Tipografía */
-  --so-font-reading: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  /* Tipografía · §2 */
+  --so-font-reading:
+    'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif;
   --so-font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --so-font-numeric: 'Segoe UI', system-ui, ui-sans-serif, sans-serif;
   --so-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
-  --so-text-xs: 12px;
-  --so-text-sm: 14px;
-  --so-text-base: 16px;
-  --so-text-lg: 18px;
-  --so-text-xl: 20px;
-  --so-text-2xl: 24px;
-  --so-text-3xl: 30px;
-  --so-text-4xl: 38px;
+  --so-text-metadata-min: 12px;
+  --so-text-metadata-max: 13px;
+  --so-text-secondary-min: 14px;
+  --so-text-secondary-max: 15px;
+  --so-text-body-min: 16px;
+  --so-text-body-max: 18px;
+  --so-text-title-min: 20px;
+  --so-text-title-max: 24px;
+  --so-text-headline-min: 28px;
+  --so-text-headline-max: 34px;
 
   --so-leading-tight: 1.2;
   --so-leading-snug: 1.35;
@@ -54,70 +59,35 @@
   --so-weight-semibold: 600;
   --so-weight-bold: 700;
 
-  /* Movimiento */
-  --so-motion-instant: 0ms;
-  --so-motion-fast: 120ms;
-  --so-motion-base: 200ms;
-  --so-motion-slow: 320ms;
+  /* Movimiento · §13 */
+  --so-motion-answer-submit-min: 150ms;
+  --so-motion-answer-submit-max: 220ms;
+  --so-motion-session-resume-min: 200ms;
+  --so-motion-session-resume-max: 300ms;
+  --so-motion-replan-min: 250ms;
+  --so-motion-replan-max: 350ms;
+  --so-motion-mastery-state-change: 200ms;
+  --so-motion-drawer-min: 180ms;
+  --so-motion-drawer-max: 240ms;
+  --so-motion-progress-reveal-min: 250ms;
+  --so-motion-progress-reveal-max: 400ms;
 
-  /* Color · tema claro (por defecto) */
-  --so-color-surface: #fbfbfd;
-  --so-color-surface-raised: #ffffff;
-  --so-color-surface-sunken: #f1f2f6;
-  --so-color-text-primary: #14181f;
-  --so-color-text-secondary: #4a5260;
-  --so-color-text-on-accent: #ffffff;
-  --so-color-border: #dde0e7;
-  --so-color-border-strong: #6b7280;
-  --so-color-accent: #2a4fbf;
-  --so-color-accent-pressed: #1e3a93;
-  --so-color-focus-ring: #1e3a93;
-  --so-color-success: #1b6b45;
-  --so-color-warning: #7a5200;
-  --so-color-danger: #a82318;
-  --so-color-info: #1a5a85;
+  /* Color · §2 · una sola paleta: el documento no especifica tema oscuro */
+  --so-color-canvas: #f7f3ea;
+  --so-color-surface: #fffdf9;
+  --so-color-ink: #17262d;
+  --so-color-navy: #0b2d3a;
+  --so-color-teal: #2b8c8c;
+  --so-color-magenta: #c13a8b;
+  --so-color-forest: #2f6b57;
+  --so-color-amber: #a56a18;
+  --so-color-brick: #a8473f;
+  --so-color-slate: #66757c;
+  --so-color-on-dark: #fffdf9;
 
-  color-scheme: light dark;
-}
-
-/* El tema se resuelve por preferencia del sistema y puede forzarse con
-   `data-theme` en el elemento raíz. Ambas direcciones deben funcionar. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --so-color-surface: #101318;
-    --so-color-surface-raised: #171b22;
-    --so-color-surface-sunken: #0b0e12;
-    --so-color-text-primary: #eef1f6;
-    --so-color-text-secondary: #b3bccb;
-    --so-color-text-on-accent: #0b0e12;
-    --so-color-border: #2a303a;
-    --so-color-border-strong: #8c97a8;
-    --so-color-accent: #9db8ff;
-    --so-color-accent-pressed: #7e9ef0;
-    --so-color-focus-ring: #9db8ff;
-    --so-color-success: #6fd3a2;
-    --so-color-warning: #e5b65c;
-    --so-color-danger: #f09189;
-    --so-color-info: #7fc1e8;
-  }
-}
-
-:root[data-theme='dark'] {
-  --so-color-surface: #101318;
-  --so-color-surface-raised: #171b22;
-  --so-color-surface-sunken: #0b0e12;
-  --so-color-text-primary: #eef1f6;
-  --so-color-text-secondary: #b3bccb;
-  --so-color-text-on-accent: #0b0e12;
-  --so-color-border: #2a303a;
-  --so-color-border-strong: #8c97a8;
-  --so-color-accent: #9db8ff;
-  --so-color-accent-pressed: #7e9ef0;
-  --so-color-focus-ring: #9db8ff;
-  --so-color-success: #6fd3a2;
-  --so-color-warning: #e5b65c;
-  --so-color-danger: #f09189;
-  --so-color-info: #7fc1e8;
+  /* El documento define una paleta clara. Declararlo evita que el navegador
+     invierta colores por su cuenta y produzca combinaciones sin verificar. */
+  color-scheme: light;
 }
 
 /* Base mínima. Ninguna pantalla de producto se construye en Phase 0. */
@@ -129,21 +99,27 @@
 
 body {
   margin: 0;
-  background: var(--so-color-surface);
-  color: var(--so-color-text-primary);
+  background: var(--so-color-canvas);
+  color: var(--so-color-ink);
   font-family: var(--so-font-ui);
-  font-size: var(--so-text-base);
+  font-size: var(--so-text-body-min);
   line-height: var(--so-leading-normal);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Foco siempre visible — Manifest §20 */
+/* §2 · numerales tabulares para temporizadores y datos numéricos */
+.so-numeric {
+  font-family: var(--so-font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Foco siempre visible · §14 */
 :focus-visible {
-  outline: 2px solid var(--so-color-focus-ring);
+  outline: 2px solid var(--so-color-navy);
   outline-offset: 2px;
 }
 
-/* Toda diana táctil respeta el mínimo */
+/* Toda diana táctil respeta el mínimo · §2 */
 button,
 [role='button'],
 a[href],
@@ -153,7 +129,7 @@ textarea {
   min-height: var(--so-touch-target-min);
 }
 
-/* Enlace de salto: invisible hasta recibir foco. Manifest §20 (navegación por teclado) */
+/* Enlace de salto: invisible hasta recibir foco · §14 (navegación por teclado) */
 .so-skip-link {
   position: absolute;
   left: var(--so-space-sm);
@@ -161,10 +137,10 @@ textarea {
   transform: translateY(-200%);
   z-index: 100;
   padding: var(--so-space-sm) var(--so-space-lg);
-  background: var(--so-color-surface-raised);
-  color: var(--so-color-text-primary);
-  border: 1px solid var(--so-color-border-strong);
-  border-radius: var(--so-radius-md);
+  background: var(--so-color-surface);
+  color: var(--so-color-ink);
+  border: 1px solid var(--so-color-slate);
+  border-radius: var(--so-radius-control);
   text-decoration: none;
 }
 
@@ -172,6 +148,7 @@ textarea {
   transform: translateY(calc(var(--so-space-sm) * 2));
 }
 
+/* §13 · «Support reduced motion» */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

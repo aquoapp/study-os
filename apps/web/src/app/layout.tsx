@@ -30,10 +30,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fbfbfd' },
-    { media: '(prefers-color-scheme: dark)', color: '#101318' },
-  ],
+  // Design System §2 · una sola paleta: Canvas / Warm Ivory. El documento no
+  // especifica tema oscuro, así que no se declara uno.
+  themeColor: '#f7f3ea',
 };
 
 export default function RootLayout({ children }: { readonly children: ReactNode }) {

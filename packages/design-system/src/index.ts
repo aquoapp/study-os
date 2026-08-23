@@ -1,4 +1,12 @@
 export {
+  DESIGN_SYSTEM_COVERAGE,
+  DESIGN_SYSTEM_SOURCE,
+  DESIGN_SYSTEM_STATUS,
+  PALETTE_PROVENANCE,
+  isDesignSystemBlocked,
+} from './status';
+
+export {
   PRIMARY_SPACES,
   PRIMARY_SPACE_COUNT,
   TRANSVERSAL_CAPABILITIES,
@@ -11,17 +19,20 @@ export {
   BREAKPOINTS,
   COLOR,
   CONTRAST_REQUIREMENTS,
+  LAYOUT,
   MOTION,
+  NON_TEXT_BACKGROUNDS,
   RADIUS,
+  SEMANTIC_ROLES,
   SPACING,
   TOKEN_CONTRACT,
   TOUCH_TARGET_MIN_PX,
   TYPOGRAPHY,
-  type ColorScale,
+  type ColorToken,
   type ContrastRequirement,
+  type NonTextBackground,
   type RadiusToken,
   type SpacingToken,
-  type ThemeName,
 } from './tokens';
 
 export {

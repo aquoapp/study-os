@@ -20,7 +20,7 @@ export default async function HomePage() {
 
       <p data-testid="phase-marker">Phase 0 · Foundation</p>
 
-      <p style={{ color: 'var(--so-color-text-secondary)' }}>
+      <p style={{ color: 'var(--so-color-slate)' }}>
         Fundación de repositorio, entornos, migraciones, esqueleto de autenticación y tokens del
         Design System. Todavía no existe contenido, ni motores, ni espacios de estudio.
       </p>

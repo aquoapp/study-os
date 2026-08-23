@@ -46,7 +46,7 @@ Actions, con Docker disponible) el pipeline los ejecuta sin cambios.
 | **P0-S4** | Framework de migraciones + migración 0 (extensiones, enum `provenance_class`, utilidad `set_updated_at`) con script de rollback | Escrito · **sin aplicar** |
 | **P0-S5** | Migración 1: `profiles` 1:1 con `auth.users`, trigger de alta idempotente, RLS `enable` + `force`, políticas de solo-propio, grants mínimos | Escrito · **sin aplicar** |
 | **P0-S6** | CI en `.github/workflows/ci.yml` con los nueve checks, en dos jobs (estático y base de datos) | Completo · sin ejecutar (no hay remoto) |
-| **P0-S7** | `@study-os/design-system`: escalas de espaciado, radio, tipografía, movimiento, breakpoints; 15 roles de color en dos temas; espejo CSS; `TOUCH_TARGET_MIN_PX = 44` | Completo |
+| **P0-S7** | `@study-os/design-system` con los valores literales de `STUDY_OS_Design_System_v1.0` §2, §3 y §13 | **BLOQUEADO** · ver SD-019 |
 | **P0-S8** | Cinco guardas ejecutables, todas con prueba negativa: `import-guard`, `tai-literal`, `secret-scan`, `client-authority-guard`, `auth-authority-guard` | Completo |
 | **P0-S9** | `/spec`, `/architecture`, `/docs` importados **byte a byte** con SHA-256 registrados; `CLAUDE.md` con el orden de autoridad enmendado por SD-009 | Completo |
 | **P0-S10** | Este informe | Completo |
@@ -105,8 +105,8 @@ Desglose de los unitarios por fichero:
 | Fichero | Qué prueba |
 | --- | --- |
 | `primarySpaces.frozen.spec` | EC-015 · lista congelada comparada contra copia literal, no contra sí misma |
-| `tokens.contract.spec` | REQ-A06 · escalas, paridad de roles entre temas, 44px, EC-017, espejo CSS |
-| `tokens.contrast.spec` | REQ-A06 · 14 pares × 2 temas ≥ AA, más los extremos conocidos del algoritmo |
+| `tokens.contract.spec` | REQ-A06 · valores del documento, 44px, anti-patrones §15, espejo CSS |
+| `tokens.contrast.spec` | REQ-A06 · 16 pares declarados, más las tres combinaciones de SD-019 que no alcanzan AA |
 | `env.separation.spec` | REQ-A03 · gate P0-G2 a nivel de código |
 | `auth.serverVerifiedIdentity.spec` | **INV-116** · métodos aceptados, verificador, superficies protegidas, 3 pruebas negativas |
 | `client.no-authoritative-write.spec` | INV-113 · REQ-A08 · 2 pruebas negativas |
@@ -243,7 +243,8 @@ lo que falta es **ejecutar** la verificación de los que tocan base de datos.
 
 | Requisito | Estado |
 | --- | --- |
-| REQ-A01 … REQ-A06, REQ-A08, REQ-A09 | Implementados y verificados |
+| REQ-A01 … REQ-A05, REQ-A08, REQ-A09 | Implementados y verificados |
+| REQ-A06 | **BLOQUEADO** · los valores proceden del documento, pero tres pares de la paleta congelada no alcanzan el AA que exige su criterio de aceptación (SD-019) |
 | REQ-A07 | Implementado · verificación E2E e integración **bloqueada** |
 | REQ-C13 (parcial, sobre `profiles`) | Implementado · `test:rls` **bloqueado** |
 

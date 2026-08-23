@@ -68,10 +68,10 @@ export default async function AccountPage() {
           data-testid="signout-button"
           style={{
             minHeight: 'var(--so-touch-target-min)',
-            borderRadius: 'var(--so-radius-md)',
-            border: '1px solid var(--so-color-border-strong)',
-            background: 'var(--so-color-surface-raised)',
-            color: 'var(--so-color-text-primary)',
+            borderRadius: 'var(--so-radius-control)',
+            border: '1px solid var(--so-color-slate)',
+            background: 'var(--so-color-surface)',
+            color: 'var(--so-color-ink)',
             padding: '0 16px',
             cursor: 'pointer',
           }}

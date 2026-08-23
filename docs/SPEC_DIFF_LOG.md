@@ -312,3 +312,164 @@ y no se ha editado.
 > El «Total: 15 entradas» de la sección anterior es correcto **para el cuerpo congelado v1.2** y
 > se conserva sin tocar deliberadamente: renumerarlo sería justamente la reescritura silenciosa
 > que `EC-019` prohíbe.
+
+---
+
+## SD-018 · Orden total de eventos por usuario · **sustituye a SD-015**
+
+**Documentos afectados:** `Canonical Data & Event Model v1.0` §10, §14, §16, §25, §27.
+**Sustituye a:** `SD-015`, que queda **superseded** y no debe implementarse en su forma
+anterior. SD-015 permanece en el cuerpo congelado sin tocar; esta entrada es la que
+gobierna a partir de ahora.
+**Origen:** revisión humana de la autorización de Phase 0 y auditoría externa del
+checkpoint.
+**Estado:** **PROPOSED · no implementado.** No existe ninguna migración de eventos ni
+ninguna tabla `learning_events` en el repositorio.
+
+### Por qué SD-015 no sirve
+
+SD-015 proponía una **secuencia global** (`learning_events.server_sequence` asignada por
+una secuencia de PostgreSQL) más una regla de «avance sin huecos» del watermark. Tiene dos
+defectos que no se arreglan ajustando la redacción:
+
+1. **Una secuencia de PostgreSQL no es transaccional.** `nextval()` no se revierte con la
+   transacción y las confirmaciones pueden ocurrir fuera de orden. La propia SD-015 lo
+   reconocía e intentaba compensarlo con la regla de avance sin huecos, que convierte cada
+   hueco temporal en un bloqueo del avance de **todas** las proyecciones.
+2. **El orden global es la unidad equivocada.** La evidencia de una persona no tiene por
+   qué esperar a la de otra. Un orden global acopla usuarios que no comparten nada y
+   convierte un hueco de cualquiera en una parada de todos.
+
+### Cambio propuesto
+
+1. **Posición monotónica por usuario/stream.** `learning_events.stream_position BIGINT NOT
+   NULL`, monotónica y sin huecos **dentro del stream de cada usuario**. No hay orden
+   global y no se necesita.
+2. **Asignación bajo bloqueo transaccional, en la misma transacción que inserta el
+   evento.** Un contador por usuario (`user_event_counters(user_id, next_position)`) se
+   bloquea con `SELECT ... FOR UPDATE`, se incrementa y se usa, todo dentro de la
+   transacción que hace el `INSERT`. Si la transacción se revierte, la posición se
+   revierte con ella. Esto elimina por construcción los huecos que SD-015 tenía que
+   gestionar a posteriori.
+3. **`unique(user_id, stream_position)`.** La unicidad la garantiza la base de datos, no
+   una convención.
+4. **`event_id` sigue siendo la única clave de idempotencia.** UUID generado en cliente,
+   `UNIQUE`, con `ON CONFLICT DO NOTHING`. Reenviar el mismo evento no crea una posición
+   nueva. Orden e idempotencia son problemas distintos y se resuelven con claves distintas.
+5. **Watermark por usuario y por proyección.** `projection_watermarks(user_id,
+   projection_name, consumed_position)`. Cada proyección avanza al ritmo de cada usuario.
+   Un usuario con evidencia pendiente no detiene las proyecciones de los demás, y una
+   proyección lenta no detiene a las otras.
+6. **`client_created_at` conserva la semántica temporal del hecho.** Es la referencia que
+   usa la lógica del motor —cuándo ocurrió— frente a `stream_position`, que solo ordena.
+   `server_received_at` queda como dato de auditoría.
+7. **Ninguna inferencia de ausencia definitiva mediante *timeout*.** Que un evento no haya
+   llegado no permite concluir que no existe. Un dispositivo sin conexión puede entregar
+   evidencia días después: se acepta, obtiene la siguiente posición de su stream, conserva
+   su `client_created_at` y dispara recálculo desde el watermark afectado. **Nada se marca
+   como definitivamente ausente porque haya pasado un tiempo.**
+
+### Consecuencias
+
+**Positivas:** el orden es reconstruible y verificable por usuario, sin huecos por
+construcción; EC-006 pasa a ser demostrable; el aislamiento entre usuarios que RLS ya da a
+nivel de fila se extiende al procesamiento.
+
+**Negativas:** el contador por usuario es un punto de serialización por usuario. Es
+aceptable: la evidencia de una persona es intrínsecamente secuencial y su volumen es bajo.
+A cambio desaparece la serialización global que SD-015 imponía.
+
+**Lo que ya no se puede hacer:** ordenar entre sí los eventos de dos usuarios distintos sin
+un criterio adicional explícito. Ninguna proyección de Phase 0 a Phase 9 lo necesita; si
+alguna lo necesitara, exigiría su propio ADR.
+
+### Pruebas asociadas
+
+- `events.streamPositionMonotonic.spec` · las posiciones de un usuario son consecutivas
+- `events.noGapsUnderRollback.spec` · una transacción revertida no deja hueco
+- `events.idempotentByEventId.spec` · el mismo `event_id` no crea posición nueva
+- `events.concurrentInsertSerialized.spec` · dos inserciones simultáneas del mismo usuario
+  no comparten posición
+- `watermark.perUserPerProjection.spec` · un usuario atrasado no bloquea a otro
+- `events.lateArrivalNoTimeout.spec` · un evento antiguo recibido tarde se acepta y no
+  reordena la historia
+- `rebuild.deterministicOrder.spec` · dos reconstrucciones producen el mismo orden
+
+### Impacto
+
+Migración 8 (stream de eventos) y 16 (índices). Debe aplicarse **antes de ingerir
+cualquier evidencia real**.
+
+**Aprobación:** pendiente.
+
+---
+
+## SD-019 · La paleta congelada no alcanza el AA que el propio documento exige
+
+**Documento afectado:** `STUDY_OS_Design_System_v1.0` §2 (Core tokens · Colour) frente a
+§14 (Accessibility).
+**Origen:** verificación de contraste al incorporar el Design System, ronda correctiva.
+**Estado:** **PROPOSED · no aplicado.** Ningún color se ha modificado.
+
+### El conflicto
+
+§14 exige «WCAG-minded AA contrast» como requisito **P0**. El criterio de aceptación de
+`REQ-A06` lo repite: «Tokens conformes; **contraste AA verificado**».
+
+Tres combinaciones de la paleta de §2 no alcanzan el 4.5:1 de texto normal. Medido sobre
+los valores literales del documento:
+
+| Combinación | Ratio | Falta |
+| --- | --- | --- |
+| Soft White `#FFFDF9` sobre Adaptive/Teal `#2B8C8C` | **3.95** | −0.55 |
+| Soft White `#FFFDF9` sobre Warning/Amber `#A56A18` | **4.42** | −0.08 |
+| Muted/Slate `#66757C` sobre Canvas/Warm Ivory `#F7F3EA` | **4.31** | −0.19 |
+
+Las tres superan el 3:1 que WCAG 1.4.11 pide para componentes de interfaz y contornos, así
+que sirven como indicador, borde o icono. Ninguna sirve para texto normal.
+
+El tercer caso es el más incómodo en la práctica: `Muted / Slate` es el color de texto
+secundario y `Canvas / Warm Ivory` es el fondo de página. Sobre `Surface / Soft White` sí
+llega (4.70), de modo que la restricción es de superficie, no del color.
+
+### Qué se ha hecho mientras tanto
+
+**No se ha retocado ningún color.** Alterar un valor de un documento FROZEN sin ADR es
+exactamente lo que EC-019 prohíbe.
+
+- `teal` y `amber` se declaran en `NON_TEXT_BACKGROUNDS`: su uso queda acotado a
+  superficies no textuales;
+- el texto secundario se sitúa sobre `surface`, no sobre `canvas`;
+- `tokens.contrast.spec` fija los tres números medidos, de modo que si alguien cambia un
+  color la contradicción no cambia de forma en silencio;
+- **`REQ-A06` y `P0-S7` quedan BLOQUEADOS**, porque el criterio de aceptación no se cumple
+  entero.
+
+### Opciones para la decisión humana
+
+| Opción | Qué implica |
+| --- | --- |
+| **A · Acotar el uso** (lo implementado) | `teal` y `amber` nunca llevan texto; el texto secundario vive sobre `surface`. Cero cambios en el documento. Limita las composiciones disponibles |
+| **B · Oscurecer los tres colores** lo justo para alcanzar 4.5 | Exige ADR y una v1.1 del Design System. Cambia la identidad visual, poco pero la cambia |
+| **C · Declarar en §14 que AA aplica al texto** y que estos tres son colores de indicador | Exige cambio de especificación. Es la opción que menos toca, si la intención original era esa |
+
+**Recomendación: A ahora, y decidir entre B y C antes de Phase 5**, que es cuando existirán
+componentes que usen estos colores con texto encima. Hasta entonces la opción A no cuesta
+nada, porque no hay pantallas de producto.
+
+**Aprobación:** pendiente.
+
+---
+
+## Resumen de la adenda · actualizado
+
+| Prioridad | Entradas |
+| --- | --- |
+| Enforcement en Phase 0 | **SD-016** (`INV-116`) |
+| Antes de ingerir evidencia real | **SD-018** (sustituye a SD-015) |
+| Antes de Phase 5 | **SD-019** (contraste de la paleta) |
+| Documentales · antes de la auditoría de Drive | SD-017, ERRATA P0-IN-1 |
+
+**Total tras la adenda: 19 entradas SPEC_DIFF (15 congeladas + SD-016 … SD-019) y 1
+errata.** `SD-015` queda **superseded por SD-018** sin haberse modificado en el cuerpo
+congelado.
