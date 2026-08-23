@@ -3,7 +3,7 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 3.0 · copia viva
+**Versión:** 4.0 · copia viva
 **Última actualización:** 2026-08-23 · ronda correctiva final de Phase 0
 **Fase actual:** 0 · Foundation
 **Estado global:** **BLOCKED** · ver `docs/PHASE_0_CHECKPOINT.md`
@@ -94,8 +94,8 @@ Ya no es «ninguno». Lo que sigue está **ejecutándose**, no solo escrito:
 | EC-019 | Artefactos congelados sin modificar; adenda por adición; hashes verificados en test | **Activo** |
 | EC-020 | `verify` cuenta un check bloqueado como fallo, nunca como omisión | **Activo** |
 | INV-104 · INV-105 · INV-107 | Una acción primaria por vista; error con texto y `role="alert"`; copy sin atribución de fracaso | **Activo** |
-| INV-113 · REQ-A08 | `client-authority-guard` sobre AST, superficie de cliente transitiva en `apps/**` y `packages/**`, registro explícito de proyecciones y RPC | **Activo** |
-| INV-116 · REQ-A07 | Verificador único de identidad, ESLint, y guarda de **procedencia positiva**: un valor de identidad solo vale si deriva demostrablemente del verificador | **Activo** (estático) · rechazo de cookie forjada **bloqueado** |
+| INV-113 · REQ-A08 | `client-authority-guard` **por símbolo y ámbito**: cualquier acceso a insert/update/upsert/delete/rpc es hallazgo, se invoque o no; la excepción de navegador exige global real, no sombreado, e invocación directa | **Activo** |
+| INV-116 · REQ-A07 | Verificador único de identidad, ESLint, y guarda de **procedencia por símbolo**: el verificador vale solo si el identificador resuelve al export canónico real; sombrearlo o reasignar una variable verificada la invalida | **Activo** (estático) · rechazo de cookie forjada **bloqueado** |
 | INV-101 | **Aprobado por Ana.** Sin superficie que pueda violarlo todavía | N/A en Phase 0 |
 
 Lo que la Engineering Constitution advertía —«los documentos por sí solos no son
@@ -110,7 +110,7 @@ control suficiente»— deja de aplicarse a estos catorce. Sigue aplicándose al
 | BD-05 | BLOCKED_DECISION | Convocatoria/modelo/ocurrencia | Migración 5 · PASS de Phase 0 |
 | SD-006 | SPEC_DIFF PROPOSED | Integridad de referencias polimórficas | `session_items` y `planner_items` |
 | SD-007 | SPEC_DIFF PROPOSED | Claves de respuesta fuera del Data API | Separación de esquemas |
-| **SD-018** | SPEC_DIFF PROPOSED | Orden de eventos por usuario · **sustituye a SD-015** | Migración 8 · antes de ingerir evidencia real |
+| **SD-018** | SPEC_DIFF **PROPOSED · sin aprobar** | Orden de eventos por usuario · **sustituye a SD-015** · contrato completo y corregido dos veces; **no implementado** | Migración 8 · antes de ingerir evidencia real |
 | **SD-019** | Opción A **autorizada, implementada y verificada** · el cambio de especificación (B o C) sigue PROPOSED y **diferido** | La paleta congelada no alcanza el AA que exige §14 | **Nada de Phase 0.** El uso sin restricciones de la paleta, que necesitan los componentes de §16 · antes de Phase 5 |
 | MI-01 | MISSING_INPUT | 6 PDF oficiales | PASS de **Phase 1** |
 | BD-03 | BLOCKED_DECISION | Escala de confianza 4 o 5 | Confirmada por el propio Design System §6 · Phases 3 y 5 |

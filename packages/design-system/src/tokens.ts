@@ -178,8 +178,12 @@ export const SEMANTIC_ROLES = {
  * no textuales —indicadores, bordes, iconografía, texto grande— para que la
  * limitación sea explícita y no se descubra en una auditoría de accesibilidad.
  *
- * La contradicción entre §2 (paleta) y §14 (AA como P0) está registrada como
- * **SD-019** y bloquea el cierre de REQ-A06.
+ * La contradicción entre §2 (paleta) y §14 (AA como P0) está registrada como **SD-019**.
+ * La **opción A** está autorizada y aplicada: bajo sus restricciones el contraste de todo
+ * texto renderizado se verifica en el navegador, que es el criterio de aceptación de
+ * REQ-A06. Ese requisito **no está bloqueado**. Lo que queda es elegir entre las opciones
+ * B y C para poder usar la paleta sin restricciones, y eso está **diferido con plazo antes
+ * de Phase 5**, cuando existan los componentes de §16 que lo necesitan.
  */
 export const NON_TEXT_BACKGROUNDS = ['teal', 'amber'] as const;
 

@@ -82,9 +82,12 @@ de `STUDY_OS_Design_System_v1.0` §2, §3 y §13:
 Se eliminó además el **tema oscuro** que la entrega anterior había inventado: el documento
 define una sola paleta y no menciona ninguno. Añadir uno exigiría decidir diez colores más.
 
-## 3. Qué sigue bloqueado, y por qué
+## 3. Qué está satisfecho bajo restricción, y qué queda diferido
 
-### `P0-S7` y `REQ-A06` · **BLOQUEADOS** por `SD-019`
+### `P0-S7` y `REQ-A06` · **satisfechos** bajo `SD-019` opción A
+
+Esta sección decía «BLOQUEADOS». Era una descripción equivocada del estado, y se corrige
+aquí.
 
 El criterio de aceptación de REQ-A06 es literal: «Tokens conformes; **contraste AA
 verificado**». La paleta congelada de §2 y el requisito de §14 —«WCAG-minded AA contrast»
@@ -100,9 +103,42 @@ Las tres alcanzan el 3:1 de componentes de interfaz (WCAG 1.4.11), así que sirv
 indicador, borde o icono. Ninguna sirve para texto normal.
 
 **No se han retocado los colores.** Alterar un valor de un documento FROZEN sin ADR es
-exactamente lo que EC-019 prohíbe. Lo que se ha hecho es acotar su uso —`teal` y `amber`
-están marcados como no aptos para texto en `NON_TEXT_BACKGROUNDS`— y registrar la
-contradicción como **SD-019**, pendiente de decisión humana.
+exactamente lo que EC-019 prohíbe. Lo que se ha hecho es acotar su uso y registrar la
+contradicción como **SD-019**.
+
+La **opción A** de SD-019 está autorizada por decisión humana, aplicada y verificada:
+
+- `teal` y `amber` no llevan texto normal encima (`NON_TEXT_BACKGROUNDS`);
+- `slate` solo como texto normal sobre `surface`;
+- sobre `canvas`, `ink`, o el texto dentro de una superficie válida.
+
+Bajo esas restricciones **todo texto renderizado alcanza el contraste que WCAG le exige**,
+medido en el navegador sobre el build de producción, en móvil y escritorio, con un fixture
+negativo que demuestra en cada ejecución que la medición detecta lo que dice detectar. Eso
+es exactamente el criterio de aceptación de REQ-A06, de modo que **`REQ-A06` y `P0-S7`
+quedan satisfechos para Phase 0**.
+
+Lo que sigue abierto es **elegir entre la opción B** (oscurecer los tres colores, con ADR y
+v1.1 del Design System) **y la C** (declarar en §14 que el AA aplica al texto y que estos
+tres son colores de indicador), para poder usar la paleta **sin restricciones**. Eso lo
+necesitan las 18 familias de componentes de §16, que empiezan en Phase 5. Es una decisión
+**diferida con plazo antes de Phase 5**, no un bloqueo de Phase 0: ningún entregable de
+Phase 0 la espera.
+
+### `SD-018` · corregido técnicamente, **PROPOSED** y sin aprobar
+
+No lo gobierna el Design System, pero conviene que conste junto al resto del estado. El
+contrato de orden e idempotencia del stream de eventos se ha corregido dos veces —el orden
+de las operaciones dentro de la transacción, y la triple coincidencia que convierte un
+`submitted_event_id` repetido en idempotencia— y está completo. **No está implementado**:
+no existe ninguna migración de eventos, ninguna tabla, ningún contador y ninguna función, y
+un test lo comprueba. Sigue **PROPOSED** y **pendiente de aprobación humana explícita**.
+
+### Decisiones de dominio pendientes antes del PASS final de Phase 0
+
+**BD-02** (identidad estable de concepto), **BD-05** (convocatoria/modelo/ocurrencia),
+**SD-006** y **SD-007**. Determinan la forma de las primeras migraciones de dominio.
+Mientras sigan abiertas, el checkpoint no puede declarar PASS.
 
 ### Otros pendientes del mismo documento
 
