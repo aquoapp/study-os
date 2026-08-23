@@ -1,12 +1,20 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
   SERVER_AUTHORITATIVE_PROJECTIONS,
+  SERVER_AUTHORITATIVE_RPCS,
   isAuthoritative,
+  isServerAuthoritativeProjection,
+  isServerAuthoritativeRpc,
   localProjection,
 } from '@study-os/domain';
 
-import { runGuard, withViolation } from './lib/run-guard';
+import registry from '../../packages/domain/src/authority-registry.json';
+
+import { REPO_ROOT, runGuard, withViolation } from './lib/run-guard';
 
 /**
  * Check de CI: `client-authority-guard` (Execution Plan §4).
@@ -61,11 +69,31 @@ describe('client.no-authoritative-write · INV-113 · REQ-A08', () => {
   });
 
   it('la lista de proyecciones autoritativas cubre Mastery, Readiness y Planner', () => {
-    expect([...SERVER_AUTHORITATIVE_PROJECTIONS]).toEqual([
-      'concept_mastery',
-      'exam_readiness',
-      'planner_runs',
-      'planner_items',
-    ]);
+    // La lista vive en `authority-registry.json` para que el código y la guarda
+    // lean lo mismo. Aquí se comprueba que cubre las tres proyecciones que nombra
+    // INV-113, no un orden concreto.
+    for (const table of ['concept_mastery', 'exam_readiness', 'planner_runs', 'planner_items']) {
+      expect([...SERVER_AUTHORITATIVE_PROJECTIONS], `falta ${table}`).toContain(table);
+    }
+    expect(isServerAuthoritativeProjection('concept_mastery')).toBe(true);
+    expect(isServerAuthoritativeProjection('profiles')).toBe(false);
+  });
+
+  it('el registro de RPC autoritativas no está vacío y ancla cada nombre a un invariante', () => {
+    // Un registro vacío haría que la comprobación de RPC pasara siempre sin
+    // comprobar nada.
+    expect(SERVER_AUTHORITATIVE_RPCS.length).toBeGreaterThan(0);
+    expect(isServerAuthoritativeRpc('recalculate_mastery')).toBe(true);
+    expect(isServerAuthoritativeRpc('search_public_glossary')).toBe(false);
+
+    const anchors: Record<string, string> = registry.rpcs.anchors;
+    for (const rpc of SERVER_AUTHORITATIVE_RPCS) {
+      expect(anchors[rpc], `la RPC "${rpc}" no declara su anclaje`).toBeTruthy();
+    }
+  });
+
+  it('el código y la guarda leen el mismo registro', () => {
+    const guard = readFileSync(join(REPO_ROOT, 'tools/guards/client-authority-guard.mjs'), 'utf8');
+    expect(guard).toContain('packages/domain/src/authority-registry.json');
   });
 });

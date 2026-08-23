@@ -1,6 +1,9 @@
 export {
   SERVER_AUTHORITATIVE_PROJECTIONS,
+  SERVER_AUTHORITATIVE_RPCS,
   isAuthoritative,
+  isServerAuthoritativeProjection,
+  isServerAuthoritativeRpc,
   localProjection,
   type AuthoritativeProjection,
   type LocalProjection,

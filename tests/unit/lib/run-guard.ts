@@ -41,12 +41,28 @@ export function runGuard(
  * probar que **falla** cuando debe.
  */
 export function withViolation<T>(relativePath: string, contents: string, body: () => T): T {
-  const absolute = join(REPO_ROOT, relativePath);
-  mkdirSync(dirname(absolute), { recursive: true });
-  writeFileSync(absolute, contents, 'utf8');
+  return withViolations({ [relativePath]: contents }, body);
+}
+
+/**
+ * Igual que `withViolation`, pero con varios ficheros a la vez.
+ *
+ * Hace falta para probar las fronteras **transitivas**: un componente de cliente
+ * que importa un helper aparentemente neutro, y es el helper quien comete la
+ * infracción. Con un solo fichero no puede demostrarse que la guarda sigue el grafo
+ * de módulos en lugar de mirar únicamente el fichero marcado.
+ */
+export function withViolations<T>(files: Record<string, string>, body: () => T): T {
+  const written: string[] = [];
   try {
+    for (const [relativePath, contents] of Object.entries(files)) {
+      const absolute = join(REPO_ROOT, relativePath);
+      mkdirSync(dirname(absolute), { recursive: true });
+      writeFileSync(absolute, contents, 'utf8');
+      written.push(absolute);
+    }
     return body();
   } finally {
-    rmSync(absolute, { force: true });
+    for (const absolute of written) rmSync(absolute, { force: true });
   }
 }

@@ -32,13 +32,14 @@ export const PUBLIC_ENV_ALLOWLIST = [
 
 export type PublicEnvKey = (typeof PUBLIC_ENV_ALLOWLIST)[number];
 
-/**
- * Variables exclusivamente de servidor. Que una de estas aparezca en el bundle del
- * cliente es un fallo duro del Checkpoint Contract («secret exposure»).
+/*
+ * Las variables exclusivamente de servidor NO se declaran aquí.
+ *
+ * Este módulo es alcanzable desde el navegador a través del barril
+ * `@study-os/config`, y el inventario de claves de servidor no tiene por qué
+ * estar en ese grafo. Vive en `./server-env-keys`, que solo se exporta desde
+ * `@study-os/config/server`. Ver EC-010 y el comentario de ese fichero.
  */
-export const SERVER_ONLY_ENV_KEYS = ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_DB_URL'] as const;
-
-export type ServerOnlyEnvKey = (typeof SERVER_ONLY_ENV_KEYS)[number];
 
 /**
  * Reglas por entorno que el código puede consultar sin conocer ningún secreto.

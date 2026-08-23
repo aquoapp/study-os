@@ -4,55 +4,58 @@
  *
  * ADR-001 v1.1 punto 2 · EC-002 · EC-003
  *
- * Los motores deterministas (Learning Engine, Planner Engine) son autoridad de
- * servidor. ADR-001 rebajó deliberadamente esta regla de invariante constitucional
- * a **medida de higiene revisable**: su incumplimiento es deuda a justificar, no un
- * fallo duro de arquitectura. El invariante duro es INV-113 (autoridad de
- * persistencia), que verifica `client-authority-guard`.
+ * Los motores deterministas son autoridad de servidor. ADR-001 rebajó
+ * deliberadamente esta regla de invariante constitucional a **medida de higiene
+ * revisable**: su incumplimiento es deuda a justificar, no un fallo duro de
+ * arquitectura. El invariante duro es INV-113, que verifica `client-authority-guard`.
  *
- * Aun siendo higiene, se ejecuta como check bloqueante de CI: la forma de que una
- * regla revisable no se erosione es que romperla cueste una conversación explícita.
+ * Aun siendo higiene, se ejecuta como check bloqueante: la forma de que una regla
+ * revisable no se erosione es que romperla cueste una conversación explícita.
  *
- * En Phase 0 no existe todavía ningún paquete de motor. La guarda ya está activa
- * para que el primer import indebido de Phase 3 falle el día que se escriba, no
- * tres fases después.
+ * ---------------------------------------------------------------------------
+ * Qué cambió respecto a la primera versión
+ *
+ *   - Alcance: `apps/**` **y** `packages/**`. Un paquete que forma parte de la
+ *     superficie de cliente puede importar un motor igual que un componente, y la
+ *     versión anterior no miraba ahí.
+ *   - Superficie de cliente **transitiva**, no solo ficheros con `'use client'`.
+ *   - Detección por AST: cubre `import`, `export … from`, `import()` dinámico y
+ *     `require()`. La versión anterior solo veía `from '…'`.
+ * ---------------------------------------------------------------------------
  */
 
-import { join } from 'node:path';
-
-import { REPO_ROOT, lineOf, read, report, stripComments, walk } from './lib/walk.mjs';
+import { report } from './lib/walk.mjs';
+import { lineOfNode, moduleSpecifiers } from './lib/ast.mjs';
+import { computeClientSurface, describeVia } from './lib/client-surface.mjs';
 
 /** Paquetes cuyo código no debe alcanzar el cliente. */
 const ENGINE_PACKAGES = ['@study-os/learning-engine', '@study-os/planner-engine'];
 
-/** Ficheros de cliente: llevan la directiva `use client` o son de navegador por ruta. */
-function isClientFile(relPath, source) {
-  if (/^apps\/web\/src\/lib\//.test(relPath)) return true;
-  return /^\s*(['"])use client\1/m.test(source);
-}
-
-const CANDIDATES = walk(join(REPO_ROOT, 'apps'), (p) => /\.(ts|tsx|js|jsx|mjs)$/.test(p));
+const { clientFiles, parsed } = computeClientSurface();
 
 const findings = [];
 
-for (const file of CANDIDATES) {
-  const source = read(file);
-  if (!isClientFile(file, source)) continue;
+for (const [file, info] of clientFiles) {
+  const sourceFile = parsed.get(file);
+  if (!sourceFile) continue;
 
-  const code = stripComments(source);
+  for (const entry of moduleSpecifiers(sourceFile)) {
+    const engine = ENGINE_PACKAGES.find(
+      (pkg) => entry.module === pkg || entry.module.startsWith(`${pkg}/`),
+    );
+    if (!engine) continue;
 
-  for (const pkg of ENGINE_PACKAGES) {
-    const pattern = new RegExp(`(?:from\\s*|import\\s*\\(\\s*)['"]${pkg.replace('/', '\\/')}`, 'g');
-    let match;
-    while ((match = pattern.exec(code)) !== null) {
-      findings.push({
-        file,
-        line: lineOf(code, match.index),
-        message: `Fichero de cliente importa "${pkg}". Las reglas del motor no viajan al navegador.`,
-      });
-    }
+    findings.push({
+      file,
+      line: lineOfNode(sourceFile, entry.node),
+      message:
+        `Superficie de cliente importa "${entry.module}" (${entry.kind}). ` +
+        `Las reglas del motor no viajan al navegador.${describeVia(info.via)}`,
+    });
   }
 }
+
+console.log(`  (superficie de cliente: ${clientFiles.size} fichero(s) en apps/ y packages/)`);
 
 report(
   'import-guard',

@@ -3,7 +3,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { PUBLIC_ENV_ALLOWLIST, SERVER_ONLY_ENV_KEYS } from '@study-os/config';
+import { PUBLIC_ENV_ALLOWLIST } from '@study-os/config';
+import { SERVER_ONLY_ENV_KEYS } from '@study-os/config/server-env-keys';
 
 import { REPO_ROOT, runGuard, withViolation } from './lib/run-guard';
 

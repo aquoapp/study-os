@@ -10,7 +10,6 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -20,16 +19,15 @@
     "noUnusedParameters": true,
     "exactOptionalPropertyTypes": true,
     "useUnknownInCatchVariables": true,
-
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "noEmit": true,
-
     "paths": {
       "@study-os/design-system": ["./packages/design-system/src/index.ts"],
       "@study-os/design-system/*": ["./packages/design-system/src/*"],
       "@study-os/config": ["./packages/config/src/index.ts"],
+      "@study-os/config/server-env-keys": ["./packages/config/src/server-env-keys.ts"],
       "@study-os/config/*": ["./packages/config/src/*"],
       "@study-os/domain": ["./packages/domain/src/index.ts"],
       "@study-os/domain/internal/identity": ["./packages/domain/src/identity.ts"],

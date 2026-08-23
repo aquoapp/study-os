@@ -7,10 +7,10 @@ import {
   ENVIRONMENTS,
   ENVIRONMENT_POLICIES,
   PUBLIC_ENV_ALLOWLIST,
-  SERVER_ONLY_ENV_KEYS,
   isEnvironment,
   policyFor,
 } from '@study-os/config';
+import { SERVER_ONLY_ENV_KEYS } from '@study-os/config/server-env-keys';
 import { readPublicConfig } from '@study-os/config/client';
 
 import { REPO_ROOT } from './lib/run-guard';

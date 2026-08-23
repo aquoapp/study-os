@@ -1,0 +1,68 @@
+{
+  "$comment": [
+    "Registro explícito de superficies cuya escritura es competencia exclusiva del servidor.",
+    "Fuente única: lo consumen packages/domain/src/authority.ts (TypeScript) y",
+    "tools/guards/client-authority-guard.mjs (Node). Duplicarlo reintroduciría la deriva",
+    "que este fichero existe para evitar.",
+    "Ampliarlo o reducirlo es un cambio de frontera de autoridad: exige la misma revisión",
+    "que INV-113 (EC-019)."
+  ],
+
+  "projections": {
+    "$comment": "INV-113 · proyecciones que solo el servidor persiste.",
+    "tables": [
+      "concept_mastery",
+      "mastery_history",
+      "exam_readiness",
+      "planner_runs",
+      "planner_items"
+    ]
+  },
+
+  "rpcs": {
+    "$comment": [
+      "RPC reservadas como autoritativas. Ninguna existe todavía: Phase 0 no crea",
+      "funciones de dominio. Se declaran ahora para que el día que se escriba la primera,",
+      "una llamada desde el navegador falle en CI y no en revisión.",
+      "Cada nombre está anclado a un invariante ya congelado; no son decisiones de producto",
+      "nuevas, son la lista de lo que el cliente no puede invocar."
+    ],
+    "names": [
+      "grade_attempt",
+      "submit_attempt",
+      "recalculate_attempts",
+      "apply_answer_key_amendment",
+      "rebuild_projections",
+      "recalculate_mastery",
+      "advance_event_watermark",
+      "promote_engine_config",
+      "run_planner"
+    ],
+    "anchors": {
+      "grade_attempt": "INV-101 · la corrección ocurre en servidor y no devuelve la clave",
+      "submit_attempt": "INV-101 · EC-007 · el intento fija la versión de clave usada",
+      "recalculate_attempts": "EC-007 · la rectificación crea recálculo, no reescribe historia",
+      "apply_answer_key_amendment": "EC-007 · SD-007",
+      "rebuild_projections": "EC-006 · reconstruibilidad del estado derivado",
+      "recalculate_mastery": "EC-002 · Mastery la calcula un motor determinista de servidor",
+      "advance_event_watermark": "SD-018 · watermark por usuario y proyección",
+      "promote_engine_config": "SD-013 · promoción de engine_config con aprobación humana",
+      "run_planner": "EC-003 · el Planner es determinista y de servidor"
+    }
+  },
+
+  "writeMethods": {
+    "$comment": "Métodos de PostgREST que persisten. Un .select() no es una escritura.",
+    "names": ["insert", "update", "upsert", "delete"]
+  },
+
+  "serviceRoleMarkers": {
+    "$comment": "EC-010 · identificadores que solo pueden aparecer en servidor.",
+    "names": [
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "supabaseServiceRoleKey",
+      "service_role",
+      "serviceRoleKey"
+    ]
+  }
+}

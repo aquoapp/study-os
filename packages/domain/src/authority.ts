@@ -13,15 +13,36 @@
  * una proyección sin declarar de qué lado de la frontera está.
  */
 
-/** Proyecciones cuya persistencia es competencia exclusiva del servidor. */
-export const SERVER_AUTHORITATIVE_PROJECTIONS = [
-  'concept_mastery',
-  'exam_readiness',
-  'planner_runs',
-  'planner_items',
-] as const;
+import registry from './authority-registry.json';
 
-export type ServerAuthoritativeProjection = (typeof SERVER_AUTHORITATIVE_PROJECTIONS)[number];
+/**
+ * Proyecciones y RPC cuya escritura es competencia exclusiva del servidor.
+ *
+ * Se leen de `authority-registry.json` en lugar de escribirse aquí porque
+ * `tools/guards/client-authority-guard.mjs` necesita la misma lista y es un script
+ * de Node sin resolutor de TypeScript. Con dos listas, la del código y la de la
+ * guarda se separan a la primera incorporación y la guarda deja de proteger lo que
+ * cree proteger.
+ */
+export const SERVER_AUTHORITATIVE_PROJECTIONS: readonly string[] = registry.projections.tables;
+
+/**
+ * RPC reservadas como autoritativas. Ninguna existe todavía —Phase 0 no crea
+ * funciones de dominio—; se declaran para que la primera llamada desde el
+ * navegador falle en CI y no en revisión. Cada nombre lleva su anclaje a un
+ * invariante congelado en el propio registro.
+ */
+export const SERVER_AUTHORITATIVE_RPCS: readonly string[] = registry.rpcs.names;
+
+export type ServerAuthoritativeProjection = string;
+
+export function isServerAuthoritativeProjection(value: string): boolean {
+  return SERVER_AUTHORITATIVE_PROJECTIONS.includes(value);
+}
+
+export function isServerAuthoritativeRpc(value: string): boolean {
+  return SERVER_AUTHORITATIVE_RPCS.includes(value);
+}
 
 /** Proyección confirmada por el servidor. Es la que manda, siempre. */
 export interface AuthoritativeProjection<T> {

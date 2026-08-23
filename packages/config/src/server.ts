@@ -12,6 +12,8 @@ import 'server-only';
 
 import { readPublicConfig, type PublicConfig } from './client';
 
+export { SERVER_ONLY_ENV_KEYS, type ServerOnlyEnvKey } from './server-env-keys';
+
 export interface ServerConfig extends PublicConfig {
   /**
    * Clave de rol de servicio. Atraviesa RLS: solo puede usarse en superficies de
