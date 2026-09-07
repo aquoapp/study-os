@@ -66,7 +66,8 @@ describe('L1 · client-authority · separar el método de su llamada', () => {
 
     expect(result.exitCode, result.output).toBe(1);
     expect(result.output).toContain('Desestructuración de ".rpc"');
-    expect(result.output).toContain('como función suelta');
+    // La llamada al alias la detecta la propagación, no el nombre suelto.
+    expect(result.output).toContain('RPC extraída');
   });
 
   it('rechaza el alias renombrado en la desestructuración', () => {
@@ -101,7 +102,7 @@ describe('L1 · client-authority · separar el método de su llamada', () => {
     );
 
     expect(result.exitCode, result.output).toBe(1);
-    expect(result.output).toContain('nombre computado que no puede resolverse');
+    expect(result.output).toContain('nombre computado no demostrable');
   });
 
   it('rechaza la escritura escondida tras dos saltos de helper transitivo', () => {

@@ -7,7 +7,6 @@
     "Ampliarlo o reducirlo es un cambio de frontera de autoridad: exige la misma revisión",
     "que INV-113 (EC-019)."
   ],
-
   "projections": {
     "$comment": "INV-113 · proyecciones que solo el servidor persiste.",
     "tables": [
@@ -18,7 +17,6 @@
       "planner_items"
     ]
   },
-
   "rpcs": {
     "$comment": [
       "RPC reservadas como autoritativas. Ninguna existe todavía: Phase 0 no crea",
@@ -50,7 +48,6 @@
       "run_planner": "EC-003 · el Planner es determinista y de servidor"
     }
   },
-
   "readOnlyRpcs": {
     "$comment": [
       "Allowlist EXPLÍCITA de RPC que la superficie de cliente puede invocar.",
@@ -66,32 +63,30 @@
     ],
     "names": []
   },
-
-  "browserApiReceivers": {
+  "browserApiExceptions": {
     "$comment": [
-      "Globales del navegador cuyos métodos .delete() no son escrituras de datos de",
-      "usuario. caches.delete(key) es la Cache Storage API, no una tabla.",
+      "La UNICA excepcion a la politica conservadora del cliente, y es un par exacto:",
+      "receptor global + miembro + invocacion directa. caches.delete(key) es la Cache",
+      "Storage API, no una tabla.",
       "",
-      "Es la única excepción a la política conservadora y está acotada a identificadores",
-      "GLOBALES: un objeto local llamado 'cache' no queda exento. Ampliar esta lista",
-      "exige la misma revisión que el resto del registro."
+      "Solo vale cuando el receptor es un identificador que ningun ambito del fichero",
+      "declara, el miembro es el indicado, y el acceso ES la llamada. Sombrear el",
+      "nombre, extraer el metodo, enlazarlo o reasignarlo no heredan la excepcion.",
+      "Ningun otro global la tiene: window.delete() es un hallazgo aunque exista.",
+      "Ampliar esta lista exige la misma revision que el resto del registro."
     ],
-    "names": [
-      "caches",
-      "localStorage",
-      "sessionStorage",
-      "indexedDB",
-      "window",
-      "document",
-      "navigator"
+    "pairs": [
+      {
+        "receiver": "caches",
+        "member": "delete",
+        "reason": "Cache Storage API · borra una cache por clave, no datos de usuario"
+      }
     ]
   },
-
   "writeMethods": {
     "$comment": "Métodos de PostgREST que persisten. Un .select() no es una escritura.",
     "names": ["insert", "update", "upsert", "delete"]
   },
-
   "serviceRoleMarkers": {
     "$comment": "EC-010 · identificadores que solo pueden aparecer en servidor.",
     "names": [

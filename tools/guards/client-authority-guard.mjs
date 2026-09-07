@@ -1,51 +1,41 @@
 #!/usr/bin/env node
 /**
- * GUARDA 3 · El cliente no escribe. Política conservadora, **por símbolo**.
+ * GUARDA 3 · El cliente no escribe. Política conservadora, **por propagación**.
  *
  * INV-113 · «El servidor es la autoridad exclusiva para persistir Mastery, Exam
  * Readiness y estado del Planner. Ninguna ruta de cliente escribe esas proyecciones.»
  * REQ-A08 · ADR-001 v1.1 punto 2 · EC-002 · EC-003 · EC-010
  *
  * ---------------------------------------------------------------------------
- * La regla, en una frase
+ * Tres reglas, y ninguna mira la forma de la llamada
  *
- * En superficie de cliente, **cualquier acceso a un miembro llamado `insert`,
- * `update`, `upsert`, `delete` o `rpc` es un hallazgo**, se invoque o no. La única
- * excepción es una invocación directa sobre el símbolo global real del navegador.
+ * 1. **Acceder** a un miembro llamado `insert`, `update`, `upsert` o `delete` en
+ *    superficie de cliente es un hallazgo, se invoque o no. Un método que se
+ *    guarda, se enlaza, se pasa o se devuelve sigue siendo el método.
  *
- * Formularla sobre el **acceso** y no sobre la llamada es lo que cierra la familia
- * entera de evasiones, porque todas consisten en separar el método de su llamada:
+ * 2. **Invocar** algo que lleve una capacidad de escritura, de RPC extraída o de
+ *    miembro no demostrable es un hallazgo. La capacidad la asigna el motor de
+ *    propagación —`tools/guards/lib/dataflow.mjs`— y viaja por declaraciones,
+ *    asignaciones simples y compuestas, desestructuración, propiedades de objeto,
+ *    elementos de array, `bind`/`call`/`apply`, retornos y argumentos. Da igual
+ *    cuántos alias haya en medio:
  *
- *     let w; w = query.update;              // asignación posterior
- *     ({ update: w } = query);              // asignación destructurada
- *     query.update.bind(query)              // bind, call, apply
- *     registrar(query.update)               // paso como argumento
- *     return query.update;                  // retorno
- *     const ops = { w: query.update };      // almacenado en otra estructura
- *     query['update'](p)                    // acceso computado literal
- *     query[M](p)                           // acceso computado constante
- *     query[loQueSea](p)                    // acceso computado no resoluble
+ *        const operations = { run: query[method] };
+ *        operations.run(payload);                 // invoca un miembro no demostrable
  *
- * Ninguna necesita un caso propio: todas pasan por un acceso a `update`.
- *
- * El acceso computado no resoluble se denuncia igual. No poder demostrar que un
- * nombre no es `update` no equivale a que no lo sea.
+ * 3. **`.rpc()`** solo se admite como invocación directa con nombre literal incluido
+ *    en la allowlist de solo lectura. El acceso a `.rpc` no se denuncia por sí
+ *    mismo: se comprueba la allowlist en la llamada. Una RPC fuera de la lista,
+ *    con nombre dinámico, o extraída y llamada por otro camino, es un hallazgo.
  *
  * ---------------------------------------------------------------------------
- * La excepción de navegador, acotada de verdad
+ * La excepción de navegador es un par exacto
  *
- * `caches.delete(key)` es la Cache Storage API, no una tabla. La excepción vale
- * **solo** cuando se cumplen las tres cosas a la vez:
- *
- *   1. el receptor es un identificador que **resuelve al global**: ningún ámbito
- *      del fichero lo declara —ni parámetro, ni variable, ni importación—;
- *   2. ese nombre está en el registro de globales de navegador;
- *   3. el acceso es **la llamada misma**: `caches.delete(k)`, no `caches.delete`
- *      guardado, pasado o enlazado.
- *
- * Sombrear el nombre no la hereda, y extraer el método tampoco. La resolución es
- * por ámbito léxico —`tools/guards/lib/scope.mjs`—, no por «el fichero declara ese
- * nombre en algún sitio», que era la aproximación anterior y castigaba de más.
+ * `caches.delete(key)`. Solo eso. El receptor tiene que ser el identificador
+ * `caches` que **ningún ámbito del fichero declara**, el miembro tiene que ser
+ * `delete`, y el acceso tiene que ser la llamada misma. Otro global con un
+ * `delete` —`window.delete()`, aunque alguien lo declare en `Window`— es un
+ * hallazgo. Sombrear, extraer, enlazar o reasignar no heredan la excepción.
  * ---------------------------------------------------------------------------
  */
 
@@ -54,7 +44,8 @@ import { join } from 'node:path';
 
 import { REPO_ROOT, report } from './lib/walk.mjs';
 import { lineOfNode, ts, walkAst } from './lib/ast.mjs';
-import { buildScopeTable, DECL_KINDS } from './lib/scope.mjs';
+import { buildScopeTable } from './lib/scope.mjs';
+import { analyzeDataflow, unwrap } from './lib/dataflow.mjs';
 import { computeClientSurface, describeVia } from './lib/client-surface.mjs';
 
 const registry = JSON.parse(
@@ -66,26 +57,21 @@ const AUTHORITATIVE_RPCS = new Set(registry.rpcs.names);
 const READ_ONLY_RPCS = new Set(registry.readOnlyRpcs.names);
 const WRITE_METHODS = new Set(registry.writeMethods.names);
 const SERVICE_ROLE_MARKERS = new Set(registry.serviceRoleMarkers.names);
-const BROWSER_API_RECEIVERS = new Set(registry.browserApiReceivers.names);
+/** Pares exactos `receptor global + miembro` que se admiten en invocación directa. */
+const BROWSER_API_PAIRS = new Map(
+  registry.browserApiExceptions.pairs.map((pair) => [`${pair.receiver}.${pair.member}`, pair]),
+);
 
-/** Miembros que no pueden tocarse en cliente, ni siquiera para mirarlos. */
-const GUARDED_MEMBERS = new Set([...WRITE_METHODS, 'rpc']);
-
-/** Formas de invocar algo sin escribir su nombre en la llamada. */
-const INDIRECT_INVOKERS = new Set(['bind', 'call', 'apply']);
+const LABEL_WRITE = 'cap:write';
+const LABEL_RPC = 'cap:rpc';
+const LABEL_OPAQUE = 'cap:opaque';
 
 const { clientFiles, parsed, boundaryViolations } = computeClientSurface();
 
 const findings = [];
 
-/**
- * Constantes de cadena **por símbolo**.
- *
- * `const M = 'update'` solo resuelve si ese símbolo no se reasigna nunca. Una
- * constante que cambia no es una constante, y tratarla como tal sería justo el
- * agujero que este módulo existe para cerrar.
- */
-function collectStringConstants(sourceFile, resolve) {
+/** Constantes de cadena por símbolo: solo las que nunca se reasignan. */
+function makeConstantResolver(sourceFile, resolve) {
   const values = new Map();
   const poisoned = new Set();
 
@@ -99,34 +85,37 @@ function collectStringConstants(sourceFile, resolve) {
       values.set(node, node.initializer.text);
       return;
     }
-
     if (
       ts.isBinaryExpression(node) &&
-      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-      ts.isIdentifier(node.left)
+      ts.isIdentifier(node.left) &&
+      node.operatorToken.kind !== ts.SyntaxKind.EqualsEqualsEqualsToken &&
+      node.operatorToken.kind !== ts.SyntaxKind.ExclamationEqualsEqualsToken &&
+      ts.tokenToString(node.operatorToken.kind)?.endsWith('=')
     ) {
       const binding = resolve(node.left);
       if (binding) poisoned.add(binding.declaration);
     }
+    if (
+      (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+      ts.isIdentifier(node.operand)
+    ) {
+      const binding = resolve(node.operand);
+      if (binding) poisoned.add(binding.declaration);
+    }
   });
 
-  return (identifier) => {
-    const binding = resolve(identifier);
-    if (!binding || poisoned.has(binding.declaration)) return null;
-    return values.get(binding.declaration) ?? null;
-  };
-}
-
-/** Resuelve una expresión a un literal de cadena, si se puede demostrar. */
-function makeStringResolver(constantOf) {
   const resolveString = (node) => {
     if (!node) return null;
-    if (ts.isStringLiteralLike(node)) return node.text;
-    if (ts.isIdentifier(node)) return constantOf(node);
-    if (ts.isParenthesizedExpression(node)) return resolveString(node.expression);
-    if (ts.isAsExpression(node)) return resolveString(node.expression);
+    const current = unwrap(node);
+    if (ts.isStringLiteralLike(current)) return current.text;
+    if (ts.isIdentifier(current)) {
+      const binding = resolve(current);
+      if (!binding || poisoned.has(binding.declaration)) return null;
+      return values.get(binding.declaration) ?? null;
+    }
     return null;
   };
+
   return resolveString;
 }
 
@@ -135,223 +124,176 @@ for (const [file, info] of clientFiles) {
   if (!sourceFile) continue;
 
   const { resolve } = buildScopeTable(sourceFile);
-  const constantOf = collectStringConstants(sourceFile, resolve);
-  const resolveString = makeStringResolver(constantOf);
+  const resolveString = makeConstantResolver(sourceFile, resolve);
   const context = describeVia(info.via);
 
   const add = (node, message) => {
     findings.push({ file, line: lineOfNode(sourceFile, node), message: message + context });
   };
 
-  /** Nombre del miembro al que apunta un acceso, y si pudo demostrarse. */
-  const accessedMember = (access) => {
+  /** Nombre del miembro accedido: `{ name, computed, resolved }`. */
+  const memberOf = (access) => {
     if (ts.isPropertyAccessExpression(access)) {
       return { name: access.name.text, computed: false, resolved: true };
     }
-    const resolvedName = resolveString(access.argumentExpression);
-    return { name: resolvedName, computed: true, resolved: resolvedName !== null };
+    const name = resolveString(access.argumentExpression);
+    return { name, computed: true, resolved: name !== null };
   };
 
-  /**
-   * ¿Este acceso es la excepción legítima de la Cache API?
-   *
-   * Las tres condiciones a la vez. Si falta una, no hay excepción.
-   */
-  const isLegitimateBrowserApiCall = (access) => {
-    const receiver = access.expression;
-    if (!ts.isIdentifier(receiver)) return false;
-    if (!BROWSER_API_RECEIVERS.has(receiver.text)) return false;
-    // 1 y 2 · el símbolo resuelve al global real, no a algo que el fichero declara
-    if (resolve(receiver) !== null) return false;
-    // 3 · el acceso ES la llamada, no un valor que se guarda o se enlaza
+  const isDirectCallee = (access) => {
     const parent = access.parent;
     return Boolean(parent && ts.isCallExpression(parent) && parent.expression === access);
   };
 
-  /** Símbolos que, en algún punto, han recibido un miembro guardado. */
-  const tainted = new Set();
-
-  /** Símbolos que han recibido un miembro con nombre computado no demostrable. */
-  const opaque = new Set();
-
-  /**
-   * ¿Este acceso se está usando como algo **invocable**?
-   *
-   * Un acceso computado que no se resuelve puede ser `query[metodo](payload)` o
-   * puede ser `policies.environments[entorno]`, que es una consulta a un registro.
-   * Sin tipos no hay forma de distinguirlos por el acceso en sí, así que se mira
-   * qué se hace con él: invocarlo, enlazarlo, o guardarlo en un símbolo que
-   * después se invoca. Lo demás es indexar datos, y denunciarlo sería ruido.
-   */
-  const isUsedAsCallable = (access) => {
-    const parent = access.parent;
-    if (!parent) return false;
-    if (ts.isCallExpression(parent) && parent.expression === access) return true;
-    if (ts.isPropertyAccessExpression(parent) && INDIRECT_INVOKERS.has(parent.name.text)) {
-      return true;
-    }
-    return false;
+  /** El par exacto: receptor global no sombreado + miembro registrado + llamada. */
+  const isBrowserApiPair = (access) => {
+    const receiver = unwrap(access.expression);
+    if (!ts.isIdentifier(receiver)) return false;
+    if (resolve(receiver) !== null) return false;
+    const { name } = memberOf(access);
+    if (name === null || !BROWSER_API_PAIRS.has(`${receiver.text}.${name}`)) return false;
+    return isDirectCallee(access);
   };
 
-  const markTainted = (target) => {
-    if (!target) return;
-    if (ts.isIdentifier(target)) {
-      const binding = resolve(target);
-      if (binding) tainted.add(binding.declaration);
-    }
-  };
-
-  const markOpaque = (target) => {
-    if (!target) return;
-    if (ts.isIdentifier(target)) {
-      const binding = resolve(target);
-      if (binding) opaque.add(binding.declaration);
-    }
-  };
-
-  // ------------------------------------------------------------ pasada 1
-  // Cada acceso a un miembro guardado, se invoque o no.
-  walkAst(sourceFile, (node) => {
-    if (!ts.isPropertyAccessExpression(node) && !ts.isElementAccessExpression(node)) return;
-
-    const { name, computed, resolved } = accessedMember(node);
-
-    if (!resolved) {
-      // Un nombre computado que no se demuestra. Solo importa si el receptor no es
-      // un global de navegador legítimo: `caches[x]()` sigue siendo Cache API.
-      if (isLegitimateBrowserApiCall(node)) return;
-
-      if (isUsedAsCallable(node)) {
-        add(
-          node,
-          'Invocación de un miembro con nombre computado que no puede resolverse a un ' +
-            'literal. No poder demostrar que no es una escritura no equivale a que no lo ' +
-            'sea (INV-113).',
-        );
-        return;
-      }
-
-      // Guardado en un símbolo: se denuncia cuando ese símbolo se invoque.
-      if (node.parent && ts.isVariableDeclaration(node.parent)) {
-        markOpaque(node.parent.name);
-      } else if (
-        node.parent &&
-        ts.isBinaryExpression(node.parent) &&
-        node.parent.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-        node.parent.right === node
+  // --------------------------------------------------------------- propagación
+  const flow = analyzeDataflow(sourceFile, resolve, {
+    resolveString,
+    seed(node) {
+      // Elementos de patrón: `const { update } = q` y `({ update: w } = q)`.
+      if (
+        ts.isBindingElement(node) ||
+        ts.isPropertyAssignment(node) ||
+        ts.isShorthandPropertyAssignment(node)
       ) {
-        markOpaque(node.parent.left);
+        const keyNode = ts.isBindingElement(node) ? (node.propertyName ?? node.name) : node.name;
+        const key =
+          ts.isIdentifier(keyNode) || ts.isStringLiteralLike(keyNode)
+            ? keyNode.text
+            : ts.isComputedPropertyName(keyNode)
+              ? resolveString(keyNode.expression)
+              : null;
+        if (key === null && ts.isComputedPropertyName(keyNode)) return [LABEL_OPAQUE];
+        if (key !== null && WRITE_METHODS.has(key)) return [`${LABEL_WRITE}:${key}`];
+        if (key === 'rpc') return [LABEL_RPC];
+        return null;
       }
-      return;
-    }
-
-    if (name === null || !GUARDED_MEMBERS.has(name)) return;
-    if (isLegitimateBrowserApiCall(node)) return;
-
-    // El acceso ya es el hallazgo. Cómo se use después solo cambia el mensaje.
-    const parent = node.parent;
-    let how = 'se referencia';
-
-    if (parent && ts.isCallExpression(parent) && parent.expression === node) {
-      how = 'se invoca';
-    } else if (
-      parent &&
-      ts.isPropertyAccessExpression(parent) &&
-      INDIRECT_INVOKERS.has(parent.name.text)
-    ) {
-      how = `se enlaza con .${parent.name.text}()`;
-    } else if (parent && ts.isVariableDeclaration(parent)) {
-      how = 'se guarda en una variable';
-      markTainted(parent.name);
-    } else if (
-      parent &&
-      ts.isBinaryExpression(parent) &&
-      parent.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-      parent.right === node
-    ) {
-      how = 'se asigna a una variable';
-      markTainted(parent.left);
-    } else if (parent && ts.isCallExpression(parent)) {
-      how = 'se pasa como argumento';
-    } else if (parent && ts.isReturnStatement(parent)) {
-      how = 'se devuelve';
-    } else if (parent && (ts.isPropertyAssignment(parent) || ts.isArrayLiteralExpression(parent))) {
-      how = 'se almacena en otra estructura';
-    }
-
-    add(
-      node,
-      `El miembro ".${name}"${computed ? ' (acceso computado)' : ''} ${how} en superficie ` +
-        'de cliente. INV-113: el cliente no persiste, y separar el método de su llamada no ' +
-        'lo convierte en otra cosa. Si esta operación es legítima, es deuda que debe ' +
-        'justificarse en el checkpoint.',
-    );
+      if (!ts.isPropertyAccessExpression(node) && !ts.isElementAccessExpression(node)) return null;
+      if (isBrowserApiPair(node)) return null;
+      const { name, resolved } = memberOf(node);
+      if (!resolved) return [LABEL_OPAQUE];
+      if (WRITE_METHODS.has(name)) return [`${LABEL_WRITE}:${name}`];
+      if (name === 'rpc') return [LABEL_RPC];
+      return null;
+    },
   });
 
-  // ------------------------------------------------------------ pasada 2
-  // Desestructuración de un miembro guardado, en declaración o en asignación.
-  walkAst(sourceFile, (node) => {
-    /** @param {import('typescript').ObjectBindingPattern} pattern */
-    const checkBindingPattern = (pattern) => {
-      for (const element of pattern.elements) {
-        if (!ts.isBindingElement(element)) continue;
-        const source = element.propertyName ?? element.name;
-        const key = ts.isIdentifier(source) || ts.isStringLiteralLike(source) ? source.text : null;
-        if (key !== null && GUARDED_MEMBERS.has(key)) {
-          add(
-            element,
-            `Desestructuración de ".${key}" en superficie de cliente. Extraer el método del ` +
-              'cliente de datos no lo convierte en otra cosa (INV-113).',
-          );
-          markTainted(element.name);
-        }
-      }
-    };
+  if (flow.reachedLimit) {
+    add(sourceFile, 'La propagación no convergió: el fichero se trata como sospechoso entero.');
+  }
 
-    if (ts.isVariableDeclaration(node) && ts.isObjectBindingPattern(node.name)) {
-      checkBindingPattern(node.name);
+  const howUsed = (access) => {
+    const parent = access.parent;
+    if (!parent) return 'se referencia';
+    if (ts.isCallExpression(parent) && parent.expression === access) return 'se invoca';
+    if (
+      ts.isPropertyAccessExpression(parent) &&
+      ['bind', 'call', 'apply'].includes(parent.name.text)
+    ) {
+      return `se enlaza con .${parent.name.text}()`;
+    }
+    if (ts.isVariableDeclaration(parent)) return 'se guarda en una variable';
+    if (ts.isBinaryExpression(parent) && parent.right === access) return 'se asigna a una variable';
+    if (ts.isCallExpression(parent)) return 'se pasa como argumento';
+    if (ts.isReturnStatement(parent)) return 'se devuelve';
+    if (ts.isPropertyAssignment(parent) || ts.isArrayLiteralExpression(parent)) {
+      return 'se almacena en otra estructura';
+    }
+    return 'se referencia';
+  };
+
+  // ------------------------------------------------ 1 · accesos a escritura
+  walkAst(sourceFile, (node) => {
+    if (!ts.isPropertyAccessExpression(node) && !ts.isElementAccessExpression(node)) return;
+    if (isBrowserApiPair(node)) return;
+
+    const { name, computed, resolved } = memberOf(node);
+    if (!resolved) return; // lo decide la propagación, cuando se invoque
+    if (WRITE_METHODS.has(name)) {
+      add(
+        node,
+        `El miembro ".${name}"${computed ? ' (acceso computado)' : ''} ${howUsed(node)} en ` +
+          'superficie de cliente. INV-113: el cliente no persiste, y separar el método de su ' +
+          'llamada no lo convierte en otra cosa. Si esta operación es legítima, es deuda que ' +
+          'debe justificarse en el checkpoint.',
+      );
       return;
     }
+    // `.rpc` extraído: no es una invocación directa, así que la allowlist no puede
+    // comprobarse. Se denuncia la extracción.
+    if (name === 'rpc' && !isDirectCallee(node)) {
+      add(
+        node,
+        `El miembro ".rpc" ${howUsed(node)} en lugar de invocarse directamente. Una RPC ` +
+          'extraída no puede contrastarse con la allowlist de solo lectura (INV-113).',
+      );
+    }
+  });
 
-    // `({ update: w } = query)` · asignación destructurada, sin declaración
+  // --------------------------------------- 1b · desestructuración de escritura
+  const checkKey = (keyNode, target, verb = 'Desestructuración') => {
+    const key =
+      ts.isIdentifier(keyNode) || ts.isStringLiteralLike(keyNode)
+        ? keyNode.text
+        : ts.isComputedPropertyName(keyNode)
+          ? resolveString(keyNode.expression)
+          : null;
+    if (key !== null && WRITE_METHODS.has(key)) {
+      add(
+        target,
+        `${verb} de ".${key}" en superficie de cliente. Extraer el método del ` +
+          'cliente de datos no lo convierte en otra cosa (INV-113).',
+      );
+    }
+    if (key === 'rpc') {
+      add(
+        target,
+        `${verb} de ".rpc" en superficie de cliente. Una RPC extraída no puede ` +
+          'contrastarse con la allowlist de solo lectura (INV-113).',
+      );
+    }
+  };
+
+  walkAst(sourceFile, (node) => {
+    if (ts.isObjectBindingPattern(node)) {
+      for (const element of node.elements) {
+        if (ts.isBindingElement(element)) checkKey(element.propertyName ?? element.name, element);
+      }
+      return;
+    }
     if (
       ts.isBinaryExpression(node) &&
       node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
       ts.isObjectLiteralExpression(node.left)
     ) {
       for (const property of node.left.properties) {
-        const key = ts.isPropertyAssignment(property)
-          ? property.name
-          : ts.isShorthandPropertyAssignment(property)
-            ? property.name
-            : null;
-        const keyText =
-          key && (ts.isIdentifier(key) || ts.isStringLiteralLike(key)) ? key.text : null;
-        if (keyText !== null && GUARDED_MEMBERS.has(keyText)) {
-          add(
-            property,
-            `Asignación destructurada de ".${keyText}" en superficie de cliente. Que no haya ` +
-              'declaración de por medio no cambia lo que se está extrayendo (INV-113).',
-          );
-          if (ts.isPropertyAssignment(property)) markTainted(property.initializer);
-          else markTainted(property.name);
+        if (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) {
+          checkKey(property.name, property, 'Asignación destructurada');
         }
       }
     }
   });
 
-  // ------------------------------------------------------------ pasada 3
-  // Llamadas: RPC con nombre, identificadores sueltos y símbolos contaminados.
+  // ---------------------------------------------- 2 y 3 · invocaciones
   walkAst(sourceFile, (node) => {
     if (!ts.isCallExpression(node)) return;
 
-    // `.rpc('nombre', …)` · el nombre importa aunque el acceso ya se haya denunciado
-    const callee = node.expression;
-    const isRpcAccess =
-      (ts.isPropertyAccessExpression(callee) && callee.name.text === 'rpc') ||
-      (ts.isElementAccessExpression(callee) && resolveString(callee.argumentExpression) === 'rpc');
+    const { node: callee, through } = flow.effectiveCallee(node);
+    const isDirectMember =
+      through === null &&
+      (ts.isPropertyAccessExpression(callee) || ts.isElementAccessExpression(callee));
 
-    if (isRpcAccess) {
+    // 3 · `.rpc(nombre, …)` como invocación directa: se comprueba la allowlist.
+    if (isDirectMember && memberOf(callee).name === 'rpc') {
       const rpcName = resolveString(node.arguments[0]);
       if (rpcName === null) {
         add(
@@ -371,46 +313,60 @@ for (const [file, info] of clientFiles) {
       return;
     }
 
-    if (!ts.isIdentifier(callee)) return;
+    // Un acceso directo a escritura ya se denunció en 1. Lo que sigue es lo que
+    // llega por propagación: alias, contenedores, bind/call/apply, retornos…
+    if (isDirectMember && WRITE_METHODS.has(memberOf(callee).name ?? '')) return;
 
-    const binding = resolve(callee);
+    const capabilities = flow.factsOf(callee);
+    const describe = ts.isIdentifier(callee)
+      ? `"${callee.text}()"`
+      : `\`${callee.getText(sourceFile).replace(/\s+/g, ' ').slice(0, 48)}\``;
+    const via = through ? ` a través de .${through}()` : '';
 
-    // Un identificador suelto que se llama como un miembro guardado. Venga de
-    // desestructuración, de parámetro o de importación, el nombre es lo bastante
-    // específico como para exigir justificación.
-    if (GUARDED_MEMBERS.has(callee.text)) {
+    for (const label of capabilities) {
+      if (label.startsWith(`${LABEL_WRITE}:`)) {
+        add(
+          node,
+          `Invocación de ${describe}${via}, que lleva el método ".${label.slice(LABEL_WRITE.length + 1)}" ` +
+            'por propagación —alias, contenedor, enlace o retorno—. Renombrar no cambia la ' +
+            'operación (INV-113).',
+        );
+        return;
+      }
+    }
+    if (capabilities.has(LABEL_OPAQUE)) {
+      add(
+        node,
+        `Invocación de ${describe}${via}, que lleva un miembro con nombre computado no ` +
+          'demostrable. Almacenarlo en un objeto, array o variable no lo blanquea: no poder ' +
+          'demostrar qué se invoca no equivale a que sea seguro (INV-113).',
+      );
+      return;
+    }
+    if (capabilities.has(LABEL_RPC)) {
+      add(
+        node,
+        `Invocación de ${describe}${via}, que es una RPC extraída. Sin invocación directa ` +
+          'con nombre literal, la allowlist de solo lectura no puede comprobarse (INV-113).',
+      );
+      return;
+    }
+
+    // Identificador suelto con nombre de escritura: parámetro, importación…
+    if (
+      ts.isIdentifier(callee) &&
+      through === null &&
+      (WRITE_METHODS.has(callee.text) || callee.text === 'rpc')
+    ) {
       add(
         node,
         `Llamada a "${callee.text}()" como función suelta en superficie de cliente. Sea ` +
-          'alias, desestructuración, parámetro o importación, el cliente no persiste (INV-113).',
-      );
-      return;
-    }
-
-    // Un símbolo que en algún punto recibió un miembro guardado.
-    if (binding && tainted.has(binding.declaration)) {
-      add(
-        node,
-        `Llamada a "${callee.text}()", que en este fichero recibe un método de escritura o ` +
-          'una RPC. El alias es la evidencia: renombrar no cambia la operación (INV-113).',
-      );
-      return;
-    }
-
-    // Un símbolo que recibió un miembro con nombre computado no demostrable, y que
-    // ahora se invoca. Guardarlo no era prueba de nada; invocarlo lo convierte en
-    // una operación que no se puede justificar.
-    if (binding && opaque.has(binding.declaration)) {
-      add(
-        node,
-        `Llamada a "${callee.text}()", que recibe un miembro con nombre computado no ` +
-          'resoluble. No poder demostrar qué se invoca no equivale a que sea seguro (INV-113).',
+          'alias, parámetro o importación, el cliente no persiste (INV-113).',
       );
     }
   });
 
-  // ------------------------------------------------------------ pasada 4
-  // Clave de rol de servicio.
+  // -------------------------------------------- clave de rol de servicio
   walkAst(sourceFile, (node) => {
     if (ts.isIdentifier(node) && SERVICE_ROLE_MARKERS.has(node.text)) {
       add(
@@ -425,7 +381,6 @@ for (const [file, info] of clientFiles) {
   });
 }
 
-// ---------------------------------------------------- frontera server-only
 for (const violation of boundaryViolations) {
   findings.push({
     file: violation.file,
@@ -437,24 +392,19 @@ for (const violation of boundaryViolations) {
 }
 
 console.log(
-  `  (superficie de cliente: ${clientFiles.size} fichero(s); análisis por símbolo y ámbito; ` +
-    `0 escrituras permitidas, ${READ_ONLY_RPCS.size} RPC en la allowlist de lectura; ` +
-    `${PROJECTIONS.size} proyecciones registradas; excepción de navegador solo para ` +
-    `invocación directa sobre el global real)`,
+  `  (superficie de cliente: ${clientFiles.size} fichero(s); propagación de capacidades por ` +
+    `punto fijo; 0 escrituras permitidas, ${READ_ONLY_RPCS.size} RPC en la allowlist de ` +
+    `lectura; ${PROJECTIONS.size} proyecciones registradas; excepción de navegador: ` +
+    `${[...BROWSER_API_PAIRS.keys()].join(', ')} en invocación directa)`,
 );
 
 report(
   'client-authority-guard',
   findings,
   'INV-113 · REQ-A08 · EC-010. En superficie de cliente no se accede a `.insert()`,\n' +
-    '`.update()`, `.upsert()`, `.delete()` ni `.rpc()` —ni para invocarlos, ni para\n' +
-    'guardarlos, enlazarlos, pasarlos o devolverlos—, salvo una `.rpc()` que esté en la\n' +
-    'allowlist de solo lectura. Una proyección local es legítima si está marcada\n' +
-    '`authoritative: false` y se sustituye por la del servidor al sincronizar; lo que no\n' +
-    'es legítimo es persistirla desde el navegador.\n' +
+    '`.update()`, `.upsert()` ni `.delete()` —ni para invocarlos, ni para guardarlos,\n' +
+    'enlazarlos, pasarlos o devolverlos—, y `.rpc()` solo como invocación directa con un\n' +
+    'nombre literal de la allowlist de solo lectura. Lo que llega por alias, contenedor,\n' +
+    'bind/call/apply o retorno se detecta por propagación, no por su forma.\n' +
     'Registro: `packages/domain/src/authority-registry.json`.',
 );
-
-if (process.env['STUDY_OS_GUARD_DEBUG'] === '1') {
-  console.error(`DEBUG · ${DECL_KINDS.VARIABLE} · ${findings.length} hallazgo(s)`);
-}

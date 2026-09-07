@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import ts from 'typescript';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -88,5 +89,44 @@ export function withViolations<T>(files: Record<string, string>, body: () => T):
     return body();
   } finally {
     for (const absolute of written) rmSync(absolute, { force: true });
+  }
+}
+
+/**
+ * Comprueba que unos ficheros **compilan** con las opciones reales del repositorio.
+ *
+ * Un fixture adversarial que no compila no demuestra nada: la guarda podría estar
+ * saltando sobre un error de sintaxis, no sobre la evasión. Se construye un programa
+ * de TypeScript con el `tsconfig.json` del repositorio y se exigen cero diagnósticos
+ * —sintácticos y semánticos— en los ficheros indicados. Los diagnósticos de las
+ * dependencias no cuentan: lo que se juzga es el fixture.
+ */
+export function assertCompiles(relativePaths: readonly string[]): void {
+  const configPath = join(REPO_ROOT, 'tsconfig.json');
+  const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+  if (configFile.error)
+    throw new Error(ts.flattenDiagnosticMessageText(configFile.error.messageText, '\n'));
+  const parsed = ts.parseJsonConfigFileContent(configFile.config, ts.sys, REPO_ROOT);
+
+  const absolute = relativePaths.map((relative) => join(REPO_ROOT, relative));
+  const program = ts.createProgram(absolute, {
+    ...parsed.options,
+    noEmit: true,
+    skipLibCheck: true,
+    incremental: false,
+  });
+
+  const normalize = (path: string) => path.split('\\').join('/').toLowerCase();
+  const wanted = new Set(absolute.map(normalize));
+  const diagnostics = ts
+    .getPreEmitDiagnostics(program)
+    .filter((diagnostic) => diagnostic.file && wanted.has(normalize(diagnostic.file.fileName)));
+
+  if (diagnostics.length > 0) {
+    const lines = diagnostics.map((diagnostic) => {
+      const { line } = diagnostic.file!.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
+      return `${diagnostic.file!.fileName}:${line + 1} · ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`;
+    });
+    throw new Error(`El fixture no compila:\n${lines.join('\n')}`);
   }
 }

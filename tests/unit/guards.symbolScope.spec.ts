@@ -204,7 +204,7 @@ describe('S1 · client-authority · el método separado de su llamada', () => {
     );
 
     expect(result.exitCode, result.output).toBe(1);
-    expect(result.output).toContain('nombre computado que no puede resolverse');
+    expect(result.output).toContain('nombre computado no demostrable');
   });
 });
 
