@@ -12,8 +12,10 @@ import { REPO_ROOT } from './lib/run-guard';
  * Qué vigila este fichero
  *
  * SD-018 corrige la interacción entre el contador de posición y la clave de
- * idempotencia. Nada de eso está implementado y **no debe estarlo** hasta que haya
- * decisión humana. Estas pruebas verifican dos cosas distintas:
+ * idempotencia. La decisión humana llegó el 2026-09-07 —ADR-008, `ACCEPTED · NOT
+ * IMPLEMENTED`— y **no autoriza ninguna migración**: nada de eso está implementado y
+ * no debe estarlo sin una autorización de implementación que este repositorio no
+ * tiene. Estas pruebas verifican dos cosas distintas:
  *
  *   1. que el contrato escrito dice lo que tiene que decir —el orden de las
  *      operaciones es el punto entero de SD-018, y una redacción que lo pierda
@@ -107,11 +109,18 @@ describe('SD-018 · el contrato dice lo que debe', () => {
     }
   });
 
-  it('sigue PROPOSED y sin aprobar', () => {
-    const section = log.slice(log.indexOf('## SD-018 · **corrección del contrato**'));
-    expect(section).toContain('NO IMPLEMENTADO');
-    expect(section).toContain('decisión humana explícita');
-    expect(section).toContain('**Aprobación:** pendiente.');
+  it('está ACCEPTED · NOT IMPLEMENTED, con ADR-008 como propietario normativo', () => {
+    const fromFirstHeading = log.slice(log.indexOf('## SD-018 · Orden total de eventos'));
+    const correction = log.slice(log.indexOf('## SD-018 · **corrección del contrato**'));
+
+    expect(correction).toContain('ACCEPTED · NOT IMPLEMENTED');
+    expect(correction).toContain('ADR-008');
+    expect(correction).toContain('2026-09-07');
+    expect(correction).toContain('no autoriza');
+    // Ninguna de las dos redacciones de SD-018 sigue diciendo «pendiente».
+    expect(fromFirstHeading).not.toContain('**Aprobación:** pendiente.');
+    // Y lo que sigue sin existir sigue sin existir.
+    expect(correction).toContain('No se ha creado ninguna migración');
   });
 });
 
@@ -179,7 +188,8 @@ describe('SD-018 · nada de esto está implementado', () => {
 
   it('las suites de intentos declaradas en el contrato no existen todavía', () => {
     // Declarar una prueba en el contrato no es escribirla. Si algún día aparecen,
-    // será porque SD-018 se implementó, y eso exige decisión humana antes.
+    // será porque SD-018 se implementó, y eso exige una autorización de
+    // implementación que la aceptación de ADR-008 no da.
     const testsDir = join(REPO_ROOT, 'tests');
     const existing = new Set<string>();
     const walk = (dir: string) => {

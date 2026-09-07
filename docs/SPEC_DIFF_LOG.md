@@ -323,8 +323,11 @@ anterior. SD-015 permanece en el cuerpo congelado sin tocar; esta entrada es la 
 gobierna a partir de ahora.
 **Origen:** revisión humana de la autorización de Phase 0 y auditoría externa del
 checkpoint.
-**Estado:** **PROPOSED · no implementado.** No existe ninguna migración de eventos ni
-ninguna tabla `learning_events` en el repositorio.
+**Estado:** **`ACCEPTED · NOT IMPLEMENTED`** · propietario normativo **ADR-008** · aprobado
+por Ana Victoria el 2026-09-07 (`STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md`). Esta
+redacción vale en su estructura; sus puntos 2 y 4 quedan sustituidos por la corrección de
+más abajo, y ADR-008 consolida el contrato final. No existe ninguna migración de eventos
+ni ninguna tabla `learning_events` en el repositorio, y la aceptación no autoriza ninguna.
 
 ### Por qué SD-015 no sirve
 
@@ -400,7 +403,8 @@ alguna lo necesitara, exigiría su propio ADR.
 Migración 8 (stream de eventos) y 16 (índices). Debe aplicarse **antes de ingerir
 cualquier evidencia real**.
 
-**Aprobación:** pendiente.
+**Aprobación:** `ACCEPTED` · 2026-09-07 · Ana Victoria · propietario normativo ADR-008 ·
+**no implementado** y sin migración autorizada.
 
 ---
 
@@ -551,9 +555,10 @@ congelado.
 estructura pero describía mal la interacción entre el contador de posición y la clave de
 idempotencia. Esta sección **sustituye** los puntos 2 y 4 de aquella redacción.
 
-**Estado:** **PROPOSED · NO IMPLEMENTADO.** No existe ninguna migración de eventos, ninguna
-tabla `learning_events`, ningún contador y ninguna función. Nada de esto está cerrado ni
-aprobado: exige decisión humana explícita.
+**Estado:** **`ACCEPTED · NOT IMPLEMENTED`** · propietario normativo **ADR-008**. No existe
+ninguna migración de eventos, ninguna tabla `learning_events`, ningún contador y ninguna
+función. La decisión humana explícita llegó el 2026-09-07 con el Human Decision Packet
+v1.0; la aceptación **no autoriza** ninguna implementación.
 
 ### Qué estaba mal
 
@@ -694,44 +699,81 @@ y el estado resultante depende del orden en que se evalúen.
 ### Qué NO se ha hecho
 
 No se ha creado ninguna migración, ninguna tabla, ninguna función ni ningún índice. SD-018
-sigue siendo un contrato propuesto. **No debe darse por cerrada ni por aprobada sin decisión
-humana explícita.**
+es un contrato **aceptado y no implementado**: la decisión humana explícita consta en el
+Human Decision Packet v1.0 y en ADR-008, y **no autoriza ninguna migración**. Antes de la
+primera migración de eventos deben existir el contrato de canonicalización versionado y las
+suites declaradas arriba.
 
-**Aprobación:** pendiente.
+**Aprobación:** `ACCEPTED` · 2026-09-07 · Ana Victoria · propietario normativo ADR-008 ·
+**no implementado** y sin migración autorizada.
 
 ---
 
-## Estado de la adenda · al cierre de la ronda correctiva final
 
-Sustituye a los dos resúmenes anteriores, que quedaron desfasados al añadirse
-`SD-018` y `SD-019` y al autorizarse la opción A de esta última.
+## Estado de la adenda · tras el Human Decision Packet v1.0 · 2026-09-07
 
-| Entrada | Tipo | Estado |
-| --- | --- | --- |
-| **ERRATA P0-IN-1** | Errata documental | PROPOSED · el fichero congelado no se ha editado |
-| **SD-016** · INV-116 | Alta de invariante | Contenido aprobado por Ana · **implementado y verificado** |
-| **SD-017** · naturaleza real de los documentos gobernantes | Corrección documental | PROPOSED · `authority-map.md` no se ha editado |
-| **SD-018** · orden e idempotencia del stream de eventos | Sustituye a SD-015 | PROPOSED · **no implementado** · corregido en esta ronda |
-| **SD-019** · la paleta no alcanza el AA que exige §14 | Contradicción entre §2 y §14 | **Opción A autorizada e implementada** · el cambio de especificación (B o C) sigue PROPOSED |
+Sustituye a los resúmenes anteriores. Los tres primeros —«Resumen de la adenda»,
+«Resumen de la adenda · actualizado» y «Estado de la adenda · al cierre de la ronda
+correctiva final»— describen la cronología y ya no gobiernan: son texto histórico.
 
-**Total: 19 entradas SPEC_DIFF** (15 congeladas + SD-016 … SD-019) **y 1 errata.**
+### Registro de aceptación · decisiones aprobadas el 2026-09-07
 
-`SD-015` queda **superseded por SD-018**. Ninguna de las dos está implementada: no
-existe tabla de eventos, ni contador, ni watermark.
+**Registro de decisión:** `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` · SHA-256
+`6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d` · baseline auditado
+`8823c2bdf2d31ec01a2f15b1566a94c1ad0eb04a` · decisora Ana Victoria · revisión técnica
+ChatGPT / Codex · **alcance: gobernanza únicamente.** No autoriza migraciones,
+implementación de dominio, infraestructura ni Phase 1.
 
-El cuerpo congelado v1.2 conserva su hash en las primeras 174 líneas:
+| Entrada | Estado operativo | Propietario normativo | Efecto sobre lo ya escrito |
+| --- | --- | --- | --- |
+| **SD-001** · BD-05 | `ACCEPTED · NOT IMPLEMENTED` | **ADR-010** | La línea «Aprobación: pendiente» de SD-001 en el cuerpo congelado es histórica · ADR-005 punto 5 superseded |
+| **SD-002** · BD-02 | `ACCEPTED · NOT IMPLEMENTED` · modelo de dos capas | **ADR-009** | Ídem para SD-002 |
+| **SD-006** | `ACCEPTED · NOT IMPLEMENTED` · aceptado según aclaración | **ADR-007** | Ídem para SD-006 · ADR-002 punto 6 superseded |
+| **SD-007** | `ACCEPTED · NOT IMPLEMENTED` · ratifica INV-101 | **ADR-006** | Ídem para SD-007 · ADR-001 punto 3 y ADR-005 punto 4 subordinados |
+| **SD-015** | `SUPERSEDED BY SD-018 / ADR-008` · no operativo | — | Su `server_sequence` global y su watermark «sin huecos» no se implementan; ADR-002 punto 10 superseded |
+| **SD-018** · con su corrección | `ACCEPTED · NOT IMPLEMENTED` · contrato final corregido | **ADR-008** | Las líneas «Aprobación: pendiente» de SD-018 se han sustituido en esta adenda |
+
+**Qué significa `ACCEPTED · NOT IMPLEMENTED`.** La decisión está tomada y tiene un único
+propietario normativo. **Ninguna migración, tabla, función, política ni test de dominio
+existe** para ninguna de las cinco, y **ninguna queda autorizada por la aceptación**. La
+implementación exige su propio plan y las precondiciones que cada ADR marca como
+prerrequisito (contrato de canonicalización versionado para ADR-008; matriz de destinos
+completada para ADR-007).
+
+**El cuerpo congelado v1.2 no se edita.** Es texto histórico: sus líneas «pendiente» —SD-001,
+SD-002, SD-006, SD-007— y su SD-015 son cronología del paquete importado, igual que su
+cabecera «Estado de todas las entradas: `PROPOSED`», y su hash se conserva:
 
 ```bash
 head -174 docs/SPEC_DIFF_LOG.md | sha256sum
 # 4a4ba01d3e211aa0c2200239826a14f3b56dbe788fe40064a5f0a087da6f2fd3
 ```
 
+Este registro de aceptación, junto con los ADR aceptados, es lo que gobierna el estado
+operativo de esas entradas.
+
+### Estado de todas las entradas de la adenda
+
+| Entrada | Tipo | Estado |
+| --- | --- | --- |
+| **ERRATA P0-IN-1** | Errata documental | PROPOSED · el fichero congelado no se ha editado |
+| **SD-016** · INV-116 | Alta de invariante | Contenido aprobado por Ana · **implementado y verificado** |
+| **SD-017** · naturaleza real de los documentos gobernantes | Corrección documental | PROPOSED · `authority-map.md` no se ha editado |
+| **SD-018** · orden e idempotencia del stream de eventos | Sustituye a SD-015 | **`ACCEPTED · NOT IMPLEMENTED`** · ADR-008 · 2026-09-07 |
+| **SD-019** · la paleta no alcanza el AA que exige §14 | Contradicción entre §2 y §14 | **Opción A autorizada e implementada** · el cambio de especificación (B o C) sigue PROPOSED · diferido antes de Phase 5 |
+
+**Total: 19 entradas SPEC_DIFF** (15 congeladas + SD-016 … SD-019) **y 1 errata.** Cinco
+en `ACCEPTED · NOT IMPLEMENTED` —SD-001, SD-002, SD-006, SD-007 y SD-018—; una
+`SUPERSEDED` —SD-015—; una implementada por decisión humana de arranque —SD-016—; el
+resto `PROPOSED`.
+
 ### Qué sigue necesitando decisión humana
 
 | Decisión | Qué desbloquea |
 | --- | --- |
-| **SD-019 · elegir entre B y C** | El uso de la paleta **sin restricciones**, que necesitan las 18 familias de componentes de §16. No condiciona ningún entregable de Phase 0: `REQ-A06` y `P0-S7` quedan satisfechos bajo la opción A. Antes de Phase 5 |
-| **SD-018 · aprobar el contrato** | Cualquier migración de eventos. Antes de ingerir evidencia real |
-| **SD-006 · SD-007** | La forma de las primeras migraciones de dominio |
-| **SD-017 · ERRATA** | La auditoría de Drive y la corrección de `authority-map.md` |
-| **BD-02 · BD-05** | Migraciones 3 y 5 |
+| **SD-019 · elegir entre B y C** | El uso de la paleta **sin restricciones**, que necesitan las 18 familias de componentes de §16. No condiciona ningún entregable de Phase 0. Antes de Phase 5 |
+| **SD-017 · ERRATA P0-IN-1** | La auditoría de Drive y la corrección de `authority-map.md` |
+| **SD-003 · SD-004 · SD-005 · SD-008 … SD-014** | Sin cambios: fuera del alcance del packet |
+
+**Lo que ya no necesita decisión humana:** SD-018, SD-006, SD-007, BD-02 y BD-05. Lo que
+necesitan ahora es un plan de implementación con sus prerrequisitos, y eso no es Phase 0.

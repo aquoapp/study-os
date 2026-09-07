@@ -1,4 +1,4 @@
-# STUDY OS · Checkpoint de Phase 0 · octava reemisión
+# STUDY OS · Checkpoint de Phase 0 · novena reemisión
 
 Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 
@@ -9,60 +9,78 @@ COMMIT/TAG: ver «HEAD» en AUDIT_EVIDENCE.md (sin tag: se crea tras el merge ap
 STATUS: BLOCKED
 ```
 
-**Octava reemisión.** La séptima (`a33ad27`) fue auditada y devolvió el falso
-negativo que quedaba en `auth-authority-guard`: un método computado sobre una consulta
-solo se denunciaba cuando el acceso era la llamada misma. Este informe la sustituye.
+**Novena reemisión.** La octava (`8823c2b`) fue auditada y sirvió de baseline al
+`STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` (SHA-256
+`6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d`), con el que Ana
+Victoria aprobó el 2026-09-07 las cinco decisiones humanas que bloqueaban el cierre. Este
+informe la sustituye. Es una ronda **de gobernanza únicamente**: sin infraestructura, sin
+migraciones, sin código de dominio y sin Phase 1.
 
 ## Por qué sigue BLOCKED
 
-Por cuatro cosas, y ninguna se resuelve con una corrección local:
+Por dos cosas, y ninguna se resuelve desde este repositorio:
 
 | Motivo | Naturaleza |
 | --- | --- |
 | **P0-G4** · cuatro de los nueve checks no pueden ejecutarse | Infraestructura externa · MI-05a, sin Docker |
 | **P0-G2** · la separación entre entornos reales no se ha comprobado | Ídem: exige que esos entornos existan |
-| **SD-018** · contrato completo, **PROPOSED y sin aprobar** | Decisión humana |
-| **BD-02 · BD-05 · SD-006 · SD-007** | Decisiones de dominio, pendientes antes del PASS final |
 
 `Execution Plan §6` stop condition 1: «Phase 0 se detiene y se reporta BLOCKED si no
 se dispone de credenciales o entornos (MI-05)».
 
-**Lo que no bloquea.** `REQ-A06` y `P0-S7` quedan **satisfechos bajo las
-restricciones de SD-019 opción A**; elegir entre B y C es una decisión **diferida
-con plazo antes de Phase 5**. Esta ronda no reabre SD-019, SD-018, el aislamiento
-E2E, la accesibilidad ni ningún contrato de dominio.
+**Lo que ya no bloquea.** SD-018, SD-006, SD-007, BD-02 y BD-05 **ya no** son decisiones
+pendientes: quedaron `ACCEPTED · NOT IMPLEMENTED` el 2026-09-07 (§0). Y `REQ-A06` y
+`P0-S7` siguen **satisfechos bajo las restricciones de SD-019 opción A**; elegir entre B
+y C es una decisión **diferida con plazo antes de Phase 5**. Esta ronda no reabre
+SD-019, el aislamiento E2E, la accesibilidad ni las guardas.
 
 ---
 
-## 0. La ronda correctiva de esta reemisión
+## 0. La ronda de gobernanza de esta reemisión
 
-Esta ronda se limitó a **cerrar el sumidero computado extraído** de
-`auth-authority-guard`. No toca infraestructura, migraciones, SD-018 ni decisiones de
-dominio.
+Esta ronda convierte cinco decisiones humanas en ADR aceptados y en estado vivo
+coherente. **No** toca infraestructura, migraciones, SQL, RLS, código de dominio ni
+Phase 1; **no** aprueba nada fuera de las cinco; **no** edita ningún artefacto
+congelado de Phase −1 salvo la anotación de supersesión en tres ADR, que el propio
+registro de decisión exige y `docs/PROVENANCE.md` §2.1 documenta por hash.
 
-| # | Hallazgo de la auditoría | Estado | Evidencia |
+### Las cinco decisiones · matriz de aceptación
+
+| Decisión | Resultado aprobado | Propietario normativo | Estado |
 | --- | --- | --- | --- |
-| C1 | `scope.mjs` trataba `var` como si tuviera ámbito de bloque | **CERRADO** (ronda anterior) | `guards.closure.spec` C1 |
-| C2 | Retornos, contenedores y llamadas no modeladas en el motor | **CERRADO** (ronda anterior) | `guards.closure.spec` C2, C3 |
-| C3 | Método computado no resoluble sobre una consulta | **CERRADO** (ronda anterior) | `guards.closure.spec` C4 |
-| C4 | La consulta se reconocía por el **nombre** `from`, no por su origen | **CERRADO** (ronda anterior) | `guards.postgrestProvenance.spec` · 13 casos |
-| C5 | `q[method](...)` solo se denunciaba cuando el acceso era la llamada misma: `const sink = query[method]; sink('user_id', raw)` pasaba | **CERRADO** en esta ronda | `guards.computedSink.spec` · 10 casos |
+| **SD-007** · claves de respuesta fuera del Data API | ACCEPT · ratifica INV-101 | **ADR-006** v1.0 | `ACCEPTED · NOT IMPLEMENTED` |
+| **SD-006** · referencias polimórficas | ACCEPT AS CLARIFIED · FK tipadas + `CHECK` de exclusividad | **ADR-007** v1.0 | `ACCEPTED · NOT IMPLEMENTED` |
+| **SD-018** · orden e idempotencia | ACCEPT THE CORRECTED CONTRACT · supersede a SD-015 | **ADR-008** v1.0 | `ACCEPTED · NOT IMPLEMENTED` |
+| **BD-02** / SD-002 · identidad de concepto | ACCEPT THE TWO-LAYER MODEL | **ADR-009** v1.0 | `ACCEPTED · NOT IMPLEMENTED` |
+| **BD-05** / SD-001 · convocatoria / ocurrencia | ACCEPT | **ADR-010** v1.0 | `ACCEPTED · NOT IMPLEMENTED` |
 
-**Qué estaba mal en C5.** La comprobación del método computado miraba el callee de la
-`CallExpression`: si era un `ElementAccessExpression` no resoluble sobre una consulta,
-hallazgo. Separar la lectura de la llamada la esquivaba entera. Ahora **leer** `q[m]`
-no resoluble sobre un valor `postgrest-query` produce la capacidad
-`postgrest-computed-sink`, que el motor propaga como una función-valor, y **invocar**
-cualquier valor que la lleve es hallazgo, esté donde esté la llamada.
+Los cinco ADR: versión 1.0, `ACCEPTED`, aprobados por Ana Victoria el 2026-09-07,
+con el registro de decisión y su hash citados en cada uno. **SD-015** queda
+`SUPERSEDED BY SD-018 / ADR-008`.
 
-Hubo que acotar una regla del motor: un seed sobre `q[m]` no se guarda en ninguna
-ubicación, porque la suya es el comodín `.*` que toda lectura de propiedad consulta, y
-guardarlo ahí habría contaminado `query.select`. Un control positivo lo vigila.
+### Qué cambia en los ADR existentes, y qué no
 
-Este informe sigue sin afirmar que todo `.from()` implique PostgREST.
+| ADR | Estado | Anotación |
+| --- | --- | --- |
+| ADR-001 | `PROPOSED` | Punto 3 subordinado a ADR-006 |
+| ADR-002 | `PROPOSED` · **no se acepta tal como está** | Punto 6 superseded por ADR-007; punto 4 (`ON CONFLICT DO NOTHING`) y punto 10 (`server_sequence` global, watermark global) superseded por ADR-008, conservados como texto histórico no operativo |
+| ADR-003 · ADR-004 | `PROPOSED` | Intactos · hash de importación conservado |
+| ADR-005 | `PROPOSED` | Punto 4 subordinado a ADR-006 —referencia, no duplica—; punto 5 superseded por ADR-010 |
 
-Conservados sin regresión: independencia respecto a `_handoff`; SD-019 opción A y
-sus pruebas renderizadas; el contrato corregido de SD-018, todavía PROPOSED; el
+### Qué no se ha determinado, y no se ha inventado
+
+ADR-007 publica la matriz de destinos con lo que los documentos gobernantes
+determinan —las familias de destino de CDEM §23 y las tablas de contenido de CDEM
+§6–§7— y marca como **prerrequisito de implementación** lo que no determinan: el
+comportamiento `ON DELETE` y la enumeración cerrada de `item_type`. ADR-008 exige un
+**contrato de canonicalización versionado** antes de la migración 8; no está
+redactado. Ambas cosas constan como deuda D-12.
+
+### Los hallazgos de las rondas correctivas
+
+C1 … C5 siguen **cerrados** (rondas anteriores); las 169 pruebas de guardas y los
+26 bypasses se ejecutan enteros en cada pasada. Conservados sin regresión:
+independencia respecto a `_handoff`; SD-019 opción A y sus pruebas renderizadas; el
 aislamiento E2E por ejecución, la enumeración completa antes del borrado, la
 verificación sobre los IDs enviados a `deleteUser` y la conservación del marcador
 ante cualquier fallo; el bundle exacto del commit y la evidencia externa.
@@ -77,7 +95,11 @@ ante cualquier fallo; el bundle exacto del commit y la evidencia externa.
 - `STUDY_OS_Technical_Architecture_v1.0` §1–§6, §5.2–§5.4
 - `docs/PHASE_0_EXECUTION_PLAN.md` v1.2 · P0-S1 … P0-S10, §4, §5, §6
 - `spec/requirement-index.md` REQ-A01 … REQ-A09, REQ-C13
-- `docs/SPEC_DIFF_LOG.md` · adenda: ERRATA P0-IN-1, SD-016, SD-017, SD-018, SD-019
+- `docs/SPEC_DIFF_LOG.md` · adenda: ERRATA P0-IN-1, SD-016, SD-017, SD-018, SD-019 y el
+  registro de aceptación del 2026-09-07
+- `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` · SHA-256
+  `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d` · no versionado
+- `architecture/ADR-006` … `ADR-010` · `ACCEPTED` · `STUDY_OS_ADR_Policy_v1.0`
 
 ---
 
@@ -93,7 +115,7 @@ ante cualquier fallo; el bundle exacto del commit y la evidencia externa.
 | **P0-S6** | CI en dos jobs, CLI fijado, E2E estáticos separados de los de auth | **Escrito · nunca ejecutado** |
 | **P0-S7** | Tokens con los valores de `STUDY_OS_Design_System_v1.0`, los defaults de implementación marcados aparte, y el contraste verificado en el navegador | **Satisfecho bajo SD-019 opción A** |
 | **P0-S8** | Cinco guardas con propagación de capacidades y procedencia por punto fijo, y 169 pruebas que ejecutan las guardas reales | Completo |
-| **P0-S9** | `/spec`, `/architecture`, `/docs` importados con SHA-256; registro versionado de documentos gobernantes | Completo |
+| **P0-S9** | `/spec`, `/architecture`, `/docs` importados con SHA-256; registro versionado de documentos gobernantes; ADR-006 … ADR-010 `ACCEPTED` el 2026-09-07 y tres ADR anotados por hash | Completo |
 | **P0-S10** | Este informe | Completo |
 
 ---
@@ -139,12 +161,14 @@ ronda.
 
 ---
 
-## SD-018 · técnicamente corregido, PROPOSED, **sin aprobar**
+## SD-018 · `ACCEPTED · NOT IMPLEMENTED` · ADR-008
 
 Contrato completo —orden de las operaciones dentro de la transacción y triple
-coincidencia de usuario, pregunta y payload canónico—, **no implementado**, y lo
-comprueba `sd018.contract.spec`. Sigue **PROPOSED y pendiente de aprobación humana
-explícita**. Sin cambios en esta ronda.
+coincidencia de usuario, pregunta y payload canónico—, **aceptado por Ana Victoria el
+2026-09-07** con ADR-008 como propietario normativo, y **no implementado**: lo comprueba
+`sd018.contract.spec`, que ahora exige el estado aceptado y sigue exigiendo que ninguna
+migración, tabla, contador, función ni suite de intentos exista. SD-015 queda
+`SUPERSEDED BY SD-018 / ADR-008`. La aceptación no autoriza ninguna migración.
 
 ---
 
@@ -152,18 +176,40 @@ explícita**. Sin cambios en esta ronda.
 
 Rondas anteriores: siete commits correctivos más `3872a84`; siete más `2c03ecb`;
 cinco más `d848f1a`; tres más `6ec13e5`; dos más `85bdf99`; tres más `b606e0d`;
-dos más `a33ad27`. Esta ronda produce uno, más la reemisión:
+dos más `a33ad27`; dos más `8823c2b`. Esta ronda produce dos, separados por
+incumbencia:
 
 | Commit | Alcance |
 | --- | --- |
-| `52ceb88` | Capacidad `postgrest-computed-sink` · seeds no guardados en el comodín `.*` · 10 fixtures |
-| (este) | Documentación viva y reemisión |
+| `c660389` | ADR-006 … ADR-010 `ACCEPTED` · anotación de supersesión parcial en ADR-001/002/005 · `adr.acceptedDecisions.spec` (60 casos) |
+| (este) | Registros vivos reconciliados · `decisionRegister.spec` (45 casos) · `sd018.contract.spec` actualizado · reemisión |
 
 Ficheros nuevos de esta ronda:
 
 | Ruta | Propósito |
 | --- | --- |
-| `tests/unit/guards.computedSink.spec.ts` | Los cuatro fixtures obligatorios, los demás caminos y tres controles positivos |
+| `architecture/ADR-006-answer-key-data-api-boundary.md` | SD-007 · propietario normativo único |
+| `architecture/ADR-007-enforceable-item-targets.md` | SD-006 · patrón vinculante y matriz de destinos |
+| `architecture/ADR-008-per-user-event-order-and-idempotency.md` | SD-018 · contrato de once puntos, `question_attempts` y canonicalización |
+| `architecture/ADR-009-stable-concept-identity.md` | BD-02 / SD-002 · modelo de dos capas |
+| `architecture/ADR-010-official-exam-occurrences.md` | BD-05 / SD-001 · convocatorias y ocurrencias |
+| `tests/unit/adr.acceptedDecisions.spec.ts` | Estado, aprobación, propiedad única, cláusulas, hashes congelados, nada implementado |
+| `tests/unit/decisionRegister.spec.ts` | Ningún registro vivo afirma un estado caducado; matriz idéntica en todos; importados intactos por hash |
+
+Ficheros vivos modificados: `docs/SPEC_DIFF_LOG.md` (solo la adenda), `docs/ARCHITECTURE_STATE.md`
+(v9.0), `docs/GOVERNING_DOCUMENTS.md`, `docs/PROVENANCE.md` (§2.1), `CLAUDE.md` §9,
+`packages/domain/src/authority.ts` (comentario), `supabase/config.toml` (comentario),
+`supabase/functions/README.md` y este informe.
+
+**No modificados, deliberadamente:** `docs/PHASE_0_EXECUTION_PLAN.md`,
+`docs/PHASE_MINUS_1_INDEX.md`, `spec/*` y las migraciones. Los tres primeros son
+importados de Phase −1 con hash registrado, y su lenguaje de estado es histórico:
+«SD-015 PROPOSED» o «BD-02 pendiente» son cronología de la entrega del 2026-08-22,
+igual que «no marcar ningún ADR como ACCEPTED»; no son el estado operativo, y
+`decisionRegister.spec` lo fija por hash. El
+comentario de cabecera de `00000000000000_init.sql`, que cita BD-02, BD-05, SD-006 y SD-018
+como decisiones abiertas, es también histórico: editar una migración está prohibido en
+esta ronda y cambiaría su huella.
 
 ---
 
@@ -176,6 +222,8 @@ Obtenido con `vitest run --project unit --reporter=json`, no a mano.
 | Fichero | Casos |
 | --- | --- |
 | `operational-security.spec.ts` | 60 |
+| `adr.acceptedDecisions.spec.ts` | 60 |
+| `decisionRegister.spec.ts` | 45 |
 | `sd018.contract.spec.ts` | 37 |
 | `guards.symbolScope.spec.ts` | 30 |
 | `tokens.contrast.spec.ts` | 29 |
@@ -203,7 +251,7 @@ Obtenido con `vitest run --project unit --reporter=json`, no a mano.
 | `primarySpaces.frozen.spec.ts` | 6 |
 | `importGuard.spec.ts` | 4 |
 | `taiLiteral.guard.spec.ts` | 3 |
-| **Total** | **536 en 28 ficheros** |
+| **Total** | **641 en 30 ficheros** |
 
 ### Ejecutado · en verde
 
@@ -218,11 +266,11 @@ La salida íntegra está en `AUDIT_EVIDENCE.md`, que se entrega fuera del ZIP.
 | `npm run lint` | **PASS** |
 | `npm run format` | **PASS** |
 | `npm run build` | **PASS** · 8 rutas |
-| `npm run test:unit` | **PASS** · **536/536** en 28 ficheros |
+| `npm run test:unit` | **PASS** · **641/641** en 30 ficheros |
 | `npm run guards` | **PASS** · las cuatro sin hallazgos |
 | `npm run secret-scan` | **PASS** · construye por sí mismo · centinela de servidor |
 | `npm run test:e2e:static` | **PASS** · **70/70** (35 casos × 2 proyectos) |
-| Fixtures nuevos, ejecutados de forma visible | **PASS** · 10/10 |
+| Pruebas documentales nuevas, ejecutadas de forma visible | **PASS** · 105/105 (60 + 45) |
 
 Y fuera del checkout limpio, en el árbol de trabajo:
 
@@ -289,8 +337,11 @@ adversariales— más 26 bypasses operacionales.
 
 **Verificado por test:** ninguna migración menciona `learning_events`,
 `user_event_counters`, `projection_watermarks`, `stream_position`,
-`question_attempts` ni `server_sequence`; no hay bloqueo de fila, ni secuencia
-global, ni `ON CONFLICT DO NOTHING` fuera del alta de perfil. `db:reset` está forzado
+`question_attempts` ni `server_sequence` (diseño superseded); no hay bloqueo de fila,
+ni secuencia global, ni `ON CONFLICT DO NOTHING` fuera del alta de perfil. Y tampoco
+`answer_key_versions`, `session_items`, `planner_items`, `answer_payload_hash`,
+`concept_versions`, `concept_key`, `exam_sittings` ni `exam_occurrences`: **aceptar
+cinco decisiones no ha creado ninguna tabla**. `db:reset` está forzado
 a `--local` y rechaza `--db-url`, `--linked`, `--project-ref`, `--remote` y cualquier
 cadena de conexión, incluidos los argumentos que lleguen después de `--`.
 
@@ -345,7 +396,8 @@ peticiones reales de borrado y conservan el marcador mientras algo pueda ir mal.
 | INV-116 · REQ-A07 | **PASS** (estático) · cookie forjada **BLOQUEADO** |
 | REQ-A06 | **PASS** bajo las restricciones de SD-019 opción A |
 | EC-009 en ejecución · REQ-C13 | **BLOQUEADO** · `test:rls` no ejecutable |
-| INV-101 | Aprobado por Ana · N/A en Phase 0 |
+| INV-101 | Aprobado por Ana · ratificado por SD-007 / ADR-006 · N/A en Phase 0 |
+| ADR Policy · «solo ACCEPTED autoriza» | **PASS** · cinco ADR aceptados y ninguna migración creada; `adr.acceptedDecisions.spec` y `decisionRegister.spec` |
 
 ---
 
@@ -364,6 +416,7 @@ peticiones reales de borrado y conservan el marcador mientras algo pueda ir mal.
 | D-09 | La resolución de ámbitos no sigue tipos ni `export *`, y trata las declaraciones de función como de bloque (semántica de módulo estricto) | Aceptable · cuando no resuelve devuelve `null`, y `null` es «no demostrado» |
 | D-10 | El motor de propagación es insensible al flujo, sigue un nivel de propiedades y no distingue instancias de una declaración entre llamadas | Aceptable · cada simplificación produce más hechos, no menos; verificado por los controles positivos |
 | D-11 | Un cliente Supabase que cruce la frontera del fichero sin tipo demostrable cae en «procedencia opaca» y falla cerrado en los métodos computados | Aceptable mientras no haya superficie de dominio · se revisa cuando la haya |
+| D-12 | ADR-007 deja `ON DELETE` y la enumeración cerrada de `item_type` como prerrequisito de implementación; ADR-008 exige un contrato de canonicalización versionado que no está redactado. Los documentos gobernantes no los determinan y la regla de no invención impide fijarlos aquí | Antes de las migraciones 7, 8 y 11 · fuera de Phase 0 |
 
 ---
 
@@ -383,8 +436,16 @@ peticiones reales de borrado y conservan el marcador mientras algo pueda ir mal.
 | --- | --- |
 | **MI-05a** · repositorio remoto, Supabase, Vercel | Impide P0-G2, P0-G4 y la protección de `main` |
 | **Docker o WSL2** en la máquina | Impide `test:integration`, `test:rls`, `test:e2e:auth` y `schema-drift` nivel B |
-| **SD-018 · aprobar el contrato** | Cualquier migración de eventos. Contrato completo, **PROPOSED y sin aprobar** |
-| **BD-02 · BD-05 · SD-006 · SD-007** | Primeras migraciones de dominio. Pendientes antes del PASS final |
+
+Decisiones **aceptadas el 2026-09-07 y no implementadas**, que ya no bloquean:
+
+| ID | Propietario normativo | Estado |
+| --- | --- | --- |
+| **SD-007** | ADR-006 | `ACCEPTED · NOT IMPLEMENTED` |
+| **SD-006** | ADR-007 | `ACCEPTED · NOT IMPLEMENTED` |
+| **SD-018** · SD-015 superseded | ADR-008 | `ACCEPTED · NOT IMPLEMENTED` |
+| **BD-02** / SD-002 | ADR-009 | `ACCEPTED · NOT IMPLEMENTED` |
+| **BD-05** / SD-001 | ADR-010 | `ACCEPTED · NOT IMPLEMENTED` |
 
 Decisiones **diferidas**, que no bloquean Phase 0:
 
@@ -402,11 +463,11 @@ Nada se ha aplicado fuera del repositorio local: ninguna migración ejecutada, n
 entorno creado, ningún servicio externo tocado, ningún secreto escrito.
 
 ```bash
-git reset --hard a33ad27
+git reset --hard 8823c2b
 ```
 
-Devuelve la rama al estado de la séptima reemisión. `main` conserva su commit raíz
-`6086537`.
+Devuelve la rama al estado de la octava reemisión, el baseline del registro de
+decisión. `main` conserva su commit raíz `6086537`.
 
 ---
 
@@ -416,11 +477,13 @@ Devuelve la rama al estado de la séptima reemisión. `main` conserva su commit 
 
 1. **MI-05a** · repositorio remoto con `main` protegida, proyecto Supabase, Vercel.
 2. **Docker Desktop**, o aceptar que los cuatro checks bloqueados solo corran en CI.
-3. `npm run db:start && npm run db:reset && npm run verify`.
-4. **Aprobar SD-018** antes de cualquier migración de eventos.
-5. Cerrar **BD-02**, **BD-05**, **SD-006**, **SD-007**.
-6. Aprobar la adenda del `SPEC_DIFF_LOG`.
-7. Reemitir el checkpoint. Con 1–5 resueltos el estado esperado es **PASS WITH
-   DEBT**, y solo entonces procede autorizar Phase 1.
+3. `npm run db:start && npm run db:reset && npm run verify`, con credenciales reales y
+   verificación de limpieza, en una ronda de infraestructura separada.
+4. Aprobar lo que sigue PROPOSED en la adenda del `SPEC_DIFF_LOG` —SD-017 y la ERRATA
+   P0-IN-1— cuando toque la auditoría de Drive; no bloquea.
+5. Reemitir el checkpoint. Con 1–3 resueltos y los nueve checks aplicables en verde el
+   estado esperado es **PASS WITH DEBT**, y solo entonces procede autorizar Phase 1.
 
-Todos los ADR siguen en `PROPOSED`.
+ADR-001 … ADR-005 siguen en `PROPOSED`. ADR-006 … ADR-010 están `ACCEPTED` y **sin
+implementar**; su implementación exige un plan propio con los prerrequisitos de D-12, y
+no forma parte de Phase 0. **Phase 0 sigue BLOCKED; Phase 1 no está autorizada.**

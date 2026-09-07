@@ -17,9 +17,10 @@ port = 54321
 #
 # En Phase 0 solo `public`, que contiene exclusivamente `profiles`.
 #
-# INV-101 / SD-007 (PROPOSED): `answer_key_versions` y toda marca de corrección
-# quedarán fuera de esta lista cuando existan. Añadir un esquema aquí es una
-# decisión de exposición, no un detalle de configuración.
+# INV-101 / SD-007 (ACCEPTED · NOT IMPLEMENTED · propietario normativo ADR-006):
+# `answer_key_versions` y toda marca de corrección quedarán fuera de esta lista
+# cuando existan. Añadir un esquema aquí es una decisión de exposición, no un
+# detalle de configuración.
 schemas = ["public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000

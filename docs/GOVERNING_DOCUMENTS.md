@@ -139,20 +139,25 @@ necesitan las 18 familias de componentes de §16, que empiezan en Phase 5. Es un
 **diferida con plazo antes de Phase 5**, no un bloqueo de Phase 0: ningún entregable de
 Phase 0 la espera.
 
-### `SD-018` · corregido técnicamente, **PROPOSED** y sin aprobar
+### `SD-018` · **`ACCEPTED · NOT IMPLEMENTED`** · propietario normativo ADR-008
 
 No lo gobierna el Design System, pero conviene que conste junto al resto del estado. El
-contrato de orden e idempotencia del stream de eventos se ha corregido dos veces —el orden
-de las operaciones dentro de la transacción, y la triple coincidencia que convierte un
-`submitted_event_id` repetido en idempotencia— y está completo. **No está implementado**:
-no existe ninguna migración de eventos, ninguna tabla, ningún contador y ninguna función, y
-un test lo comprueba. Sigue **PROPOSED** y **pendiente de aprobación humana explícita**.
+contrato de orden e idempotencia del stream de eventos —corregido dos veces: el orden de
+las operaciones dentro de la transacción, y la triple coincidencia que convierte un
+`submitted_event_id` repetido en idempotencia— fue **aceptado por Ana Victoria el
+2026-09-07** mediante `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md`, y tiene su
+propietario normativo en `architecture/ADR-008-per-user-event-order-and-idempotency.md`.
+SD-015 queda `SUPERSEDED BY SD-018 / ADR-008`. **No está implementado**: no existe ninguna
+migración de eventos, ninguna tabla, ningún contador y ninguna función, y un test lo
+comprueba. La aceptación no autoriza ninguna migración.
 
-### Decisiones de dominio pendientes antes del PASS final de Phase 0
+### Decisiones de dominio · aceptadas el 2026-09-07, no implementadas
 
-**BD-02** (identidad estable de concepto), **BD-05** (convocatoria/modelo/ocurrencia),
-**SD-006** y **SD-007**. Determinan la forma de las primeras migraciones de dominio.
-Mientras sigan abiertas, el checkpoint no puede declarar PASS.
+**BD-02** (ADR-009), **BD-05** (ADR-010), **SD-006** (ADR-007) y **SD-007** (ADR-006)
+fueron aceptadas el mismo día, con el mismo registro de decisión y el mismo alcance:
+gobernanza únicamente. Determinan la forma de las primeras migraciones de dominio, que
+**no** se escriben en Phase 0. Ya no impiden el PASS del checkpoint; lo que sigue
+impidiéndolo es la evidencia de infraestructura real de P0-G2 y P0-G4.
 
 ### Otros pendientes del mismo documento
 

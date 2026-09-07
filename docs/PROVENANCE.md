@@ -38,17 +38,19 @@ con los del paquete. Cualquier divergencia futura es una modificación y debe ju
 | `spec/risk-register.md` | `601d6d1183fbc8fb00a69eed4e9f261362eb6b4c323dd01137f9625211cb0dff` |
 | `spec/terminology.md` | `1bf26b82b3de941ef7b00d9b948e6fc4df3e34cf81eccf9891bc9a9ea1031086` |
 | `architecture/ADR-000-template.md` | `383782a8bbf69333c7f3d0c97b47d2993098f623a73728636580e76bd2886103` |
-| `architecture/ADR-001-stack-and-boundaries.md` | `9eeb3be861da6b1b0eb1bedfa70e33e5e06908042e5eda37ce1f7c135de3990c` |
-| `architecture/ADR-002-canonical-evidence-events.md` | `2234c873a809503fe4137997902a8771298350464795a0557597729f6424e03e` |
+| `architecture/ADR-001-stack-and-boundaries.md` | `9eeb3be861da6b1b0eb1bedfa70e33e5e06908042e5eda37ce1f7c135de3990c` (**anotado el 2026-09-07**, ver §2.1) |
+| `architecture/ADR-002-canonical-evidence-events.md` | `2234c873a809503fe4137997902a8771298350464795a0557597729f6424e03e` (**anotado el 2026-09-07**, ver §2.1) |
 | `architecture/ADR-003-mastery-vs-readiness.md` | `4155d6d2b54caad99c9bc5ce4bd5c5e5fce9f5f66ec6f3410ff2942d52c3cf4a` |
 | `architecture/ADR-004-offline-reconciliation.md` | `f7a9833f787d2d3e939f54d9b758bf1ec0a8c9f7bbd97454b6529a5a0c4518fd` |
-| `architecture/ADR-005-provenance-and-official-versioning.md` | `aa5414eb34f024f03778ea4456e56a3159ce02e391d1fee3458d2cac5d833406` |
+| `architecture/ADR-005-provenance-and-official-versioning.md` | `aa5414eb34f024f03778ea4456e56a3159ce02e391d1fee3458d2cac5d833406` (**anotado el 2026-09-07**, ver §2.1) |
 | `docs/ARCHITECTURE_STATE.md` | `595437cca7ed13d09f78a0544fa26a8ad034d28b0cb8ecd97a71e08aff6b7fa1` (**estado de importación**) |
 | `docs/PHASE_0_EXECUTION_PLAN.md` | `d7371a2e31cc7ea1ddbd5ef7505d962ad2625c9c81035520d7e386ac20164d57` |
 | `docs/PHASE_MINUS_1_INDEX.md` | `769c24175400db4e5fb5359025fbf509cbecd8e088fc09e3ca1a5cf79cd8b415` |
 | `docs/SPEC_DIFF_LOG.md` | `4a4ba01d3e211aa0c2200239826a14f3b56dbe788fe40064a5f0a087da6f2fd3` (**estado de importación**) |
 
-> **Dos artefactos importados divergen de su hash base, y solo dos.**
+> **Cinco artefactos importados divergen de su hash base, y solo cinco.** Dos son copias
+> vivas por su propia regla; tres son ADR anotados por decisión humana el 2026-09-07
+> (§2.1).
 >
 > **`ARCHITECTURE_STATE.md`** es una **copia viva**: su propia regla de mantenimiento
 > dice que «se actualiza en cada checkpoint» y que «si describe estado futuro o
@@ -61,9 +63,44 @@ con los del paquete. Cualquier divergencia futura es una modificación y debe ju
 > 174 líneas del fichero conservan el hash
 > `4a4ba01d3e211aa0c2200239826a14f3b56dbe788fe40064a5f0a087da6f2fd3`, comprobable con
 > `head -174 docs/SPEC_DIFF_LOG.md | sha256sum`. Adenda actual: ERRATA P0-IN-1, SD-016,
-> SD-017, SD-018 y SD-019.
+> SD-017, SD-018, SD-019 y el **registro de aceptación del 2026-09-07**.
 >
-> Los otros 17 artefactos importados conservan su hash original sin excepción.
+> Los otros 14 artefactos importados conservan su hash original sin excepción. En
+> particular, `docs/PHASE_0_EXECUTION_PLAN.md`, `docs/PHASE_MINUS_1_INDEX.md` y todo
+> `spec/` siguen intactos: lo que dicen sobre BD-02, BD-05, SD-006, SD-007 o SD-015
+> —«pendiente», «PROPUESTO»— es cronología histórica del paquete importado, y el estado
+> operativo lo fijan los registros vivos. Un test lo verifica por hash.
+
+### 2.1 ADR anotados por decisión humana · 2026-09-07
+
+Ana Victoria aprobó cinco decisiones mediante `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md`
+(SHA-256 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d`, baseline
+`8823c2bdf2d31ec01a2f15b1566a94c1ad0eb04a`). El propio paquete exige que los ADR
+existentes marquen **solo sus puntos solapados** como subordinados o superseded por los
+ADR nuevos, conservando el texto histórico. Es la única modificación que han recibido, y
+por eso —y solo por eso— divergen de su hash de importación:
+
+| Ruta | Hash de importación (histórico) | Hash tras la anotación | Qué se anotó |
+|---|---|---|---|
+| `architecture/ADR-001-stack-and-boundaries.md` | `9eeb3be861da6b1b0eb1bedfa70e33e5e06908042e5eda37ce1f7c135de3990c` | `f951d6156650bdf25c1da7ce658a95347784899c5b8b77863b304c0c55417e4c` | Nota de supersesión parcial; punto 3 subordinado a ADR-006 |
+| `architecture/ADR-002-canonical-evidence-events.md` | `2234c873a809503fe4137997902a8771298350464795a0557597729f6424e03e` | `c6f1192883aa1f3214031ffc35a36245a37650beccc39fa2d414b24916fb804c` | Nota de supersesión parcial; punto 6 superseded por ADR-007; puntos 4 y 10 superseded por ADR-008; SD-015 superseded |
+| `architecture/ADR-005-provenance-and-official-versioning.md` | `aa5414eb34f024f03778ea4456e56a3159ce02e391d1fee3458d2cac5d833406` | `abafcd77b056588dd09e63dd2652a94b71534cbfd3bd5fef62224bbb7f8a76e1` | Nota de supersesión parcial; punto 4 subordinado a ADR-006; punto 5 superseded por ADR-010 |
+
+Los tres siguen `PROPOSED` en conjunto. `ADR-000`, `ADR-003` y `ADR-004` no se han
+tocado y conservan su hash, verificado por `adr.acceptedDecisions.spec`.
+
+Los cinco ADR aceptados son artefactos **creados en Phase 0** (§6), no importados:
+
+| Ruta | SHA-256 |
+|---|---|
+| `architecture/ADR-006-answer-key-data-api-boundary.md` | `96f955c1a9e063141005f7091db18093af529cbea836b8e84764280ad8a191ef` |
+| `architecture/ADR-007-enforceable-item-targets.md` | `d0af2c3acba40b7ec9b18e21bdb6f00a2647eddfee97ca5aee28cdf5ccb5e520` |
+| `architecture/ADR-008-per-user-event-order-and-idempotency.md` | `0282ad130f28ac303e6a2f85ce5eb5fa683a491452a6964ed19a35ec52d5c7bc` |
+| `architecture/ADR-009-stable-concept-identity.md` | `105b441b5ad572b38c8b100be735e1e3344f99cda8d22bdecbc321be2429f225` |
+| `architecture/ADR-010-official-exam-occurrences.md` | `6a19b7e3cc494edc12f613fb8ee52b27501781320cca967751b471744bc1c463` |
+
+El registro de decisión no se versiona: es material de entrada, como los originales de
+§3, y su hash queda aquí y en cada ADR aceptado.
 
 ## 3. Documentos gobernantes de origen
 
@@ -142,5 +179,6 @@ repositorio**: no son un artefacto de producto y no deben convertirse en depende
 
 Todo lo que **no** aparece en §2 y está versionado en este repositorio se creó durante Phase 0
 sobre la rama `phase/0-foundation`. En particular: `apps/`, `packages/`, `supabase/`, `tests/`,
-`tools/`, `CLAUDE.md`, `README.md`, `docs/PROVENANCE.md`, `docs/PHASE_0_CHECKPOINT.md` y la
-configuración de raíz.
+`tools/`, `CLAUDE.md`, `README.md`, `docs/PROVENANCE.md`, `docs/PHASE_0_CHECKPOINT.md`,
+`docs/GOVERNING_DOCUMENTS.md`, `docs/governing-documents.json`, los ADR aceptados
+`architecture/ADR-006` … `ADR-010` (§2.1) y la configuración de raíz.

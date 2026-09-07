@@ -50,7 +50,7 @@ export interface AuthoritativeProjection<T> {
   readonly value: T;
   /** Versión del motor que la produjo (EC-002, EC-003, EC-006). */
   readonly engineVersion: string;
-  /** `stream_position` del usuario consumida — pendiente de SD-018 (ver nota abajo). */
+  /** `stream_position` del usuario consumida — SD-018 aceptado, no implementado (ver nota abajo). */
   readonly watermark: number;
 }
 
@@ -89,16 +89,18 @@ export function localProjection<T>(
 }
 
 /*
- * NOTA · SD-018 · PROPOSED, no implementado. Sustituye a SD-015.
+ * NOTA · SD-018 · ACCEPTED · NOT IMPLEMENTED · propietario normativo ADR-008.
+ * Sustituye a SD-015.
  *
  * `watermark` está tipado como número porque SD-018 lo define como la posición del
- * stream del usuario consumida por la proyección. **SD-018 sigue en PROPOSED** y
- * debe aprobarse antes de crear cualquier migración de eventos: posición monotónica
- * por usuario/stream, contador bloqueado en la misma transacción que inserta,
- * `unique(user_id, stream_position)`, `event_id` como única clave de idempotencia
- * —comprobada **después** del bloqueo—, watermark por usuario y proyección,
- * `client_created_at` para la semántica temporal, y ninguna inferencia de ausencia
- * definitiva mediante timeout.
+ * stream del usuario consumida por la proyección. SD-018 fue aceptado por decisión
+ * humana el 2026-09-07 (Human Decision Packet v1.0) y sigue **no implementado**: la
+ * aceptación no autoriza ninguna migración de eventos. El contrato: posición
+ * monotónica por usuario/stream, contador bloqueado en la misma transacción que
+ * inserta, `unique(user_id, stream_position)`, `event_id` como única clave de
+ * idempotencia —comprobada **después** del bloqueo—, watermark por usuario y
+ * proyección, `client_created_at` para la semántica temporal, y ninguna inferencia
+ * de ausencia definitiva mediante timeout.
  *
  * SD-015 queda superseded: proponía una secuencia global de PostgreSQL, que no es
  * transaccional y deja huecos que después hay que gestionar.

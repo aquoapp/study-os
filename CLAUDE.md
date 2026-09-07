@@ -115,9 +115,14 @@ pantalla de producto ni contenido canónico. Ver
 [`docs/PHASE_0_EXECUTION_PLAN.md`](docs/PHASE_0_EXECUTION_PLAN.md) §9 para la lista
 explícita de lo que **no** se hace en esta fase.
 
-Decisiones abiertas que condicionan el cierre de Phase 0: **BD-02, BD-05, SD-006,
-SD-007, SD-018** (que sustituye a SD-015) y **SD-019** (contraste de la paleta).
-Ninguna impide el andamiaje; todas impiden declarar PASS.
+Las cinco decisiones que condicionaban el cierre de Phase 0 quedaron **aceptadas el
+2026-09-07** (`STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md`, gobernanza únicamente):
+**SD-007** → ADR-006, **SD-006** → ADR-007, **SD-018** → ADR-008 (que supersede a
+SD-015), **BD-02** → ADR-009 y **BD-05** → ADR-010. Todas en `ACCEPTED · NOT
+IMPLEMENTED`: ninguna migración de dominio queda autorizada por la aceptación. ADR-001 …
+ADR-005 siguen `PROPOSED`. **SD-019** (contraste de la paleta) sigue diferida antes de
+Phase 5 y no bloquea Phase 0. El checkpoint sigue **BLOCKED** por P0-G2 y P0-G4, que
+exigen infraestructura real.
 
 **INV-101 ya no está abierto.** Ana lo aprobó, con su redacción congelada, en la
 autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante
