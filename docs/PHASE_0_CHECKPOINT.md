@@ -1,4 +1,4 @@
-# STUDY OS · Checkpoint de Phase 0 · quinta reemisión
+# STUDY OS · Checkpoint de Phase 0 · sexta reemisión
 
 Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 
@@ -9,8 +9,8 @@ COMMIT/TAG: ver «HEAD» en AUDIT_EVIDENCE.md (sin tag: se crea tras el merge ap
 STATUS: BLOCKED
 ```
 
-**Quinta reemisión.** La cuarta (`6ec13e5`) fue auditada y devolvió una ronda de
-correcciones estáticas. Este informe la sustituye.
+**Sexta reemisión.** La quinta (`85bdf99`) fue auditada y devolvió cuatro agujeros en el
+motor de propagación. Este informe la sustituye.
 
 ## Por qué sigue BLOCKED
 
@@ -29,7 +29,8 @@ se dispone de credenciales o entornos (MI-05)».
 **Lo que no bloquea.** `REQ-A06` y `P0-S7` quedan **satisfechos bajo las
 restricciones de SD-019 opción A**, autorizada, aplicada y verificada en el
 navegador. Elegir entre las opciones B y C es una decisión **diferida con plazo
-antes de Phase 5**.
+antes de Phase 5**. Ninguna de las dos cosas se reabre en esta ronda, ni tampoco el
+contrato corregido de SD-018 ni el aislamiento E2E.
 
 ---
 
@@ -37,12 +38,17 @@ antes de Phase 5**.
 
 | # | Hallazgo de la auditoría | Estado | Evidencia |
 | --- | --- | --- | --- |
-| 1 | Las guardas eran parches por forma, no propagación | **CERRADO** | `tools/guards/lib/dataflow.mjs` · punto fijo por declaración, asignación, propiedad y contenedor |
-| 2 | `client-authority-guard`: miembro opaco blanqueado en un objeto; excepción de navegador demasiado amplia; allowlist de RPC inerte | **CERRADO** | `guards.propagation.spec` P1·1, P1·6, P3 |
-| 3 | `auth-authority-guard`: solo `=` invalidaba; alias tardíos; homónimo anidado en el módulo canónico | **CERRADO** | `guards.propagation.spec` P1·2–5, P2 |
-| 4 | Fixtures que compilen, ejecuten la guarda real y comprueben el hallazgo concreto | **HECHO** | 21 casos con `assertCompiles` |
-| 5 | Documentación viva desactualizada | **CERRADO** | `ARCHITECTURE_STATE` v5.0 · `GOVERNING_DOCUMENTS` · esta reemisión |
+| 1 | `scope.mjs` trataba `var` como si tuviera ámbito de bloque | **CERRADO** | `var` se iza a la función · `guards.closure.spec` C1 |
+| 2 | `dataflow.mjs` solo resolvía retornos de un identificador ligado a una declaración; los contenedores no llegaban a `pop`, `at`, `find`, `Map.get`; una llamada no modelada vaciaba los hechos | **CERRADO** | Funciones como valores, recuperación desde contenedor por cualquier vía, llamadas no modeladas con veneno · C2, C3 |
+| 3 | `auth-authority-guard` dejaba pasar un método computado no resoluble sobre una consulta PostgREST | **CERRADO** | Procedencia `postgrest` del receptor · C4 |
+| 4 | Fixtures que compilen, ejecuten las guardas reales y compongan varias transformaciones | **HECHO** | 19 casos con `assertCompiles` · cadena compuesta en C5 |
+| 5 | Documentación viva: D-09 afirmaba que el tratamiento de `var` solo sobredetectaba; se afirmaban coberturas no demostradas | **CERRADO** | Esta reemisión · `ARCHITECTURE_STATE` v6.0 |
 | 6 | Verificación desde un checkout limpio y bundle con evidencia externa | **HECHO** | `AUDIT_EVIDENCE.md` |
+
+**Sobre D-09.** La quinta reemisión decía que tratar `var` como de bloque «produce más
+sombreado detectado, no menos». Era falso: un `var caches` dentro de un `{}` se
+resolvía a ese bloque, y el uso de `caches` fuera del bloque caía en el global, que
+es exactamente **sub**detectar. Se corrige el motor y se retira la afirmación.
 
 Conservados sin regresión: independencia respecto a `_handoff`; SD-019 opción A y
 sus pruebas renderizadas; el contrato corregido de SD-018, todavía PROPOSED; el
@@ -75,7 +81,7 @@ ante cualquier fallo; el bundle exacto del commit y la evidencia externa.
 | **P0-S5** | Migración 1: `profiles` 1:1, trigger idempotente, RLS `enable`+`force` | **Escrita · sin aplicar** |
 | **P0-S6** | CI en dos jobs, CLI fijado, E2E estáticos separados de los de auth | **Escrito · nunca ejecutado** |
 | **P0-S7** | Tokens con los valores de `STUDY_OS_Design_System_v1.0`, los defaults de implementación marcados aparte, y el contraste verificado en el navegador | **Satisfecho bajo SD-019 opción A** |
-| **P0-S8** | Cinco guardas con propagación de capacidades y procedencia por punto fijo, y 127 pruebas que ejecutan las guardas reales | Completo |
+| **P0-S8** | Cinco guardas con propagación de capacidades y procedencia por punto fijo, y 146 pruebas que ejecutan las guardas reales | Completo |
 | **P0-S9** | `/spec`, `/architecture`, `/docs` importados con SHA-256; registro versionado de documentos gobernantes | Completo |
 | **P0-S10** | Este informe | Completo |
 
@@ -85,21 +91,18 @@ ante cualquier fallo; el bundle exacto del commit y la evidencia externa.
 
 La paleta congelada de §2 tiene tres combinaciones que no alcanzan el 4.5:1 que §14
 exige: `onDark` sobre `teal` (3.95), `onDark` sobre `amber` (4.42) y `slate` sobre
-`canvas` (4.31). Ningún color se ha modificado: hacerlo sin ADR es lo que EC-019
-prohíbe.
+`canvas` (4.31). Ningún color se ha modificado.
 
 **Opción A, autorizada por decisión humana y aplicada:** `teal` y `amber` no llevan
 texto normal; `slate` solo como texto normal sobre `surface`; sobre `canvas`, `ink` o
 el texto dentro de una superficie válida. Bajo esas restricciones **todo texto
 renderizado alcanza el contraste que WCAG le exige**, medido en el navegador sobre el
-build de producción, en móvil y escritorio, con un fixture negativo automático que
-demuestra en cada pasada que la medición detecta lo que dice detectar. Ese es el
-criterio de aceptación de `REQ-A06`: `REQ-A06` y `P0-S7` quedan **satisfechos para
-Phase 0**.
+build de producción, en móvil y escritorio, con un fixture negativo automático. Ese
+es el criterio de aceptación de `REQ-A06`: `REQ-A06` y `P0-S7` quedan **satisfechos
+para Phase 0**.
 
-**Diferido, con plazo antes de Phase 5:** elegir entre B (oscurecer los tres colores)
-y C (modificar §14) para usar la paleta sin restricciones. Lo necesitan las 18
-familias de componentes de §16. Nada de Phase 0 lo espera.
+**Diferido, con plazo antes de Phase 5:** elegir entre B y C para usar la paleta sin
+restricciones. Nada de Phase 0 lo espera.
 
 ---
 
@@ -108,33 +111,28 @@ familias de componentes de §16. Nada de Phase 0 lo espera.
 El contrato de orden e idempotencia del stream de eventos está completo: el orden de
 las operaciones dentro de la transacción y la triple coincidencia —usuario, pregunta
 y payload canónico completo— que convierte un `submitted_event_id` repetido en
-idempotencia. Cualquier diferencia es conflicto de integridad, revierte por completo y
-no consume `attempt_number`.
-
-**No está implementado**: ninguna migración de eventos, ninguna tabla, ningún contador,
-ninguna función, y ninguna de las suites que el contrato declara existe en `tests/**`.
-Lo comprueba `sd018.contract.spec`. **Sigue PROPOSED y pendiente de aprobación humana
-explícita.** Nada de esta ronda lo da por aprobado.
+idempotencia. **No está implementado**, y lo comprueba `sd018.contract.spec`. **Sigue
+PROPOSED y pendiente de aprobación humana explícita.** Nada de esta ronda lo da por
+aprobado.
 
 ---
 
 ## FILES CHANGED
 
 Rondas anteriores: siete commits correctivos más `3872a84`; siete más `2c03ecb`;
-cinco más `d848f1a`; **tres** más `6ec13e5` —la cuarta reemisión decía «cuatro», y
-eran tres—. Esta ronda produce dos, más la reemisión:
+cinco más `d848f1a`; tres más `6ec13e5`; dos más `85bdf99`. Esta ronda produce uno,
+más la reemisión:
 
 | Commit | Alcance |
 | --- | --- |
-| `38da486` | Motor de propagación · guardas reescritas sobre él · 21 fixtures que compilan |
+| `86ff125` | `var` izado · funciones como valores · contenedores · llamadas no modeladas · veneno en dos fases · procedencia PostgREST · 19 fixtures |
 | (este) | Documentación viva y reemisión |
 
 Ficheros nuevos de esta ronda:
 
 | Ruta | Propósito |
 | --- | --- |
-| `tools/guards/lib/dataflow.mjs` | Propagación conservadora de hechos por punto fijo |
-| `tests/unit/guards.propagation.spec.ts` | Los seis fixtures obligatorios, sus variantes, la allowlist y seis controles positivos |
+| `tests/unit/guards.closure.spec.ts` | Las cuatro evasiones por varios caminos, la cadena compuesta y siete controles positivos |
 
 ---
 
@@ -158,6 +156,7 @@ Obtenido con `vitest run --project unit --reporter=json`, no a mano.
 | `guards.adversarial.spec.ts` | 21 |
 | `guards.propagation.spec.ts` | 21 |
 | `governingDocuments.registry.spec.ts` | 19 |
+| `guards.closure.spec.ts` | 19 |
 | `toolchain.pinning.spec.ts` | 18 |
 | `env.separation.spec.ts` | 16 |
 | `auth.serverVerifiedIdentity.spec.ts` | 15 |
@@ -171,7 +170,7 @@ Obtenido con `vitest run --project unit --reporter=json`, no a mano.
 | `primarySpaces.frozen.spec.ts` | 6 |
 | `importGuard.spec.ts` | 4 |
 | `taiLiteral.guard.spec.ts` | 3 |
-| **Total** | **494 en 25 ficheros** |
+| **Total** | **513 en 26 ficheros** |
 
 ### Ejecutado · en verde
 
@@ -186,11 +185,11 @@ La salida íntegra está en `AUDIT_EVIDENCE.md`, que se entrega fuera del ZIP.
 | `npm run lint` | **PASS** |
 | `npm run format` | **PASS** |
 | `npm run build` | **PASS** · 8 rutas |
-| `npm run test:unit` | **PASS** · **494/494** en 25 ficheros |
+| `npm run test:unit` | **PASS** · **513/513** en 26 ficheros |
 | `npm run guards` | **PASS** · las cuatro sin hallazgos |
 | `npm run secret-scan` | **PASS** · construye por sí mismo · centinela de servidor |
 | `npm run test:e2e:static` | **PASS** · **70/70** (35 casos × 2 proyectos) |
-| Fixtures adversariales y controles positivos nuevos | **PASS** · 21/21, ejecutados de forma visible |
+| Fixtures nuevos, ejecutados de forma visible | **PASS** · 19/19 |
 
 Y fuera del checkout limpio, en el árbol de trabajo:
 
@@ -219,37 +218,38 @@ y `verify` los cuenta como fallo.
 | **P0-G4** · Baseline lint/type/test | Los nueve checks en verde | **FAIL** · 5 verdes, 0 rojos, 4 bloqueados |
 | **P0-G5** · Guardas de invariante activas | Fallan ante una violación deliberada | **PASS** · ver abajo |
 
-### P0-G5 · PASS porque los seis fixtures nuevos fallan de verdad
+### P0-G5 · PASS porque las cuatro evasiones producen código distinto de cero
 
-La auditoría exigió que P0-G5 siguiera en FAIL hasta que estos seis fallaran
-correctamente. Fallan, y cada uno cumple las cuatro condiciones: compila con el
-`tsconfig.json` real, ejecuta la guarda real como proceso hijo, termina con código
-distinto de cero y produce el hallazgo concreto.
+La auditoría exigió que P0-G5 siguiera en FAIL hasta que estas cuatro fallaran de
+verdad. Fallan, y cada fixture cumple las cuatro condiciones: compila con el
+`tsconfig.json` real, ejecuta la guarda como proceso hijo, termina con código
+distinto de cero y produce el hallazgo concreto. Y cada una se prueba por varios
+caminos, para que no sea un `if` disfrazado.
 
-| # | Fixture | Detección |
-| --- | --- | --- |
-| 1 | `const operations = { run: query[method] }; operations.run(payload)` | «Invocación de `operations.run`, que lleva un miembro con nombre computado no demostrable. Almacenarlo en un objeto…» |
-| 2 | `userId += raw` | «"user_id" recibe `userId` … ha sido mutado después» |
-| 3 | `(identity as { userId: string }).userId = raw` | «"user_id" recibe `identity.userId` … ha sido mutado después» |
-| 4 | `let filterByOwner; filterByOwner = query.eq; filterByOwner('owner_id', raw)` | «"owner_id" recibe `raw` en .eq()» |
-| 5 | `function requireVerifiedIdentity()` anidada **dentro** de `identity.ts` | «"user_id" recibe … no deriva del verificador» · y solo ese hallazgo en el fichero |
-| 6 | `window.delete(payload)` con `Window` aumentada | «El miembro ".delete" se invoca» |
+| # | Evasión | Caminos probados | Detección |
+| --- | --- | --- | --- |
+| 1 | `var caches` en `{}` sombrea al global | bloque, `if`, cabecera de `for` | «El miembro ".delete" se invoca» |
+| 2 | Retornos de funciones-valor | IIFE, función expresión, método de objeto, alias tardío; y los argumentos por alias e IIFE | «lleva el método … por propagación» · «"user_id" recibe `valor`» |
+| 3 | Recuperación desde contenedor | índice, desestructuración, `at`, `pop`, `shift`, `find`, `Map.get`, y `reduce`/`slice` no modelados | «nombre computado no demostrable» · «lleva el método ".update" por propagación» |
+| 4 | Método computado sobre PostgREST | directo, por alias de la consulta, tras `.limit()` | «método con nombre computado … sobre una consulta PostgREST» |
 
-Los mismos defectos por otros caminos —array, `push`, retorno, argumento, propiedad
-anidada, `call`, `apply`, `++`, `Object.assign`, `Reflect.set`, `defineProperty`,
-reasignación destructurada, `?:` con rama cruda, `bind`, contenedor— también fallan.
-Y la allowlist de RPC: una RPC literal incluida temporalmente en
-`readOnlyRpcs.names` **pasa**; la misma sin estar en la lista, una dinámica y una
-extraída **fallan**; la autoritativa se denuncia con su ancla tras comprobar la lista.
+**Cierre transitivo.** La cadena contenedor → extracción → retorno → alias → llamada
+falla en la guarda de cliente (miembro opaco) y en la de identidad (`.eq` al final,
+con `"profile_id" recibe \`raw\``). La misma cadena con una función inocua no produce
+hallazgos.
 
-**Seis controles positivos** siguen pasando: el repositorio real, `caches.delete(key)`
-directo, la identidad canónica real —directa y por espacio de nombres—, la
-reasignación desde otra identidad verificada, el acceso ordinario a registros, y
-`Array.prototype.filter` con una columna constante inocua.
+**Siete controles positivos** siguen pasando: el repositorio real, `caches.delete(key)`
+sobre el global, un `Map` de funciones inocuas recuperadas y llamadas, la identidad
+canónica a través de un helper local, la identidad guardada en un contenedor y
+recuperada, un método computado sobre un registro ajeno a datos, y la cadena compuesta
+inocua.
 
-**Total acumulado: 127 casos que ejecutan las guardas reales** —21 de propagación,
-30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión, 21 adversariales— más 26
-bypasses operacionales.
+Lo que este informe afirma sobre retornos, contenedores y alias es exactamente lo
+que `guards.closure.spec` y `guards.propagation.spec` ejecutan. Nada más.
+
+**Total acumulado: 146 casos que ejecutan las guardas reales** —19 de cierre
+transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión,
+21 adversariales— más 26 bypasses operacionales.
 
 ---
 
@@ -276,21 +276,21 @@ cadena de conexión, incluidos los argumentos que lleguen después de `--`.
 `authenticated`.
 
 **Auth · procedencia por propagación.** `derived` nace solo en una llamada al export
-de nivel superior de `apps/web/src/server/auth/identity.ts`, resuelto por símbolo:
-ni un parámetro homónimo, ni una variable local, ni una función anidada en el propio
-módulo canónico lo son. La etiqueta hereda solo a `userId`, `email` y `method`.
-Cualquier unión con un valor crudo envenena; cualquier mutación —`+=`, `++`,
-escritura de propiedad, `Object.assign`, `Reflect.set`, `Object.defineProperty`—
-invalida el valor y sus propiedades. Ninguna de las dos se quita. Los sumideros
-—`.eq`, `.neq`, `.is`, `.filter`, `.in`, `.match`, `.insert`, `.update`, `.upsert`,
-`.rpc`— se reconocen invocados directamente o por cualquier alias, nazca donde nazca.
+de nivel superior de `apps/web/src/server/auth/identity.ts`, resuelto por símbolo. La
+etiqueta hereda solo a `userId`, `email` y `method`. Cualquier unión con un valor
+crudo envenena; cualquier transformación no modelada envenena; cualquier mutación
+—`+=`, `++`, escritura de propiedad, `Object.assign`, `Reflect.set`,
+`Object.defineProperty`— invalida el valor y sus propiedades. El veneno se emite con
+los hechos convergidos, en una segunda fase, para no confundir «todavía no calculado»
+con «desacuerdo». Un método computado no resoluble sobre una consulta PostgREST es
+hallazgo.
 
 **Cliente · capacidades por propagación.** Acceder a `insert/update/upsert/delete`
 es hallazgo, se invoque o no. Invocar algo que lleve una capacidad de escritura, de
-RPC extraída o de miembro no demostrable es hallazgo, llegue por alias, contenedor,
-`bind`/`call`/`apply`, retorno o argumento. La excepción de navegador es el par exacto
-`caches.delete` en invocación directa sobre el global no sombreado. `.rpc()` se
-admite solo como invocación directa con nombre literal de la allowlist.
+RPC extraída o de miembro no demostrable es hallazgo, y la capacidad viaja por alias,
+contenedor —cualquier recuperación—, `bind`/`call`/`apply`, retorno de cualquier
+función-valor y argumento. La excepción de navegador es el par exacto `caches.delete`
+en invocación directa sobre el global no sombreado, con `var` izado a la función.
 
 **Secretos.** Centinela único por ejecución inyectado como **valor** de las variables
 de servidor. Comprobado que no aparece en `.next/static`, ni en el HTML renderizado,
@@ -311,7 +311,7 @@ conservan el marcador mientras algo pueda ir mal.
 | --- | --- |
 | EC-008 · EC-009 (estático) · EC-010 · EC-011 (nivel A) · EC-012 · EC-015 · EC-017 · EC-018 · EC-019 · EC-020 | **PASS** |
 | INV-104 · INV-105 · INV-107 | **PASS** |
-| INV-113 · REQ-A08 | **PASS** · propagación de capacidades |
+| INV-113 · REQ-A08 | **PASS** · propagación de capacidades con cierre transitivo probado |
 | INV-116 · REQ-A07 | **PASS** (estático) · cookie forjada **BLOQUEADO** |
 | REQ-A06 | **PASS** bajo las restricciones de SD-019 opción A |
 | EC-009 en ejecución · REQ-C13 | **BLOQUEADO** · `test:rls` no ejecutable |
@@ -331,8 +331,8 @@ conservan el marcador mientras algo pueda ir mal.
 | D-06 | Listas espejo entre TypeScript y las herramientas `.mjs` | Aceptable · hay tests que las comparan |
 | D-07 | Las restricciones de SD-019 opción A acotan las composiciones disponibles | Al elegir entre B y C · antes de Phase 5 |
 | D-08 | Los E2E de auth no se han ejecutado nunca. Su aislamiento concurrente está probado con un doble en memoria, no contra una instancia real | Al disponer de instancia |
-| D-09 | La resolución de ámbitos trata `var` como si tuviera ámbito de bloque | Aceptable · produce más sombreado detectado, no menos |
-| D-10 | El motor de propagación es insensible al flujo y sigue un nivel de propiedades | Aceptable · ambas simplificaciones producen más hechos, no menos |
+| D-09 | La resolución de ámbitos no sigue tipos ni `export *`, y trata las declaraciones de función como de bloque (semántica de módulo estricto) | Aceptable · cuando no resuelve devuelve `null`, y `null` es «no demostrado» |
+| D-10 | El motor de propagación es insensible al flujo, sigue un nivel de propiedades y no distingue instancias de una declaración entre llamadas | Aceptable · cada simplificación produce más hechos, no menos; verificado por los controles positivos |
 
 ---
 
@@ -371,10 +371,10 @@ Nada se ha aplicado fuera del repositorio local: ninguna migración ejecutada, n
 entorno creado, ningún servicio externo tocado, ningún secreto escrito.
 
 ```bash
-git reset --hard 6ec13e5
+git reset --hard 85bdf99
 ```
 
-Devuelve la rama al estado de la cuarta reemisión. `main` conserva su commit raíz
+Devuelve la rama al estado de la quinta reemisión. `main` conserva su commit raíz
 `6086537`.
 
 ---
