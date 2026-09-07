@@ -29,9 +29,9 @@
  * no sabe resolver algo, devuelve `null` y quien pregunta decide, y en las guardas
  * `null` significa «no se puede demostrar que sea seguro».
  *
- * Simplificación conocida: `var` se trata como si tuviera ámbito de bloque. Eso
- * puede resolver un `var` a un ámbito más interno del que le corresponde, lo que
- * produce **más** sombreado detectado, no menos. Es la dirección segura.
+ * `var` se **iza**: pertenece a la función, método o fichero más próximos, nunca al
+ * bloque. Es la semántica real de JavaScript, y la que importa para el sombreado: un
+ * `var caches` dentro de un `{}` sigue sombreando al global fuera del bloque.
  * ---------------------------------------------------------------------------
  */
 
@@ -82,6 +82,39 @@ function enclosingScope(node) {
   return null;
 }
 
+function isFunctionScope(node) {
+  return (
+    ts.isSourceFile(node) ||
+    ts.isFunctionDeclaration(node) ||
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node) ||
+    ts.isMethodDeclaration(node) ||
+    ts.isConstructorDeclaration(node) ||
+    ts.isGetAccessorDeclaration(node) ||
+    ts.isSetAccessorDeclaration(node) ||
+    ts.isModuleBlock(node)
+  );
+}
+
+/** Ámbito de función más próximo: donde se iza un `var`. */
+function enclosingFunctionScope(node) {
+  let current = node.parent;
+  while (current) {
+    if (isFunctionScope(current)) return current;
+    current = current.parent;
+  }
+  return null;
+}
+
+/** ¿Esta declaración de variable es un `var`, y por tanto se iza? */
+function isVarDeclaration(declaration) {
+  let current = declaration;
+  while (current && !ts.isVariableDeclarationList(current)) current = current.parent;
+  if (!current) return false;
+  const flags = ts.getCombinedNodeFlags(current);
+  return (flags & (ts.NodeFlags.Let | ts.NodeFlags.Const | ts.NodeFlags.Using)) === 0;
+}
+
 /**
  * @typedef {{
  *   name: string,
@@ -107,9 +140,10 @@ export function buildScopeTable(sourceFile) {
   /** @type {Binding[]} */
   const bindings = [];
 
-  const declare = (nameNode, kind, declaration, extra = {}) => {
+  const declare = (nameNode, kind, declaration, extra = {}, hoist = false) => {
     if (!nameNode || !ts.isIdentifier(nameNode)) return;
-    const scope = enclosingScope(declaration) ?? sourceFile;
+    const scope =
+      (hoist ? enclosingFunctionScope(declaration) : enclosingScope(declaration)) ?? sourceFile;
     if (!scopes.has(scope)) scopes.set(scope, new Map());
     const binding = { name: nameNode.text, kind, declaration, scope, ...extra };
     // La primera declaración gana. Redeclarar el mismo nombre en el mismo ámbito
@@ -119,15 +153,17 @@ export function buildScopeTable(sourceFile) {
   };
 
   /** Nombres introducidos por un patrón de enlace, con su declaración de origen. */
-  const declarePattern = (nameNode, kind, declaration) => {
+  const declarePattern = (nameNode, kind, declaration, hoist = false) => {
     if (!nameNode) return;
     if (ts.isIdentifier(nameNode)) {
-      declare(nameNode, kind, declaration);
+      declare(nameNode, kind, declaration, {}, hoist);
       return;
     }
     if (ts.isObjectBindingPattern(nameNode) || ts.isArrayBindingPattern(nameNode)) {
       for (const element of nameNode.elements) {
-        if (ts.isBindingElement(element)) declarePattern(element.name, DECL_KINDS.BINDING, element);
+        if (ts.isBindingElement(element)) {
+          declarePattern(element.name, DECL_KINDS.BINDING, element, hoist);
+        }
       }
     }
   };
@@ -159,7 +195,7 @@ export function buildScopeTable(sourceFile) {
         }
       }
     } else if (ts.isVariableDeclaration(node)) {
-      declarePattern(node.name, DECL_KINDS.VARIABLE, node);
+      declarePattern(node.name, DECL_KINDS.VARIABLE, node, isVarDeclaration(node));
     } else if (ts.isParameter(node)) {
       declarePattern(node.name, DECL_KINDS.PARAMETER, node);
     } else if (ts.isFunctionDeclaration(node) && node.name) {

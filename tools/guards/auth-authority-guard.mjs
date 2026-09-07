@@ -91,6 +91,8 @@ const DERIVED = 'derived';
 const POISONED = 'poisoned';
 const MUTATED = 'mutated';
 const SINK = 'sink:';
+/** Procedencia del receptor: este valor es una consulta PostgREST. */
+const POSTGREST = 'postgrest';
 
 const findings = [];
 
@@ -221,9 +223,18 @@ for (const file of collectSourceFiles()) {
       if (label === POISONED || label === MUTATED) return true;
       return false;
     },
+    // Un constructor de consulta devuelve la consulta: `db.from('t').select()` es tan
+    // PostgREST como `db.from('t')`, y también lo es lo que salga de `.eq()`.
+    callInherits(label) {
+      return label === POSTGREST;
+    },
     seed(node) {
       if (ts.isCallExpression(node)) {
         const callee = unwrap(node.expression);
+        // `X.from('tabla')` es el origen de toda consulta PostgREST.
+        if (ts.isPropertyAccessExpression(callee) && callee.name.text === 'from') {
+          return [POSTGREST];
+        }
         if (ts.isIdentifier(callee) && isCanonicalVerifier(callee)) return [DERIVED];
         if (
           ts.isPropertyAccessExpression(callee) &&
@@ -374,6 +385,16 @@ for (const file of collectSourceFiles()) {
         'fichero. Puede llevar user_id, owner_id o profile_id sin verificar: no poder ' +
         'demostrar que no los lleva no equivale a que no los lleve (INV-116). Construye el ' +
         'objeto campo a campo en el punto de uso.',
+    );
+  };
+
+  const reportOpaqueMethod = (node, valueNode) => {
+    push(
+      node,
+      `Invocación de un método con nombre computado ${describeValue(valueNode)} sobre una ` +
+        'consulta PostgREST, y el nombre no se resuelve a un literal en este fichero. Puede ' +
+        'ser .eq, .in, .insert o cualquier otro sumidero de identidad: no poder demostrar ' +
+        'qué método es no equivale a que sea inocuo (INV-116).',
     );
   };
 
@@ -552,6 +573,16 @@ for (const file of collectSourceFiles()) {
       const method = memberNameOf(callee);
       if (method !== null && SINK_METHODS.has(method)) {
         checkSinkCall(node, method, args);
+        return;
+      }
+      // Método computado no resoluble sobre una consulta: puede ser cualquier sumidero.
+      // Sobre un registro ajeno a datos —sin procedencia PostgREST— sigue permitido.
+      if (
+        method === null &&
+        ts.isElementAccessExpression(callee) &&
+        flow.factsOf(callee.expression).has(POSTGREST)
+      ) {
+        reportOpaqueMethod(node, callee.argumentExpression);
         return;
       }
       // Un miembro con otro nombre puede llevar el sumidero por propagación:
