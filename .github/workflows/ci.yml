@@ -22,9 +22,13 @@ env:
   # Valores locales de Supabase. La clave anónima y la de servicio de una instancia
   # local son constantes públicas del CLI, no secretos: no otorgan acceso a ningún
   # dato real. Ningún secreto de staging o producción entra en este pipeline.
+  #
+  # `SUPABASE_DB_URL` NO va aquí: solo la define el job `database`, que es el único
+  # con una base de datos delante. Definida a nivel de workflow, la guarda
+  # schema-drift entraba en su nivel B dentro del job estático —sin base ni Docker—
+  # y un test de `operational-bypasses.spec` agotaba su límite esperando al diff.
   NEXT_PUBLIC_ENVIRONMENT: local
   NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-  SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -64,15 +68,6 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: anon-placeholder-para-escaneo
 
-      # El paquete `supabase` fijado por el lockfile no descarga su binario en la
-      # instalación sino en la primera invocación. Sin este paso, esa primera
-      # invocación ocurre dentro de un test de `operational-bypasses.spec` que
-      # ejecuta la guarda schema-drift, y la descarga (138 s en el runner) agota el
-      # límite de 30 s del test. Se precalienta aquí, con la versión fijada, para
-      # que el test mida la guarda y no la red.
-      - name: Precalentar el CLI de Supabase (descarga del binario fijado)
-        run: node node_modules/supabase/dist/supabase.js --version
-
       - name: test:unit
         run: npm run test:unit
         env:
@@ -94,6 +89,10 @@ jobs:
   database:
     name: Base de datos · migraciones, integración, RLS, E2E
     runs-on: ubuntu-latest
+    env:
+      # Solo aquí hay base de datos. Credencial pública por defecto del stack local
+      # del CLI, sobre loopback: no es un secreto.
+      SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
     steps:
       - uses: actions/checkout@v4
 

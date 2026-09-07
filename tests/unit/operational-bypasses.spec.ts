@@ -104,7 +104,12 @@ describe('schema-drift · estrictamente de solo lectura', () => {
     rmSync(LOCK);
 
     try {
-      const result = runNode([DRIFT]);
+      // Esta prueba mide el nivel A de la guarda —el registro de huellas—, no el
+      // nivel B. Con `SUPABASE_DB_URL` heredada del entorno (CI, o un desarrollador
+      // con staging cargado) la guarda intentaría un `db diff` real, que tarda
+      // minutos en fallar sin base ni Docker y convierte esta prueba en un timeout.
+      // Se vacía a propósito: el nivel B tiene su propio check, `schema-drift`.
+      const result = runNode([DRIFT], { SUPABASE_DB_URL: '' });
 
       expect(result.exitCode, result.output).toBe(1);
       expect(result.output).toContain('No existe supabase/migrations/.lock.json');
