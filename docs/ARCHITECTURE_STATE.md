@@ -3,7 +3,7 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 4.0 · copia viva
+**Versión:** 5.0 · copia viva
 **Última actualización:** 2026-08-23 · ronda correctiva final de Phase 0
 **Fase actual:** 0 · Foundation
 **Estado global:** **BLOCKED** · ver `docs/PHASE_0_CHECKPOINT.md`
@@ -51,13 +51,13 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | `packages/learning-engine` | NO EXISTE | Phase 3 |
 | `packages/planner-engine` | NO EXISTE | Phase 4 |
 | Capa de IA | NO EXISTE | Phase 8. MI-05b no se ha solicitado |
-| Tests unitarios | **364 · todos ejecutados y en verde** | 20 ficheros. Recuento verificable con `vitest --reporter=json` |
-| E2E estáticos | **60 · ejecutados y en verde** | arranque, PWA y accesibilidad renderizada · 30 casos × 2 proyectos. No tocan Supabase |
+| Tests unitarios | **494 · todos ejecutados y en verde** | 25 ficheros. Recuento verificable con `vitest --reporter=json`. La auditoría anterior contó 473 en 24; esta ronda añade `guards.propagation.spec` (21) |
+| E2E estáticos | **70 · ejecutados y en verde** | arranque, PWA, accesibilidad renderizada y su fixture negativo · 35 casos × 2 proyectos. No tocan Supabase |
 | E2E de auth | **8 escritos · 0 ejecutados** | 5 + 3 casos. Exigen servidor de Auth y credenciales de limpieza |
 | Tests de integración | **10 escritos · 0 ejecutados** | Exigen instancia de Supabase |
 | Tests de RLS | **11 escritos · 0 ejecutados** | Exigen instancia de Supabase |
 | CI | **EXISTE · nunca ejecutado** | `.github/workflows/ci.yml`, dos jobs, nueve checks. Sin remoto no ha corrido |
-| Guardas de invariante | **5 activas, con política conservadora** | import · tai-literal · secret-scan · client-authority (0 escrituras permitidas) · auth-authority (procedencia positiva). 49 pruebas de evasión |
+| Guardas de invariante | **5 activas, por propagación de punto fijo** | import · tai-literal · secret-scan · client-authority (capacidades) · auth-authority (procedencia). **127 casos de guardas** que ejecutan las guardas reales —21 de propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión, 21 adversariales— **más 26 bypasses operacionales**. La auditoría anterior contó 106 + 26 |
 | Contenido ingerido | NINGUNO | Ni siquiera de prueba. Execution Plan §9 |
 | Tablas de dominio | **NINGUNA** | Verificado por test: ninguna migración crea `learning_events`, `question_attempts`, `concept_mastery`, `exam_readiness`, `planner_*`, `canonical_questions`, `answer_key_versions`, `learning_units`, `sessions` ni `session_items` |
 | Artefactos de Phase −1 | **IMPORTADOS** | 19 ficheros, byte a byte, con SHA-256 en `docs/PROVENANCE.md` |
@@ -94,8 +94,8 @@ Ya no es «ninguno». Lo que sigue está **ejecutándose**, no solo escrito:
 | EC-019 | Artefactos congelados sin modificar; adenda por adición; hashes verificados en test | **Activo** |
 | EC-020 | `verify` cuenta un check bloqueado como fallo, nunca como omisión | **Activo** |
 | INV-104 · INV-105 · INV-107 | Una acción primaria por vista; error con texto y `role="alert"`; copy sin atribución de fracaso | **Activo** |
-| INV-113 · REQ-A08 | `client-authority-guard` **por símbolo y ámbito**: cualquier acceso a insert/update/upsert/delete/rpc es hallazgo, se invoque o no; la excepción de navegador exige global real, no sombreado, e invocación directa | **Activo** |
-| INV-116 · REQ-A07 | Verificador único de identidad, ESLint, y guarda de **procedencia por símbolo**: el verificador vale solo si el identificador resuelve al export canónico real; sombrearlo o reasignar una variable verificada la invalida | **Activo** (estático) · rechazo de cookie forjada **bloqueado** |
+| INV-113 · REQ-A08 | `client-authority-guard` **por propagación**: `tools/guards/lib/dataflow.mjs` sigue cada valor por asignaciones, desestructuración, propiedades, arrays, `bind`/`call`/`apply`, retornos y argumentos hasta el punto fijo; invocar algo que lleve una capacidad de escritura, de RPC extraída o de miembro no demostrable es hallazgo. Excepción de navegador: el par exacto `caches.delete` en invocación directa. Allowlist de RPC comprobada en la llamada | **Activo** |
+| INV-116 · REQ-A07 | Verificador único de identidad, ESLint, y guarda de **procedencia por propagación**: `derived` nace solo en el export de nivel superior del módulo canónico; cualquier unión con un valor crudo envenena y cualquier mutación —`+=`, `++`, escritura de propiedad, `Object.assign`, `Reflect.set`, `defineProperty`— invalida el valor y sus propiedades | **Activo** (estático) · rechazo de cookie forjada **bloqueado** |
 | INV-101 | **Aprobado por Ana.** Sin superficie que pueda violarlo todavía | N/A en Phase 0 |
 
 Lo que la Engineering Constitution advertía —«los documentos por sí solos no son

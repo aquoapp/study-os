@@ -16,22 +16,36 @@ inventan reglas para poder seguir escribiendo código.
 
 ## 1. Inventario verificado
 
-Los ocho documentos gobernantes están disponibles (el nivel 2, la Engineering
+Los **ocho documentos gobernantes** están disponibles (el nivel 2, la Engineering
 Constitution, llega como Markdown; los demás como PDF u OOXML). Cada uno se verificó por hash y por
 naturaleza real del contenido —cabecera del fichero, recuento de objetos de página y de
-imagen— y no por su extensión.
+imagen— y no por su extensión. Son los ocho que `docs/governing-documents.json` lista
+bajo `documents`, con su nivel de autoridad:
 
-| Documento | Origen | SHA-256 | Contenido verificado |
+| Nivel | Documento | Origen | SHA-256 | Contenido verificado |
+| --- | --- | --- | --- | --- |
+| 1 | Master Product Specification v1.0 | `.pdf` | `aa9ba0965e37daaa3a1f16138900b67e0b084a15b10f25fb98f160f7f59d1923` | PDF 1.4 · 31 págs · texto · 0 imágenes |
+| 2 | Engineering Constitution v1.0 | `.md` | `717c661a9f508ca05aea38a9264621d815caadf31d2ad083465a55b7a82f1544` | Markdown |
+| 3 | **Design System v1.0** | `.pdf` | `62a85885709cc2dc9ed4cffd71ed852ed1e54cf0962940ff53da93dd8c357aa4` | PDF 1.4 · 11 págs · texto · 0 imágenes |
+| 3 | **Onboarding & Edge States Visual Spec v1.0** | `.pdf` | `e7bb2e91ed114778b6a46b15eb75b89a33e2c7261c1f7eee3e6d2cbb59ca9078` | PDF 1.4 · 12 págs · texto · 0 imágenes |
+| 3 | Technical Architecture v1.0 | `.docx` | `248eba10082ccd0dfa644362d4af77e9df7bd118df5b45e8c1c00ba81bdc3a5f` | OOXML · `word/document.xml` |
+| 3 | Canonical Data & Event Model v1.0 | `.pdf` | `08a8588f1bbd56a0d269b33d67add98897ada204ff12b735443beecdb3aac125` | PDF 1.4 · 25 págs · texto · 0 imágenes |
+| 3 | **Functional Closure / MVP Scope v0.1** | `.pdf` | `6645bc17aca99a6070f7c958d07569857f596a07bac88fc285cf411918c07f3f` | PDF 1.4 · 4 págs · texto · 0 imágenes |
+| 4 | Builder Handoff Manifest v1.0 | `.pdf` | `0087c301d259e1aad27ffbb77ab4484d546959bceecfac993ee907153b8ee1c3` | PDF 1.4 · 19 págs · texto · 0 imágenes |
+
+La **capa de control** es otra cosa, y esta tabla la mezclaba con lo anterior. El
+Source of Truth Index no es un documento gobernante: es el índice que fija el **orden de
+autoridad** entre los gobernantes. El registro lo lista bajo `controlLayer`, junto con el
+Checkpoint Contract, la ADR Policy y la compilación de Phase −1. Los cuatro están
+verificados por hash igual que los demás, y `verify:originals` los comprueba, pero no
+cuentan entre los ocho:
+
+| Artefacto de control | Origen | SHA-256 | Contenido verificado |
 | --- | --- | --- | --- |
-| Master Product Specification v1.0 | `.pdf` | `aa9ba0965e37daaa3a1f16138900b67e0b084a15b10f25fb98f160f7f59d1923` | PDF 1.4 · 31 págs · texto · 0 imágenes |
-| Engineering Constitution v1.0 | `.md` | `717c661a9f508ca05aea38a9264621d815caadf31d2ad083465a55b7a82f1544` | Markdown |
-| Canonical Data & Event Model v1.0 | `.pdf` | `08a8588f1bbd56a0d269b33d67add98897ada204ff12b735443beecdb3aac125` | PDF 1.4 · 25 págs · texto · 0 imágenes |
-| Builder Handoff Manifest v1.0 | `.pdf` | `0087c301d259e1aad27ffbb77ab4484d546959bceecfac993ee907153b8ee1c3` | PDF 1.4 · 19 págs · texto · 0 imágenes |
-| Technical Architecture v1.0 | `.docx` | `248eba10082ccd0dfa644362d4af77e9df7bd118df5b45e8c1c00ba81bdc3a5f` | OOXML · `word/document.xml` |
 | Source of Truth Index v1.0 | `.docx` | `d1b3dfac163781dc7248beafe396d18b5054061d680037b376969ae718551a08` | OOXML · `word/document.xml` |
-| **Design System v1.0** | `.pdf` | `62a85885709cc2dc9ed4cffd71ed852ed1e54cf0962940ff53da93dd8c357aa4` | PDF 1.4 · 11 págs · texto · 0 imágenes |
-| **Functional Closure / MVP Scope v0.1** | `.pdf` | `6645bc17aca99a6070f7c958d07569857f596a07bac88fc285cf411918c07f3f` | PDF 1.4 · 4 págs · texto · 0 imágenes |
-| **Onboarding & Edge States Visual Spec v1.0** | `.pdf` | `e7bb2e91ed114778b6a46b15eb75b89a33e2c7261c1f7eee3e6d2cbb59ca9078` | PDF 1.4 · 12 págs · texto · 0 imágenes |
+| Checkpoint Contract v1.0 | `.md` | `e94f10f1741b794d3953a7fd8da2becb4ad911febdcc36013a96b44ca948595c` | Markdown |
+| ADR Policy v1.0 | `.md` | `3e723d756c63144b09ee07935b44d7988bf1e69106005873318b77dcd0760a23` | Markdown |
+| Phase −1 Specification Compilation v1.0 | `.md` | `98279c50828608df23ac92bfcff1d82e030ac7ff92bf8a1eca939deac4fb8298` | Markdown |
 
 Los tres en negrita son los que llegaron durante la ronda correctiva. Sus nombres de
 fichero exactos, tal como están depositados:
