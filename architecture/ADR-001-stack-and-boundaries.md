@@ -5,6 +5,8 @@ DATE: 2026-08-22
 DECISION OWNER: Ana Victoria
 SPEC REFERENCES: Technical Architecture v1.0 §1–§6, §16; Master Product Specification §39–§40; Engineering Constitution EC-002, EC-003, EC-010, EC-018; contradiction-register C-25
 
+> **Nota de supersesión parcial · 2026-09-07.** El **punto 3** de la Decisión (claves de respuesta fuera del Data API) queda **subordinado a ADR-006**, propietario normativo único de SD-007 (`ACCEPTED · NOT IMPLEMENTED`). Este ADR puede citar esa frontera; no la define. **Todo lo demás sigue `PROPOSED`.** El texto histórico se conserva sin cambios; la marca entre corchetes señala el punto afectado. Registro de decisión: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` (SHA-256 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d`).
+
 ## Context
 La `Technical Architecture v1.0` fija el stack pero **no declara dónde se ejecutan los motores deterministas**. Los define como paquetes TypeScript y prohíbe calcular mastery autoritativo en el navegador (§3.3), sin establecer un límite verificable. Sin ese límite, un import accidental basta para que las reglas del motor —y potencialmente la lógica de corrección— viajen al cliente, y para que aparezca la tentación de "calcular rápido en local".
 
@@ -16,7 +18,7 @@ La `Technical Architecture v1.0` fija el stack pero **no declara dónde se ejecu
    - toda divergencia entre proyección local y servidor se resuelve **siempre** a favor del servidor, sin excepción ni fusión;
    - la regla de import en ESLint se conserva como **medida de higiene revisable**, no como invariante constitucional: su incumplimiento es deuda a justificar, no un fallo duro.
    El invariante duro es INV-113 en su formulación de autoridad de persistencia, verificado por `client.no-authoritative-write.spec`.
-3. **`answer_key_versions` y cualquier marca de corrección quedan fuera del esquema expuesto al Data API.** La corrección se realiza en servidor y devuelve resultado + explicación, nunca la clave (INV-101).
+3. **[SUBORDINADO a ADR-006 · definición normativa allí]** **`answer_key_versions` y cualquier marca de corrección quedan fuera del esquema expuesto al Data API.** La corrección se realiza en servidor y devuelve resultado + explicación, nunca la clave (INV-101).
 4. **pgvector y la recuperación semántica se difieren a Phase 8** y solo se activan si existe corpus ingerido que lo justifique. El MVP usa recuperación determinista concepto → `learning_unit` → `source_version`.
 5. Se mantienen fuera de MVP: Kubernetes, microservicios, broker de eventos, base de grafo, Elasticsearch, vector DB dedicada, apps nativas, auth propia.
 
