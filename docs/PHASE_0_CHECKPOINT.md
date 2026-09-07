@@ -1,4 +1,4 @@
-# STUDY OS · Checkpoint de Phase 0 · sexta reemisión
+# STUDY OS · Checkpoint de Phase 0 · séptima reemisión
 
 Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 
@@ -9,8 +9,8 @@ COMMIT/TAG: ver «HEAD» en AUDIT_EVIDENCE.md (sin tag: se crea tras el merge ap
 STATUS: BLOCKED
 ```
 
-**Sexta reemisión.** La quinta (`85bdf99`) fue auditada y devolvió cuatro agujeros en el
-motor de propagación. Este informe la sustituye.
+**Séptima reemisión.** La sexta (`b606e0d`) fue auditada y devolvió un defecto: la
+procedencia PostgREST se detectaba por el nombre `from`. Este informe la sustituye.
 
 ## Por qué sigue BLOCKED
 
@@ -27,28 +27,31 @@ Por cuatro cosas, y ninguna se resuelve con una corrección local:
 se dispone de credenciales o entornos (MI-05)».
 
 **Lo que no bloquea.** `REQ-A06` y `P0-S7` quedan **satisfechos bajo las
-restricciones de SD-019 opción A**, autorizada, aplicada y verificada en el
-navegador. Elegir entre las opciones B y C es una decisión **diferida con plazo
-antes de Phase 5**. Ninguna de las dos cosas se reabre en esta ronda, ni tampoco el
-contrato corregido de SD-018 ni el aislamiento E2E.
+restricciones de SD-019 opción A**; elegir entre B y C es una decisión **diferida
+con plazo antes de Phase 5**. Esta ronda no reabre SD-019, SD-018, el aislamiento
+E2E, la accesibilidad ni ningún contrato de dominio.
 
 ---
 
 ## 0. La ronda correctiva de esta reemisión
 
+Esta ronda se limitó a **cerrar la procedencia PostgREST** de `auth-authority-guard`.
+
 | # | Hallazgo de la auditoría | Estado | Evidencia |
 | --- | --- | --- | --- |
-| 1 | `scope.mjs` trataba `var` como si tuviera ámbito de bloque | **CERRADO** | `var` se iza a la función · `guards.closure.spec` C1 |
-| 2 | `dataflow.mjs` solo resolvía retornos de un identificador ligado a una declaración; los contenedores no llegaban a `pop`, `at`, `find`, `Map.get`; una llamada no modelada vaciaba los hechos | **CERRADO** | Funciones como valores, recuperación desde contenedor por cualquier vía, llamadas no modeladas con veneno · C2, C3 |
-| 3 | `auth-authority-guard` dejaba pasar un método computado no resoluble sobre una consulta PostgREST | **CERRADO** | Procedencia `postgrest` del receptor · C4 |
-| 4 | Fixtures que compilen, ejecuten las guardas reales y compongan varias transformaciones | **HECHO** | 19 casos con `assertCompiles` · cadena compuesta en C5 |
-| 5 | Documentación viva: D-09 afirmaba que el tratamiento de `var` solo sobredetectaba; se afirmaban coberturas no demostradas | **CERRADO** | Esta reemisión · `ARCHITECTURE_STATE` v6.0 |
-| 6 | Verificación desde un checkout limpio y bundle con evidencia externa | **HECHO** | `AUDIT_EVIDENCE.md` |
+| C1 | `scope.mjs` trataba `var` como si tuviera ámbito de bloque | **CERRADO** (ronda anterior) | `guards.closure.spec` C1 |
+| C2 | Retornos, contenedores y llamadas no modeladas en el motor | **CERRADO** (ronda anterior) | `guards.closure.spec` C2, C3 |
+| C3 | Método computado no resoluble sobre una consulta | **CERRADO** (ronda anterior) | `guards.closure.spec` C4 |
+| C4 | La consulta se reconocía por el **nombre** `from`, no por su origen | **CERRADO** en esta ronda | `guards.postgrestProvenance.spec` · 13 casos |
 
-**Sobre D-09.** La quinta reemisión decía que tratar `var` como de bloque «produce más
-sombreado detectado, no menos». Era falso: un `var caches` dentro de un `{}` se
-resolvía a ese bloque, y el uso de `caches` fuera del bloque caía en el global, que
-es exactamente **sub**detectar. Se corrige el motor y se retira la afirmación.
+**Qué estaba mal en C4.** Cualquier llamada a un miembro llamado `from` sembraba la
+etiqueta de consulta. Eso fallaba en las dos direcciones a la vez: `Array.from(x)` y
+cualquier objeto local con un método `from()` quedaban marcados como consulta
+PostgREST —falso positivo—, y un cliente cuyo `.from` se extraía con `bind`, con
+`call` o por asignación posterior, y se invocaba por otro camino, no quedaba
+marcado —falso negativo—.
+
+Este informe ya no afirma en ninguna parte que todo `.from()` implique PostgREST.
 
 Conservados sin regresión: independencia respecto a `_handoff`; SD-019 opción A y
 sus pruebas renderizadas; el contrato corregido de SD-018, todavía PROPOSED; el
@@ -81,9 +84,34 @@ ante cualquier fallo; el bundle exacto del commit y la evidencia externa.
 | **P0-S5** | Migración 1: `profiles` 1:1, trigger idempotente, RLS `enable`+`force` | **Escrita · sin aplicar** |
 | **P0-S6** | CI en dos jobs, CLI fijado, E2E estáticos separados de los de auth | **Escrito · nunca ejecutado** |
 | **P0-S7** | Tokens con los valores de `STUDY_OS_Design_System_v1.0`, los defaults de implementación marcados aparte, y el contraste verificado en el navegador | **Satisfecho bajo SD-019 opción A** |
-| **P0-S8** | Cinco guardas con propagación de capacidades y procedencia por punto fijo, y 146 pruebas que ejecutan las guardas reales | Completo |
+| **P0-S8** | Cinco guardas con propagación de capacidades y procedencia por punto fijo, y 159 pruebas que ejecutan las guardas reales | Completo |
 | **P0-S9** | `/spec`, `/architecture`, `/docs` importados con SHA-256; registro versionado de documentos gobernantes | Completo |
 | **P0-S10** | Este informe | Completo |
+
+---
+
+## Procedencia de consulta · tres capacidades encadenadas
+
+Ninguna se reconoce por el nombre del receptor ni del método.
+
+| Capacidad | Nace | Viaja |
+| --- | --- | --- |
+| `supabase-client` | Solo en una llamada a un **origen registrado** en `authority-registry.json`, resuelto por **módulo** y por **nombre exportado** | Como cualquier valor. No se hereda por llamada: un `.rpc()` sobre un cliente no devuelve otro cliente |
+| `postgrest-from` | Al **acceder** a `.from` sobre un valor `supabase-client`, por propiedad o por desestructuración | Extracción directa, `bind`, `call`, `apply`, asignación posterior, desestructuración, propiedades, contenedores, parámetros y retornos |
+| `postgrest-query` | Al **invocar** un valor `postgrest-from` | Se conserva por las operaciones encadenadas de consulta |
+
+**Orígenes registrados.** Internos, resueltos con los alias de `tsconfig`:
+`apps/web/src/server/supabase/server-client.ts#createSupabaseServerClient` y su
+equivalente de navegador. Externos, comparados por especificador:
+`@supabase/ssr#createServerClient` y `@supabase/ssr#createBrowserClient`. Se compara
+el nombre **exportado**: `import { createServerClient as mk }` sigue siendo el
+origen, y una función local que se llame igual no lo es.
+
+**Frontera opaca.** Cuando el origen no se puede demostrar —un parámetro `any`, un
+valor que llega de fuera del fichero— y la llamada puede llevar una columna o un
+payload de identidad, se **falla cerrado** y el mensaje dice que la procedencia del
+cliente es opaca. Un objeto construido en el fichero sí tiene origen demostrable, y
+una llamada con solo primitivos inocuos no puede llevar una columna.
 
 ---
 
@@ -93,56 +121,40 @@ La paleta congelada de §2 tiene tres combinaciones que no alcanzan el 4.5:1 que
 exige: `onDark` sobre `teal` (3.95), `onDark` sobre `amber` (4.42) y `slate` sobre
 `canvas` (4.31). Ningún color se ha modificado.
 
-**Opción A, autorizada por decisión humana y aplicada:** `teal` y `amber` no llevan
-texto normal; `slate` solo como texto normal sobre `surface`; sobre `canvas`, `ink` o
-el texto dentro de una superficie válida. Bajo esas restricciones **todo texto
-renderizado alcanza el contraste que WCAG le exige**, medido en el navegador sobre el
-build de producción, en móvil y escritorio, con un fixture negativo automático. Ese
-es el criterio de aceptación de `REQ-A06`: `REQ-A06` y `P0-S7` quedan **satisfechos
-para Phase 0**.
-
-**Diferido, con plazo antes de Phase 5:** elegir entre B y C para usar la paleta sin
-restricciones. Nada de Phase 0 lo espera.
+**Opción A, autorizada por decisión humana y aplicada.** Bajo sus restricciones todo
+texto renderizado alcanza el contraste que WCAG le exige, medido en el navegador
+sobre el build de producción, con un fixture negativo automático. Ese es el criterio
+de aceptación de `REQ-A06`: `REQ-A06` y `P0-S7` quedan **satisfechos para Phase 0**.
+**Diferido, con plazo antes de Phase 5:** elegir entre B y C. Sin cambios en esta
+ronda.
 
 ---
 
 ## SD-018 · técnicamente corregido, PROPOSED, **sin aprobar**
 
-El contrato de orden e idempotencia del stream de eventos está completo: el orden de
-las operaciones dentro de la transacción y la triple coincidencia —usuario, pregunta
-y payload canónico completo— que convierte un `submitted_event_id` repetido en
-idempotencia. **No está implementado**, y lo comprueba `sd018.contract.spec`. **Sigue
-PROPOSED y pendiente de aprobación humana explícita.** Nada de esta ronda lo da por
-aprobado.
+Contrato completo —orden de las operaciones dentro de la transacción y triple
+coincidencia de usuario, pregunta y payload canónico—, **no implementado**, y lo
+comprueba `sd018.contract.spec`. Sigue **PROPOSED y pendiente de aprobación humana
+explícita**. Sin cambios en esta ronda.
 
 ---
 
 ## FILES CHANGED
 
 Rondas anteriores: siete commits correctivos más `3872a84`; siete más `2c03ecb`;
-cinco más `d848f1a`; tres más `6ec13e5`; dos más `85bdf99`. Esta ronda produce tres,
-más la reemisión:
+cinco más `d848f1a`; tres más `6ec13e5`; dos más `85bdf99`; tres más `b606e0d`.
+Esta ronda produce uno, más la reemisión:
 
 | Commit | Alcance |
 | --- | --- |
-| `86ff125` | `var` izado · funciones como valores · contenedores · llamadas no modeladas · veneno en dos fases · procedencia PostgREST · 19 fixtures |
-| `14a0e3a` | Documentación viva y primera versión de esta reemisión |
-| `03e955b` | El proyecto `unit` pasa a 30 s de timeout: un test de bypass agotó los 5 s por defecto en la ejecución de evidencia bajo carga |
-| (este) | Esta tabla, tras el hallazgo anterior |
-
-**Sobre `03e955b`.** La primera ejecución de evidencia desde el checkout limpio dio
-**512/513**: el test que borra el registro de huellas y lanza `schema-drift` como
-proceso hijo agotó el timeout por defecto de 5 s, con `npm ci`, el build y Playwright
-compitiendo por la máquina. En verde en todas las demás ejecuciones. No se tocó el
-test ni el código que prueba; se dio al proyecto `unit` el mismo timeout que ya tenían
-los de integración y RLS, y se repitió la ejecución de evidencia entera sobre el
-commit resultante. La cifra de este informe es la de esa segunda ejecución.
+| `24a0c61` | Tres capacidades de procedencia · registro de orígenes · `seed` con hechos de subexpresiones · hechos sembrados guardados en su ubicación · frontera opaca · 13 fixtures |
+| (este) | Documentación viva y reemisión |
 
 Ficheros nuevos de esta ronda:
 
 | Ruta | Propósito |
 | --- | --- |
-| `tests/unit/guards.closure.spec.ts` | Las cuatro evasiones por varios caminos, la cadena compuesta y siete controles positivos |
+| `tests/unit/guards.postgrestProvenance.spec.ts` | Los cuatro fixtures obligatorios, los caminos de viaje, la frontera opaca y cinco controles positivos |
 
 ---
 
@@ -173,6 +185,7 @@ Obtenido con `vitest run --project unit --reporter=json`, no a mano.
 | `designSystem.blocked.spec.ts` | 15 |
 | `schema.drift.spec.ts` | 14 |
 | `tokens.provenance.spec.ts` | 14 |
+| `guards.postgrestProvenance.spec.ts` | 13 |
 | `offline.copy.spec.ts` | 13 |
 | `e2eConcurrentRuns.spec.ts` | 11 |
 | `bundle.secret-scan.spec.ts` | 7 |
@@ -180,7 +193,7 @@ Obtenido con `vitest run --project unit --reporter=json`, no a mano.
 | `primarySpaces.frozen.spec.ts` | 6 |
 | `importGuard.spec.ts` | 4 |
 | `taiLiteral.guard.spec.ts` | 3 |
-| **Total** | **513 en 26 ficheros** |
+| **Total** | **526 en 27 ficheros** |
 
 ### Ejecutado · en verde
 
@@ -195,11 +208,11 @@ La salida íntegra está en `AUDIT_EVIDENCE.md`, que se entrega fuera del ZIP.
 | `npm run lint` | **PASS** |
 | `npm run format` | **PASS** |
 | `npm run build` | **PASS** · 8 rutas |
-| `npm run test:unit` | **PASS** · **513/513** en 26 ficheros |
+| `npm run test:unit` | **PASS** · **526/526** en 27 ficheros |
 | `npm run guards` | **PASS** · las cuatro sin hallazgos |
 | `npm run secret-scan` | **PASS** · construye por sí mismo · centinela de servidor |
 | `npm run test:e2e:static` | **PASS** · **70/70** (35 casos × 2 proyectos) |
-| Fixtures nuevos, ejecutados de forma visible | **PASS** · 19/19 |
+| Fixtures nuevos, ejecutados de forma visible | **PASS** · 13/13 |
 
 Y fuera del checkout limpio, en el árbol de trabajo:
 
@@ -228,38 +241,27 @@ y `verify` los cuenta como fallo.
 | **P0-G4** · Baseline lint/type/test | Los nueve checks en verde | **FAIL** · 5 verdes, 0 rojos, 4 bloqueados |
 | **P0-G5** · Guardas de invariante activas | Fallan ante una violación deliberada | **PASS** · ver abajo |
 
-### P0-G5 · PASS porque las cuatro evasiones producen código distinto de cero
+### P0-G5 · PASS porque los cuatro fixtures obligatorios fallan de verdad
 
-La auditoría exigió que P0-G5 siguiera en FAIL hasta que estas cuatro fallaran de
-verdad. Fallan, y cada fixture cumple las cuatro condiciones: compila con el
-`tsconfig.json` real, ejecuta la guarda como proceso hijo, termina con código
-distinto de cero y produce el hallazgo concreto. Y cada una se prueba por varios
-caminos, para que no sea un `if` disfrazado.
+P0-G5 estuvo en **FAIL** mientras C4 seguía abierto. Vuelve a PASS porque los cuatro
+fixtures que la auditoría exigió producen código distinto de cero, cada uno
+compilando con el `tsconfig.json` real y ejecutando la guarda como proceso hijo:
 
-| # | Evasión | Caminos probados | Detección |
-| --- | --- | --- | --- |
-| 1 | `var caches` en `{}` sombrea al global | bloque, `if`, cabecera de `for` | «El miembro ".delete" se invoca» |
-| 2 | Retornos de funciones-valor | IIFE, función expresión, método de objeto, alias tardío; y los argumentos por alias e IIFE | «lleva el método … por propagación» · «"user_id" recibe `valor`» |
-| 3 | Recuperación desde contenedor | índice, desestructuración, `at`, `pop`, `shift`, `find`, `Map.get`, y `reduce`/`slice` no modelados | «nombre computado no demostrable» · «lleva el método ".update" por propagación» |
-| 4 | Método computado sobre PostgREST | directo, por alias de la consulta, tras `.limit()` | «método con nombre computado … sobre una consulta PostgREST» |
+| # | Fixture | Detección |
+| --- | --- | --- |
+| 1 | Cliente canónico → `db.from.bind(db)` → consulta → método dinámico con `user_id` | «sobre una consulta PostgREST» |
+| 2 | `.from` extraído por asignación posterior y llamado con `.call()` | Ídem |
+| 3 | Consulta construida directamente, y consulta mediante alias | Ídem, dos veces |
+| 4 | Objeto local con método `from()` + propiedad dinámica inocua · `Array.from()` y un `from` local homónimo | **código cero** |
 
-**Cierre transitivo.** La cadena contenedor → extracción → retorno → alias → llamada
-falla en la guarda de cliente (miembro opaco) y en la de identidad (`.eq` al final,
-con `"profile_id" recibe \`raw\``). La misma cadena con una función inocua no produce
-hallazgos.
+Y además: `.from` viaja por `apply`, desestructuración, contenedor y retorno —cuatro
+hallazgos—; el origen externo `@supabase/ssr#createServerClient` cuenta; el alias de
+importación no cambia nada; la frontera opaca falla cerrado con su propio mensaje; y
+una consulta canónica con identidad verificada sigue pasando.
 
-**Siete controles positivos** siguen pasando: el repositorio real, `caches.delete(key)`
-sobre el global, un `Map` de funciones inocuas recuperadas y llamadas, la identidad
-canónica a través de un helper local, la identidad guardada en un contenedor y
-recuperada, un método computado sobre un registro ajeno a datos, y la cadena compuesta
-inocua.
-
-Lo que este informe afirma sobre retornos, contenedores y alias es exactamente lo
-que `guards.closure.spec` y `guards.propagation.spec` ejecutan. Nada más.
-
-**Total acumulado: 146 casos que ejecutan las guardas reales** —19 de cierre
-transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión,
-21 adversariales— más 26 bypasses operacionales.
+**Total acumulado: 159 casos que ejecutan las guardas reales** —13 de procedencia
+PostgREST, 19 de cierre transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de
+blanqueo, 28 de evasión, 21 adversariales— más 26 bypasses operacionales.
 
 ---
 
@@ -286,32 +288,34 @@ cadena de conexión, incluidos los argumentos que lleguen después de `--`.
 `authenticated`.
 
 **Auth · procedencia por propagación.** `derived` nace solo en una llamada al export
-de nivel superior de `apps/web/src/server/auth/identity.ts`, resuelto por símbolo. La
-etiqueta hereda solo a `userId`, `email` y `method`. Cualquier unión con un valor
-crudo envenena; cualquier transformación no modelada envenena; cualquier mutación
-—`+=`, `++`, escritura de propiedad, `Object.assign`, `Reflect.set`,
-`Object.defineProperty`— invalida el valor y sus propiedades. El veneno se emite con
-los hechos convergidos, en una segunda fase, para no confundir «todavía no calculado»
-con «desacuerdo». Un método computado no resoluble sobre una consulta PostgREST es
-hallazgo.
+de nivel superior de `apps/web/src/server/auth/identity.ts`, resuelto por símbolo.
+La etiqueta hereda solo a `userId`, `email` y `method`. Cualquier unión con un valor
+crudo o transformación no modelada envenena; cualquier mutación —`+=`, `++`,
+escritura de propiedad, `Object.assign`, `Reflect.set`, `Object.defineProperty`—
+invalida el valor y sus propiedades. El veneno se emite con los hechos convergidos,
+en una segunda fase.
+
+La **procedencia de consulta** es la de la tabla de arriba: origen registrado →
+`.from` → invocación. Un método computado no resoluble es hallazgo sobre una
+consulta demostrada, y también sobre un receptor de origen opaco cuando la llamada
+puede llevar identidad.
 
 **Cliente · capacidades por propagación.** Acceder a `insert/update/upsert/delete`
 es hallazgo, se invoque o no. Invocar algo que lleve una capacidad de escritura, de
 RPC extraída o de miembro no demostrable es hallazgo, y la capacidad viaja por alias,
-contenedor —cualquier recuperación—, `bind`/`call`/`apply`, retorno de cualquier
-función-valor y argumento. La excepción de navegador es el par exacto `caches.delete`
-en invocación directa sobre el global no sombreado, con `var` izado a la función.
+contenedor, `bind`/`call`/`apply`, retorno de cualquier función-valor y argumento.
+La excepción de navegador es el par exacto `caches.delete` en invocación directa
+sobre el global no sombreado, con `var` izado a la función.
 
 **Secretos.** Centinela único por ejecución inyectado como **valor** de las variables
 de servidor. Comprobado que no aparece en `.next/static`, ni en el HTML renderizado,
 ni en los recursos `/_next/*` referenciados. Y demostrado que la fuga se detectaría.
 
 **Tests con privilegios.** Producción denegada sin excepción; staging exige
-autorización explícita; se comprueban la etiqueta del entorno y el host real. Los
-E2E de auth exigen credenciales de limpieza antes de crear ningún usuario, marcan
-cada correo con el identificador de la ejecución, listan entero antes de borrar,
-borran solo lo suyo, verifican «nada ajeno» sobre las peticiones reales de borrado y
-conservan el marcador mientras algo pueda ir mal.
+autorización explícita. Los E2E de auth exigen credenciales de limpieza antes de
+crear ningún usuario, marcan cada correo con el identificador de la ejecución, listan
+entero antes de borrar, borran solo lo suyo, verifican «nada ajeno» sobre las
+peticiones reales de borrado y conservan el marcador mientras algo pueda ir mal.
 
 ---
 
@@ -343,6 +347,7 @@ conservan el marcador mientras algo pueda ir mal.
 | D-08 | Los E2E de auth no se han ejecutado nunca. Su aislamiento concurrente está probado con un doble en memoria, no contra una instancia real | Al disponer de instancia |
 | D-09 | La resolución de ámbitos no sigue tipos ni `export *`, y trata las declaraciones de función como de bloque (semántica de módulo estricto) | Aceptable · cuando no resuelve devuelve `null`, y `null` es «no demostrado» |
 | D-10 | El motor de propagación es insensible al flujo, sigue un nivel de propiedades y no distingue instancias de una declaración entre llamadas | Aceptable · cada simplificación produce más hechos, no menos; verificado por los controles positivos |
+| D-11 | Un cliente Supabase que cruce la frontera del fichero sin tipo demostrable cae en «procedencia opaca» y falla cerrado en los métodos computados | Aceptable mientras no haya superficie de dominio · se revisa cuando la haya |
 
 ---
 
@@ -381,10 +386,10 @@ Nada se ha aplicado fuera del repositorio local: ninguna migración ejecutada, n
 entorno creado, ningún servicio externo tocado, ningún secreto escrito.
 
 ```bash
-git reset --hard 85bdf99
+git reset --hard b606e0d
 ```
 
-Devuelve la rama al estado de la quinta reemisión. `main` conserva su commit raíz
+Devuelve la rama al estado de la sexta reemisión. `main` conserva su commit raíz
 `6086537`.
 
 ---
