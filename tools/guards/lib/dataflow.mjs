@@ -163,7 +163,7 @@ const isFunctionLike = (node) =>
 
 /**
  * @typedef {{
- *   seed?: (node: import('typescript').Node) => Iterable<string> | null | undefined,
+ *   seed?: (node: import('typescript').Node, factsOf: (n: import('typescript').Node) => Set<string>) => Iterable<string> | null | undefined,
  *   resolveString?: (node: import('typescript').Node) => string | null,
  *   mustLabels?: Iterable<string>,
  *   poisonLabel?: string,
@@ -397,7 +397,7 @@ export function analyzeDataflow(sourceFile, resolve, config = {}) {
   };
 
   const withSeed = (node, set) => {
-    const extra = seed(node);
+    const extra = seed(node, factsOf);
     if (extra) for (const label of extra) set.add(label);
     return set;
   };
@@ -496,7 +496,7 @@ export function analyzeDataflow(sourceFile, resolve, config = {}) {
     if (ts.isCallExpression(node)) {
       // Una llamada que la guarda siembra con una etiqueta obligatoria está
       // modelada por definición: es el verificador. No se envenena por desconocida.
-      const sown = seed(node);
+      const sown = seed(node, factsOf);
       const sownSet = new Set(sown ?? []);
       for (const must of mustLabels) if (sownSet.has(must)) return sownSet;
       return withSeed(node, callResult(node));
@@ -567,7 +567,7 @@ export function analyzeDataflow(sourceFile, resolve, config = {}) {
         for (const label of sourceFacts) {
           if (propertyInherits(label, property)) subFacts.add(label);
         }
-        const sown = seed(element);
+        const sown = seed(element, factsOf);
         if (sown) for (const label of sown) subFacts.add(label);
         writePattern(element.name, subKey, subFacts);
       }
@@ -615,7 +615,7 @@ export function analyzeDataflow(sourceFile, resolve, config = {}) {
         const subKey = sourceKey ? `${sourceKey}.${name ?? '*'}` : null;
         const subFacts = subKey ? readKey(subKey) : new Set();
         for (const label of sourceFacts) if (propertyInherits(label, name)) subFacts.add(label);
-        const sown = seed(property);
+        const sown = seed(property, factsOf);
         if (sown) for (const label of sown) subFacts.add(label);
         writeTarget(target, subKey, subFacts);
       }
@@ -690,6 +690,19 @@ export function analyzeDataflow(sourceFile, resolve, config = {}) {
   };
 
   const transfer = (node) => {
+    /**
+     * Un hecho sembrado sobre un acceso se guarda también **en la ubicación**.
+     *
+     * `db.from` siembra su capacidad sobre el valor del acceso; sin escribirla en
+     * `d:db.from`, una desestructuración —`const { from } = db`— leería la ubicación
+     * vacía y perdería el hecho. Guardarla ahí hace que todas las formas de sacar
+     * ese miembro vean lo mismo, sin que ninguna necesite un caso propio.
+     */
+    if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
+      const sown = seed(node, factsOf);
+      if (sown) addFacts(keyOf(node), sown);
+    }
+
     // Cada función es un valor. Las declaradas viven en su propia declaración.
     if (ts.isFunctionDeclaration(node) && node.name) {
       addFacts(declKey(node), [fnLabel(node)]);

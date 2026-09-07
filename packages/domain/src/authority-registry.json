@@ -83,6 +83,42 @@
       }
     ]
   },
+  "supabaseClientOrigins": {
+    "$comment": [
+      "De donde puede nacer un cliente Supabase, por MODULO y EXPORT, nunca por nombre.",
+      "",
+      "Que una funcion se llame createServerClient no la convierte en el constructor de",
+      "Supabase, y que un metodo se llame from() no convierte a su receptor en una",
+      "consulta PostgREST: Array.from es el contraejemplo mas comun. La guarda resuelve",
+      "la importacion hasta el modulo y compara el nombre EXPORTADO, no el local.",
+      "",
+      "internal: rutas del repositorio, resueltas con los alias de tsconfig.",
+      "external: especificadores de paquete, comparados literalmente.",
+      "",
+      "Anadir un origen amplia la superficie que la guarda considera consulta: exige la",
+      "misma revision que el resto del registro (EC-019)."
+    ],
+    "internal": [
+      {
+        "module": "apps/web/src/server/supabase/server-client.ts",
+        "export": "createSupabaseServerClient"
+      },
+      {
+        "module": "apps/web/src/lib/supabase/browser-client.ts",
+        "export": "createSupabaseBrowserClient"
+      }
+    ],
+    "external": [
+      {
+        "module": "@supabase/ssr",
+        "export": "createServerClient"
+      },
+      {
+        "module": "@supabase/ssr",
+        "export": "createBrowserClient"
+      }
+    ]
+  },
   "writeMethods": {
     "$comment": "Métodos de PostgREST que persisten. Un .select() no es una escritura.",
     "names": ["insert", "update", "upsert", "delete"]

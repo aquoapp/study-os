@@ -57,7 +57,10 @@
  * ---------------------------------------------------------------------------
  */
 
-import { read, report } from './lib/walk.mjs';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { REPO_ROOT, read, report } from './lib/walk.mjs';
 import { lineOfNode, parseSource, ts, walkAst } from './lib/ast.mjs';
 import { buildScopeTable, DECL_KINDS } from './lib/scope.mjs';
 import { analyzeDataflow, unwrap } from './lib/dataflow.mjs';
@@ -91,8 +94,44 @@ const DERIVED = 'derived';
 const POISONED = 'poisoned';
 const MUTATED = 'mutated';
 const SINK = 'sink:';
-/** Procedencia del receptor: este valor es una consulta PostgREST. */
-const POSTGREST = 'postgrest';
+
+/**
+ * Procedencia de la consulta, en tres capacidades separadas.
+ *
+ * La versión anterior sembraba una sola etiqueta en cualquier llamada a un miembro
+ * llamado `from`. Eso fallaba en las dos direcciones a la vez: `Array.from(x)` y
+ * cualquier objeto local con un método `from()` quedaban marcados como consulta
+ * —falso positivo—, y un cliente cuyo `.from` se extraía y se invocaba por otro
+ * camino no quedaba marcado —falso negativo—.
+ *
+ * Ahora la procedencia se demuestra por eslabones:
+ *
+ *   CLIENT → nace SOLO en una llamada a un origen registrado, resuelto por módulo
+ *            y por nombre exportado. Ni el nombre local ni la forma cuentan.
+ *   FROM   → nace al ACCEDER a `.from` sobre un valor CLIENT. Es un valor como
+ *            cualquier otro: viaja por extracción, `bind`, `call`, `apply`,
+ *            asignación posterior, desestructuración, propiedades, contenedores,
+ *            parámetros y retornos.
+ *   QUERY  → nace al INVOCAR un valor FROM, y se conserva por las operaciones
+ *            encadenadas de consulta (`callInherits`).
+ */
+const CLIENT = 'supabase-client';
+const FROM = 'postgrest-from';
+const QUERY = 'postgrest-query';
+
+const registry = JSON.parse(
+  readFileSync(join(REPO_ROOT, 'packages/domain/src/authority-registry.json'), 'utf8'),
+);
+
+/** Orígenes de cliente Supabase: `<módulo>#<export>`. */
+const CLIENT_ORIGINS = {
+  internal: new Set(
+    registry.supabaseClientOrigins.internal.map((origin) => `${origin.module}#${origin.export}`),
+  ),
+  external: new Set(
+    registry.supabaseClientOrigins.external.map((origin) => `${origin.module}#${origin.export}`),
+  ),
+};
 
 const findings = [];
 
@@ -195,6 +234,92 @@ for (const file of collectSourceFiles()) {
     return false;
   };
 
+  /**
+   * ¿Este identificador resuelve a un origen registrado de cliente Supabase?
+   *
+   * Tiene que ser un especificador de importación cuyo módulo resuelva al fichero
+   * registrado —o, para un paquete externo, coincida con el especificador— y cuyo
+   * nombre **exportado** esté registrado. El nombre local da igual: `import
+   * { createServerClient as mk }` sigue siendo el origen, y una función local
+   * llamada `createServerClient` no lo es.
+   *
+   * Dentro del propio módulo registrado, su función exportada de nivel superior
+   * también lo es: `server-client.ts` devuelve el cliente que construye.
+   */
+  const isClientOrigin = (identifier) => {
+    const binding = resolve(identifier);
+    if (!binding) return false;
+
+    if (binding.kind === DECL_KINDS.IMPORT_NAMED) {
+      const exported = binding.exportedName ?? '';
+      const specifier = binding.importedFrom;
+      if (typeof specifier !== 'string') return false;
+      if (CLIENT_ORIGINS.external.has(`${specifier}#${exported}`)) return true;
+      const target = resolveModule(file, specifier);
+      return target !== null && CLIENT_ORIGINS.internal.has(`${target}#${exported}`);
+    }
+
+    if (binding.kind === DECL_KINDS.FUNCTION) {
+      const declaration = binding.declaration;
+      return (
+        ts.isFunctionDeclaration(declaration) &&
+        declaration.parent === sourceFile &&
+        hasExportModifier(declaration) &&
+        CLIENT_ORIGINS.internal.has(`${file}#${binding.name}`)
+      );
+    }
+
+    return false;
+  };
+
+  /**
+   * El valor del que se está desestructurando, para un elemento de patrón.
+   *
+   * `const { from } = db` y `({ from } = db)` sacan el mismo miembro que `db.from`,
+   * pero sin ningún nodo de acceso que sembrar. Estas dos funciones dan al sembrador
+   * lo que necesita: qué se extrae, y de dónde.
+   */
+  const destructuredSource = (node) => {
+    if (ts.isBindingElement(node)) {
+      const pattern = node.parent;
+      if (!pattern || !ts.isObjectBindingPattern(pattern)) return null;
+      const declaration = pattern.parent;
+      if (ts.isVariableDeclaration(declaration) && declaration.initializer) {
+        return declaration.initializer;
+      }
+      if (ts.isParameter(declaration)) return null;
+      return null;
+    }
+    if (ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node)) {
+      const literal = node.parent;
+      if (!literal || !ts.isObjectLiteralExpression(literal)) return null;
+      const assignment = literal.parent;
+      if (
+        assignment &&
+        ts.isBinaryExpression(assignment) &&
+        assignment.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+        assignment.left === literal
+      ) {
+        return assignment.right;
+      }
+      return null;
+    }
+    return null;
+  };
+
+  /** El nombre del miembro que un elemento de patrón extrae. */
+  const destructuredKey = (node) => {
+    const source = ts.isBindingElement(node)
+      ? (node.propertyName ?? node.name)
+      : ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node)
+        ? node.name
+        : null;
+    if (!source) return null;
+    if (ts.isIdentifier(source) || ts.isStringLiteralLike(source)) return source.text;
+    if (ts.isComputedPropertyName(source)) return resolveString(source.expression);
+    return null;
+  };
+
   /** ¿Este identificador es el espacio de nombres del módulo canónico? */
   const isCanonicalNamespace = (identifier) => {
     const binding = resolve(identifier);
@@ -223,18 +348,33 @@ for (const file of collectSourceFiles()) {
       if (label === POISONED || label === MUTATED) return true;
       return false;
     },
-    // Un constructor de consulta devuelve la consulta: `db.from('t').select()` es tan
-    // PostgREST como `db.from('t')`, y también lo es lo que salga de `.eq()`.
+    // Las operaciones encadenadas de una consulta siguen siendo la consulta:
+    // `db.from('t').select()` es tan consulta como `db.from('t')`, y también lo es
+    // lo que salga de `.eq()`. El cliente NO se hereda por llamada: `.rpc()` sobre
+    // un cliente no devuelve otro cliente.
     callInherits(label) {
-      return label === POSTGREST;
+      return label === QUERY;
     },
-    seed(node) {
+    seed(node, factsOf) {
       if (ts.isCallExpression(node)) {
         const callee = unwrap(node.expression);
-        // `X.from('tabla')` es el origen de toda consulta PostgREST.
-        if (ts.isPropertyAccessExpression(callee) && callee.name.text === 'from') {
-          return [POSTGREST];
+
+        // Invocar un valor FROM produce una consulta, venga por donde venga. Se
+        // excluye `.bind()`, que no invoca: solo enlaza, y el motor ya devuelve el
+        // mismo valor —con su FROM— para que la invocación posterior lo produzca.
+        const isBind = ts.isPropertyAccessExpression(callee) && callee.name.text === 'bind';
+        if (!isBind) {
+          const target =
+            ts.isPropertyAccessExpression(callee) &&
+            (callee.name.text === 'call' || callee.name.text === 'apply')
+              ? unwrap(callee.expression)
+              : callee;
+          if (factsOf(target).has(FROM)) return [QUERY];
         }
+
+        // Un origen registrado de cliente, resuelto por módulo y export.
+        if (ts.isIdentifier(callee) && isClientOrigin(callee)) return [CLIENT];
+
         if (ts.isIdentifier(callee) && isCanonicalVerifier(callee)) return [DERIVED];
         if (
           ts.isPropertyAccessExpression(callee) &&
@@ -249,7 +389,19 @@ for (const file of collectSourceFiles()) {
       if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
         const member = memberNameOf(node);
         if (member !== null && SINK_METHODS.has(member)) return [`${SINK}${member}`];
+        // `.from` sobre un cliente registrado: el acceso YA es el valor que produce
+        // consultas. Sobre cualquier otra cosa —`Array.from`, un objeto local con un
+        // método `from()`— no es nada.
+        if (member === 'from' && factsOf(node.expression).has(CLIENT)) return [FROM];
       }
+
+      // Sacar `.from` de un cliente **desestructurando** es sacar lo mismo. No hay
+      // nodo de acceso que sembrar, así que se siembra el elemento del patrón.
+      const source = destructuredSource(node);
+      if (source && destructuredKey(node) === 'from' && factsOf(source).has(CLIENT)) {
+        return [FROM];
+      }
+
       return null;
     },
   });
@@ -397,6 +549,39 @@ for (const file of collectSourceFiles()) {
         'qué método es no equivale a que sea inocuo (INV-116).',
     );
   };
+
+  const reportOpaqueClient = (node, valueNode) => {
+    push(
+      node,
+      `Invocación de un método con nombre computado ${describeValue(valueNode)} sobre un valor ` +
+        'cuya procedencia es opaca: no se puede demostrar que venga de un cliente Supabase ' +
+        'registrado, pero tampoco que no. Y la llamada puede llevar una columna o un payload ' +
+        'de identidad. Se falla cerrado (INV-116): construye la consulta desde un origen ' +
+        'registrado, o invoca el método por su nombre.',
+    );
+  };
+
+  /**
+   * ¿Puede esta llamada llevar identidad?
+   *
+   * Un argumento que resuelve a una columna de identidad, o cualquier argumento que
+   * no sea un primitivo —podría ser un payload—. Una llamada con solo primitivos
+   * inocuos, o sin argumentos, no puede llevar una columna ni un payload.
+   */
+  const mayCarryIdentity = (args) =>
+    args.some((argument) => {
+      const literal = resolveString(argument);
+      if (literal !== null) return IDENTITY_COLUMNS.has(literal);
+      return !isHarmlessPrimitive(argument);
+    });
+
+  /**
+   * ¿Se puede demostrar de dónde sale este valor?
+   *
+   * Un literal de objeto o array construido en este fichero, o un `new`, sí. Un
+   * parámetro, una importación o el resultado de una llamada ajena, no.
+   */
+  const hasDemonstrableOrigin = (node) => resolveLiteral(node) !== null;
 
   const reportOpaqueColumn = (node, detail, valueNode) => {
     push(
@@ -575,15 +760,22 @@ for (const file of collectSourceFiles()) {
         checkSinkCall(node, method, args);
         return;
       }
-      // Método computado no resoluble sobre una consulta: puede ser cualquier sumidero.
-      // Sobre un registro ajeno a datos —sin procedencia PostgREST— sigue permitido.
-      if (
-        method === null &&
-        ts.isElementAccessExpression(callee) &&
-        flow.factsOf(callee.expression).has(POSTGREST)
-      ) {
-        reportOpaqueMethod(node, callee.argumentExpression);
-        return;
+      // Método computado no resoluble. Dos casos, y ninguno mira cómo se llama el
+      // receptor ni el método.
+      if (method === null && ts.isElementAccessExpression(callee)) {
+        const receiver = callee.expression;
+        // 1 · procedencia de consulta demostrada: puede ser cualquier sumidero.
+        if (flow.factsOf(receiver).has(QUERY)) {
+          reportOpaqueMethod(node, callee.argumentExpression);
+          return;
+        }
+        // 2 · procedencia opaca y la llamada puede llevar identidad: falla cerrado.
+        //     Un objeto construido en este fichero sí tiene origen demostrable, y
+        //     una llamada con solo primitivos inocuos no puede llevar una columna.
+        if (!hasDemonstrableOrigin(receiver) && mayCarryIdentity(args)) {
+          reportOpaqueClient(node, callee.argumentExpression);
+          return;
+        }
       }
       // Un miembro con otro nombre puede llevar el sumidero por propagación:
       // `const ops = { filtrar: query.eq }; ops.filtrar(...)`.

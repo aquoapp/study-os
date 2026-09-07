@@ -279,9 +279,11 @@ describe('C4 · método computado no resoluble sobre una consulta PostgREST', ()
     });
 
     expect(result.exitCode, result.output).toBe(1);
-    expect(result.output).toContain(
-      'método con nombre computado `method` sobre una consulta PostgREST',
-    );
+    // `db` es un parámetro `any`: su procedencia no se puede demostrar. La guarda ya
+    // no supone que todo `.from()` sea PostgREST —`Array.from` es el contraejemplo—,
+    // así que este caso entra por la otra puerta: falla cerrado por origen opaco.
+    // La procedencia demostrada la cubre `guards.postgrestProvenance.spec`.
+    expect(result.output).toContain('cuya procedencia es opaca');
   });
 
   it('también por alias de la consulta y tras otros métodos encadenados', () => {
@@ -298,7 +300,7 @@ describe('C4 · método computado no resoluble sobre una consulta PostgREST', ()
     });
 
     expect(result.exitCode, result.output).toBe(1);
-    expect(count(result.output, 'sobre una consulta PostgREST')).toBe(2);
+    expect(count(result.output, 'cuya procedencia es opaca')).toBe(2);
   });
 
   it('un método computado ordinario sobre un registro ajeno a datos sigue permitido', () => {
