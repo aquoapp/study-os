@@ -120,13 +120,23 @@ aprobado.
 ## FILES CHANGED
 
 Rondas anteriores: siete commits correctivos más `3872a84`; siete más `2c03ecb`;
-cinco más `d848f1a`; tres más `6ec13e5`; dos más `85bdf99`. Esta ronda produce uno,
+cinco más `d848f1a`; tres más `6ec13e5`; dos más `85bdf99`. Esta ronda produce tres,
 más la reemisión:
 
 | Commit | Alcance |
 | --- | --- |
 | `86ff125` | `var` izado · funciones como valores · contenedores · llamadas no modeladas · veneno en dos fases · procedencia PostgREST · 19 fixtures |
-| (este) | Documentación viva y reemisión |
+| `14a0e3a` | Documentación viva y primera versión de esta reemisión |
+| `03e955b` | El proyecto `unit` pasa a 30 s de timeout: un test de bypass agotó los 5 s por defecto en la ejecución de evidencia bajo carga |
+| (este) | Esta tabla, tras el hallazgo anterior |
+
+**Sobre `03e955b`.** La primera ejecución de evidencia desde el checkout limpio dio
+**512/513**: el test que borra el registro de huellas y lanza `schema-drift` como
+proceso hijo agotó el timeout por defecto de 5 s, con `npm ci`, el build y Playwright
+compitiendo por la máquina. En verde en todas las demás ejecuciones. No se tocó el
+test ni el código que prueba; se dio al proyecto `unit` el mismo timeout que ya tenían
+los de integración y RLS, y se repitió la ejecución de evidencia entera sobre el
+commit resultante. La cifra de este informe es la de esa segunda ejecución.
 
 Ficheros nuevos de esta ronda:
 
