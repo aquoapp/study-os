@@ -1,4 +1,4 @@
-# STUDY OS · Checkpoint de Phase 0 · séptima reemisión
+# STUDY OS · Checkpoint de Phase 0 · octava reemisión
 
 Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 
@@ -9,8 +9,9 @@ COMMIT/TAG: ver «HEAD» en AUDIT_EVIDENCE.md (sin tag: se crea tras el merge ap
 STATUS: BLOCKED
 ```
 
-**Séptima reemisión.** La sexta (`b606e0d`) fue auditada y devolvió un defecto: la
-procedencia PostgREST se detectaba por el nombre `from`. Este informe la sustituye.
+**Octava reemisión.** La séptima (`a33ad27`) fue auditada y devolvió el falso
+negativo que quedaba en `auth-authority-guard`: un método computado sobre una consulta
+solo se denunciaba cuando el acceso era la llamada misma. Este informe la sustituye.
 
 ## Por qué sigue BLOCKED
 
@@ -35,23 +36,30 @@ E2E, la accesibilidad ni ningún contrato de dominio.
 
 ## 0. La ronda correctiva de esta reemisión
 
-Esta ronda se limitó a **cerrar la procedencia PostgREST** de `auth-authority-guard`.
+Esta ronda se limitó a **cerrar el sumidero computado extraído** de
+`auth-authority-guard`. No toca infraestructura, migraciones, SD-018 ni decisiones de
+dominio.
 
 | # | Hallazgo de la auditoría | Estado | Evidencia |
 | --- | --- | --- | --- |
 | C1 | `scope.mjs` trataba `var` como si tuviera ámbito de bloque | **CERRADO** (ronda anterior) | `guards.closure.spec` C1 |
 | C2 | Retornos, contenedores y llamadas no modeladas en el motor | **CERRADO** (ronda anterior) | `guards.closure.spec` C2, C3 |
 | C3 | Método computado no resoluble sobre una consulta | **CERRADO** (ronda anterior) | `guards.closure.spec` C4 |
-| C4 | La consulta se reconocía por el **nombre** `from`, no por su origen | **CERRADO** en esta ronda | `guards.postgrestProvenance.spec` · 13 casos |
+| C4 | La consulta se reconocía por el **nombre** `from`, no por su origen | **CERRADO** (ronda anterior) | `guards.postgrestProvenance.spec` · 13 casos |
+| C5 | `q[method](...)` solo se denunciaba cuando el acceso era la llamada misma: `const sink = query[method]; sink('user_id', raw)` pasaba | **CERRADO** en esta ronda | `guards.computedSink.spec` · 10 casos |
 
-**Qué estaba mal en C4.** Cualquier llamada a un miembro llamado `from` sembraba la
-etiqueta de consulta. Eso fallaba en las dos direcciones a la vez: `Array.from(x)` y
-cualquier objeto local con un método `from()` quedaban marcados como consulta
-PostgREST —falso positivo—, y un cliente cuyo `.from` se extraía con `bind`, con
-`call` o por asignación posterior, y se invocaba por otro camino, no quedaba
-marcado —falso negativo—.
+**Qué estaba mal en C5.** La comprobación del método computado miraba el callee de la
+`CallExpression`: si era un `ElementAccessExpression` no resoluble sobre una consulta,
+hallazgo. Separar la lectura de la llamada la esquivaba entera. Ahora **leer** `q[m]`
+no resoluble sobre un valor `postgrest-query` produce la capacidad
+`postgrest-computed-sink`, que el motor propaga como una función-valor, y **invocar**
+cualquier valor que la lleve es hallazgo, esté donde esté la llamada.
 
-Este informe ya no afirma en ninguna parte que todo `.from()` implique PostgREST.
+Hubo que acotar una regla del motor: un seed sobre `q[m]` no se guarda en ninguna
+ubicación, porque la suya es el comodín `.*` que toda lectura de propiedad consulta, y
+guardarlo ahí habría contaminado `query.select`. Un control positivo lo vigila.
+
+Este informe sigue sin afirmar que todo `.from()` implique PostgREST.
 
 Conservados sin regresión: independencia respecto a `_handoff`; SD-019 opción A y
 sus pruebas renderizadas; el contrato corregido de SD-018, todavía PROPOSED; el
@@ -84,7 +92,7 @@ ante cualquier fallo; el bundle exacto del commit y la evidencia externa.
 | **P0-S5** | Migración 1: `profiles` 1:1, trigger idempotente, RLS `enable`+`force` | **Escrita · sin aplicar** |
 | **P0-S6** | CI en dos jobs, CLI fijado, E2E estáticos separados de los de auth | **Escrito · nunca ejecutado** |
 | **P0-S7** | Tokens con los valores de `STUDY_OS_Design_System_v1.0`, los defaults de implementación marcados aparte, y el contraste verificado en el navegador | **Satisfecho bajo SD-019 opción A** |
-| **P0-S8** | Cinco guardas con propagación de capacidades y procedencia por punto fijo, y 159 pruebas que ejecutan las guardas reales | Completo |
+| **P0-S8** | Cinco guardas con propagación de capacidades y procedencia por punto fijo, y 169 pruebas que ejecutan las guardas reales | Completo |
 | **P0-S9** | `/spec`, `/architecture`, `/docs` importados con SHA-256; registro versionado de documentos gobernantes | Completo |
 | **P0-S10** | Este informe | Completo |
 
@@ -99,6 +107,7 @@ Ninguna se reconoce por el nombre del receptor ni del método.
 | `supabase-client` | Solo en una llamada a un **origen registrado** en `authority-registry.json`, resuelto por **módulo** y por **nombre exportado** | Como cualquier valor. No se hereda por llamada: un `.rpc()` sobre un cliente no devuelve otro cliente |
 | `postgrest-from` | Al **acceder** a `.from` sobre un valor `supabase-client`, por propiedad o por desestructuración | Extracción directa, `bind`, `call`, `apply`, asignación posterior, desestructuración, propiedades, contenedores, parámetros y retornos |
 | `postgrest-query` | Al **invocar** un valor `postgrest-from` | Se conserva por las operaciones encadenadas de consulta |
+| `postgrest-computed-sink` | Al **leer** `q[m]` con `m` no resoluble sobre un `postgrest-query`, se invoque o no ahí | Como una función-valor: declaraciones, asignaciones posteriores, propiedades, contenedores, parámetros, retornos, `bind`/`call`/`apply` y alias. Invocarla es siempre hallazgo. Solo nace sobre `postgrest-query` |
 
 **Orígenes registrados.** Internos, resueltos con los alias de `tsconfig`:
 `apps/web/src/server/supabase/server-client.ts#createSupabaseServerClient` y su
@@ -142,19 +151,19 @@ explícita**. Sin cambios en esta ronda.
 ## FILES CHANGED
 
 Rondas anteriores: siete commits correctivos más `3872a84`; siete más `2c03ecb`;
-cinco más `d848f1a`; tres más `6ec13e5`; dos más `85bdf99`; tres más `b606e0d`.
-Esta ronda produce uno, más la reemisión:
+cinco más `d848f1a`; tres más `6ec13e5`; dos más `85bdf99`; tres más `b606e0d`;
+dos más `a33ad27`. Esta ronda produce uno, más la reemisión:
 
 | Commit | Alcance |
 | --- | --- |
-| `24a0c61` | Tres capacidades de procedencia · registro de orígenes · `seed` con hechos de subexpresiones · hechos sembrados guardados en su ubicación · frontera opaca · 13 fixtures |
+| `52ceb88` | Capacidad `postgrest-computed-sink` · seeds no guardados en el comodín `.*` · 10 fixtures |
 | (este) | Documentación viva y reemisión |
 
 Ficheros nuevos de esta ronda:
 
 | Ruta | Propósito |
 | --- | --- |
-| `tests/unit/guards.postgrestProvenance.spec.ts` | Los cuatro fixtures obligatorios, los caminos de viaje, la frontera opaca y cinco controles positivos |
+| `tests/unit/guards.computedSink.spec.ts` | Los cuatro fixtures obligatorios, los demás caminos y tres controles positivos |
 
 ---
 
@@ -188,12 +197,13 @@ Obtenido con `vitest run --project unit --reporter=json`, no a mano.
 | `guards.postgrestProvenance.spec.ts` | 13 |
 | `offline.copy.spec.ts` | 13 |
 | `e2eConcurrentRuns.spec.ts` | 11 |
+| `guards.computedSink.spec.ts` | 10 |
 | `bundle.secret-scan.spec.ts` | 7 |
 | `client.no-authoritative-write.spec.ts` | 7 |
 | `primarySpaces.frozen.spec.ts` | 6 |
 | `importGuard.spec.ts` | 4 |
 | `taiLiteral.guard.spec.ts` | 3 |
-| **Total** | **526 en 27 ficheros** |
+| **Total** | **536 en 28 ficheros** |
 
 ### Ejecutado · en verde
 
@@ -208,11 +218,11 @@ La salida íntegra está en `AUDIT_EVIDENCE.md`, que se entrega fuera del ZIP.
 | `npm run lint` | **PASS** |
 | `npm run format` | **PASS** |
 | `npm run build` | **PASS** · 8 rutas |
-| `npm run test:unit` | **PASS** · **526/526** en 27 ficheros |
+| `npm run test:unit` | **PASS** · **536/536** en 28 ficheros |
 | `npm run guards` | **PASS** · las cuatro sin hallazgos |
 | `npm run secret-scan` | **PASS** · construye por sí mismo · centinela de servidor |
 | `npm run test:e2e:static` | **PASS** · **70/70** (35 casos × 2 proyectos) |
-| Fixtures nuevos, ejecutados de forma visible | **PASS** · 13/13 |
+| Fixtures nuevos, ejecutados de forma visible | **PASS** · 10/10 |
 
 Y fuera del checkout limpio, en el árbol de trabajo:
 
@@ -243,25 +253,30 @@ y `verify` los cuenta como fallo.
 
 ### P0-G5 · PASS porque los cuatro fixtures obligatorios fallan de verdad
 
-P0-G5 estuvo en **FAIL** mientras C4 seguía abierto. Vuelve a PASS porque los cuatro
+P0-G5 estuvo en **FAIL** mientras C5 seguía abierto. Vuelve a PASS porque los cuatro
 fixtures que la auditoría exigió producen código distinto de cero, cada uno
 compilando con el `tsconfig.json` real y ejecutando la guarda como proceso hijo:
 
 | # | Fixture | Detección |
 | --- | --- | --- |
-| 1 | Cliente canónico → `db.from.bind(db)` → consulta → método dinámico con `user_id` | «sobre una consulta PostgREST» |
-| 2 | `.from` extraído por asignación posterior y llamado con `.call()` | Ídem |
-| 3 | Consulta construida directamente, y consulta mediante alias | Ídem, dos veces |
-| 4 | Objeto local con método `from()` + propiedad dinámica inocua · `Array.from()` y un `from` local homónimo | **código cero** |
+| 1 | `const sink = query[method]; sink('user_id', raw)` | «Invocación de `sink`, que es un método con nombre computado extraído de una consulta PostgREST» |
+| 2 | Asignación posterior del mismo sumidero | Ídem |
+| 3 | Paso por contenedor y retorno | Ídem |
+| 4 | `.bind(query)` antes de invocarlo | Ídem |
 
-Y además: `.from` viaja por `apply`, desestructuración, contenedor y retorno —cuatro
-hallazgos—; el origen externo `@supabase/ssr#createServerClient` cuenta; el alias de
-importación no cambia nada; la frontera opaca falla cerrado con su propio mensaje; y
-una consulta canónica con identidad verificada sigue pasando.
+Y además: propiedad, parámetro, `call`, `apply` y alias intermedio —cinco hallazgos—;
+el acceso directo conserva su propio diagnóstico sin duplicarse; y tres controles
+positivos en código cero: el repositorio real, `registry[method]` extraído de un
+registro local y ejecutado con una columna de identidad como argumento, y
+`query[method]` leído en el mismo fichero que `query.select()` sin contaminarlo.
 
-**Total acumulado: 159 casos que ejecutan las guardas reales** —13 de procedencia
-PostgREST, 19 de cierre transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de
-blanqueo, 28 de evasión, 21 adversariales— más 26 bypasses operacionales.
+Los cuatro de la ronda anterior —C4— siguen fallando: `guards.postgrestProvenance.spec`
+se ejecuta entera en cada pasada.
+
+**Total acumulado: 169 casos que ejecutan las guardas reales** —10 de sumidero
+computado extraído, 13 de procedencia PostgREST, 19 de cierre transitivo, 21 de
+propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión, 21
+adversariales— más 26 bypasses operacionales.
 
 ---
 
@@ -298,7 +313,8 @@ en una segunda fase.
 La **procedencia de consulta** es la de la tabla de arriba: origen registrado →
 `.from` → invocación. Un método computado no resoluble es hallazgo sobre una
 consulta demostrada, y también sobre un receptor de origen opaco cuando la llamada
-puede llevar identidad.
+puede llevar identidad. Y leerlo sin invocarlo produce `postgrest-computed-sink`, que
+viaja con el valor y falla cerrado en cualquier invocación posterior.
 
 **Cliente · capacidades por propagación.** Acceder a `insert/update/upsert/delete`
 es hallazgo, se invoque o no. Invocar algo que lleve una capacidad de escritura, de
@@ -386,10 +402,10 @@ Nada se ha aplicado fuera del repositorio local: ninguna migración ejecutada, n
 entorno creado, ningún servicio externo tocado, ningún secreto escrito.
 
 ```bash
-git reset --hard b606e0d
+git reset --hard a33ad27
 ```
 
-Devuelve la rama al estado de la sexta reemisión. `main` conserva su commit raíz
+Devuelve la rama al estado de la séptima reemisión. `main` conserva su commit raíz
 `6086537`.
 
 ---
