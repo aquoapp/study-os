@@ -52,6 +52,19 @@ export default defineConfig({
            * orden. Un test de invariante que a veces pasa no sirve de nada.
            */
           fileParallelism: false,
+          /**
+           * Treinta segundos, como los otros proyectos.
+           *
+           * Buena parte de estos tests no son unitarios en sentido estricto: lanzan
+           * las guardas como procesos hijos, construyen un programa de TypeScript
+           * para comprobar que un fixture compila, o ejecutan `db.mjs` seis veces
+           * seguidas. Con el valor por defecto de 5 s, uno de ellos agotó el tiempo
+           * en la ejecución de evidencia desde un checkout limpio —con `npm ci`,
+           * el build y Playwright compitiendo por la máquina— y en verde en todas
+           * las demás. Un test que falla por carga de la máquina no mide lo que dice
+           * medir.
+           */
+          testTimeout: 30_000,
         },
       },
       {
