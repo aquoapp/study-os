@@ -700,7 +700,12 @@ export function analyzeDataflow(sourceFile, resolve, config = {}) {
      */
     if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
       const sown = seed(node, factsOf);
-      if (sown) addFacts(keyOf(node), sown);
+      // Un acceso con clave no resoluble —`q[m]`— no denota ninguna ubicación
+      // concreta: su clave es el comodín `.*`, que TODA lectura de propiedad del
+      // mismo objeto consulta. Guardar ahí el hecho contaminaría `q.select`. El
+      // valor extraído lleva el hecho igualmente, y viaja con él.
+      const key = keyOf(node);
+      if (sown && key && !key.endsWith('.*')) addFacts(key, sown);
     }
 
     // Cada función es un valor. Las declaradas viven en su propia declaración.

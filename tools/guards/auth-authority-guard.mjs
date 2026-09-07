@@ -119,6 +119,20 @@ const CLIENT = 'supabase-client';
 const FROM = 'postgrest-from';
 const QUERY = 'postgrest-query';
 
+/**
+ * Sumidero PostgREST **computado**.
+ *
+ * Nace al **leer** `q[m]` con `m` no resoluble sobre un valor QUERY, se invoque o no
+ * en ese mismo sitio. Es una capacidad como cualquier otra —viaja por declaraciones,
+ * asignaciones posteriores, propiedades, contenedores, parámetros, retornos,
+ * `bind`/`call`/`apply` y alias—, y **invocarla** es siempre un hallazgo: no se
+ * puede saber si es `.eq`, `.in`, `.insert` o cualquier otro sumidero de identidad,
+ * y separarla de su lectura no cambia lo que es.
+ *
+ * Solo nace sobre QUERY. `registry[m]` sobre un objeto local no la produce.
+ */
+const COMPUTED_SINK = 'postgrest-computed-sink';
+
 const registry = JSON.parse(
   readFileSync(join(REPO_ROOT, 'packages/domain/src/authority-registry.json'), 'utf8'),
 );
@@ -389,6 +403,15 @@ for (const file of collectSourceFiles()) {
       if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
         const member = memberNameOf(node);
         if (member !== null && SINK_METHODS.has(member)) return [`${SINK}${member}`];
+        // Leer `q[m]` con `m` no resoluble sobre una consulta: el valor extraído es un
+        // sumidero que no se puede nombrar, esté o no la llamada al lado.
+        if (
+          member === null &&
+          ts.isElementAccessExpression(node) &&
+          factsOf(node.expression).has(QUERY)
+        ) {
+          return [COMPUTED_SINK];
+        }
         // `.from` sobre un cliente registrado: el acceso YA es el valor que produce
         // consultas. Sobre cualquier otra cosa —`Array.from`, un objeto local con un
         // método `from()`— no es nada.
@@ -547,6 +570,17 @@ for (const file of collectSourceFiles()) {
         'consulta PostgREST, y el nombre no se resuelve a un literal en este fichero. Puede ' +
         'ser .eq, .in, .insert o cualquier otro sumidero de identidad: no poder demostrar ' +
         'qué método es no equivale a que sea inocuo (INV-116).',
+    );
+  };
+
+  const reportExtractedComputedSink = (node, calleeNode) => {
+    push(
+      node,
+      `Invocación de ${describeValue(calleeNode)}, que es un método con nombre computado ` +
+        'extraído de una consulta PostgREST. El nombre no se resolvió a un literal al ' +
+        'extraerlo, y separarlo de su lectura —variable, propiedad, contenedor, retorno, ' +
+        'bind— no cambia lo que es: puede ser .eq, .in, .insert o cualquier otro sumidero ' +
+        'de identidad. Se falla cerrado (INV-116).',
     );
   };
 
@@ -779,6 +813,13 @@ for (const file of collectSourceFiles()) {
       }
       // Un miembro con otro nombre puede llevar el sumidero por propagación:
       // `const ops = { filtrar: query.eq }; ops.filtrar(...)`.
+    }
+
+    // Un sumidero computado extraído de una consulta y invocado por cualquier camino.
+    // El acceso directo `q[m](...)` ya se denunció arriba; esto cubre el resto.
+    if (flow.factsOf(callee).has(COMPUTED_SINK)) {
+      reportExtractedComputedSink(node, callee);
+      return;
     }
 
     // Todo lo demás: el callee lleva la etiqueta del sumidero por propagación.
