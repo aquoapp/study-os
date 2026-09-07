@@ -64,6 +64,15 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: anon-placeholder-para-escaneo
 
+      # El paquete `supabase` fijado por el lockfile no descarga su binario en la
+      # instalación sino en la primera invocación. Sin este paso, esa primera
+      # invocación ocurre dentro de un test de `operational-bypasses.spec` que
+      # ejecuta la guarda schema-drift, y la descarga (138 s en el runner) agota el
+      # límite de 30 s del test. Se precalienta aquí, con la versión fijada, para
+      # que el test mida la guarda y no la red.
+      - name: Precalentar el CLI de Supabase (descarga del binario fijado)
+        run: node node_modules/supabase/dist/supabase.js --version
+
       - name: test:unit
         run: npm run test:unit
         env:
