@@ -34,7 +34,10 @@ function uniqueEmail(label: string): string {
     );
   }
   ordinal += 1;
-  return runScopedEmail(String(runId), label, ordinal);
+  // Ver la nota equivalente en auth.signup-login.e2e.ts: el ordinal es por worker y
+  // el segundo proyecto de Playwright repetía el correo del primero.
+  const scope = `${label}-${test.info().project.name}-w${test.info().workerIndex}`;
+  return runScopedEmail(String(runId), scope, ordinal);
 }
 
 const PASSWORD = 'Contrasena-De-Prueba-1!';

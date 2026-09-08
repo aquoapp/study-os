@@ -30,7 +30,13 @@ function uniqueEmail(label: string): string {
     );
   }
   ordinal += 1;
-  return runScopedEmail(String(runId), label, ordinal);
+  // El ordinal vive en el proceso del worker. Playwright arranca otro worker por
+  // proyecto (móvil, escritorio) y tras cada reintento, y ahí el ordinal vuelve a 1:
+  // el segundo proyecto repetía el correo que el primero ya había dado de alta y se
+  // quedaba en /registro (CI run 34230693848). El proyecto y el índice del worker
+  // forman parte del correo para que dos workers no puedan coincidir.
+  const scope = `${label}-${test.info().project.name}-w${test.info().workerIndex}`;
+  return runScopedEmail(String(runId), scope, ordinal);
 }
 
 const PASSWORD = 'Contrasena-De-Prueba-1!';
