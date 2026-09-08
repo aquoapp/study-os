@@ -146,6 +146,7 @@ describe('schema-drift · estrictamente de solo lectura', () => {
     expect(Object.keys(lock.migrations)).toEqual([
       '00000000000000_init.sql',
       '00000000000001_profiles.sql',
+      '00000000000002_profiles_service_role.sql',
     ]);
     expect(read('tools/guards/schema-drift.mjs')).toContain('no está en el registro de huellas');
   });
