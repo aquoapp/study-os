@@ -3,8 +3,8 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.0 · copia viva
-**Última actualización:** 2026-09-08 · publicación del repositorio y protección de `main`
+**Versión:** 11.1 · copia viva
+**Última actualización:** 2026-09-08 · cierre de D-14 (token temporal revocado por Ana)
 **Fase actual:** 0 · Foundation
 **Estado global:** **PASS WITH DEBT** · ver `docs/PHASE_0_CHECKPOINT.md`
 
@@ -161,7 +161,7 @@ SD-006, SD-007, BD-02 y BD-05 (aceptados el 2026-09-07, §4).
 | D-11 | Un cliente Supabase que cruce la frontera del fichero sin tipo demostrable cae en «procedencia opaca» y falla cerrado en los métodos computados | Aceptable mientras no haya superficie de dominio | Cuando la haya |
 | D-12 | ADR-007 deja `ON DELETE` y la enumeración cerrada de `item_type` como prerrequisito; ADR-008 exige un contrato de canonicalización que no está redactado | Los documentos gobernantes no los determinan y la regla de no invención impide fijarlos aquí | Antes de las migraciones 7, 8 y 11 · fuera de Phase 0 |
 | D-13 | `schema-drift` nivel B no puede ejecutarse en la máquina de desarrollo | `supabase db diff` construye una base sombra con Docker, que no está instalado (decisión humana: no instalarlo). El control corre en CI contra el stack local y contra STAGING | Aceptable · la evidencia es la de CI |
-| D-14 | Token de acceso personal de Supabase `STUDY_OS Phase 0` (30 días) en un fichero local ignorado por Git | Fue necesario para la Management API (configuración de Auth de STAGING, rotación de claves); ya no lo necesita ninguna operación | **Revocar ahora** · única acción humana pendiente |
+| D-14 | ~~Token de acceso personal de Supabase `STUDY_OS Phase 0` (30 días) en un fichero local ignorado por Git~~ **Cerrada el 2026-09-08**: Ana lo revocó tras la entrega de la undécima reemisión. Fue necesario para la Management API (configuración de Auth de STAGING, rotación de claves); ninguna herramienta del repositorio ni de CI lo usa | — | — |
 | D-15 | ~~La `service_role` legacy de STAGING quedó expuesta en un mensaje de error de shell~~ **Cerrada el 2026-09-08**: clave `sb_secret` `phase0_tests` nueva, claves legacy de STAGING desactivadas (Management API: `enabled: false`), checks reejecutados; PRODUCTION no afectado | — | — |
 
 **Deuda documental heredada:** 26 contradicciones registradas (C-01…C-26). SD-019
@@ -197,8 +197,8 @@ para en su checkpoint aunque los gates estén en verde.
 Los cuatro checks que exigían infraestructura se ejecutan de verdad —contra STAGING y en
 CI—, el repositorio es público con `main` protegida mecánicamente, el Preview de Vercel
 existe y ninguna decisión humana de dominio queda abierta. La deuda que impide el `PASS`
-limpio es la de §6, encabezada por la revocación del token temporal (D-14). Antes de
-Phase 1: revocar D-14, revisión humana y merge de `phase/0-foundation` por PR, tag.
+limpio es la de §6, encabezada por D-13; D-14 quedó cerrada el 2026-09-08. Antes de
+Phase 1: revisión humana y merge de `phase/0-foundation` por PR, tag.
 Detalle en `docs/PHASE_0_CHECKPOINT.md`.
 
 ---

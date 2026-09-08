@@ -5,7 +5,7 @@ Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 ```text
 PHASE: 0 · Foundation
 BRANCH: phase/0-foundation
-COMMIT/TAG: ver «HEAD» en AUDIT_EVIDENCE.md (sin tag: se crea tras el merge aprobado)
+COMMIT/TAG: 94bd6c4 · código y evidencia auditados (AUDIT_EVIDENCE.md) · más un commit documental posterior que solo cierra D-14 (sin tag: se crea tras el merge aprobado)
 STATUS: PASS WITH DEBT
 ```
 
@@ -19,17 +19,27 @@ público el repositorio para obtener la protección sin coste. Esta reemisión d
 esa publicación, la protección de `main` demostrada y el cierre de MI-05a. Sustituye a
 la décima.
 
+**Cierre de D-14, posterior a la emisión.** El 2026-09-08, entregadas esta reemisión y
+su evidencia para `94bd6c4`, Ana Victoria revocó el token de acceso personal de Supabase
+`STUDY_OS Phase 0`. El cierre no toca código, migraciones, tests ni infraestructura: el
+árbol auditado sigue siendo el de `94bd6c4` y el bundle
+`STUDY_OS_Phase_0_Audit_Bundle_94bd6c4.zip` sigue describiéndolo; el commit documental
+que registra el cierre no genera evidencia nueva porque el Checkpoint Contract no la
+exige para un cambio exclusivamente documental. La revocación consta por declaración
+humana: verificarla mecánicamente exigiría otro token, que no se crea. Ninguna
+herramienta del repositorio ni de CI usa ese token (`SUPABASE_ACCESS_TOKEN` no aparece
+en el árbol).
+
 ## Por qué PASS WITH DEBT
 
 Los nueve checks bloqueantes están en verde en CI remoto sobre el repositorio público, y
 ocho de nueve en local (D-13). Los cinco gates están en `PASS`. Los outputs de Phase 0
 del `Execution Plan §3` —repositorio, rama protegida, CI, entornos separados, Preview—
-existen y están verificados. Ninguna decisión humana queda abierta. No es `PASS` a secas
-por la deuda que sigue registrada:
+existen y están verificados. Ninguna decisión humana queda abierta; D-14 quedó cerrada
+tras la emisión. No es `PASS` a secas por la deuda que sigue registrada:
 
 | Deuda que impide el `PASS` limpio | Naturaleza |
 | --- | --- |
-| **D-14** · el token de acceso personal `STUDY_OS Phase 0` sigue vigente hasta que Ana lo revoque (única acción humana pendiente al cerrar esta reemisión) | Credencial temporal · fuera del repositorio |
 | **D-13** · `schema-drift` nivel B exige Docker en local; el control corre en CI contra el stack local y contra STAGING real | Aceptada · evidencia en CI |
 | **D-04 · D-05 · D-06 · D-07 · D-09 … D-12** · deudas menores registradas en rondas anteriores, sin cambios | Aceptadas o diferidas fuera de Phase 0 |
 
@@ -139,8 +149,8 @@ se corrigió con la opción de menor impacto: Ana creó una clave `sb_secret` nu
 `{"enabled": false}` para las legacy, la clave nueva se cargó en el fichero local sin
 pasar por el chat, y los checks de integración, RLS y E2E se reejecutaron con ella.
 PRODUCTION no se tocó. La credencial expuesta queda revocada de facto. El token de
-acceso personal `STUDY_OS Phase 0` (30 días) es una credencial temporal a revocar al
-terminar la ronda (D-14).
+acceso personal `STUDY_OS Phase 0` (30 días) era una credencial temporal; Ana lo revocó
+al terminar la ronda (D-14, cerrada).
 
 ---
 
@@ -193,7 +203,8 @@ anterior citó por error `c660389`, corregido aquí como **D-GOV-01 cerrada**). 
 | `253e9c1` | CI: job `drift-staging` contra STAGING real con guarda fail-closed |
 | `a272022` | Décima reemisión · `ARCHITECTURE_STATE` v10.0 · `CLAUDE.md` §9 · tests documentales (rehecho en el saneamiento previo a la publicación) |
 | `4e403ca` | Preview de Vercel verificado y evaluación de la protección de `main` (rehecho en el saneamiento) |
-| (este) | Undécima reemisión · publicación, ruleset de `main`, cierre de MI-05a · `ARCHITECTURE_STATE` v11.0 · `CLAUDE.md` §9 · test documental |
+| `94bd6c4` | Undécima reemisión · publicación, ruleset de `main`, cierre de MI-05a · `ARCHITECTURE_STATE` v11.0 · `CLAUDE.md` §9 · test documental |
+| (este) | Cierre documental de D-14 · `ARCHITECTURE_STATE` v11.1 · sin cambios de código, migraciones, tests ni infraestructura |
 
 Ficheros nuevos: `supabase/migrations/00000000000002_profiles_service_role.sql` y su
 reversa. Modificados: `.github/workflows/ci.yml`, `supabase/migrations/.lock.json`,
@@ -261,7 +272,7 @@ I1–I4 y quedan en la evidencia con sus causas.
 Los cinco gates de aceptación están en PASS. La rama protegida y el Preview desplegado
 —los outputs de Phase 0 que MI-05a dejaba sin cubrir en la décima reemisión— existen y
 están verificados; D-15 está cerrada. El `STATUS: PASS WITH DEBT` procede únicamente de
-la deuda registrada en KNOWN DEBT, encabezada por la revocación pendiente de D-14.
+la deuda registrada en KNOWN DEBT, encabezada por D-13 desde el cierre de D-14.
 
 ### P0-G2 · evidencia de separación real
 
@@ -353,7 +364,7 @@ final: 0 usuarios, 0 tablas, 0 buckets, configuración de Auth y claves sin camb
 | D-09 · D-10 · D-11 | Límites documentados de las guardas | Aceptables |
 | D-12 | Prerrequisitos de ADR-007 y ADR-008 | Antes de las migraciones 7, 8 y 11 · fuera de Phase 0 |
 | D-13 | `schema-drift` nivel B exige Docker en local; corre en CI contra el stack local y contra STAGING | Aceptable · la evidencia es la de CI |
-| D-14 | Token de acceso personal `STUDY_OS Phase 0` (30 días), fichero local ignorado | **Revocar ahora**: ninguna operación pendiente lo necesita · única acción humana al cierre |
+| D-14 | ~~Token de acceso personal `STUDY_OS Phase 0` (30 días), fichero local ignorado~~ **Cerrada** el 2026-09-08: Ana revocó el token tras la entrega de esta reemisión; ninguna herramienta del repositorio ni de CI lo usa | — |
 | D-16 | El historial original de Phase 0 vive en `aquoapp/study-os-archive-private` (privado); el repositorio público empieza con la historia saneada. Los runs de CI anteriores a la publicación solo constan en el archivo y en la evidencia entregada | Aceptada · trazabilidad preservada en privado |
 | D-15 | `service_role` legacy de STAGING expuesta en un error de shell | **Cerrada** el 2026-09-08: clave `sb_secret` nueva, legacy desactivadas, checks reejecutados |
 | D-GOV-01 | La novena reemisión citaba `c660389` en lugar de `7344f00` | **Cerrada** en esta reemisión |
@@ -404,7 +415,7 @@ listos.
 **Phase 1 · Domain Foundation**, solo con autorización humana explícita. Phase 0 cierra
 en `PASS WITH DEBT`; la fase **para aquí** aunque los gates estén en verde.
 
-1. Ana revoca el token temporal `STUDY_OS Phase 0` (D-14): única acción humana pendiente.
+1. ~~Ana revoca el token temporal `STUDY_OS Phase 0` (D-14)~~ Hecho el 2026-09-08; D-14 cerrada.
 2. Revisión humana y merge de `phase/0-foundation` en `main` por PR (la protección lo
    exige); tag de Phase 0 tras el merge.
 3. Decisión humana explícita de arrancar Phase 1.
