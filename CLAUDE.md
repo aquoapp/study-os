@@ -128,10 +128,14 @@ Phase 5 y no bloquea Phase 0.
 `STUDY_OS_PRODUCTION` (`nzcgufeycvehczroryoe`) no se muta. Cualquier otro proyecto Supabase
 —incluido el proyecto preexistente de otro producto que también se llamaba `STUDY_OS`— está
 **prohibido**.
-Repositorio `aquoapp/study-os` (privado) con CI en verde; proyecto Vercel `study-os`.
+Repositorio `aquoapp/study-os`, **público** desde el 2026-09-08, con CI en verde y `main`
+protegida por un ruleset sin bypass (PR obligatorio, checks exigidos, sin force-push ni
+borrado); proyecto Vercel `study-os` vinculado a él. El repositorio privado anterior,
+`aquoapp/study-os-archive-private`, es archivo de trazabilidad y no se toca ni se publica.
 Los secretos viven en `.env.staging.local` y `.env.supabase-admin.local`, ignorados por Git:
-nunca se leen ni se imprimen. El checkpoint sigue **BLOCKED** por lo que queda de MI-05a
-(protección mecánica de `main`, imposible en GitHub Free con repositorio privado).
+nunca se leen ni se imprimen. Todo lo que se sube es público: ningún identificador de
+proyectos ajenos, ningún dato real, ningún secreto. El checkpoint de Phase 0 es
+**PASS WITH DEBT** (MI-05a cerrado); Phase 1 sigue sin autorización humana.
 
 **INV-101 ya no está abierto.** Ana lo aprobó, con su redacción congelada, en la
 autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante

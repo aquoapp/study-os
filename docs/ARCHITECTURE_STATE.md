@@ -3,10 +3,10 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 10.0 · copia viva
-**Última actualización:** 2026-09-08 · ronda de infraestructura de Phase 0
+**Versión:** 11.0 · copia viva
+**Última actualización:** 2026-09-08 · publicación del repositorio y protección de `main`
 **Fase actual:** 0 · Foundation
-**Estado global:** **BLOCKED** · ver `docs/PHASE_0_CHECKPOINT.md`
+**Estado global:** **PASS WITH DEBT** · ver `docs/PHASE_0_CHECKPOINT.md`
 
 ---
 
@@ -41,7 +41,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 
 | Elemento | Estado | Nota |
 | --- | --- | --- |
-| Repositorio de aplicación | **EXISTE · remoto** | `aquoapp/study-os`, **PRIVATE**, `origin`; `main` y `phase/0-foundation` publicadas sin reescritura. `main` **sin protección mecánica**: GitHub Free devuelve 403 en un repositorio privado (D-01, MI-05a) |
+| Repositorio de aplicación | **EXISTE · remoto · público** | `aquoapp/study-os`, **PUBLIC** desde el 2026-09-08, `origin`, `main` por defecto. `main` **protegida por ruleset** (PR obligatorio, tres checks de estado estrictos, sin force-push, sin borrado, sin bypass) y demostrada con cuatro rechazos. Historia canónica: 47 commits; `main` = `6086537`. El repositorio privado anterior es `aquoapp/study-os-archive-private` (archivo, nunca público) |
 | Aplicación Next.js | **EXISTE** | Next 16.3.2 · App Router · TypeScript `strict` · PWA instalable · 8 rutas |
 | Proyecto Supabase | **EXISTE · organización dedicada `STUDY_OS`** | `STUDY_OS_STAGING` (`xzcrqsolxarutlvvkzfp`, eu-west-1) es el **único entorno mutable**; `STUDY_OS_PRODUCTION` (`nzcgufeycvehczroryoe`, eu-central-1) existe como frontera real y **no se ha mutado**. Plan Free. Data API con exposición automática desactivada: los grants los dan las migraciones |
 | Migraciones | **3 escritas · 3 aplicadas en STAGING · 0 en PRODUCTION** | `0000_init`, `0001_profiles` y `0002_profiles_service_role` (grants DML al rol de servicio, autorizada el 2026-09-08 tras la primera evidencia real). Con rollback y huellas en `.lock.json`; las de 0 y 1 intactas. Aplicadas también desde cero en CI en cada run |
@@ -58,7 +58,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | Tests de integración | **10 ejecutados y en verde** | `profiles` 1:1 contra STAGING y en CI |
 | Tests de RLS | **11 ejecutados y en verde** | Contra STAGING y en CI |
 | CI | **EXISTE · ejecutado · en verde** | `.github/workflows/ci.yml`, tres jobs: estático, base de datos (stack local migrado desde cero) y **deriva de esquema contra STAGING real** con guarda fail-closed. Run `34234262313` sobre `253e9c1`: los nueve checks en verde. Seis runs anteriores con fallos reales, corregidos y registrados |
-| Proyecto Vercel | **EXISTE · vinculado** | Equipo `STUDY_OS`, proyecto `study-os` ligado a `aquoapp/study-os`, `apps/web`, Next.js, Node 24. Variables públicas separadas: Preview → STAGING, Production → PRODUCTION; ningún secreto de servidor. **Preview real desde `phase/0-foundation`: READY** (`study-os-git-phase-0-foundation-study-os6.vercel.app`, protegido por Vercel Authentication). Un alta real por formulario a través del Preview aterrizó en STAGING con perfil 1:1 y PRODUCTION siguió en 0 usuarios; el fixture se borró. Los dos intentos anteriores fallaron por el correo del autor de los commits (asociado por Ana) y por instalar solo las dependencias de `apps/web` (corregido con `installCommand: cd ../.. && npm ci`). Producción de Vercel sin desplegar: `main` sigue en su commit raíz |
+| Proyecto Vercel | **EXISTE · vinculado al repositorio público** | Equipo `STUDY_OS`, proyecto `study-os` revinculado el 2026-09-08 al nuevo `aquoapp/study-os` (protección de forks activa), `apps/web`, Next.js, Node 24. Variables públicas separadas: Preview → STAGING, Production → PRODUCTION; ningún secreto de servidor. **Preview real desde `phase/0-foundation`: READY** (`study-os-git-phase-0-foundation-study-os6.vercel.app`, protegido por Vercel Authentication). Un alta real por formulario a través del Preview aterrizó en STAGING con perfil 1:1 y PRODUCTION siguió en 0 usuarios; el fixture se borró. Los dos intentos anteriores fallaron por el correo del autor de los commits (asociado por Ana) y por instalar solo las dependencias de `apps/web` (corregido con `installCommand: cd ../.. && npm ci`). Producción de Vercel sin desplegar: `main` sigue en su commit raíz |
 | Guardas de invariante | **5 activas, por propagación de punto fijo** | import · tai-literal · secret-scan · client-authority (capacidades) · auth-authority (procedencia). **169 casos de guardas** que ejecutan las guardas reales —10 de sumidero computado extraído, 13 de procedencia PostgREST, 19 de cierre transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión, 21 adversariales— **más 26 bypasses operacionales**. Sin cambios en esta ronda |
 | Contenido ingerido | NINGUNO | Ni siquiera de prueba. Execution Plan §9 |
 | Tablas de dominio | **NINGUNA** | Verificado por test: ninguna migración crea `learning_events`, `question_attempts`, `concept_mastery`, `exam_readiness`, `planner_*`, `canonical_questions`, `answer_key_versions`, `learning_units`, `sessions`, `session_items`, `planner_items`, `user_event_counters`, `projection_watermarks`, `concept_versions`, `exam_sittings` ni `exam_occurrences`. **Aceptar cinco decisiones no ha creado ninguna** |
@@ -133,7 +133,7 @@ la aceptación. Lo que necesitan ahora es un plan de implementación, y eso no e
 
 | ID | Tipo | Asunto | Bloquea |
 | --- | --- | --- | --- |
-| MI-05a · **parcialmente resuelto** | MISSING_INPUT | Repositorio remoto, CI en verde, Supabase y Vercel con Preview real **existen** (2026-09-08). Queda solo: **protección mecánica de `main`** (GitHub Free, 403 en repositorio privado) | El cierre de Phase 0 |
+| MI-05a · **resuelto** | ~~MISSING_INPUT~~ | Repositorio remoto público, `main` protegida por ruleset y demostrada, CI en verde, Supabase y Vercel con Preview real (2026-09-08, coste 0 €) | Nada |
 | **SD-019** | Opción A **autorizada, implementada y verificada** · el cambio de especificación (B o C) sigue PROPOSED y **diferido** | La paleta congelada no alcanza el AA que exige §14 | **Nada de Phase 0.** El uso sin restricciones de la paleta, que necesitan los componentes de §16 · antes de Phase 5 |
 | MI-01 | MISSING_INPUT | 6 PDF oficiales | PASS de **Phase 1** |
 | BD-03 | BLOCKED_DECISION | Escala de confianza 4 o 5 | Confirmada por el propio Design System §6 · Phases 3 y 5 |
@@ -147,7 +147,8 @@ SD-006, SD-007, BD-02 y BD-05 (aceptados el 2026-09-07, §4).
 
 | # | Deuda | Motivo | Resolver en |
 | --- | --- | --- | --- |
-| D-01 | `main` no está protegida mecánicamente | GitHub Free no admite reglas de protección ni rulesets en un repositorio privado (403 verificado). El repositorio debe seguir siendo privado | Plan de GitHub que lo admita, con autorización humana · **blocker de MI-05a** |
+| D-01 | ~~`main` no está protegida mecánicamente~~ **Cerrada el 2026-09-08**: el repositorio se hizo público tras tres preflights de publicación y `main` tiene un ruleset activo sin bypass (push directo, force-push, sobrescritura y borrado rechazados) | — | — |
+| D-16 | La historia original vive en `aquoapp/study-os-archive-private` (privado); el público nació del estado saneado con los mismos 47 commits salvo los dos de punta rehechos | Higiene de publicación: los dos commits de punta originales describían un proyecto ajeno con identificadores que no se publican | Aceptada · trazabilidad preservada en privado |
 | D-02 | ~~Las migraciones nunca se han aplicado~~ **Cerrada el 2026-09-08**: aplicadas en STAGING y desde cero en cada run de CI | — | — |
 | D-03 | ~~CI nunca se ha ejecutado~~ **Cerrada el 2026-09-08**: run `34234262313` en verde | — | — |
 | D-04 | La familia tipográfica es de sistema | §2 da dirección, no nombre | Al decidirla |
@@ -160,7 +161,7 @@ SD-006, SD-007, BD-02 y BD-05 (aceptados el 2026-09-07, §4).
 | D-11 | Un cliente Supabase que cruce la frontera del fichero sin tipo demostrable cae en «procedencia opaca» y falla cerrado en los métodos computados | Aceptable mientras no haya superficie de dominio | Cuando la haya |
 | D-12 | ADR-007 deja `ON DELETE` y la enumeración cerrada de `item_type` como prerrequisito; ADR-008 exige un contrato de canonicalización que no está redactado | Los documentos gobernantes no los determinan y la regla de no invención impide fijarlos aquí | Antes de las migraciones 7, 8 y 11 · fuera de Phase 0 |
 | D-13 | `schema-drift` nivel B no puede ejecutarse en la máquina de desarrollo | `supabase db diff` construye una base sombra con Docker, que no está instalado (decisión humana: no instalarlo). El control corre en CI contra el stack local y contra STAGING | Aceptable · la evidencia es la de CI |
-| D-14 | Token de acceso personal de Supabase `STUDY_OS Phase 0` (30 días) en un fichero local ignorado por Git | Necesario para la Management API (configuración de Auth de STAGING, rotación de claves) | **Revocar al cerrar la ronda de infraestructura** |
+| D-14 | Token de acceso personal de Supabase `STUDY_OS Phase 0` (30 días) en un fichero local ignorado por Git | Fue necesario para la Management API (configuración de Auth de STAGING, rotación de claves); ya no lo necesita ninguna operación | **Revocar ahora** · única acción humana pendiente |
 | D-15 | ~~La `service_role` legacy de STAGING quedó expuesta en un mensaje de error de shell~~ **Cerrada el 2026-09-08**: clave `sb_secret` `phase0_tests` nueva, claves legacy de STAGING desactivadas (Management API: `enabled: false`), checks reejecutados; PRODUCTION no afectado | — | — |
 
 **Deuda documental heredada:** 26 contradicciones registradas (C-01…C-26). SD-019
@@ -173,7 +174,7 @@ aceptación) y en los ADR.
 
 | Entrada | Impacto | Responsable |
 | --- | --- | --- |
-| **MI-05a** · lo que queda: protección mecánica de `main` | Bloquea el cierre de Phase 0 | Ana |
+| ~~**MI-05a**~~ | Resuelto el 2026-09-08: repositorio público con `main` protegida | — |
 | ~~Docker o WSL2~~ | Ya no es entrada: los cuatro checks que lo necesitaban corren contra STAGING y en CI. Solo `schema-drift` nivel B sigue exigiendo Docker en local (D-13) | — |
 | MI-01 · 6 PDF oficiales | Bloquea el PASS de Phase 1 | Ana |
 | MI-02 · contenido didáctico | Limita LEARN | Producción de contenido |
@@ -189,15 +190,16 @@ correctiva y están verificados por hash; ni el registro de decisión humana del
 
 ## 8. Próxima transición
 
-**De:** Phase 0 · Foundation — **BLOCKED**.
-**A:** ninguna. Phase 1 no arranca.
+**De:** Phase 0 · Foundation — **PASS WITH DEBT**.
+**A:** Phase 1 · Domain Foundation, **solo con autorización humana explícita**. La fase
+para en su checkpoint aunque los gates estén en verde.
 
-Los cuatro checks que exigían infraestructura ya se han ejecutado de verdad —contra
-STAGING y en CI— y ninguna decisión humana de dominio queda abierta. Lo que sigue
-condicionando el cierre es lo que resta de MI-05a: la **protección mecánica de `main`**,
-que GitHub Free no permite en un repositorio privado, y el primer Preview de Vercel;
-. Con eso resuelto, el estado esperado es **PASS WITH DEBT**. Detalle en
-`docs/PHASE_0_CHECKPOINT.md`.
+Los cuatro checks que exigían infraestructura se ejecutan de verdad —contra STAGING y en
+CI—, el repositorio es público con `main` protegida mecánicamente, el Preview de Vercel
+existe y ninguna decisión humana de dominio queda abierta. La deuda que impide el `PASS`
+limpio es la de §6, encabezada por la revocación del token temporal (D-14). Antes de
+Phase 1: revocar D-14, revisión humana y merge de `phase/0-foundation` por PR, tag.
+Detalle en `docs/PHASE_0_CHECKPOINT.md`.
 
 ---
 

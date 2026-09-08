@@ -177,9 +177,10 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
     }
   });
 
-  it('PHASE_0_CHECKPOINT · BLOCKED solo por evidencia externa; gates con su vocabulario', () => {
+  it('PHASE_0_CHECKPOINT · PASS WITH DEBT solo por deuda registrada; gates con su vocabulario', () => {
     const checkpoint = read('docs/PHASE_0_CHECKPOINT.md');
-    expect(checkpoint).toContain('STATUS: BLOCKED');
+    expect(checkpoint).toContain('STATUS: PASS WITH DEBT');
+    expect(checkpoint).not.toContain('STATUS: BLOCKED');
     expect(checkpoint).toContain(PACKET_SHA256);
     expect(checkpoint).toMatch(/^\| \*\*P0-G1\*\*[^\n]*\*\*PASS\*\*/m);
     // Ronda de infraestructura (2026-09-08): P0-G2 y P0-G4 tienen evidencia real.
@@ -188,9 +189,9 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
     expect(checkpoint).toMatch(/^\| \*\*P0-G4\*\*[^\n]*\*\*PASS\*\*/m);
     expect(checkpoint).toMatch(/^\| \*\*P0-G5\*\*[^\n]*\*\*PASS\*\*/m);
 
-    // Las filas de la tabla de bloqueo son solo las de infraestructura.
+    // Las filas de la tabla de deuda son deuda técnica, nunca decisiones de dominio.
     const section = checkpoint.slice(
-      checkpoint.indexOf('## Por qué sigue BLOCKED'),
+      checkpoint.indexOf('## Por qué PASS WITH DEBT'),
       checkpoint.indexOf('## 0.'),
     );
     const rows = section.split('\n').filter((line) => line.startsWith('| **'));

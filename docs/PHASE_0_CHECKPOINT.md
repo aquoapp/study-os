@@ -1,4 +1,4 @@
-# STUDY OS · Checkpoint de Phase 0 · décima reemisión
+# STUDY OS · Checkpoint de Phase 0 · undécima reemisión
 
 Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 
@@ -6,28 +6,36 @@ Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 PHASE: 0 · Foundation
 BRANCH: phase/0-foundation
 COMMIT/TAG: ver «HEAD» en AUDIT_EVIDENCE.md (sin tag: se crea tras el merge aprobado)
-STATUS: BLOCKED
+STATUS: PASS WITH DEBT
 ```
 
-**Décima reemisión.** La novena (`84d3b8b`) fue auditada como `PASS WITH DEBT` en
-gobernanza, con Phase 0 `BLOCKED` por la evidencia de infraestructura que faltaba. Esta
-ronda es la **ronda de infraestructura** autorizada por Ana Victoria el 2026-09-08: por
-primera vez los cuatro checks que exigían base de datos y servidor de Auth se han
-ejecutado de verdad —contra un proyecto Supabase dedicado y en CI remoto—, y el
-repositorio, el pipeline y el proyecto de despliegue existen. Este informe sustituye a la
-novena.
+**Undécima reemisión.** La décima (`a272022`, con `4e403ca` para el Preview de Vercel)
+cerró la **ronda de infraestructura** del 2026-09-08 —cuatro checks con base de datos y
+Auth ejecutados de verdad contra un proyecto Supabase dedicado y en CI remoto— y quedó
+`BLOCKED` por un único resto de MI-05a: la protección mecánica de `main`, que GitHub
+Free no admite en un repositorio privado. Ana Victoria decidió el mismo día **no
+contratar ningún plan de pago** y, tras un preflight de publicación adversarial, hacer
+público el repositorio para obtener la protección sin coste. Esta reemisión documenta
+esa publicación, la protección de `main` demostrada y el cierre de MI-05a. Sustituye a
+la décima.
 
-## Por qué sigue BLOCKED
+## Por qué PASS WITH DEBT
 
-Ya no por evidencia de checks: los nueve checks bloqueantes están en verde en CI remoto y
-ocho de nueve en local. Sigue `BLOCKED` por un único resto de **MI-05a**:
+Los nueve checks bloqueantes están en verde en CI remoto sobre el repositorio público, y
+ocho de nueve en local (D-13). Los cinco gates están en `PASS`. Los outputs de Phase 0
+del `Execution Plan §3` —repositorio, rama protegida, CI, entornos separados, Preview—
+existen y están verificados. Ninguna decisión humana queda abierta. No es `PASS` a secas
+por la deuda que sigue registrada:
 
-| Motivo | Naturaleza |
+| Deuda que impide el `PASS` limpio | Naturaleza |
 | --- | --- |
-| **Protección mecánica de `main`** · GitHub Free devuelve 403 a reglas de protección y rulesets en un repositorio **privado** | Externo · plan de la *forge* · decisión humana con coste |
+| **D-14** · el token de acceso personal `STUDY_OS Phase 0` sigue vigente hasta que Ana lo revoque (única acción humana pendiente al cerrar esta reemisión) | Credencial temporal · fuera del repositorio |
+| **D-13** · `schema-drift` nivel B exige Docker en local; el control corre en CI contra el stack local y contra STAGING real | Aceptada · evidencia en CI |
+| **D-04 · D-05 · D-06 · D-07 · D-09 … D-12** · deudas menores registradas en rondas anteriores, sin cambios | Aceptadas o diferidas fuera de Phase 0 |
 
-`Execution Plan §3` output 1 exige «ramas protegidas». No se declara `PASS` mientras
-falte, y no se sustituye por una convención documental.
+`Execution Plan §3` output 1 exige «ramas protegidas»: cumplido por un ruleset activo
+sobre `main` en `aquoapp/study-os`, sin actores de bypass, y demostrado con cuatro
+intentos rechazados por la *forge* (véase §0).
 
 **Lo que ya no bloquea.** Las cinco decisiones humanas quedaron cerradas el 2026-09-07
 (ronda anterior) y ninguna se ha implementado en esta ronda:
@@ -89,6 +97,37 @@ PRODUCTION sigue en 0 usuarios. El fixture se borró con el rol de servicio rota
 Producción de Vercel no se ha desplegado: `main` sigue en su commit raíz y el merge es
 decisión humana.
 
+### Publicación del repositorio y protección mecánica de `main` · cierre de MI-05a
+
+Decisión humana del 2026-09-08: **0 €**, sin GitHub Pro ni Team. Un repositorio público
+en GitHub Free sí admite rulesets. Antes de publicar se ejecutó un **preflight de
+publicación adversarial** sobre todo el historial (todas las refs, el reflog y los
+objetos no alcanzables; 25 patrones): sin secretos, sin PII más allá de la autoría Git
+que Ana aceptó expresamente, sin corpus TAI ni originales de Phase −1 (0 fragmentos
+literales de los 14 originales), sin ficheros locales rastreados. El único `FAIL` fue
+**higiene de publicación**: los dos commits de punta de la décima reemisión describían,
+por trazabilidad, un proyecto Supabase preexistente de **otro producto** con
+identificadores y cifras que no deben publicarse.
+
+Cómo se resolvió, en orden y con cada paso verificado:
+
+| Paso | Hecho | Verificación |
+| --- | --- | --- |
+| Saneamiento | Reescritura **excepcional y autorizada** solo de `phase/0-foundation`: los dos commits de punta se rehicieron sin esos identificadores (`a272022`, `4e403ca`); diferencia de árbol: 2 ficheros, 8 líneas añadidas, 7 borradas; nada de código, migraciones, tests ni gates | `main` intacta en `6086537`; tests documentales en verde |
+| Segundo preflight | Limpio por refs, pero GitHub seguía sirviendo los commits antiguos por SHA y su vista *Activity* los listaba: exposición material si se publicaba | `STOP` · no se publicó |
+| Archivo privado | El repositorio de entonces se renombró a **`aquoapp/study-os-archive-private`**, **PRIVATE** para siempre, sin tocar ramas, commits, Activity, Actions ni evidencia: conserva la historia original completa para auditoría | Anónimo: `404` |
+| Repositorio oficial | **`aquoapp/study-os` nuevo**, creado vacío y poblado desde un repositorio *bare* recién inicializado que solo recibió las dos refs saneadas: 696 objetos, 47 commits, 0 no alcanzables, sin reflog; los objetos retirados no existen en él (`cat-file` falla, `fetch` por SHA responde `not our ref`, la API responde `422`/`404`) | `main` = `6086537` (mismo SHA, sin reescritura); `phase/0-foundation` = `4e403ca` |
+| Tercer preflight | Once controles sobre el repositorio nuevo: secretos, PII, contaminación, material propio, ficheros locales, objetos históricos, objetos no alcanzables, refs remotas, *Activity* (solo dos `branch_creation`), recuperación por SHA de lo retirado (imposible) y ausencia de relación navegable con el archivo (`fork: false`, sin `parent`, sin redirección) | **SAFE** |
+| Publicación | `PRIVATE → PUBLIC` del repositorio nuevo; secreto `STAGING_DB_URL` repuesto desde el fichero local por *stdin*; aprobación obligatoria de workflows de PR desde forks para todo colaborador externo | Anónimo: `200`; los SHA retirados: `404`/`422` |
+| Ruleset `main` | `deletion` · `non_fast_forward` · `pull_request` (0 aprobaciones exigidas porque solo hay un colaborador, hilos resueltos, merge o squash) · `required_status_checks` estrictos con los tres jobs de CI · **sin actores de bypass**: aplica también a administradores | `GET rules/branches/main` devuelve las cuatro reglas |
+| Demostración | Con un commit inocuo en una rama local: push directo a `main` **rechazado** (`GH013 · Changes must be made through a pull request · 3 of 3 required status checks are expected`), force-push **rechazado**, sobrescritura con otra rama **rechazada**, borrado **rechazado**; `main` sigue en `6086537` | Evidencia `05-protection-proof.txt` · control positivo: la rama de fase sí acepta push |
+| Vercel | Proyecto `study-os` desvinculado del archivo y vinculado al repositorio nuevo (`repoId` del nuevo), sin acción humana: la GitHub App ya tenía acceso; `apps/web`, Next.js, Node 24, Preview → STAGING, Production → PRODUCTION, rama de producción `main`, protección de forks activa; ningún despliegue provocado por la revinculación y Production **sin desplegar** | `02-vercel-link.txt` |
+
+Trazabilidad: existió un repositorio privado previo con la misma historia; se archivó
+por higiene de publicación; la historia original permanece preservada en privado; el
+repositorio público operativo nació desde el estado saneado y su historia (47 commits) es
+la canónica. Los datos retirados no se reproducen aquí ni en la evidencia pública.
+
 ### Incidente de seguridad · D-15
 
 Al cargar `.env.staging.local` por primera vez, un valor pegado con un espacio tras el
@@ -129,7 +168,7 @@ terminar la ronda (D-14).
 | **P0-S3** | Next.js 16.3.2 · TypeScript `strict` · PWA instalable · Node 24 | Completo |
 | **P0-S4** | Migración 0 con rollback | **Aplicada en STAGING y en CI** |
 | **P0-S5** | Migración 1 (`profiles` 1:1, trigger idempotente, RLS `enable`+`force`) y migración 2 (grants del rol de servicio) con rollback | **Aplicadas en STAGING y en CI** · alta y login reales verificados |
-| **P0-S6** | CI en tres jobs, CLI fijado, E2E estáticos separados de los de auth, deriva contra STAGING real | **Ejecutado · en verde** (run `34234262313`) |
+| **P0-S6** | CI en tres jobs, CLI fijado, E2E estáticos separados de los de auth, deriva contra STAGING real; `main` protegida por ruleset y demostrada | **Ejecutado · en verde** en el repositorio público (run `34244927309`) |
 | **P0-S7** | Tokens del Design System y contraste verificado en el navegador | **Satisfecho bajo SD-019 opción A** |
 | **P0-S8** | Cinco guardas por propagación de punto fijo y 169 pruebas que ejecutan las guardas reales | Completo |
 | **P0-S9** | `/spec`, `/architecture`, `/docs` importados con SHA-256; ADR-006 … ADR-010 aceptados | Completo |
@@ -152,7 +191,9 @@ anterior citó por error `c660389`, corregido aquí como **D-GOV-01 cerrada**). 
 | `de38df9` | `VerifiedIdentity`: marca real en runtime · dos pruebas que la ejecutan |
 | `5162c9e` | E2E de auth: correos únicos por proyecto y worker |
 | `253e9c1` | CI: job `drift-staging` contra STAGING real con guarda fail-closed |
-| (este) | `ARCHITECTURE_STATE` v10.0 · `CLAUDE.md` §9 · esta reemisión · tests documentales |
+| `a272022` | Décima reemisión · `ARCHITECTURE_STATE` v10.0 · `CLAUDE.md` §9 · tests documentales (rehecho en el saneamiento previo a la publicación) |
+| `4e403ca` | Preview de Vercel verificado y evaluación de la protección de `main` (rehecho en el saneamiento) |
+| (este) | Undécima reemisión · publicación, ruleset de `main`, cierre de MI-05a · `ARCHITECTURE_STATE` v11.0 · `CLAUDE.md` §9 · test documental |
 
 Ficheros nuevos: `supabase/migrations/00000000000002_profiles_service_role.sql` y su
 reversa. Modificados: `.github/workflows/ci.yml`, `supabase/migrations/.lock.json`,
@@ -189,7 +230,11 @@ explícita `staging:automated-tests`, ref `xzcrqsolxarutlvvkzfp`:
 
 ### Ejecutado en CI remoto · en verde
 
-Run `34234262313` sobre `253e9c1`, tres jobs:
+En el repositorio público `aquoapp/study-os`: run `34244927309` sobre `4e403ca` (el job
+de deriva se relanzó una vez porque el secreto `STAGING_DB_URL` se creó segundos después
+del primer push; con el secreto presente, en verde) y el run de esta reemisión (véase
+`AUDIT_EVIDENCE.md`). En el repositorio archivado, run `34234262313` sobre `253e9c1`.
+Tres jobs:
 
 | Job | Resultado |
 | --- | --- |
@@ -210,12 +255,13 @@ I1–I4 y quedan en la evidencia con sus causas.
 | **P0-G1** · La app arranca | `app.boot` y `pwa.manifest` en verde | **PASS** · en CI y contra el build con variables de STAGING |
 | **P0-G2** · Separación de entornos | Producción no accesible desde staging | **PASS** · evidencia real: refs, URLs, hosts, regiones y claves distintos; PRODUCTION vacío y sin mutar; Preview → STAGING y Production → PRODUCTION en Vercel; cuatro configuraciones cruzadas fallan cerradas antes de tocar la red |
 | **P0-G3** · Sin secretos en cliente | Escaneo sin hallazgos | **PASS** · centinela de servidor; ningún secreto en Vercel ni en el bundle |
-| **P0-G4** · Baseline lint/type/test | Los nueve checks en verde | **PASS** en CI remoto (run `34234262313`) · en local 8/9 sin Docker, documentado como D-13 |
+| **P0-G4** · Baseline lint/type/test | Los nueve checks en verde | **PASS** en CI remoto sobre el repositorio público (run `34244927309` sobre `4e403ca`; antes `34234262313` en el repositorio archivado) · en local 8/9 sin Docker, documentado como D-13 |
 | **P0-G5** · Guardas de invariante activas | Fallan ante una violación deliberada | **PASS** · 169 + 26 casos |
 
-Los cinco gates de aceptación están en PASS. El `STATUS: BLOCKED` no procede de un gate:
-procede de los outputs de Phase 0 que MI-05a todavía no cubre (rama protegida, Preview
-desplegado) y del incidente D-15.
+Los cinco gates de aceptación están en PASS. La rama protegida y el Preview desplegado
+—los outputs de Phase 0 que MI-05a dejaba sin cubrir en la décima reemisión— existen y
+están verificados; D-15 está cerrada. El `STATUS: PASS WITH DEBT` procede únicamente de
+la deuda registrada en KNOWN DEBT, encabezada por la revocación pendiente de D-14.
 
 ### P0-G2 · evidencia de separación real
 
@@ -298,7 +344,7 @@ final: 0 usuarios, 0 tablas, 0 buckets, configuración de Auth y claves sin camb
 
 | # | Deuda | Resolver en |
 | --- | --- | --- |
-| D-01 | `main` sin protección mecánica: GitHub Free, repositorio privado, 403 verificado | Plan de GitHub que lo admita, con autorización humana · **blocker de MI-05a** |
+| D-01 | **Cerrada** el 2026-09-08: ruleset activo sobre `main` en el repositorio público, sin bypass, con cuatro rechazos demostrados | — |
 | D-02 · D-03 · D-08 | **Cerradas** el 2026-09-08: migraciones aplicadas, CI ejecutado, E2E de auth ejecutados | — |
 | D-04 | La familia tipográfica es un default provisional | Al decidirla |
 | D-05 | `next-env.d.ts` versionado y en `.prettierignore` | — |
@@ -307,7 +353,8 @@ final: 0 usuarios, 0 tablas, 0 buckets, configuración de Auth y claves sin camb
 | D-09 · D-10 · D-11 | Límites documentados de las guardas | Aceptables |
 | D-12 | Prerrequisitos de ADR-007 y ADR-008 | Antes de las migraciones 7, 8 y 11 · fuera de Phase 0 |
 | D-13 | `schema-drift` nivel B exige Docker en local; corre en CI contra el stack local y contra STAGING | Aceptable · la evidencia es la de CI |
-| D-14 | Token de acceso personal `STUDY_OS Phase 0` (30 días), fichero local ignorado | **Revocar al cerrar la ronda** |
+| D-14 | Token de acceso personal `STUDY_OS Phase 0` (30 días), fichero local ignorado | **Revocar ahora**: ninguna operación pendiente lo necesita · única acción humana al cierre |
+| D-16 | El historial original de Phase 0 vive en `aquoapp/study-os-archive-private` (privado); el repositorio público empieza con la historia saneada. Los runs de CI anteriores a la publicación solo constan en el archivo y en la evidencia entregada | Aceptada · trazabilidad preservada en privado |
 | D-15 | `service_role` legacy de STAGING expuesta en un error de shell | **Cerrada** el 2026-09-08: clave `sb_secret` nueva, legacy desactivadas, checks reejecutados |
 | D-GOV-01 | La novena reemisión citaba `c660389` en lugar de `7344f00` | **Cerrada** en esta reemisión |
 
@@ -317,18 +364,18 @@ final: 0 usuarios, 0 tablas, 0 buckets, configuración de Auth y claves sin camb
 
 | ID | Impacto |
 | --- | --- |
-| **MI-05a · resto** · protección mecánica de `main` (GitHub Free, repositorio privado) | Impide declarar `PASS` |
+| Ninguna | — |
 
-### Evaluación final del único blocker · protección mecánica de `main`
+### MI-05a · cerrado
 
-| Punto | Estado exacto |
+| Entrada | Estado |
 | --- | --- |
-| Control ausente | Ninguna regla de protección ni ruleset sobre `main` en `aquoapp/study-os`: un push directo o un borrado de rama no son rechazados por la *forge* |
-| Evidencia del 403 | `PUT repos/aquoapp/study-os/branches/main/protection` y `POST …/rulesets` responden `403 · "Upgrade to GitHub Pro or make this repository public to enable this feature."` (`40-github-main-protection.txt`) |
-| Plan requerido | El repositorio es de una cuenta personal y debe seguir **privado**: el plan que lo desbloquea es **GitHub Pro** (cuenta personal), que es el que nombra el propio 403. La alternativa es trasladar el repositorio a una organización en plan **Team** |
-| Precio comprobado | `github.com/pricing` (2026-09-08): Free `$0`; **Team `$4 USD por usuario/mes`**; Enterprise desde `$21`. La página muestra que en Free los *repository rules* solo existen en repositorios públicos. El precio de GitHub Pro personal no aparece en esa página tal como se sirvió al comprobarlo; GitHub lo publica en la sección de cuentas personales y ha de confirmarse en el momento de contratar |
-| Efecto sobre el gate | Ningún gate P0-G1…P0-G5 depende de ello; afecta al **output 1 de Phase 0** («ramas protegidas», Execution Plan §3) y a D-01. Mientras falte, `STATUS` no puede ser `PASS` y la convención documental no lo sustituye |
-| Acción mínima de Ana | Elegir y contratar **una** de las dos: GitHub Pro en la cuenta `aquoapp`, o una organización en Team con el repositorio transferido. Ninguna compra ni cambio de plan se hace sin su autorización. Con el plan activo, la regla de protección se crea con `gh api` en un minuto y se verifica con un push directo rechazado |
+| Repositorio remoto | `aquoapp/study-os`, **público**, `main` por defecto |
+| Rama protegida | Ruleset activo sobre `main` (PR obligatorio, tres checks de estado exigidos y estrictos, sin force-push, sin borrado, sin bypass) · demostrado con push directo, force-push, sobrescritura y borrado rechazados |
+| CI | Tres jobs en verde en el repositorio público, incluida la deriva contra STAGING real |
+| Entornos | STAGING y PRODUCTION separados en Supabase y en Vercel (P0-G2) |
+| Preview | Vercel vinculado al repositorio público; Preview READY desde `phase/0-foundation`; Production sin desplegar |
+| Coste | 0 € · la décima reemisión evaluó GitHub Pro / Team y Ana los descartó |
 
 Decisiones **diferidas**, que no bloquean Phase 0: **SD-019** (B o C, antes de Phase 5).
 `MI-05b` (proveedor de IA) no se ha solicitado: es entrada de Phase 8.
@@ -338,8 +385,10 @@ Decisiones **diferidas**, que no bloquean Phase 0: **SD-019** (B o C, antes de P
 ## ROLLBACK
 
 Repositorio: `git reset --hard 84d3b8b` devuelve la rama al estado de la novena reemisión;
-`main` conserva `6086537`. Remoto: las ramas se publicaron sin reescritura; nada que
-deshacer con `--force`.
+`main` conserva `6086537` y está protegida: cualquier cambio sobre ella pasa por PR.
+Remoto: `phase/0-foundation` se reescribió **una sola vez**, con autorización expresa y
+solo para el saneamiento previo a la publicación; desde entonces no se reescribe. La
+historia original está en el archivo privado.
 
 STAGING: `supabase/migrations/down/*.down.sql` en orden inverso (la de `profiles` es
 destructiva y está autorizada solo en STAGING); `mailer_autoconfirm` vuelve a `false` con
@@ -352,12 +401,13 @@ listos.
 
 ## NEXT RECOMMENDED PHASE
 
-**Ninguna.** Phase 0 no cierra y Phase 1 no debe arrancar.
+**Phase 1 · Domain Foundation**, solo con autorización humana explícita. Phase 0 cierra
+en `PASS WITH DEBT`; la fase **para aquí** aunque los gates estén en verde.
 
-1. Decidir la protección mecánica de `main` (D-01): plan de GitHub o alternativa gobernada.
-2. Revocar el token temporal `STUDY_OS Phase 0` (D-14) al cerrar la ronda.
-3. Reemitir el checkpoint. Con 1 resuelto el estado esperado es **PASS WITH DEBT**, y
-   solo entonces procede autorizar Phase 1.
+1. Ana revoca el token temporal `STUDY_OS Phase 0` (D-14): única acción humana pendiente.
+2. Revisión humana y merge de `phase/0-foundation` en `main` por PR (la protección lo
+   exige); tag de Phase 0 tras el merge.
+3. Decisión humana explícita de arrancar Phase 1.
 
 ADR-001 … ADR-005 siguen en `PROPOSED`. ADR-006 … ADR-010 están `ACCEPTED` y sin
-implementar. **Phase 0 sigue BLOCKED; Phase 1 no está autorizada.**
+implementar. **Phase 0: PASS WITH DEBT; Phase 1 no está autorizada.**
