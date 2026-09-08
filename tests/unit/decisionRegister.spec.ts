@@ -182,9 +182,10 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
     expect(checkpoint).toContain('STATUS: BLOCKED');
     expect(checkpoint).toContain(PACKET_SHA256);
     expect(checkpoint).toMatch(/^\| \*\*P0-G1\*\*[^\n]*\*\*PASS\*\*/m);
-    expect(checkpoint).toMatch(/^\| \*\*P0-G2\*\*[^\n]*\*\*BLOQUEADO\*\*/m);
+    // Ronda de infraestructura (2026-09-08): P0-G2 y P0-G4 tienen evidencia real.
+    expect(checkpoint).toMatch(/^\| \*\*P0-G2\*\*[^\n]*\*\*PASS\*\*/m);
     expect(checkpoint).toMatch(/^\| \*\*P0-G3\*\*[^\n]*\*\*PASS\*\*/m);
-    expect(checkpoint).toMatch(/^\| \*\*P0-G4\*\*[^\n]*\*\*FAIL\*\*/m);
+    expect(checkpoint).toMatch(/^\| \*\*P0-G4\*\*[^\n]*\*\*PASS\*\*/m);
     expect(checkpoint).toMatch(/^\| \*\*P0-G5\*\*[^\n]*\*\*PASS\*\*/m);
 
     // Las filas de la tabla de bloqueo son solo las de infraestructura.

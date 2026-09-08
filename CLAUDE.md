@@ -121,8 +121,17 @@ Las cinco decisiones que condicionaban el cierre de Phase 0 quedaron **aceptadas
 SD-015), **BD-02** → ADR-009 y **BD-05** → ADR-010. Todas en `ACCEPTED · NOT
 IMPLEMENTED`: ninguna migración de dominio queda autorizada por la aceptación. ADR-001 …
 ADR-005 siguen `PROPOSED`. **SD-019** (contraste de la paleta) sigue diferida antes de
-Phase 5 y no bloquea Phase 0. El checkpoint sigue **BLOCKED** por P0-G2 y P0-G4, que
-exigen infraestructura real.
+Phase 5 y no bloquea Phase 0.
+
+**Infraestructura real (2026-09-08).** Organización Supabase dedicada `STUDY_OS`:
+`STUDY_OS_STAGING` (`xzcrqsolxarutlvvkzfp`) es el único entorno mutable y
+`STUDY_OS_PRODUCTION` (`nzcgufeycvehczroryoe`) no se muta. Cualquier otro proyecto Supabase
+—incluido el proyecto preexistente de otro producto que también se llamaba `STUDY_OS`— está
+**prohibido**.
+Repositorio `aquoapp/study-os` (privado) con CI en verde; proyecto Vercel `study-os`.
+Los secretos viven en `.env.staging.local` y `.env.supabase-admin.local`, ignorados por Git:
+nunca se leen ni se imprimen. El checkpoint sigue **BLOCKED** por lo que queda de MI-05a
+(protección mecánica de `main`, imposible en GitHub Free con repositorio privado).
 
 **INV-101 ya no está abierto.** Ana lo aprobó, con su redacción congelada, en la
 autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante
