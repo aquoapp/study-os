@@ -1,0 +1,133 @@
+{
+  "$comment": [
+    "Registro versionado de los documentos gobernantes y de su verificación.",
+    "",
+    "Es la ÚNICA fuente de verdad sobre nombres y hashes. Lo leen:",
+    "  · tests/unit/governingDocuments.registry.spec.ts — solo el árbol Git, sin tocar _handoff",
+    "  · tools/verify-originals.mjs — comprobación local separada contra _handoff/originals/",
+    "",
+    "Los tests versionados NO acceden a _handoff/: ese directorio no existe en un",
+    "checkout limpio ni en CI, y un test que dependa de él no es reproducible.",
+    "La verificación contra los ficheros reales es `npm run verify:originals`, local",
+    "y fuera de los nueve checks."
+  ],
+
+  "version": 1,
+  "originalsPath": "_handoff/originals",
+
+  "documents": [
+    {
+      "file": "STUDY_OS_Master_Product_Specification_v1.0.pdf",
+      "title": "Master Product Specification v1.0",
+      "authorityLevel": 1,
+      "sha256": "aa9ba0965e37daaa3a1f16138900b67e0b084a15b10f25fb98f160f7f59d1923",
+      "kind": "pdf",
+      "pages": 31,
+      "images": 0
+    },
+    {
+      "file": "STUDY_OS_Engineering_Constitution_v1.0.md",
+      "title": "Engineering Constitution v1.0",
+      "authorityLevel": 2,
+      "sha256": "717c661a9f508ca05aea38a9264621d815caadf31d2ad083465a55b7a82f1544",
+      "kind": "markdown"
+    },
+    {
+      "file": "STUDY_OS_Design_System_v1.0.pdf",
+      "title": "Design System v1.0",
+      "authorityLevel": 3,
+      "sha256": "62a85885709cc2dc9ed4cffd71ed852ed1e54cf0962940ff53da93dd8c357aa4",
+      "kind": "pdf",
+      "pages": 11,
+      "images": 0,
+      "governs": ["packages/design-system/src/tokens.ts", "packages/design-system/src/tokens.css"]
+    },
+    {
+      "file": "STUDY_OS_Onboarding_Edge_States_Visual_Spec_v1.0.pdf",
+      "title": "Onboarding & Edge States Visual Spec v1.0",
+      "authorityLevel": 3,
+      "sha256": "e7bb2e91ed114778b6a46b15eb75b89a33e2c7261c1f7eee3e6d2cbb59ca9078",
+      "kind": "pdf",
+      "pages": 12,
+      "images": 0
+    },
+    {
+      "file": "STUDY_OS_Technical_Architecture_v1.0.docx",
+      "title": "Technical Architecture v1.0",
+      "authorityLevel": 3,
+      "sha256": "248eba10082ccd0dfa644362d4af77e9df7bd118df5b45e8c1c00ba81bdc3a5f",
+      "kind": "ooxml"
+    },
+    {
+      "file": "STUDY_OS_Canonical_Data_Event_Model_v1.0.pdf",
+      "title": "Canonical Data & Event Model v1.0",
+      "authorityLevel": 3,
+      "sha256": "08a8588f1bbd56a0d269b33d67add98897ada204ff12b735443beecdb3aac125",
+      "kind": "pdf",
+      "pages": 25,
+      "images": 0
+    },
+    {
+      "file": "STUDY_OS_Functional_Closure_MVP_Scope_v0.1.pdf",
+      "title": "Functional Closure / MVP Scope v0.1",
+      "authorityLevel": 3,
+      "sha256": "6645bc17aca99a6070f7c958d07569857f596a07bac88fc285cf411918c07f3f",
+      "kind": "pdf",
+      "pages": 4,
+      "images": 0
+    },
+    {
+      "file": "STUDY_OS_Builder_Handoff_Manifest_v1.0.pdf",
+      "title": "Builder Handoff Manifest v1.0",
+      "authorityLevel": 4,
+      "sha256": "0087c301d259e1aad27ffbb77ab4484d546959bceecfac993ee907153b8ee1c3",
+      "kind": "pdf",
+      "pages": 19,
+      "images": 0
+    }
+  ],
+
+  "controlLayer": [
+    {
+      "file": "STUDY OS · Source of Truth Index v1.0.docx",
+      "title": "Source of Truth Index v1.0",
+      "sha256": "d1b3dfac163781dc7248beafe396d18b5054061d680037b376969ae718551a08",
+      "kind": "ooxml"
+    },
+    {
+      "file": "STUDY_OS_Checkpoint_Contract_v1.0.md",
+      "title": "Checkpoint Contract v1.0",
+      "sha256": "e94f10f1741b794d3953a7fd8da2becb4ad911febdcc36013a96b44ca948595c",
+      "kind": "markdown"
+    },
+    {
+      "file": "STUDY_OS_ADR_Policy_v1.0.md",
+      "title": "ADR Policy v1.0",
+      "sha256": "3e723d756c63144b09ee07935b44d7988bf1e69106005873318b77dcd0760a23",
+      "kind": "markdown"
+    },
+    {
+      "file": "STUDY_OS_Phase_Minus_1_Specification_Compilation_v1.0.md",
+      "title": "Phase −1 Specification Compilation v1.0",
+      "sha256": "98279c50828608df23ac92bfcff1d82e030ac7ff92bf8a1eca939deac4fb8298",
+      "kind": "markdown"
+    }
+  ],
+
+  "nonGoverning": [
+    {
+      "file": "STUDY_OS_Founder_Portfolio_Master_Context_v0.1.md",
+      "title": "Founder Portfolio Master Context v0.1",
+      "authorityLevel": 7,
+      "sha256": "6304f5957aba93c01f89563a834d1f2d5f0d86689278ac4daa7e8a19ba40613d",
+      "kind": "markdown",
+      "note": "Material exploratorio. NO gobierna. Ausente de spec/authority-map.md; propuesto en SD-017."
+    }
+  ],
+
+  "frozenPackage": {
+    "file": "_handoff/STUDY_OS_Phase_Minus_1_v1_2.zip",
+    "sha256": "8193934333099c0af331acbb12f590af8dc9b6d9026436f585265a87f763814a",
+    "files": 19
+  }
+}

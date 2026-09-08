@@ -1,0 +1,42 @@
+{
+  "$comment": [
+    "Políticas por entorno. Fuente única: las leen packages/config (TypeScript) y",
+    "tools/lib/environment-policy.mjs (Node), para que una operación destructiva se",
+    "juzgue con el mismo criterio desde el código y desde la línea de comandos.",
+    "",
+    "allowsDestructiveReset · un reset destructivo es aceptable sin más trámite",
+    "requiresExplicitAuthorization · admite la operación, pero solo con autorización",
+    "  explícita en el entorno (STUDY_OS_DESTRUCTIVE_AUTHORIZATION)",
+    "holdsRealUserData · los datos son de personas reales",
+    "requiresSecureTransport · se exige HTTPS y cookies Secure",
+    "allowsAutomatedTests · pueden ejecutarse tests que crean y borran usuarios"
+  ],
+
+  "environments": {
+    "local": {
+      "allowsDestructiveReset": true,
+      "requiresExplicitAuthorization": false,
+      "holdsRealUserData": false,
+      "requiresSecureTransport": false,
+      "allowsAutomatedTests": true
+    },
+    "staging": {
+      "allowsDestructiveReset": true,
+      "requiresExplicitAuthorization": true,
+      "holdsRealUserData": false,
+      "requiresSecureTransport": true,
+      "allowsAutomatedTests": true
+    },
+    "production": {
+      "allowsDestructiveReset": false,
+      "requiresExplicitAuthorization": true,
+      "holdsRealUserData": true,
+      "requiresSecureTransport": true,
+      "allowsAutomatedTests": false
+    }
+  },
+
+  "authorizationEnvVar": "STUDY_OS_DESTRUCTIVE_AUTHORIZATION",
+
+  "$authorizationFormat": "<entorno>:<operación> · p. ej. staging:db-reset. Debe coincidir exactamente; no hay comodines."
+}

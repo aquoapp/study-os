@@ -1,0 +1,135 @@
+{
+  "$comment": [
+    "Registro explícito de superficies cuya escritura es competencia exclusiva del servidor.",
+    "Fuente única: lo consumen packages/domain/src/authority.ts (TypeScript) y",
+    "tools/guards/client-authority-guard.mjs (Node). Duplicarlo reintroduciría la deriva",
+    "que este fichero existe para evitar.",
+    "Ampliarlo o reducirlo es un cambio de frontera de autoridad: exige la misma revisión",
+    "que INV-113 (EC-019)."
+  ],
+  "projections": {
+    "$comment": "INV-113 · proyecciones que solo el servidor persiste.",
+    "tables": [
+      "concept_mastery",
+      "mastery_history",
+      "exam_readiness",
+      "planner_runs",
+      "planner_items"
+    ]
+  },
+  "rpcs": {
+    "$comment": [
+      "RPC reservadas como autoritativas. Ninguna existe todavía: Phase 0 no crea",
+      "funciones de dominio. Se declaran ahora para que el día que se escriba la primera,",
+      "una llamada desde el navegador falle en CI y no en revisión.",
+      "Cada nombre está anclado a un invariante ya congelado; no son decisiones de producto",
+      "nuevas, son la lista de lo que el cliente no puede invocar."
+    ],
+    "names": [
+      "grade_attempt",
+      "submit_attempt",
+      "recalculate_attempts",
+      "apply_answer_key_amendment",
+      "rebuild_projections",
+      "recalculate_mastery",
+      "advance_event_watermark",
+      "promote_engine_config",
+      "run_planner"
+    ],
+    "anchors": {
+      "grade_attempt": "INV-101 · la corrección ocurre en servidor y no devuelve la clave",
+      "submit_attempt": "INV-101 · EC-007 · el intento fija la versión de clave usada",
+      "recalculate_attempts": "EC-007 · la rectificación crea recálculo, no reescribe historia",
+      "apply_answer_key_amendment": "EC-007 · SD-007",
+      "rebuild_projections": "EC-006 · reconstruibilidad del estado derivado",
+      "recalculate_mastery": "EC-002 · Mastery la calcula un motor determinista de servidor",
+      "advance_event_watermark": "SD-018 · watermark por usuario y proyección",
+      "promote_engine_config": "SD-013 · promoción de engine_config con aprobación humana",
+      "run_planner": "EC-003 · el Planner es determinista y de servidor"
+    }
+  },
+  "readOnlyRpcs": {
+    "$comment": [
+      "Allowlist EXPLÍCITA de RPC que la superficie de cliente puede invocar.",
+      "",
+      "Política conservadora: la guarda rechaza CUALQUIER .rpc() desde cliente salvo",
+      "las que estén aquí. La lista vacía no es un descuido: en Phase 0 no existe",
+      "ninguna función de dominio, así que no hay nada que permitir.",
+      "",
+      "Añadir una entrada es una decisión de frontera de autoridad y exige la misma",
+      "revisión que INV-113 (EC-019). Una RPC solo puede entrar aquí si es",
+      "estrictamente de lectura: no escribe ninguna tabla, no emite eventos y no",
+      "modifica ninguna proyección. Si hay duda, no entra."
+    ],
+    "names": []
+  },
+  "browserApiExceptions": {
+    "$comment": [
+      "La UNICA excepcion a la politica conservadora del cliente, y es un par exacto:",
+      "receptor global + miembro + invocacion directa. caches.delete(key) es la Cache",
+      "Storage API, no una tabla.",
+      "",
+      "Solo vale cuando el receptor es un identificador que ningun ambito del fichero",
+      "declara, el miembro es el indicado, y el acceso ES la llamada. Sombrear el",
+      "nombre, extraer el metodo, enlazarlo o reasignarlo no heredan la excepcion.",
+      "Ningun otro global la tiene: window.delete() es un hallazgo aunque exista.",
+      "Ampliar esta lista exige la misma revision que el resto del registro."
+    ],
+    "pairs": [
+      {
+        "receiver": "caches",
+        "member": "delete",
+        "reason": "Cache Storage API · borra una cache por clave, no datos de usuario"
+      }
+    ]
+  },
+  "supabaseClientOrigins": {
+    "$comment": [
+      "De donde puede nacer un cliente Supabase, por MODULO y EXPORT, nunca por nombre.",
+      "",
+      "Que una funcion se llame createServerClient no la convierte en el constructor de",
+      "Supabase, y que un metodo se llame from() no convierte a su receptor en una",
+      "consulta PostgREST: Array.from es el contraejemplo mas comun. La guarda resuelve",
+      "la importacion hasta el modulo y compara el nombre EXPORTADO, no el local.",
+      "",
+      "internal: rutas del repositorio, resueltas con los alias de tsconfig.",
+      "external: especificadores de paquete, comparados literalmente.",
+      "",
+      "Anadir un origen amplia la superficie que la guarda considera consulta: exige la",
+      "misma revision que el resto del registro (EC-019)."
+    ],
+    "internal": [
+      {
+        "module": "apps/web/src/server/supabase/server-client.ts",
+        "export": "createSupabaseServerClient"
+      },
+      {
+        "module": "apps/web/src/lib/supabase/browser-client.ts",
+        "export": "createSupabaseBrowserClient"
+      }
+    ],
+    "external": [
+      {
+        "module": "@supabase/ssr",
+        "export": "createServerClient"
+      },
+      {
+        "module": "@supabase/ssr",
+        "export": "createBrowserClient"
+      }
+    ]
+  },
+  "writeMethods": {
+    "$comment": "Métodos de PostgREST que persisten. Un .select() no es una escritura.",
+    "names": ["insert", "update", "upsert", "delete"]
+  },
+  "serviceRoleMarkers": {
+    "$comment": "EC-010 · identificadores que solo pueden aparecer en servidor.",
+    "names": [
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "supabaseServiceRoleKey",
+      "service_role",
+      "serviceRoleKey"
+    ]
+  }
+}

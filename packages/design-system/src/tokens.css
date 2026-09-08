@@ -1,0 +1,206 @@
+/* ---------------------------------------------------------------------------
+ * STUDY OS · tokens.css
+ *
+ * Espejo en CSS de `tokens.ts`. `tests/unit/tokens.contract.spec.ts` compara ambos
+ * ficheros: si divergen, el test falla. No editar uno sin el otro.
+ *
+ * Fuente de los valores: `STUDY_OS_Design_System_v1.0` §2, §3, §13.
+ * REQ-A06 · P0-S7 · dirección visual: CALM INTELLIGENCE.
+ * --------------------------------------------------------------------------- */
+
+:root {
+  /* Espaciado · §2 */
+  --so-space-none: 0px;
+  --so-space-xs: 4px;
+  --so-space-sm: 8px;
+  --so-space-md: 12px;
+  --so-space-lg: 16px;
+  --so-space-xl: 24px;
+  --so-space-2xl: 32px;
+  --so-space-3xl: 48px;
+  --so-space-4xl: 64px;
+
+  /* Radio · §2 */
+  --so-radius-none: 0px;
+  --so-radius-micro: 8px;
+  --so-radius-control: 12px;
+  --so-radius-card: 16px;
+  --so-radius-hero: 20px;
+  --so-radius-full: 9999px;
+
+  /* Diana táctil mínima · §2 y §14 */
+  --so-touch-target-min: 44px;
+
+  /* Tipografía · §2 */
+  --so-font-reading:
+    'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif;
+  --so-font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --so-font-numeric: 'Segoe UI', system-ui, ui-sans-serif, sans-serif;
+  --so-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  --so-text-metadata-min: 12px;
+  --so-text-metadata-max: 13px;
+  --so-text-secondary-min: 14px;
+  --so-text-secondary-max: 15px;
+  --so-text-body-min: 16px;
+  --so-text-body-max: 18px;
+  --so-text-title-min: 20px;
+  --so-text-title-max: 24px;
+  --so-text-headline-min: 28px;
+  --so-text-headline-max: 34px;
+
+  --so-leading-tight: 1.2;
+  --so-leading-snug: 1.35;
+  --so-leading-normal: 1.5;
+  --so-leading-reading: 1.65;
+
+  --so-weight-regular: 400;
+  --so-weight-medium: 500;
+  --so-weight-semibold: 600;
+  --so-weight-bold: 700;
+
+  /* Movimiento · §13 */
+  --so-motion-answer-submit-min: 150ms;
+  --so-motion-answer-submit-max: 220ms;
+  --so-motion-session-resume-min: 200ms;
+  --so-motion-session-resume-max: 300ms;
+  --so-motion-replan-min: 250ms;
+  --so-motion-replan-max: 350ms;
+  --so-motion-mastery-state-change: 200ms;
+  --so-motion-drawer-min: 180ms;
+  --so-motion-drawer-max: 240ms;
+  --so-motion-progress-reveal-min: 250ms;
+  --so-motion-progress-reveal-max: 400ms;
+
+  /* Color · §2 · una sola paleta: el documento no especifica tema oscuro */
+  --so-color-canvas: #f7f3ea;
+  --so-color-surface: #fffdf9;
+  --so-color-ink: #17262d;
+  --so-color-navy: #0b2d3a;
+  --so-color-teal: #2b8c8c;
+  --so-color-magenta: #c13a8b;
+  --so-color-forest: #2f6b57;
+  --so-color-amber: #a56a18;
+  --so-color-brick: #a8473f;
+  --so-color-slate: #66757c;
+  --so-color-on-dark: #fffdf9;
+
+  /* El documento define una paleta clara. Declararlo evita que el navegador
+     invierta colores por su cuenta y produzca combinaciones sin verificar. */
+  color-scheme: light;
+}
+
+/* Base mínima. Ninguna pantalla de producto se construye en Phase 0. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--so-color-canvas);
+  color: var(--so-color-ink);
+  font-family: var(--so-font-ui);
+  font-size: var(--so-text-body-min);
+  line-height: var(--so-leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* §2 · numerales tabulares para temporizadores y datos numéricos */
+.so-numeric {
+  font-family: var(--so-font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Foco siempre visible · §14 */
+:focus-visible {
+  outline: 2px solid var(--so-color-navy);
+  outline-offset: 2px;
+}
+
+/* Toda diana táctil respeta el mínimo · §2 */
+button,
+[role='button'],
+a[href],
+input,
+select,
+textarea {
+  min-height: var(--so-touch-target-min);
+}
+
+/* ---------------------------------------------------------------------------
+ * SD-019 · opción A, autorizada para Phase 0
+ *
+ * No se modifica ningún color congelado. La restricción se aplica en el uso:
+ *
+ *   · `teal` y `amber` NO pueden llevar texto normal encima (3.95 y 4.42);
+ *   · `slate` solo es texto normal sobre `surface` (4.70), nunca sobre `canvas` (4.31);
+ *   · sobre `canvas` se usa `ink` (14.03) o se coloca el texto dentro de `.so-panel`.
+ *
+ * `tests/e2e/static/accessibility.a11y.spec.ts` mide el color computado real de cada
+ * texto visible contra su fondo efectivo, no una lista de tokens.
+ * --------------------------------------------------------------------------- */
+
+/* Contenedor de página. El fondo es `canvas`, heredado de body. */
+.so-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--so-space-xl);
+}
+
+/* Superficie válida para texto secundario. §2 Surface / Soft White · §6 Study Card. */
+.so-panel {
+  background: var(--so-color-surface);
+  border: 1px solid var(--so-color-slate);
+  border-radius: var(--so-radius-card);
+  padding: var(--so-space-lg);
+}
+
+/* Texto secundario. Solo legible dentro de `.so-panel`: sobre `canvas` no llega a AA. */
+.so-panel .so-text-secondary {
+  color: var(--so-color-slate);
+}
+
+/* Acción terciaria · §5. Diana táctil completa aunque el texto sea corto. */
+.so-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--so-touch-target-min);
+  min-width: var(--so-touch-target-min);
+  padding: 0 var(--so-space-sm);
+  color: var(--so-color-navy);
+  border-radius: var(--so-radius-micro);
+}
+
+/* Enlace de salto: invisible hasta recibir foco · §14 (navegación por teclado) */
+.so-skip-link {
+  position: absolute;
+  left: var(--so-space-sm);
+  top: calc(var(--so-space-sm) * -1);
+  transform: translateY(-200%);
+  z-index: 100;
+  padding: var(--so-space-sm) var(--so-space-lg);
+  background: var(--so-color-surface);
+  color: var(--so-color-ink);
+  border: 1px solid var(--so-color-slate);
+  border-radius: var(--so-radius-control);
+  text-decoration: none;
+}
+
+.so-skip-link:focus-visible {
+  transform: translateY(calc(var(--so-space-sm) * 2));
+}
+
+/* §13 · «Support reduced motion» */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

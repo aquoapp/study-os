@@ -1,0 +1,34 @@
+-- ---------------------------------------------------------------------------
+-- STUDY OS · Migración 2 · privilegios del rol de servicio sobre profiles
+--
+-- P0-S5  · esqueleto de auth · `profiles`
+-- REQ-A07 · `profiles` 1:1 · las pruebas de integración lo verifican con el rol de servicio
+-- EC-011 · el esquema lo gobiernan las migraciones del repositorio
+--
+-- Rollback: supabase/migrations/down/00000000000002_profiles_service_role.down.sql
+-- Autorización humana: Ana Victoria · 2026-09-07 · ronda de infraestructura de Phase 0
+--
+-- ---------------------------------------------------------------------------
+-- POR QUÉ EXISTE
+--
+-- La primera ejecución real contra base de datos (CI run 34158674892 y el
+-- proyecto STUDY_OS_STAGING) demostró que `service_role` solo tenía REFERENCES,
+-- TRIGGER y TRUNCATE sobre `public.profiles`. Con la exposición automática del
+-- Data API desactivada —decisión deliberada de los proyectos de STUDY OS—, los
+-- privilegios por defecto ya no conceden DML a los roles de la API, y la
+-- migración 1 nunca se lo concedió al rol de servicio: solo revocó a `anon` y
+-- `authenticated` y concedió a `authenticated` lo mínimo.
+--
+-- El rol de servicio es el que usan los tests de integración y de RLS para
+-- preparar y limpiar datos, y el que usará cualquier superficie de servidor con
+-- identidad ya verificada (INV-116). Nunca llega al cliente (EC-010).
+--
+-- QUÉ NO HACE
+--
+-- No toca `anon` ni `authenticated`, no añade ni cambia políticas y no debilita
+-- RLS: `service_role` ya atraviesa RLS por su atributo BYPASSRLS; lo que le
+-- faltaba era el privilegio de tabla, que es una capa distinta.
+-- Las migraciones 0 y 1 no se modifican.
+-- ---------------------------------------------------------------------------
+
+grant select, insert, update, delete on public.profiles to service_role;
