@@ -3,9 +3,10 @@
 Sistema de estudio adaptativo. **Study OS es el producto; TAI es el primer pack de contenido**
 (Engineering Constitution EC-018, Builder Handoff Manifest §5).
 
-> **Estado actual:** Phase 0 · Foundation.
-> No existe todavía ninguna tabla de dominio, ningún motor, ninguna pantalla de producto
-> ni contenido canónico. Ver `docs/PHASE_0_EXECUTION_PLAN.md`.
+> **Estado actual:** Phase 0 congelada (`phase-0-v1.0`) · Phase 1A · Canonical Domain
+> Foundation con BUILD autorizado el 2026-09-09 (`docs/PHASE_1A_AUTHORIZATION_PACKET.md`).
+> Ningún motor, ninguna pantalla de producto y ningún contenido oficial: el corpus TAI no
+> entra en este repositorio público. Ver `docs/ARCHITECTURE_STATE.md`.
 
 ---
 

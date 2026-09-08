@@ -1,10 +1,10 @@
 # ADR-010 · Convocatorias y ocurrencias oficiales de pregunta
 
-STATUS: ACCEPTED · v1.0
+STATUS: ACCEPTED · v1.1 (anexo de implementación aceptado el 2026-09-09 · decisión C-3 · el texto v1.0 se conserva íntegro)
 DATE: 2026-09-07
 DECISION OWNER: Ana Victoria
 DECISION RECORD: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` · SHA-256 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d` · baseline auditado `8823c2bdf2d31ec01a2f15b1566a94c1ad0eb04a`
-IMPLEMENTATION STATUS: NOT IMPLEMENTED · este ADR no autoriza ninguna migración ni código de dominio
+IMPLEMENTATION STATUS: AUTHORIZED · Phase 1A (2026-09-09) · estructura de convocatorias y ocurrencias según el anexo v1.1; la carga oficial es de Phase 1B. Hasta el 2026-09-09 constaba como NOT IMPLEMENTED
 OWNS: **BD-05 / SD-001** · propietario normativo único
 SPEC REFERENCES: Canonical Data & Event Model v1.0 §5, §6, §7, §22, §23, §28; Master Product Specification v1.0 §18, §30, §31; Technical Architecture v1.0 §8, §9; Engineering Constitution EC-001, EC-007, EC-008; Official Exam Corpus v1.0 (05_DB_Schema, CORP-001…005); contradiction-register C-02; `spec/domain-model.md` [GAP-3], [GAP-5]; `docs/SPEC_DIFF_LOG.md` SD-001; REQ-B13; ADR-005 punto 5 (superseded por este ADR); ADR-006 (frontera de claves)
 
@@ -116,3 +116,49 @@ Record: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` §3.5 y §5 · SHA-256
 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d`
 Scope of approval: gobernanza únicamente · no autoriza migraciones, implementación de
 dominio, infraestructura ni Phase 1
+
+---
+
+## Anexo v1.1 · dimensiones exam-neutral, unicidad y reserva · ACCEPTED 2026-09-09
+
+**Registro de decisión:** `STUDY_OS_Phase_1A_Authorization_Packet_PROPOSED_a263ec1.md` · SHA-256 `806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4` · decisión **C-3** aceptada en la
+Phase 1A Build Authorization del 2026-09-09 (decisión humana M-7). El texto v1.0 no se
+modifica; este anexo fija los prerrequisitos que v1.0 dejaba abiertos.
+
+### Modelo mínimo, sin enum global
+
+1. `exam_sections(id, exam_pack_id, code, title, sort_order)` · partes del examen definidas
+   por el pack (las filas THEORY, PRACTICAL_I y PRACTICAL_II de TAI son datos de Phase 1B).
+   Unicidad `(exam_pack_id, code)`.
+2. `exam_sittings(id, exam_pack_id, sitting_date, call_label, source_version_id, notes,
+   created_at)` · convocatoria o sesión oficial. Unicidad `(exam_pack_id, sitting_date,
+   call_label)`.
+3. `exam_sitting_models(id, sitting_id, model_code, source_version_id)` · variantes de una
+   convocatoria (A, B). Unicidad `(sitting_id, model_code)`. Los modelos son filas, nunca un
+   enum.
+4. `exam_occurrences(id, sitting_model_id, section_id, question_id, display_no, is_reserve,
+   source_version_id, source_file_ref, created_at)`:
+   - unicidad `(sitting_model_id, section_id, display_no)`: sin posiciones oficiales
+     duplicadas;
+   - unicidad `(sitting_model_id, question_id)`: una pregunta aparece una vez por modelo;
+   - mismo pack: sección, convocatoria y pregunta comparten `exam_pack_id` (claves foráneas
+     compuestas);
+   - `is_reserve boolean NOT NULL`; la bolsa de reserva es la sección, de modo que
+     THEORY_RESERVE = (sección THEORY, reserva verdadera);
+   - `source_version_id NOT NULL` (INV-110).
+5. La clave de respuesta sigue por pregunta canónica (representación); el modelo es metadato
+   de procedencia (punto 7 de v1.0).
+6. `practical_questions(practical_id, question_id, sort_order)` no cambia; las ocurrencias de
+   preguntas de práctico usan las secciones de práctico.
+7. **No modelado en Phase 1A, a propósito:** divergencia de clave por modelo (decisión nueva
+   si aparece evidencia), puntuación (BD-06), simulacro (Phase 6).
+
+### Pruebas que fija este anexo
+
+`examOccurrence.uniquePosition.spec`, `examOccurrence.uniqueQuestionPerModel.spec`,
+`examOccurrence.reserveExplicit.spec`, `examOccurrence.provenanceRequired.spec`,
+`examOccurrence.samePack.spec`, `secondPack.noSchemaChange.spec` (dos packs sintéticos con
+secciones y modelos disjuntos).
+
+**Alcance de la aceptación:** Phase 1A. La carga de las 405 ocurrencias oficiales (REQ-B13) y
+sus totales son Phase 1B.

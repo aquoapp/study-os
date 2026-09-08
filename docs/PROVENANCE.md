@@ -84,20 +84,26 @@ por eso —y solo por eso— divergen de su hash de importación:
 |---|---|---|---|
 | `architecture/ADR-001-stack-and-boundaries.md` | `9eeb3be861da6b1b0eb1bedfa70e33e5e06908042e5eda37ce1f7c135de3990c` | `f951d6156650bdf25c1da7ce658a95347784899c5b8b77863b304c0c55417e4c` | Nota de supersesión parcial; punto 3 subordinado a ADR-006 |
 | `architecture/ADR-002-canonical-evidence-events.md` | `2234c873a809503fe4137997902a8771298350464795a0557597729f6424e03e` | `c6f1192883aa1f3214031ffc35a36245a37650beccc39fa2d414b24916fb804c` | Nota de supersesión parcial; punto 6 superseded por ADR-007; puntos 4 y 10 superseded por ADR-008; SD-015 superseded |
-| `architecture/ADR-005-provenance-and-official-versioning.md` | `aa5414eb34f024f03778ea4456e56a3159ce02e391d1fee3458d2cac5d833406` | `abafcd77b056588dd09e63dd2652a94b71534cbfd3bd5fef62224bbb7f8a76e1` | Nota de supersesión parcial; punto 4 subordinado a ADR-006; punto 5 superseded por ADR-010 |
+| `architecture/ADR-005-provenance-and-official-versioning.md` | `aa5414eb34f024f03778ea4456e56a3159ce02e391d1fee3458d2cac5d833406` | `333b18e9a5694556f61584c6c613247c5816574315fa15d3ea43084043cd4e8a` (antes `abafcd77b056588dd09e63dd2652a94b71534cbfd3bd5fef62224bbb7f8a76e1`) | Nota de supersesión parcial (2026-09-07); nota de disposición para Phase 1A (2026-09-09): sigue PROPOSED |
 
 Los tres siguen `PROPOSED` en conjunto. `ADR-000`, `ADR-003` y `ADR-004` no se han
 tocado y conservan su hash, verificado por `adr.acceptedDecisions.spec`.
 
-Los cinco ADR aceptados son artefactos **creados en Phase 0** (§6), no importados:
+Los ADR aceptados son artefactos **creados en Phase 0 y Phase 1A** (§6), no importados. Hash
+de creación (2026-09-07) y hash vigente tras la Phase 1A Build Authorization (2026-09-09):
 
-| Ruta | SHA-256 |
-|---|---|
-| `architecture/ADR-006-answer-key-data-api-boundary.md` | `96f955c1a9e063141005f7091db18093af529cbea836b8e84764280ad8a191ef` |
-| `architecture/ADR-007-enforceable-item-targets.md` | `d0af2c3acba40b7ec9b18e21bdb6f00a2647eddfee97ca5aee28cdf5ccb5e520` |
-| `architecture/ADR-008-per-user-event-order-and-idempotency.md` | `0282ad130f28ac303e6a2f85ce5eb5fa683a491452a6964ed19a35ec52d5c7bc` |
-| `architecture/ADR-009-stable-concept-identity.md` | `105b441b5ad572b38c8b100be735e1e3344f99cda8d22bdecbc321be2429f225` |
-| `architecture/ADR-010-official-exam-occurrences.md` | `6a19b7e3cc494edc12f613fb8ee52b27501781320cca967751b471744bc1c463` |
+| Ruta | SHA-256 de creación | SHA-256 vigente | Qué cambió el 2026-09-09 |
+|---|---|---|---|
+| `architecture/ADR-006-answer-key-data-api-boundary.md` | `96f955c1a9e063141005f7091db18093af529cbea836b8e84764280ad8a191ef` | `2fee211783f1e3f9ad334669754aa1ca510c1ebae6bd2072951f6e9602b6e096` | cabecera IMPLEMENTATION STATUS → AUTHORIZED · Phase 1A |
+| `architecture/ADR-007-enforceable-item-targets.md` | `d0af2c3acba40b7ec9b18e21bdb6f00a2647eddfee97ca5aee28cdf5ccb5e520` | (sin cambios) | — |
+| `architecture/ADR-008-per-user-event-order-and-idempotency.md` | `0282ad130f28ac303e6a2f85ce5eb5fa683a491452a6964ed19a35ec52d5c7bc` | (sin cambios) | — |
+| `architecture/ADR-009-stable-concept-identity.md` | `105b441b5ad572b38c8b100be735e1e3344f99cda8d22bdecbc321be2429f225` | `defe63ec63e004a778ea6a2d388b70bc81d9f0c0a989c65d383af53fee6e484d` | anexo v1.1 aceptado (C-2); cabecera AUTHORIZED |
+| `architecture/ADR-010-official-exam-occurrences.md` | `6a19b7e3cc494edc12f613fb8ee52b27501781320cca967751b471744bc1c463` | `0467e3e28932d3c86666875c156c606f956305c486ca2397cfc41ffcb6ed7116` | anexo v1.1 aceptado (C-3); cabecera AUTHORIZED |
+| `architecture/ADR-011-schema-topology-and-data-api-exposure.md` | — | `4b7a80cf1ea349be0dd5d775ab8007a8d5bd90447a5a5e75d36a290ae27eb9a0` | creado y aceptado el 2026-09-09 (C-1) |
+
+Registro de decisión de Phase 1A: `STUDY_OS_Phase_1A_Authorization_Packet_PROPOSED_a263ec1.md`
+· SHA-256 `806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4` · copia
+aceptada en `docs/PHASE_1A_AUTHORIZATION_PACKET.md`.
 
 El registro de decisión no se versiona: es material de entrada, como los originales de
 §3, y su hash queda aquí y en cada ADR aceptado.

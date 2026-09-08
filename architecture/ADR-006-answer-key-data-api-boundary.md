@@ -4,7 +4,7 @@ STATUS: ACCEPTED · v1.0
 DATE: 2026-09-07
 DECISION OWNER: Ana Victoria
 DECISION RECORD: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` · SHA-256 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d` · baseline auditado `8823c2bdf2d31ec01a2f15b1566a94c1ad0eb04a`
-IMPLEMENTATION STATUS: NOT IMPLEMENTED · este ADR no autoriza ninguna migración ni código de dominio
+IMPLEMENTATION STATUS: AUTHORIZED · Phase 1A (2026-09-09) · la frontera de esquema (claves en `content`, ADR-011) se implementa en Phase 1A; la corrección en servidor es de fases posteriores. Hasta el 2026-09-09 constaba como NOT IMPLEMENTED
 OWNS: **SD-007** · propietario normativo único
 SPEC REFERENCES: Master Product Specification v1.0 §17, §20, §29, §40, §44; Technical Architecture v1.0 §5.3–§5.4; Canonical Data & Event Model v1.0 §6, §12, §22, §23, §29 (P0-13, P0-15); Engineering Constitution EC-007, EC-009, EC-010; INV-101, INV-116; contradiction-register C-13; `docs/SPEC_DIFF_LOG.md` SD-007
 

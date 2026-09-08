@@ -12,6 +12,18 @@ SPEC REFERENCES: Master Product Specification §18, §30, §31; Technical Archit
 >
 > Los puntos 1–3 y 6–9 siguen `PROPOSED` y sin aprobar. El texto histórico se conserva sin cambios; las marcas entre corchetes señalan los puntos afectados. Registro de decisión: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` (SHA-256 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d`).
 
+> **Nota de disposición para Phase 1A · 2026-09-09.** Este ADR **sigue `PROPOSED` en conjunto**; Ana Victoria aprobó la disposición punto por punto (decisión C-6, `STUDY_OS_Phase_1A_Authorization_Packet_PROPOSED_a263ec1.md`, SHA-256 `806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4`) como **disposición gobernante de Phase 1A**, sin promover el ADR a `ACCEPTED`:
+>
+> - **Punto 1** (clases de procedencia NOT NULL + CHECK; OFFICIAL exige `source_version_id`; cuarentena): **subsumido** por EC-001, EC-008, Master §30 e INV-110. Phase 1A lo implementa bajo esa autoridad.
+> - **Punto 2** (la autoridad es de la versión; filtrado de vigencia antes de similitud): **subsumido** por Master §30–§31, TA §7.3/§9, CDEM §5 e INV-109. Phase 1A implementa las columnas de estado y vigencia; la regla de recuperación es de Phase 8.
+> - **Punto 3** (ciclo PROVISIONAL → FINAL → AMENDED; el intento conserva la versión; `attempt_recalculations`): **subsumido** por Master §18, CDEM §6/§12 y EC-007. Phase 1A implementa el ciclo de la clave; intentos y recálculo son Phases 2 y 10.
+> - **Punto 6** (pipeline con staging; el contenido parseado nunca entra en tablas publicadas): la **frontera** queda **subsumida** por Master §31 y TA §8 y se implementa en Phase 1A; la **lista de campos inmutables** del contrato de ingestión (nivel 6) **sigue `PROPOSED`** y se decide en Phase 1B con el corpus.
+> - **Punto 7** (mapping `PENDING_REVALIDATION`; `mapping_confidence`): el **estado de revalidación** queda cubierto por la decisión M-6 (ADR-009 v1.1); **`mapping_confidence` sigue `PROPOSED`** y se reexamina en Phase 1B.
+> - **Punto 8** (GENERATED no asciende a VERIFIED en MVP): se aplica en Phase 1A como **ausencia de ruta de promoción**, con prueba negativa; no necesita ADR.
+> - **Punto 9** (eventos de cambio de fuente y recálculo dirigido): **subsumido** por Master §18/§31, CDEM §20 y TA §9; se implementa en Phase 10.
+>
+> Ningún punto de este ADR autoriza por sí mismo cambio arquitectónico alguno (ADR Policy); lo que Phase 1A construye lo autorizan las fuentes superiores citadas y el Phase 1A Authorization Packet.
+
 ## Context
 La trazabilidad es la ventaja defendible del producto, y es donde el paquete presenta los huecos más serios: el corpus oficial define entidades que el modelo canónico no tiene (C-02), no contiene los textos de las opciones (C-01), el mapping concepto↔pregunta contiene errores verificables pese a declararse validado (C-07), y la matriz RLS, leída literalmente, expondría las claves de respuesta al cliente (C-13).
 

@@ -7,7 +7,11 @@ import { describe, expect, it } from 'vitest';
 import { REPO_ROOT } from './lib/run-guard';
 
 /**
- * `adr.acceptedDecisions.spec` · los cinco ADR aceptados y lo que dejan intacto.
+ * `adr.acceptedDecisions.spec` · los ADR aceptados y lo que dejan intacto.
+ *
+ * Revisado el 2026-09-09 (Phase 1A Build Authorization, decisión C-7): ADR-011 es el sexto
+ * ADR aceptado; ADR-009 y ADR-010 llevan un anexo v1.1 aceptado; la frontera «aceptar no
+ * es implementar» pasa a vigilar solo lo que sigue sin autorizar (Phase 2 en adelante).
  *
  * ---------------------------------------------------------------------------
  * Qué vigila este fichero
@@ -66,6 +70,15 @@ const ACCEPTED: Array<{ file: string; owns: string; decision: string }> = [
   },
 ];
 
+const PHASE_1A_PACKET_SHA256 = '806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4';
+
+/** ADR aceptados cuya implementación autoriza la Phase 1A Build Authorization. */
+const PHASE_1A_AUTHORIZED = new Set([
+  'architecture/ADR-006-answer-key-data-api-boundary.md',
+  'architecture/ADR-009-stable-concept-identity.md',
+  'architecture/ADR-010-official-exam-occurrences.md',
+]);
+
 const PROPOSED = [
   'architecture/ADR-001-stack-and-boundaries.md',
   'architecture/ADR-002-canonical-evidence-events.md',
@@ -98,18 +111,24 @@ const TEMPLATE_SECTIONS = [
 ];
 
 describe('ADR-006 … ADR-010 · aceptados, con aprobación y propietario', () => {
-  it('existen exactamente once ficheros en architecture/: plantilla + diez ADR', () => {
+  it('existen exactamente doce ficheros en architecture/: plantilla + once ADR', () => {
     const files = readdirSync(join(REPO_ROOT, 'architecture')).sort();
-    expect(files).toHaveLength(11);
+    expect(files).toHaveLength(12);
     for (const { file } of ACCEPTED) expect(files).toContain(file.replace('architecture/', ''));
+    expect(files).toContain('ADR-011-schema-topology-and-data-api-exposure.md');
   });
 
   for (const { file, owns, decision } of ACCEPTED) {
     describe(file, () => {
       const text = read(file);
 
-      it('es v1.0 y ACCEPTED', () => {
-        expect(text).toMatch(/^STATUS: ACCEPTED · v1\.0$/m);
+      it('es ACCEPTED, v1.0 o v1.1 con anexo aceptado el 2026-09-09', () => {
+        expect(text).toMatch(/^STATUS: ACCEPTED · v1\.(0|1)/m);
+        if (/^STATUS: ACCEPTED · v1\.1/m.test(text)) {
+          expect(text).toContain('## Anexo v1.1');
+          expect(text).toContain('ACCEPTED 2026-09-09');
+          expect(text).toContain(PHASE_1A_PACKET_SHA256);
+        }
         expect(text).toMatch(/^DATE: 2026-09-07$/m);
         expect(text).toMatch(/^DECISION OWNER: Ana Victoria$/m);
       });
@@ -132,10 +151,16 @@ describe('ADR-006 … ADR-010 · aceptados, con aprobación y propietario', () =
         expect(claimants, `más de un propietario para ${decision}`).toEqual([file]);
       });
 
-      it('registra la decisión como ACCEPTED · NOT IMPLEMENTED', () => {
+      it('registra la decisión como ACCEPTED · NOT IMPLEMENTED y un estado de implementación explícito', () => {
         expect(text).toContain('ACCEPTED · NOT IMPLEMENTED');
-        expect(text).toMatch(/^IMPLEMENTATION STATUS: NOT IMPLEMENTED/m);
-        expect(text).toContain('no autoriza ninguna migración');
+        // Phase 1A (2026-09-09) autoriza implementar ADR-006, ADR-009 y ADR-010; ADR-007 y
+        // ADR-008 siguen sin implementar hasta Phase 2 y Phase 4.
+        if (PHASE_1A_AUTHORIZED.has(file)) {
+          expect(text).toMatch(/^IMPLEMENTATION STATUS: AUTHORIZED · Phase 1A/m);
+        } else {
+          expect(text).toMatch(/^IMPLEMENTATION STATUS: NOT IMPLEMENTED/m);
+          expect(text).toContain('no autoriza ninguna migración');
+        }
       });
 
       it('acota la aprobación a gobernanza', () => {
@@ -150,6 +175,52 @@ describe('ADR-006 … ADR-010 · aceptados, con aprobación y propietario', () =
       });
     });
   }
+});
+
+describe('ADR-011 · aceptado el 2026-09-09 por la Phase 1A Build Authorization', () => {
+  const text = read('architecture/ADR-011-schema-topology-and-data-api-exposure.md');
+
+  it('es v1.0, ACCEPTED, de Ana Victoria, con el registro de decisión de Phase 1A', () => {
+    expect(text).toMatch(/^STATUS: ACCEPTED · v1\.0$/m);
+    expect(text).toMatch(/^DATE: 2026-09-09$/m);
+    expect(text).toMatch(/^DECISION OWNER: Ana Victoria$/m);
+    expect(text).toMatch(/^Approved by: Ana Victoria$/m);
+    expect(text).toMatch(/^Date: 2026-09-09$/m);
+    expect(text).toContain(PHASE_1A_PACKET_SHA256);
+    expect(text).toMatch(/^IMPLEMENTATION STATUS: AUTHORIZED · Phase 1A/m);
+  });
+
+  it('sigue la plantilla ADR-000', () => {
+    for (const section of TEMPLATE_SECTIONS) {
+      expect(text, `falta ${section}`).toContain(`${section}\n`);
+    }
+  });
+
+  it('fija la frontera: public expuesto, content e ingest no expuestos, lista gobernada', () => {
+    const flatText = flat(text);
+    for (const needle of [
+      '`public` es la única superficie expuesta',
+      '`content` es un esquema no expuesto',
+      '`ingest` es un esquema no expuesto',
+      'La lista de exposición es explícita, gobernada y probada',
+      'dataApi.exposedSchemas',
+      'dataApi.nonExposedSchemas',
+      'La exposición automática permanece desactivada',
+      'no tienen `USAGE` sobre `content` ni `ingest`',
+      'SECURITY DEFINER',
+      'cambio de frontera de seguridad',
+    ]) {
+      expect(flatText, `falta: ${needle}`).toContain(needle);
+    }
+  });
+
+  it('el registro de autoridad declara la misma lista', () => {
+    const registry = JSON.parse(read('packages/domain/src/authority-registry.json')) as {
+      dataApi: { exposedSchemas: string[]; nonExposedSchemas: string[] };
+    };
+    expect(registry.dataApi.exposedSchemas).toEqual(['public']);
+    expect(registry.dataApi.nonExposedSchemas).toEqual(['content', 'ingest']);
+  });
 });
 
 describe('las cláusulas vinculantes están escritas, no resumidas', () => {
@@ -232,9 +303,14 @@ describe('las cláusulas vinculantes están escritas, no resumidas', () => {
     }
   });
 
-  it('ADR-009 · identidad estable en dos capas', () => {
+  it('ADR-009 · identidad estable en dos capas, con el anexo v1.1', () => {
     const text = flat(read('architecture/ADR-009-stable-concept-identity.md'));
     for (const needle of [
+      '<slug>-<hash8>',
+      '(exam_pack_id, concept_key)',
+      'copy_forward_question_concepts',
+      'PENDING_REVALIDATION',
+      'identidades estables, mismo pack, sin autorreferencia',
       '(exam_pack_id, concept_key)',
       'inmutable una vez referenciada',
       'concept_versions',
@@ -251,9 +327,15 @@ describe('las cláusulas vinculantes están escritas, no resumidas', () => {
     }
   });
 
-  it('ADR-010 · convocatorias y ocurrencias', () => {
+  it('ADR-010 · convocatorias y ocurrencias, con el anexo v1.1', () => {
     const text = flat(read('architecture/ADR-010-official-exam-occurrences.md'));
     for (const needle of [
+      'exam_sections',
+      'exam_sitting_models',
+      'sin enum global',
+      '(sitting_model_id, section_id, display_no)',
+      '(sitting_model_id, question_id)',
+      'is_reserve boolean NOT NULL',
       'exam_sittings',
       'exam_occurrences',
       'estado de reserva',
@@ -332,24 +414,30 @@ describe('ADR-001 … ADR-005 · siguen PROPOSED, con referencias precisas', () 
   }
 });
 
-describe('aceptar no es implementar', () => {
+describe('aceptar no es implementar · lo que sigue sin autorizar tras Phase 1A', () => {
   const migrationsDir = join(REPO_ROOT, 'supabase', 'migrations');
   const sqlFiles = readdirSync(migrationsDir)
     .filter((name) => name.endsWith('.sql'))
     .map((name) => join(migrationsDir, name));
 
+  /**
+   * Phase 1A (2026-09-09) autoriza `answer_key_versions`, `concept_versions`,
+   * `concept_key`, `exam_sittings` y `exam_occurrences`. Lo de ADR-007 (migraciones 7 y
+   * 11, Phase 2 y 4) y lo de ADR-008 (migraciones 8, 9 y 16, Phase 2) sigue prohibido.
+   */
   const tables = [
-    'answer_key_versions',
     'session_items',
     'planner_items',
+    'study_sessions',
+    'learning_units',
     'user_event_counters',
     'projection_watermarks',
     'stream_position',
     'answer_payload_hash',
-    'concept_versions',
-    'concept_key',
-    'exam_sittings',
-    'exam_occurrences',
+    'question_attempts',
+    'learning_events',
+    'concept_mastery',
+    'exam_readiness',
   ];
 
   for (const table of tables) {

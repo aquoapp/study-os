@@ -777,3 +777,99 @@ resto `PROPOSED`.
 
 **Lo que ya no necesita decisión humana:** SD-018, SD-006, SD-007, BD-02 y BD-05. Lo que
 necesitan ahora es un plan de implementación con sus prerrequisitos, y eso no es Phase 0.
+
+---
+
+## SD-020 · División de Phase 1 en 1A y 1B; asignación de decisiones a la fase que gobiernan
+
+**Documentos afectados:** `docs/PHASE_0_EXECUTION_PLAN.md` §7 (congelado; no se edita); Builder
+Handoff Manifest v1.0 §10 · Phase 1 (congelado; no se edita); `spec/contradiction-register.md`
+(congelado; no se edita). Esta entrada vive en la adenda y gobierna operativamente.
+**Origen:** contradicciones B-6 y B-7 de la Phase 1 Pre-Authorization Review (2026-09-09);
+decisiones humanas «Split», M-2 y M-8 del Phase 1A Authorization Packet.
+**Estado:** **`ACCEPTED`** · 2026-09-09 · Ana Victoria · decisión C-4 ·
+`STUDY_OS_Phase_1A_Authorization_Packet_PROPOSED_a263ec1.md` · SHA-256 `806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4`.
+
+**Cambio:**
+
+1. Phase 1 se divide en **Phase 1A · Canonical Domain Foundation** y **Phase 1B · Official
+   Corpus Integration**. Phase 1A debe poder cerrar en `PASS` por sí misma y **no** reporta
+   `BLOCKED` por la ausencia deliberada de entradas de corpus, que pertenecen a 1B. Las fases
+   posteriores no se renumeran.
+2. Los tres gates del Manifest §10 para Phase 1 se asignan así: «invalid answer-key relation
+   rejected» y «normal user cannot mutate canonical content» → **1A**; «sample TAI content
+   traceable to source/version» → **1A** en cuanto al mecanismo (con fixtures GENERATED
+   sintéticos) y **1B** con contenido oficial.
+3. Entradas y requisitos que gobierna **1B**: MI-01, MI-04, REQ-B11, REQ-B12, REQ-B13,
+   REQ-B15, los totales oficiales 270 / 405 / 30 y la completitud del banco oficial.
+4. **BD-03** (escala de confianza) se decide **antes de la migración de intentos de Phase 2 y
+   de la UI de CHECK**; **BD-06** (puntuación oficial y respuesta en blanco) se decide **antes
+   de las tablas de simulacro de Phase 6**. Ninguna de las dos gobierna 1A ni 1B.
+5. El repositorio público **no contiene** corpus oficial, preguntas, opciones, claves,
+   prácticos ni PDF (decisión M-1); el mecanismo de custodia privada se decide antes de 1B.
+
+**Impacto:** semántica de checkpoint de Phase 1A y 1B; ningún impacto de esquema.
+
+---
+
+## SD-021 · Representaciones inmutables de pregunta canónica; aclaración de «versión del ítem» en ADR-008
+
+**Documentos afectados:** Canonical Data & Event Model v1.0 §6 (`canonical_questions` lleva
+`stem`; congelado, no se edita); ADR-008 (`ACCEPTED`; **aclarado, no enmendado**).
+**Origen:** contradicción B-9 de la Phase 1 Pre-Authorization Review; decisión humana M-4.
+**Estado:** **`ACCEPTED`** · 2026-09-09 · Ana Victoria · decisión C-5 ·
+`STUDY_OS_Phase_1A_Authorization_Packet_PROPOSED_a263ec1.md` · SHA-256 `806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4`.
+
+**Cambio:**
+
+1. `canonical_questions` pasa a ser la **identidad semántica estable** (ámbito de pack, sin
+   contenido visible por el aprendiz).
+2. `question_representations` contiene el **contenido publicado inmutable** (`stem`,
+   `official_reference`, `presentation_json`, procedencia, versión de fuente,
+   `representation_no`, `supersedes_representation_id`, `superseded_by_representation_id`,
+   estado). Exactamente una representación publicada vigente por pregunta.
+3. `question_options` pertenecen a una representación y son inmutables con ella.
+4. Una corrección o revisión crea una representación **nueva** enlazada por supersesión;
+   nunca se reescribe contenido publicado.
+5. La evidencia histórica (Phase 2+) referencia `question_representation_id` además de
+   `question_id` y `answer_key_version_id`.
+6. **Aclaración de ADR-008:** «la versión del ítem» del contrato de hash canónico **es
+   `question_representation_id`**. El texto de ADR-008 se satisface sin cambios: exige una
+   versión del ítem sin definirla, y esta entrada la define.
+
+**Justificación:** EC-007 y M-4. Refinamiento permitido por CDEM §31 (no altera ninguno de
+los nueve principios protegidos) y aclaración, no enmienda, de ADR-008.
+**Impacto:** nodos N5 y N7 del DAG de Phase 1A; Phase 2 almacena `question_representation_id`
+en los intentos.
+
+---
+
+## Estado de la adenda · tras la Phase 1A Build Authorization · 2026-09-09
+
+Sustituye a «Estado de la adenda · tras el Human Decision Packet v1.0» como resumen
+operativo; aquel texto y su registro de aceptación se conservan íntegros como cronología.
+
+**Registro de decisión:** `STUDY_OS_Phase_1A_Authorization_Packet_PROPOSED_a263ec1.md` · SHA-256 `806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4` · Phase 1A Build
+Authorization · 2026-09-09 · decisora Ana Victoria · revisión independiente (ChatGPT) ·
+**alcance: gobernanza e implementación de Phase 1A únicamente.** No autoriza Phase 1B, Phase
+2, FPS ni ninguna mutación de PRODUCTION.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| C-1 | ADR-011 · topología de esquemas y frontera de exposición | **`ACCEPTED`** · implementación autorizada en Phase 1A |
+| C-2 | ADR-009 v1.1 · anexo (clave de concepto, mapeos, prerrequisitos) | **`ACCEPTED`** · implementación autorizada en Phase 1A |
+| C-3 | ADR-010 v1.1 · anexo (dimensiones exam-neutral, unicidad, reserva) | **`ACCEPTED`** · implementación autorizada en Phase 1A |
+| C-4 | SD-020 · división 1A/1B y asignación de decisiones | **`ACCEPTED`** |
+| C-5 | SD-021 · representaciones inmutables; aclaración de ADR-008 | **`ACCEPTED`** |
+| C-6 | ADR-005 · disposición punto por punto | **aprobada como disposición gobernante de Phase 1A** · el ADR sigue `PROPOSED` |
+| C-7 | Aterrizaje de gobernanza y revisión de las pruebas negativas de Phase 0 | **autorizado** |
+| C-8 | First Product Sight | aprobado **conceptualmente** como hito; colocación y cambios de frontera **no autorizados**; decisión separada antes de Phase 2 |
+
+**Qué pasa a estar implementándose:** ADR-006, ADR-009 (v1.1) y ADR-010 (v1.1) en cuanto
+Phase 1A los requiere; ADR-011. ADR-007 y ADR-008 siguen `ACCEPTED · NOT IMPLEMENTED`:
+sus migraciones son de Phase 2 y Phase 4.
+
+**Total tras esta adenda: 21 entradas SPEC_DIFF** (15 congeladas + SD-016 … SD-021) **y 1
+errata.** SD-020 y SD-021 `ACCEPTED`; SD-018 `ACCEPTED · NOT IMPLEMENTED`; SD-001, SD-002,
+SD-006 y SD-007 `ACCEPTED` y en implementación parcial en Phase 1A (solo lo que sus ADR
+autorizan para esta fase); SD-015 `SUPERSEDED`; SD-016 implementada; el resto `PROPOSED`.

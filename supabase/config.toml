@@ -17,10 +17,12 @@ port = 54321
 #
 # En Phase 0 solo `public`, que contiene exclusivamente `profiles`.
 #
-# INV-101 / SD-007 (ACCEPTED · NOT IMPLEMENTED · propietario normativo ADR-006):
-# `answer_key_versions` y toda marca de corrección quedarán fuera de esta lista
-# cuando existan. Añadir un esquema aquí es una decisión de exposición, no un
-# detalle de configuración.
+# INV-101 / SD-007 (propietario normativo ADR-006) y ADR-011 (ACCEPTED · 2026-09-09):
+# `content` (claves de respuesta) e `ingest` (frontera de ingestión) son esquemas NO
+# expuestos y nunca entran en esta lista. Un test compara esta lista con
+# `dataApi.exposedSchemas` de `packages/domain/src/authority-registry.json`. Añadir un
+# esquema aquí es un cambio de frontera de seguridad (EC-019), no un detalle de
+# configuración.
 schemas = ["public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
