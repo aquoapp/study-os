@@ -58,7 +58,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | Tests de integración | **10 ejecutados y en verde** | `profiles` 1:1 contra STAGING y en CI |
 | Tests de RLS | **11 ejecutados y en verde** | Contra STAGING y en CI |
 | CI | **EXISTE · ejecutado · en verde** | `.github/workflows/ci.yml`, tres jobs: estático, base de datos (stack local migrado desde cero) y **deriva de esquema contra STAGING real** con guarda fail-closed. Run `34234262313` sobre `253e9c1`: los nueve checks en verde. Seis runs anteriores con fallos reales, corregidos y registrados |
-| Proyecto Vercel | **EXISTE · vinculado** | Equipo `STUDY_OS`, proyecto `study-os` ligado a `aquoapp/study-os`, `apps/web`, Next.js, Node 24. Variables públicas separadas: Preview → STAGING, Production → PRODUCTION; ningún secreto de servidor. El primer despliegue Git (`253e9c1`) quedó `BLOCKED` porque el correo del autor de los commits no estaba asociado a la cuenta GitHub conectada; Ana lo asoció el 2026-09-08 y el Preview se genera con el commit de esta reemisión (resultado en `AUDIT_EVIDENCE.md`) |
+| Proyecto Vercel | **EXISTE · vinculado** | Equipo `STUDY_OS`, proyecto `study-os` ligado a `aquoapp/study-os`, `apps/web`, Next.js, Node 24. Variables públicas separadas: Preview → STAGING, Production → PRODUCTION; ningún secreto de servidor. **Preview real desde `phase/0-foundation`: READY** (`study-os-git-phase-0-foundation-study-os6.vercel.app`, protegido por Vercel Authentication). Un alta real por formulario a través del Preview aterrizó en STAGING con perfil 1:1 y PRODUCTION siguió en 0 usuarios; el fixture se borró. Los dos intentos anteriores fallaron por el correo del autor de los commits (asociado por Ana) y por instalar solo las dependencias de `apps/web` (corregido con `installCommand: cd ../.. && npm ci`). Producción de Vercel sin desplegar: `main` sigue en su commit raíz |
 | Guardas de invariante | **5 activas, por propagación de punto fijo** | import · tai-literal · secret-scan · client-authority (capacidades) · auth-authority (procedencia). **169 casos de guardas** que ejecutan las guardas reales —10 de sumidero computado extraído, 13 de procedencia PostgREST, 19 de cierre transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión, 21 adversariales— **más 26 bypasses operacionales**. Sin cambios en esta ronda |
 | Contenido ingerido | NINGUNO | Ni siquiera de prueba. Execution Plan §9 |
 | Tablas de dominio | **NINGUNA** | Verificado por test: ninguna migración crea `learning_events`, `question_attempts`, `concept_mastery`, `exam_readiness`, `planner_*`, `canonical_questions`, `answer_key_versions`, `learning_units`, `sessions`, `session_items`, `planner_items`, `user_event_counters`, `projection_watermarks`, `concept_versions`, `exam_sittings` ni `exam_occurrences`. **Aceptar cinco decisiones no ha creado ninguna** |
@@ -133,7 +133,7 @@ la aceptación. Lo que necesitan ahora es un plan de implementación, y eso no e
 
 | ID | Tipo | Asunto | Bloquea |
 | --- | --- | --- | --- |
-| MI-05a · **parcialmente resuelto** | MISSING_INPUT | Repositorio remoto, Supabase y Vercel **existen** (2026-09-08). Queda: **protección mecánica de `main`** (GitHub Free, 403 en repositorio privado) y el primer despliegue Preview (bloqueado por el correo del autor de los commits) | El cierre de Phase 0 |
+| MI-05a · **parcialmente resuelto** | MISSING_INPUT | Repositorio remoto, CI en verde, Supabase y Vercel con Preview real **existen** (2026-09-08). Queda solo: **protección mecánica de `main`** (GitHub Free, 403 en repositorio privado) | El cierre de Phase 0 |
 | **SD-019** | Opción A **autorizada, implementada y verificada** · el cambio de especificación (B o C) sigue PROPOSED y **diferido** | La paleta congelada no alcanza el AA que exige §14 | **Nada de Phase 0.** El uso sin restricciones de la paleta, que necesitan los componentes de §16 · antes de Phase 5 |
 | MI-01 | MISSING_INPUT | 6 PDF oficiales | PASS de **Phase 1** |
 | BD-03 | BLOCKED_DECISION | Escala de confianza 4 o 5 | Confirmada por el propio Design System §6 · Phases 3 y 5 |
@@ -173,7 +173,7 @@ aceptación) y en los ADR.
 
 | Entrada | Impacto | Responsable |
 | --- | --- | --- |
-| **MI-05a** · lo que queda: protección mecánica de `main` y el primer Preview de Vercel | Bloquea el cierre de Phase 0 | Ana |
+| **MI-05a** · lo que queda: protección mecánica de `main` | Bloquea el cierre de Phase 0 | Ana |
 | ~~Docker o WSL2~~ | Ya no es entrada: los cuatro checks que lo necesitaban corren contra STAGING y en CI. Solo `schema-drift` nivel B sigue exigiendo Docker en local (D-13) | — |
 | MI-01 · 6 PDF oficiales | Bloquea el PASS de Phase 1 | Ana |
 | MI-02 · contenido didáctico | Limita LEARN | Producción de contenido |
@@ -196,8 +196,8 @@ Los cuatro checks que exigían infraestructura ya se han ejecutado de verdad —
 STAGING y en CI— y ninguna decisión humana de dominio queda abierta. Lo que sigue
 condicionando el cierre es lo que resta de MI-05a: la **protección mecánica de `main`**,
 que GitHub Free no permite en un repositorio privado, y el primer Preview de Vercel;
-y el primer Preview de Vercel. Con eso resuelto, el estado esperado es **PASS WITH
-DEBT**. Detalle en `docs/PHASE_0_CHECKPOINT.md`.
+. Con eso resuelto, el estado esperado es **PASS WITH DEBT**. Detalle en
+`docs/PHASE_0_CHECKPOINT.md`.
 
 ---
 

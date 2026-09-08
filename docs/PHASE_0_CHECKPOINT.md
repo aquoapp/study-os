@@ -76,6 +76,18 @@ commit y su evidencia en CI:
 | I4 | En CI, E2E de auth 8/8 en móvil y los dos tests de alta en rojo en escritorio | El ordinal del correo de fixture vivía en el worker de Playwright; el segundo proyecto repetía el correo del primero | El correo incluye proyecto e índice de worker (`5162c9e`) |
 | I5 | Contra STAGING, el alta por formulario fallaba: `Email address … is invalid` y después `email rate limit exceeded` | El Auth alojado tenía la confirmación por correo activa; al enviar el correo rechaza el dominio reservado `example.test` y agota la cuota SMTP | `mailer_autoconfirm = true` **solo en STAGING**, por Management API, autorizado por Ana. Con ello `example.test` se acepta (sonda de un usuario por dominio, borrados al instante): **no hace falta cambiar el fixture** |
 | I6 | `schema-drift` nivel B no puede ejecutarse en la máquina de desarrollo | `supabase db diff` construye una base sombra con Docker | Opción B autorizada: job `drift-staging` en CI contra el STAGING real, con secreto `STAGING_DB_URL` y guarda fail-closed que rechaza cualquier cadena que no contenga el ref de STAGING o contenga el de PRODUCTION (`253e9c1`) |
+| I7 | El primer despliegue Git de Vercel quedó `BLOCKED` y el segundo en `ERROR` | El correo del autor de los commits no estaba asociado a la cuenta GitHub conectada; después, Vercel instalaba solo las dependencias de `apps/web` y no las del root del workspace | Ana asoció el correo; `installCommand: cd ../.. && npm ci` en el proyecto Vercel (configuración de proyecto, sin cambio de código). Tercer despliegue **READY** |
+
+### Preview de Vercel · desplegado y verificado
+
+`https://study-os-git-phase-0-foundation-study-os6.vercel.app` (Preview, `target: null`,
+protegido por Vercel Authentication). Verificado con el navegador de la sesión: `/`
+responde 200 sin sesión; `/cuenta` redirige a `/entrar` sin sesión (INV-116); un alta real
+por formulario termina en `/cuenta` con `verification-method = getClaims` y
+`user-id = profile-id`, y esa cuenta aparece en **STAGING** con su perfil 1:1 mientras
+PRODUCTION sigue en 0 usuarios. El fixture se borró con el rol de servicio rotado.
+Producción de Vercel no se ha desplegado: `main` sigue en su commit raíz y el merge es
+decisión humana.
 
 ### Incidente de seguridad · D-15
 
@@ -214,8 +226,9 @@ desplegado) y del incidente D-15.
 | DB host | `db.xzcrqsolxarutlvvkzfp.supabase.co` | `db.nzcgufeycvehczroryoe.supabase.co` | Sí |
 | Región | eu-west-1 | eu-central-1 | Sí |
 | Clave publishable (SHA-256, 16 hex) | distinta | distinta | Sí |
-| Vercel | Preview | Production | Variables separadas; ningún secreto de servidor |
+| Vercel | Preview (READY desde `phase/0-foundation`) | Production (sin desplegar; `main` en su raíz) | Variables separadas; ningún secreto de servidor |
 | Fixtures | creados y borrados | **0** · nunca escritos | PRODUCTION solo lectura |
+| Alta real a través del Preview de Vercel | aterrizó en STAGING (perfil 1:1, `getClaims`), borrada después | PRODUCTION siguió en 0 usuarios | Preview → STAGING demostrado de extremo a extremo |
 
 Configuraciones cruzadas que fallan cerradas: `production` con URL de PRODUCTION
 (`Los tests automatizados están prohibidos en "production"`), `local` con URL de STAGING
@@ -305,6 +318,17 @@ final: 0 usuarios, 0 tablas, 0 buckets, configuración de Auth y claves sin camb
 | ID | Impacto |
 | --- | --- |
 | **MI-05a · resto** · protección mecánica de `main` (GitHub Free, repositorio privado) | Impide declarar `PASS` |
+
+### Evaluación final del único blocker · protección mecánica de `main`
+
+| Punto | Estado exacto |
+| --- | --- |
+| Control ausente | Ninguna regla de protección ni ruleset sobre `main` en `aquoapp/study-os`: un push directo o un borrado de rama no son rechazados por la *forge* |
+| Evidencia del 403 | `PUT repos/aquoapp/study-os/branches/main/protection` y `POST …/rulesets` responden `403 · "Upgrade to GitHub Pro or make this repository public to enable this feature."` (`40-github-main-protection.txt`) |
+| Plan requerido | El repositorio es de una cuenta personal y debe seguir **privado**: el plan que lo desbloquea es **GitHub Pro** (cuenta personal), que es el que nombra el propio 403. La alternativa es trasladar el repositorio a una organización en plan **Team** |
+| Precio comprobado | `github.com/pricing` (2026-09-08): Free `$0`; **Team `$4 USD por usuario/mes`**; Enterprise desde `$21`. La página muestra que en Free los *repository rules* solo existen en repositorios públicos. El precio de GitHub Pro personal no aparece en esa página tal como se sirvió al comprobarlo; GitHub lo publica en la sección de cuentas personales y ha de confirmarse en el momento de contratar |
+| Efecto sobre el gate | Ningún gate P0-G1…P0-G5 depende de ello; afecta al **output 1 de Phase 0** («ramas protegidas», Execution Plan §3) y a D-01. Mientras falte, `STATUS` no puede ser `PASS` y la convención documental no lo sustituye |
+| Acción mínima de Ana | Elegir y contratar **una** de las dos: GitHub Pro en la cuenta `aquoapp`, o una organización en Team con el repositorio transferido. Ninguna compra ni cambio de plan se hace sin su autorización. Con el plan activo, la regla de protección se crea con `gh api` en un minuto y se verifica con un push directo rechazado |
 
 Decisiones **diferidas**, que no bloquean Phase 0: **SD-019** (B o C, antes de Phase 5).
 `MI-05b` (proveedor de IA) no se ha solicitado: es entrada de Phase 8.
