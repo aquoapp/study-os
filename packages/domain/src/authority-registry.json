@@ -19,10 +19,11 @@
   },
   "rpcs": {
     "$comment": [
-      "RPC reservadas como autoritativas. Ninguna existe todavía: Phase 0 no crea",
-      "funciones de dominio. Se declaran ahora para que el día que se escriba la primera,",
-      "una llamada desde el navegador falle en CI y no en revisión.",
-      "Cada nombre está anclado a un invariante ya congelado; no son decisiones de producto",
+      "RPC reservadas como autoritativas: el cliente no puede invocarlas. Las de Phase 0 se",
+      "declararon antes de existir para que la primera llamada desde el navegador fallara en",
+      "CI. Phase 1A añade las funciones de la frontera de ingestión y del copy-forward, que",
+      "existen como funciones de servidor y solo son invocables con rol de servicio.",
+      "Cada nombre está anclado a un invariante o ADR aceptado; no son decisiones de producto",
       "nuevas, son la lista de lo que el cliente no puede invocar."
     ],
     "names": [
@@ -34,7 +35,11 @@
       "recalculate_mastery",
       "advance_event_watermark",
       "promote_engine_config",
-      "run_planner"
+      "run_planner",
+      "stage_item",
+      "validate_staged_item",
+      "publish_staged_item",
+      "copy_forward_question_concepts"
     ],
     "anchors": {
       "grade_attempt": "INV-101 · la corrección ocurre en servidor y no devuelve la clave",
@@ -45,7 +50,11 @@
       "recalculate_mastery": "EC-002 · Mastery la calcula un motor determinista de servidor",
       "advance_event_watermark": "SD-018 · watermark por usuario y proyección",
       "promote_engine_config": "SD-013 · promoción de engine_config con aprobación humana",
-      "run_planner": "EC-003 · el Planner es determinista y de servidor"
+      "run_planner": "EC-003 · el Planner es determinista y de servidor",
+      "stage_item": "ADR-011 · frontera de ingestión: solo servidor deposita en ingest",
+      "validate_staged_item": "INV-110 · cuarentena si OFFICIAL carece de fuente primaria",
+      "publish_staged_item": "ADR-011 · Master §31 · única vía de publicación a tablas canónicas",
+      "copy_forward_question_concepts": "ADR-009 v1.1 · copy-forward con PENDING_REVALIDATION"
     }
   },
   "readOnlyRpcs": {
@@ -131,5 +140,16 @@
       "service_role",
       "serviceRoleKey"
     ]
+  },
+  "dataApi": {
+    "$comment": [
+      "ADR-011 · lista de exposición del Data API, gobernada y probada.",
+      "exposedSchemas debe coincidir con [api].schemas de supabase/config.toml y con la",
+      "configuración de cada proyecto. nonExposedSchemas nunca son alcanzables por anon ni",
+      "authenticated. Cambiar cualquiera de las dos listas es un cambio de frontera de",
+      "seguridad (EC-019) y exige enmienda de ADR-011."
+    ],
+    "exposedSchemas": ["public"],
+    "nonExposedSchemas": ["content", "ingest"]
   }
 }

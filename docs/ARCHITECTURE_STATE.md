@@ -3,9 +3,9 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.2 · copia viva
+**Versión:** 11.3 · copia viva
 **Última actualización:** 2026-09-08 · Phase 0 integrada en `main`, etiquetada y congelada; Production de Vercel sin despliegue automático
-**Fase actual:** 0 · Foundation · **congelada** (Phase 1 no autorizada)
+**Fase actual:** 1A · Canonical Domain Foundation · **BUILD autorizado el 2026-09-09** (Phase 1B, Phase 2 y FPS no autorizados)
 **Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `5d8296c1776be778b075d9e239b383a0476a6514` · tag anotado `phase-0-v1.0` · ver `docs/PHASE_0_CHECKPOINT.md`
 
 ---
@@ -74,12 +74,13 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | ADR-002 | Eventos de evidencia canónica | PROPOSED · v1.2 · punto 6 superseded por ADR-007; puntos 4 y 10 superseded por ADR-008; SD-015 superseded |
 | ADR-003 | Mastery, Readiness y configuración de motor | PROPOSED · v1.1 · intacto |
 | ADR-004 | Reconciliación offline y continuidad | PROPOSED · v1.1 · intacto |
-| ADR-005 | Procedencia y versionado oficial | PROPOSED · punto 4 subordinado a ADR-006; punto 5 superseded por ADR-010 |
-| ADR-006 | Frontera del Data API para las claves de respuesta · **SD-007** | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **NOT IMPLEMENTED** |
+| ADR-005 | Procedencia y versionado oficial | PROPOSED · punto 4 subordinado a ADR-006; punto 5 superseded por ADR-010 · **disposición punto por punto para Phase 1A aprobada el 2026-09-09** (puntos 1, 2, 3, 6-frontera, 8 y 9 subsumidos por fuentes superiores; 6-lista de campos y 7-`mapping_confidence` siguen PROPOSED hacia Phase 1B) |
+| ADR-006 | Frontera del Data API para las claves de respuesta · **SD-007** | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **implementación de la frontera autorizada en Phase 1A** (la corrección en servidor es de fases posteriores) |
 | ADR-007 | Destinos verificables de ítems de sesión y de planner · **SD-006** | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **NOT IMPLEMENTED** · matriz con celdas marcadas como prerrequisito |
 | ADR-008 | Orden de eventos por usuario e idempotencia · **SD-018** · supersede a SD-015 | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **NOT IMPLEMENTED** · exige contrato de canonicalización antes de migrar |
-| ADR-009 | Identidad estable de concepto · **BD-02** / SD-002 | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **NOT IMPLEMENTED** |
-| ADR-010 | Convocatorias y ocurrencias oficiales · **BD-05** / SD-001 | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **NOT IMPLEMENTED** |
+| ADR-009 | Identidad estable de concepto · **BD-02** / SD-002 | **ACCEPTED** · v1.1 · 2026-09-07 (v1.0) y 2026-09-09 (anexo) · Ana Victoria · **implementación autorizada en Phase 1A** |
+| ADR-010 | Convocatorias y ocurrencias oficiales · **BD-05** / SD-001 | **ACCEPTED** · v1.1 · 2026-09-07 (v1.0) y 2026-09-09 (anexo) · Ana Victoria · **implementación de la estructura autorizada en Phase 1A** (carga oficial en Phase 1B) |
+| ADR-011 | Topología de esquemas y frontera de exposición del Data API | **ACCEPTED** · v1.0 · 2026-09-09 · Ana Victoria · **implementación autorizada en Phase 1A** |
 
 **Cinco decisiones están ACCEPTED y ninguna está implementada.** Cada una en
 `ACCEPTED · NOT IMPLEMENTED`, con un único propietario normativo, aprobada mediante el
@@ -213,3 +214,24 @@ Detalle en `docs/PHASE_0_CHECKPOINT.md`.
 
 **Regla de mantenimiento:** este documento se actualiza en cada checkpoint. Si
 describe estado futuro o intenciones, se está usando mal.
+
+## 9. Phase 1A · autorización de BUILD · 2026-09-09
+
+**Registro de decisión:** `STUDY_OS_Phase_1A_Authorization_Packet_PROPOSED_a263ec1.md` · SHA-256 `806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4` · Phase 1A Build
+Authorization · Ana Victoria · revisión independiente previa (Phase 1 Pre-Authorization Review
+del 2026-09-09).
+
+**Qué se autoriza:** únicamente el alcance del Phase 1A Authorization Packet aceptado
+(`docs/PHASE_1A_AUTHORIZATION_PACKET.md`): topología ADR-011, jerarquía de contenido,
+identidad y versiones de concepto, fuentes, identidad y representaciones inmutables de
+pregunta, mapeos versionados, claves en `content`, modelo exam-neutral de ocurrencias,
+prácticos (estructura), frontera `ingest`, procedencia, RLS y grants, fixtures GENERATED
+sintéticos, pruebas, reversibilidad, deriva y checkpoint.
+
+**Qué no se autoriza:** Phase 1B (corpus oficial, MI-01, MI-04, custodia privada), Phase 2
+(sesiones, eventos, intentos), motores, proyecciones, corrección, RPC invocable por cliente,
+UI, `learning_units`, FPS (aprobado solo como hito conceptual), pgvector, IA, offline y
+cualquier mutación de PRODUCTION.
+
+**Este documento se actualiza en el checkpoint de Phase 1A** con el inventario real de
+esquemas, tablas, funciones, políticas y pruebas.

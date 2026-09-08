@@ -58,7 +58,10 @@ const LIVING = [
   'architecture/ADR-008-per-user-event-order-and-idempotency.md',
   'architecture/ADR-009-stable-concept-identity.md',
   'architecture/ADR-010-official-exam-occurrences.md',
+  'architecture/ADR-011-schema-topology-and-data-api-exposure.md',
 ];
+
+const PHASE_1A_PACKET_SHA256 = '806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4';
 
 /** El SPEC_DIFF_LOG es vivo solo en su adenda: las primeras 174 líneas son el cuerpo congelado. */
 const FROZEN_BODY_LINES = 174;
@@ -154,9 +157,19 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
     expect(createHash('sha256').update(`${head}\n`).digest('hex')).toBe(FROZEN_BODY_SHA256);
   });
 
-  it('ARCHITECTURE_STATE · ADR-006 … ADR-010 ACCEPTED, ADR-001 … ADR-005 PROPOSED', () => {
+  it('SPEC_DIFF_LOG · SD-020 y SD-021 constan ACCEPTED con el registro de Phase 1A', () => {
+    const addendum = read('docs/SPEC_DIFF_LOG.md').split('\n').slice(FROZEN_BODY_LINES).join('\n');
+    expect(addendum).toContain('## SD-020 ·');
+    expect(addendum).toContain('## SD-021 ·');
+    expect(addendum).toContain(PHASE_1A_PACKET_SHA256);
+    expect(addendum).toContain('tras la Phase 1A Build Authorization');
+    expect(addendum).toMatch(/^\| C-1 \| ADR-011[^\n]*`ACCEPTED`/m);
+    expect(addendum).toMatch(/^\| C-6 \| ADR-005[^\n]*sigue `PROPOSED`/m);
+  });
+
+  it('ARCHITECTURE_STATE · ADR-006 … ADR-011 ACCEPTED, ADR-001 … ADR-005 PROPOSED', () => {
     const state = read('docs/ARCHITECTURE_STATE.md');
-    for (const adr of ['ADR-006', 'ADR-007', 'ADR-008', 'ADR-009', 'ADR-010']) {
+    for (const adr of ['ADR-006', 'ADR-007', 'ADR-008', 'ADR-009', 'ADR-010', 'ADR-011']) {
       expect(state).toMatch(new RegExp(`^\\| ${adr} \\|[^\\n]*ACCEPTED`, 'm'));
     }
     for (const adr of ['ADR-001', 'ADR-002', 'ADR-003', 'ADR-004', 'ADR-005']) {

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -143,11 +143,19 @@ describe('schema-drift · estrictamente de solo lectura', () => {
     const lock = JSON.parse(read('supabase/migrations/.lock.json')) as {
       migrations: Record<string, string>;
     };
-    expect(Object.keys(lock.migrations)).toEqual([
+    // El registro cubre exactamente las migraciones del árbol, y las tres de Phase 0
+    // siguen ahí con su nombre original: ninguna se renombra ni desaparece.
+    const onDisk = readdirSync(join(REPO_ROOT, 'supabase', 'migrations'))
+      .filter((name) => name.endsWith('.sql'))
+      .sort();
+    expect(Object.keys(lock.migrations).sort()).toEqual(onDisk);
+    for (const phase0 of [
       '00000000000000_init.sql',
       '00000000000001_profiles.sql',
       '00000000000002_profiles_service_role.sql',
-    ]);
+    ]) {
+      expect(Object.keys(lock.migrations)).toContain(phase0);
+    }
     expect(read('tools/guards/schema-drift.mjs')).toContain('no está en el registro de huellas');
   });
 });

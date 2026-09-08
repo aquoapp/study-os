@@ -137,8 +137,13 @@ nunca se leen ni se imprimen. Todo lo que se sube es público: ningún identific
 proyectos ajenos, ningún dato real, ningún secreto. El checkpoint de Phase 0 es
 **PASS WITH DEBT** (MI-05a cerrado). Phase 0 quedó aceptada, integrada en `main`
 (`5d8296c`, tag `phase-0-v1.0`) y **congelada** el 2026-09-08. Vercel no despliega
-Production automáticamente desde Git: exige decisión humana. Phase 1 sigue sin
-autorización humana.
+Production automáticamente desde Git: exige decisión humana.
+
+**Phase 1A · Canonical Domain Foundation · BUILD autorizado el 2026-09-09** por la Phase 1A
+Build Authorization (paquete aceptado en `docs/PHASE_1A_AUTHORIZATION_PACKET.md`): ADR-011
+`ACCEPTED`, anexos v1.1 de ADR-009 y ADR-010 `ACCEPTED`, SD-020 y SD-021 `ACCEPTED`, ADR-005
+con disposición punto por punto y aún `PROPOSED`. Phase 1B, Phase 2 y FPS **no** están
+autorizados; el corpus oficial TAI nunca entra en este repositorio público.
 
 **INV-101 ya no está abierto.** Ana lo aprobó, con su redacción congelada, en la
 autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante

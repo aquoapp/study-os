@@ -1,10 +1,10 @@
 # ADR-009 · Identidad estable de concepto con representación versionada del sílabo
 
-STATUS: ACCEPTED · v1.0
+STATUS: ACCEPTED · v1.1 (anexo de implementación aceptado el 2026-09-09 · decisión C-2 · el texto v1.0 se conserva íntegro)
 DATE: 2026-09-07
 DECISION OWNER: Ana Victoria
 DECISION RECORD: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` · SHA-256 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d` · baseline auditado `8823c2bdf2d31ec01a2f15b1566a94c1ad0eb04a`
-IMPLEMENTATION STATUS: NOT IMPLEMENTED · este ADR no autoriza ninguna migración ni código de dominio
+IMPLEMENTATION STATUS: AUTHORIZED · Phase 1A (2026-09-09) · migraciones de jerarquía, conceptos, versiones y mapeos según el anexo v1.1. Hasta el 2026-09-09 constaba como NOT IMPLEMENTED
 OWNS: **BD-02 / SD-002** · propietario normativo único
 SPEC REFERENCES: Canonical Data & Event Model v1.0 §4, §6, §14, §20, §25, §29 (P0-5, P0-11); Master Product Specification v1.0 §11, §12, §31, §43; Technical Architecture v1.0 §6; Engineering Constitution EC-001, EC-006, EC-007; contradiction-register C-03, C-08; `spec/domain-model.md` [GAP-1], [GAP-2]; `docs/SPEC_DIFF_LOG.md` SD-002; REQ-B14
 
@@ -117,3 +117,72 @@ Record: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` §3.4 y §5 · SHA-256
 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d`
 Scope of approval: gobernanza únicamente · no autoriza migraciones, implementación de
 dominio, infraestructura ni Phase 1
+
+---
+
+## Anexo v1.1 · convención de clave, mapeos versionados y prerrequisitos · ACCEPTED 2026-09-09
+
+**Registro de decisión:** `STUDY_OS_Phase_1A_Authorization_Packet_PROPOSED_a263ec1.md` · SHA-256 `806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4` · decisión **C-2** aceptada en la
+Phase 1A Build Authorization del 2026-09-09 (decisiones humanas M-5 y M-6). El texto v1.0 no
+se modifica; este anexo fija las celdas que v1.0 dejaba como prerrequisito de implementación.
+
+### A · Convención determinista de `concept_key` (M-5)
+
+1. **Forma:** `<slug>-<hash8>`, expresión regular `^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}$`,
+   longitud total ≤ 64.
+2. **`slug`:** el título del concepto en el momento de su creación, normalizado (NFKD, sin
+   diacríticos, minúsculas, solo letras y dígitos ASCII, cualquier otra secuencia colapsada a
+   `-`), truncado a 40 caracteres en frontera de palabra. Es legible; **nunca** es identidad
+   por sí solo.
+3. **`hash8`:** los 8 primeros caracteres hexadecimales de SHA-256 sobre la cadena UTF-8
+   `<exam_pack.slug> "\n" <NFC(título de creación)>`. Determinista para el mismo pack y
+   título; independiente de códigos de programa y de orden de ingestión.
+4. **Ámbito de pack:** unicidad `(exam_pack_id, concept_key)`. Un título idéntico dentro de un
+   pack es, por definición, el mismo concepto; un duplicado semántico con el mismo título es
+   una decisión de contenido que se registra en el linaje, no un cambio de clave.
+5. **Inmutabilidad:** un trigger rechaza `UPDATE` de `concept_key` cuando la fila está
+   `PUBLISHED` o es referenciada por cualquier clave foránea. `concepts.id` (UUID) es el
+   destino de toda FK; la clave es la identidad humana estable.
+6. **Neutralidad de examen:** ningún código de programa oficial entra en la clave.
+   `concept_versions.official_code` (texto, opcional) y la colocación bajo tema llevan la
+   numeración oficial por versión del pack.
+7. **Regla de ingestión:** una carga localiza los conceptos existentes por `concept_key`
+   (recalculada a partir del slug del pack y del título de la fuente) o por un mapeo de linaje
+   explícito; nunca regenera claves de conceptos existentes.
+
+### B · Mapeos versionados (M-6)
+
+1. `question_concepts(id, question_id, concept_id, exam_pack_version_id, relationship_type,
+   weight, mapping_status, copied_from_mapping_id, validated_at, created_at)`.
+2. **Unicidad:** `(question_id, concept_id, exam_pack_version_id)`; exactamente un
+   `relationship_type = 'PRIMARY'` por `(question_id, exam_pack_version_id)` (índice único
+   parcial); `weight` en `(0, 1]`.
+3. **Mismo pack:** claves foráneas compuestas hacia `canonical_questions(id, exam_pack_id)`,
+   `concepts(id, exam_pack_id)` y `exam_pack_versions(id, exam_pack_id)` que comparten la
+   columna de pack.
+4. **Copy-forward:** la función de servidor `copy_forward_question_concepts(from_version,
+   to_version)` inserta filas con `mapping_status = 'PENDING_REVALIDATION'` y
+   `copied_from_mapping_id`; un mapeo solo alimenta motores posteriores cuando está
+   `VALIDATED`; el rechazo es un estado, no un borrado.
+5. **Resolución de evidencia (Phase 2+):** un intento resuelve sus mapeos a través de la
+   `exam_pack_version` vigente en `client_created_at`, o de la versión registrada en la
+   sesión cuando exista.
+
+### C · Prerrequisitos y colocación (M-6)
+
+1. `concept_prerequisites(concept_id, prerequisite_concept_id, strength, rationale)` sobre
+   identidades estables, mismo pack, sin autorreferencia, par único.
+2. Si una fuente canónica demostrara alguna vez un prerrequisito específico de versión, será
+   una decisión nueva (ADR), no una columna.
+3. La colocación vive en `concept_versions(concept_id, exam_pack_version_id, topic_id, title,
+   description, difficulty_hint, official_code, sort_order)` con unicidad
+   `(concept_id, exam_pack_version_id)` y `(topic_id, sort_order)`.
+
+### Pruebas que fija este anexo
+
+`concept.keyConvention.spec` (regex, determinismo, normalización), `concept.keyImmutable.spec`,
+`concept.identityAcrossVersions.spec` (REQ-B14 con packs sintéticos),
+`questionConcepts.versionScope.spec`, `questionConcepts.copyForward.spec`,
+`concept.selfPrereq.reject.spec`.
+
+**Alcance de la aceptación:** Phase 1A. No autoriza Phase 1B, Phase 2 ni FPS.
