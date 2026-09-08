@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   VERIFIED_IDENTITY_METHODS,
   isVerifiedIdentityMethod,
+  unsafeBrandVerifiedIdentity,
 } from '@study-os/domain/internal/identity';
 
 import { REPO_ROOT, runGuard, withViolation } from './lib/run-guard';
@@ -39,6 +40,46 @@ function code(source: string): string {
 }
 
 describe('auth.serverVerifiedIdentity · INV-116 · REQ-A07', () => {
+  /**
+   * El constructor se **ejecuta** aquí, no solo se cita en fixtures. La marca era
+   * una declaración ambiente —existía para el tipo y no para el runtime— y ninguna
+   * prueba la construía de verdad; la primera alta real contra un servidor de Auth
+   * falló con `ReferenceError: serverVerified is not defined` (CI run 34229491576).
+   */
+  describe('el constructor funciona en tiempo de ejecución', () => {
+    it('construye una identidad con su marca privada, real y no enumerable por clave', () => {
+      const identity = unsafeBrandVerifiedIdentity({
+        userId: '00000000-0000-4000-8000-000000000000',
+        email: null,
+        method: 'getClaims',
+      });
+
+      expect(identity.userId).toBe('00000000-0000-4000-8000-000000000000');
+      expect(identity.email).toBeNull();
+      expect(identity.method).toBe('getClaims');
+
+      const brands = Object.getOwnPropertySymbols(identity);
+      expect(brands).toHaveLength(1);
+      expect(brands[0]?.description).toBe('study-os.identity.serverVerified');
+      expect((identity as unknown as Record<symbol, unknown>)[brands[0] as symbol]).toBe(true);
+      // La marca no viaja por las claves ordinarias: no se serializa ni se copia por accidente.
+      expect(Object.keys(identity)).toEqual(['userId', 'email', 'method']);
+    });
+
+    it('rechaza un userId vacío y un método no aceptado', () => {
+      expect(() =>
+        unsafeBrandVerifiedIdentity({ userId: '', email: null, method: 'getUser' }),
+      ).toThrow(/INV-116/);
+      expect(() =>
+        unsafeBrandVerifiedIdentity({
+          userId: 'x',
+          email: null,
+          method: 'getSession' as unknown as 'getUser',
+        }),
+      ).toThrow(/getSession/);
+    });
+  });
+
   describe('métodos aceptados', () => {
     it('son exactamente getClaims y getUser', () => {
       expect([...VERIFIED_IDENTITY_METHODS]).toEqual(['getClaims', 'getUser']);

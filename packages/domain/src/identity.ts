@@ -20,7 +20,18 @@
  * ---------------------------------------------------------------------------
  */
 
-declare const serverVerified: unique symbol;
+/**
+ * Marca privada de la identidad verificada.
+ *
+ * Es un símbolo **real**, no una declaración ambiente. La primera versión decía
+ * `declare const serverVerified: unique symbol`, que para TypeScript existe y para
+ * el runtime no: el tipo compilaba, las pruebas unitarias nunca construían una
+ * identidad de verdad, y la primera alta real contra un servidor de Auth terminó
+ * en `ReferenceError: serverVerified is not defined` al renderizar `/cuenta`
+ * (CI run 34229491576, `test:e2e:auth`). El símbolo no se exporta: sigue siendo
+ * imposible fabricar la marca desde fuera de este módulo.
+ */
+const serverVerified: unique symbol = Symbol('study-os.identity.serverVerified');
 
 /** Métodos aceptados de verificación. Ambos validan contra el servidor de Auth. */
 export const VERIFIED_IDENTITY_METHODS = ['getClaims', 'getUser'] as const;
