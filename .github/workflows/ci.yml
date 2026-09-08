@@ -149,3 +149,54 @@ jobs:
       - name: Detener Supabase
         if: always()
         run: npm run db:stop
+
+  # ---------------------------------------------------------------------------
+  # Deriva de esquema contra STAGING (P0-G4 · EC-011 · REQ-A04)
+  #
+  # El job `database` comprueba la deriva contra el stack local recién migrado.
+  # Este job la comprueba contra el proyecto STUDY_OS_STAGING real: `supabase db
+  # diff` construye una base sombra desde las migraciones del repositorio (Docker,
+  # que el runner sí tiene) y la compara con el esquema `public` de STAGING. Si
+  # STAGING tuviera algo que las migraciones no describen, el diff no es vacío y
+  # el job falla.
+  #
+  # La cadena de conexión es el secreto `STAGING_DB_URL` del repositorio (pooler
+  # en modo sesión, sin datos reales). Nunca se imprime. Antes de usarla se
+  # comprueba que apunta al ref de STAGING y no al de PRODUCTION: una URL
+  # equivocada falla cerrado, no ejecuta nada.
+  # ---------------------------------------------------------------------------
+  drift-staging:
+    name: Deriva de esquema · STUDY_OS_STAGING (real)
+    runs-on: ubuntu-latest
+    env:
+      STAGING_REF: xzcrqsolxarutlvvkzfp
+      PRODUCTION_REF: nzcgufeycvehczroryoe
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: La cadena apunta a STAGING y nunca a PRODUCTION (fail-closed, sin imprimirla)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.STAGING_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::STAGING_DB_URL no está configurado como secreto del repositorio"; exit 1
+          fi
+          case "$SUPABASE_DB_URL" in
+            *"$PRODUCTION_REF"*) echo "::error::la cadena apunta a PRODUCTION: se rechaza"; exit 1 ;;
+          esac
+          case "$SUPABASE_DB_URL" in
+            *"$STAGING_REF"*) echo "la cadena contiene el ref de STAGING ($STAGING_REF)" ;;
+            *) echo "::error::la cadena no contiene el ref de STAGING"; exit 1 ;;
+          esac
+
+      - name: schema-drift · contra STUDY_OS_STAGING
+        env:
+          SUPABASE_DB_URL: ${{ secrets.STAGING_DB_URL }}
+        run: npm run schema-drift
