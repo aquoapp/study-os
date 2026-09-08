@@ -3,10 +3,10 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.1 · copia viva
-**Última actualización:** 2026-09-08 · cierre de D-14 (token temporal revocado por Ana)
-**Fase actual:** 0 · Foundation
-**Estado global:** **PASS WITH DEBT** · ver `docs/PHASE_0_CHECKPOINT.md`
+**Versión:** 11.2 · copia viva
+**Última actualización:** 2026-09-08 · Phase 0 integrada en `main`, etiquetada y congelada; Production de Vercel sin despliegue automático
+**Fase actual:** 0 · Foundation · **congelada** (Phase 1 no autorizada)
+**Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `5d8296c1776be778b075d9e239b383a0476a6514` · tag anotado `phase-0-v1.0` · ver `docs/PHASE_0_CHECKPOINT.md`
 
 ---
 
@@ -58,7 +58,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | Tests de integración | **10 ejecutados y en verde** | `profiles` 1:1 contra STAGING y en CI |
 | Tests de RLS | **11 ejecutados y en verde** | Contra STAGING y en CI |
 | CI | **EXISTE · ejecutado · en verde** | `.github/workflows/ci.yml`, tres jobs: estático, base de datos (stack local migrado desde cero) y **deriva de esquema contra STAGING real** con guarda fail-closed. Run `34234262313` sobre `253e9c1`: los nueve checks en verde. Seis runs anteriores con fallos reales, corregidos y registrados |
-| Proyecto Vercel | **EXISTE · vinculado al repositorio público** | Equipo `STUDY_OS`, proyecto `study-os` revinculado el 2026-09-08 al nuevo `aquoapp/study-os` (protección de forks activa), `apps/web`, Next.js, Node 24. Variables públicas separadas: Preview → STAGING, Production → PRODUCTION; ningún secreto de servidor. **Preview real desde `phase/0-foundation`: READY** (`study-os-git-phase-0-foundation-study-os6.vercel.app`, protegido por Vercel Authentication). Un alta real por formulario a través del Preview aterrizó en STAGING con perfil 1:1 y PRODUCTION siguió en 0 usuarios; el fixture se borró. Los dos intentos anteriores fallaron por el correo del autor de los commits (asociado por Ana) y por instalar solo las dependencias de `apps/web` (corregido con `installCommand: cd ../.. && npm ci`). Producción de Vercel sin desplegar: `main` sigue en su commit raíz |
+| Proyecto Vercel | **EXISTE · vinculado al repositorio público** | Equipo `STUDY_OS`, proyecto `study-os` revinculado el 2026-09-08 al nuevo `aquoapp/study-os` (protección de forks activa), `apps/web`, Next.js, Node 24. Variables públicas separadas: Preview → STAGING, Production → PRODUCTION; ningún secreto de servidor. **Preview real desde `phase/0-foundation`: READY** (`study-os-git-phase-0-foundation-study-os6.vercel.app`, protegido por Vercel Authentication). Un alta real por formulario a través del Preview aterrizó en STAGING con perfil 1:1 y PRODUCTION siguió en 0 usuarios; el fixture se borró. Los dos intentos anteriores fallaron por el correo del autor de los commits (asociado por Ana) y por instalar solo las dependencias de `apps/web` (corregido con `installCommand: cd ../.. && npm ci`). Production de Vercel: el merge del PR #1 en `main` (`5d8296c`) provocó un **despliegue automático de Production** por la integración Git de Vercel, sin acción manual; Ana lo aceptó el 2026-09-08 como desviación no destructiva de Phase 0 (solo la aplicación de Phase 0, solo variables públicas de PRODUCTION, protegido por Vercel Authentication, sin dominio propio, sin migraciones, Supabase PRODUCTION sin mutar) y se conserva como evidencia. Desde entonces el proyecto lleva un *Ignored Build Step* (`commandForIgnoringBuildStep`, ajuste del proyecto, no del repositorio) que cancela toda construcción con `VERCEL_ENV=production` o rama `main`: **ningún push o merge a `main` despliega Production automáticamente**; los Preview siguen construyéndose. Un despliegue de Production exige una decisión humana explícita (por ejemplo `vercel deploy --prod --force` o «Redeploy» en el panel). Asignaciones de entorno, Vercel Authentication y raíz `apps/web` sin cambios |
 | Guardas de invariante | **5 activas, por propagación de punto fijo** | import · tai-literal · secret-scan · client-authority (capacidades) · auth-authority (procedencia). **169 casos de guardas** que ejecutan las guardas reales —10 de sumidero computado extraído, 13 de procedencia PostgREST, 19 de cierre transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión, 21 adversariales— **más 26 bypasses operacionales**. Sin cambios en esta ronda |
 | Contenido ingerido | NINGUNO | Ni siquiera de prueba. Execution Plan §9 |
 | Tablas de dominio | **NINGUNA** | Verificado por test: ninguna migración crea `learning_events`, `question_attempts`, `concept_mastery`, `exam_readiness`, `planner_*`, `canonical_questions`, `answer_key_versions`, `learning_units`, `sessions`, `session_items`, `planner_items`, `user_event_counters`, `projection_watermarks`, `concept_versions`, `exam_sittings` ni `exam_occurrences`. **Aceptar cinco decisiones no ha creado ninguna** |
@@ -197,8 +197,16 @@ para en su checkpoint aunque los gates estén en verde.
 Los cuatro checks que exigían infraestructura se ejecutan de verdad —contra STAGING y en
 CI—, el repositorio es público con `main` protegida mecánicamente, el Preview de Vercel
 existe y ninguna decisión humana de dominio queda abierta. La deuda que impide el `PASS`
-limpio es la de §6, encabezada por D-13; D-14 quedó cerrada el 2026-09-08. Antes de
-Phase 1: revisión humana y merge de `phase/0-foundation` por PR, tag.
+limpio es la de §6, encabezada por D-13; D-14 quedó cerrada el 2026-09-08.
+
+**Congelación (2026-09-08).** Tras la revisión humana independiente, Ana aceptó Phase 0
+(`PASS WITH DEBT`) y autorizó el merge: PR #1 integrado en `main` por el flujo protegido
+con un merge commit, `5d8296c1776be778b075d9e239b383a0476a6514`, cuyo árbol es idéntico al
+de `f4cdda4` (línea base auditada `94bd6c4` más el cierre documental de D-14). Tag anotado
+`phase-0-v1.0` sobre ese commit. La deuda aceptada permanece tal cual: D-13, D-04, D-05,
+D-06, D-07, D-09, D-10, D-11, D-12 y D-16. La rama `phase/0-foundation` se conserva como
+histórica. Los commits posteriores a la etiqueta son exclusivamente documentales y no
+mueven la línea base congelada. Phase 1 exige una decisión humana separada.
 Detalle en `docs/PHASE_0_CHECKPOINT.md`.
 
 ---

@@ -135,7 +135,10 @@ borrado); proyecto Vercel `study-os` vinculado a él. El repositorio privado ant
 Los secretos viven en `.env.staging.local` y `.env.supabase-admin.local`, ignorados por Git:
 nunca se leen ni se imprimen. Todo lo que se sube es público: ningún identificador de
 proyectos ajenos, ningún dato real, ningún secreto. El checkpoint de Phase 0 es
-**PASS WITH DEBT** (MI-05a cerrado); Phase 1 sigue sin autorización humana.
+**PASS WITH DEBT** (MI-05a cerrado). Phase 0 quedó aceptada, integrada en `main`
+(`5d8296c`, tag `phase-0-v1.0`) y **congelada** el 2026-09-08. Vercel no despliega
+Production automáticamente desde Git: exige decisión humana. Phase 1 sigue sin
+autorización humana.
 
 **INV-101 ya no está abierto.** Ana lo aprobó, con su redacción congelada, en la
 autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante

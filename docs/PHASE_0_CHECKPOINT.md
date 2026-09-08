@@ -5,7 +5,7 @@ Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 ```text
 PHASE: 0 · Foundation
 BRANCH: phase/0-foundation
-COMMIT/TAG: 94bd6c4 · código y evidencia auditados (AUDIT_EVIDENCE.md) · más un commit documental posterior que solo cierra D-14 (sin tag: se crea tras el merge aprobado)
+COMMIT/TAG: 94bd6c4 · código y evidencia auditados (AUDIT_EVIDENCE.md) · más un commit documental posterior que solo cierra D-14 (f4cdda4) · integrado en main como 5d8296c (PR #1) · tag anotado phase-0-v1.0
 STATUS: PASS WITH DEBT
 ```
 
@@ -416,8 +416,9 @@ listos.
 en `PASS WITH DEBT`; la fase **para aquí** aunque los gates estén en verde.
 
 1. ~~Ana revoca el token temporal `STUDY_OS Phase 0` (D-14)~~ Hecho el 2026-09-08; D-14 cerrada.
-2. Revisión humana y merge de `phase/0-foundation` en `main` por PR (la protección lo
-   exige); tag de Phase 0 tras el merge.
+2. ~~Revisión humana y merge de `phase/0-foundation` en `main` por PR; tag de Phase 0 tras
+   el merge~~ Hecho el 2026-09-08: aceptación humana, PR #1 integrado (`5d8296c`), tag
+   `phase-0-v1.0`, Phase 0 congelada.
 3. Decisión humana explícita de arrancar Phase 1.
 
 ADR-001 … ADR-005 siguen en `PROPOSED`. ADR-006 … ADR-010 están `ACCEPTED` y sin
