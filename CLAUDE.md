@@ -199,9 +199,15 @@ selecciona `source_versions.storage_path`, `checksum` ni `retrieved_at`.
 la primera capa de componentes de producto, la asignación determinista en `@study-os/domain`,
 tres módulos de servidor y las acciones que envían la evidencia por las dos RPC ya
 declaradas. Un pack de demostración sintético y estable vive en STAGING, sembrado por
-`tools/seed-fps-demo.mjs` de forma idempotente y por la frontera de ingestión. El checkpoint
-es `docs/FPS_CHECKPOINT.md`: nueve gates en PASS y **FPS-G10 pendiente del recorrido manual
-de Ana**. Sin merge, sin tag y sin congelación: la aceptación es humana y no se ha producido.
+`tools/seed-fps-demo.mjs` de forma idempotente y por la frontera de ingestión. **Aceptado y congelado** el 2026-09-09 tras el recorrido manual de Ana sobre el Preview
+desplegado: PR #10 integrado en `main` (`6bde0a0`), tag anotado `fps-v1.0`. El checkpoint es
+`docs/FPS_CHECKPOINT.md`: **FPS-G1 … FPS-G10 en PASS**, y lo que cierra G10 es el recorrido
+humano, no una suite. Cuatro observaciones de producto quedan registradas y **sin corregir**:
+FPS-OBS-01 planitud visual (producto y UX, no deuda técnica), FPS-OBS-02 copy de calibración,
+FPS-OBS-03 doble final de sesión y FPS-OBS-04 disponibilidad frente a duración, que pertenece
+al Planner. La aceptación **no** aprueba el diseño visual definitivo. Phase 1B, Phase 3,
+Phase 4, Phase 5, Planner, Learning Engine, corpus oficial, Release y PRODUCTION **siguen sin
+autorizar**.
 
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:

@@ -3,10 +3,10 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.12 · copia viva
-**Última actualización:** 2026-09-09 · Phase 2 · Learner & Evidence Core **aceptada y congelada**: PR #7 integrado en `main` (`46b8fcd`) y tag anotado `phase-2-v1.0`. BUILD ejecutado por dos modelos: Fable 5.1 hasta su límite de uso y Opus 5 tras la recuperación forense
-**Fase actual:** **First Product Slice · CONSTRUIDO · pendiente del recorrido manual de Ana** sobre la Phase 2 congelada · ver `docs/FPS_AUTHORIZATION_PACKET.md` y `docs/FPS_SCREEN_CONTRACT.md` · Phase 2 `FROZEN · PASS WITH DEBT · HUMAN ACCEPTED`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 3, merge final del FPS y PRODUCTION no autorizados
-**Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `46b8fcd705e32c86ed6ddac225cd50f80e4faca9` · tag anotado `phase-2-v1.0` (Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_2_CHECKPOINT.md`
+**Versión:** 11.13 · copia viva
+**Última actualización:** 2026-09-09 · First Product Slice **aceptado por recorrido humano y congelado**: PR #10 integrado en `main` (`6bde0a0`) y tag anotado `fps-v1.0`, con cuatro observaciones de producto registradas y sin corregir
+**Fase actual:** **First Product Slice · FROZEN · HUMAN ACCEPTED · PASS WITH OBSERVATIONS** · ver `docs/FPS_CHECKPOINT.md` · Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 3, Phase 4, Phase 5, Planner, Learning Engine y PRODUCTION no autorizados
+**Estado global:** **PASS WITH OBSERVATIONS** · línea base congelada `main` = `6bde0a045532c8ffb2769c0a24d4bbb94958dd57` · tag anotado `fps-v1.0` (Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/FPS_CHECKPOINT.md`
 
 ---
 
@@ -276,7 +276,13 @@ posterior al envío. **D-20** queda como vigilancia del FPS, ni cerrada ni ampli
 solo contenido `GENERATED` y no selecciona `source_versions.storage_path`, `checksum` ni
 `retrieved_at`.
 
-**Construido el 2026-09-09** en `milestone/fps-first-product-slice`, sobre `main` = `e32727c`: cuatro rutas protegidas, la primera capa de componentes de producto, `fps-fixed-v1` en `@study-os/domain`, tres módulos de servidor y las acciones que envían la evidencia por las dos RPC ya declaradas. **Sin migración, sin RPC nueva, sin grant nuevo y sin exposición nueva.** Un pack de demostración sintético y estable en STAGING, sembrado de forma idempotente por la frontera de ingestión. Checkpoint `docs/FPS_CHECKPOINT.md`: nueve gates en PASS y **FPS-G10 pendiente del recorrido manual**. Sin merge, sin tag y sin congelación.
+**Construido el 2026-09-09** en `milestone/fps-first-product-slice`, sobre `main` = `e32727c`: cuatro rutas protegidas, la primera capa de componentes de producto, `fps-fixed-v1` en `@study-os/domain`, tres módulos de servidor y las acciones que envían la evidencia por las dos RPC ya declaradas. **Sin migración, sin RPC nueva, sin grant nuevo y sin exposición nueva.** Un pack de demostración sintético y estable en STAGING, sembrado de forma idempotente por la frontera de ingestión. Checkpoint `docs/FPS_CHECKPOINT.md`.
+
+**Aceptado y congelado el 2026-09-09.** `FPS · HUMAN WALKTHROUGH: PASS`: Ana completó el recorrido en el Preview desplegado, a través de la interfaz real. Integrado en `main` por el PR #10 con las tres comprobaciones exigidas en verde (CI `34400908876`): commit de merge `6bde0a045532c8ffb2769c0a24d4bbb94958dd57`, padres `e32727c` y `d3f1086`, árbol idéntico al HEAD aceptado; tag anotado `fps-v1.0` sobre ese merge. **FPS-G1 … FPS-G10 en PASS**, y lo que cierra G10 es el recorrido humano, no una suite. El sub-gate de interrupción manual **no se observó** en la evidencia humana y queda probado mecánicamente por FPS-G6.
+
+La reconciliación de solo lectura entre lo que el producto mostró y lo que STAGING guarda cuadra entera: dos sesiones `FPS_FIXED` con `planner_run_id` nulo y ambas COMPLETED, 7 ítems completados por sesión, 5 intentos con 4 aciertos y 1 fallo en cada una, 62 eventos en posiciones 1 … 62 sin huecos, ningún intento duplicado y ninguna anomalía de autoridad.
+
+**Cuatro observaciones de producto, no bloqueantes y sin corregir:** FPS-OBS-01 planitud visual (producto y UX, **no deuda técnica**), FPS-OBS-02 copy de calibración de poco valor en algunas combinaciones, FPS-OBS-03 doble final de sesión, FPS-OBS-04 disponibilidad declarada frente a duración de la sesión, que es el hueco de capacidad esperado y pertenece al Planner. La aceptación **no** aprueba el diseño visual definitivo de STUDY OS. El FPS **no añade deuda**: WATCH-P2-1 sigue heredado y sin mitigar, y D-20 sigue como vigilancia sin ampliar.
 
 **Aterrizaje de gobernanza (rama `milestone/fps-governance`):** aceptación de SD-010 en el
 `SPEC_DIFF_LOG`; paquete aceptado; contrato de pantalla; registro de alcance actualizado en
