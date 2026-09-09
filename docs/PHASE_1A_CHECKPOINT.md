@@ -191,7 +191,7 @@ Funciones de `public` ejecutables por roles de cliente: ninguna de Phase 1A (`an
 
 | Suite | Casos | Dónde |
 | --- | --- | --- |
-| `test:unit` | 659 (31 ficheros) | extracción limpia · CI |
+| `test:unit` | 662 (31 ficheros; incluye la vigilancia documental de este checkpoint) | extracción limpia · CI |
 | `test:integration` | 107 (4 ficheros: exposición 9, catálogo 15, fundación 34 + fuentes, perfil 1:1) | STAGING · CI |
 | `test:rls` | 107 (2 ficheros: aislamiento de perfiles 11; contenido canónico dirigido por catálogo 96 = 1 + 5 × 19 tablas) | STAGING · CI |
 | `test:e2e` | 70 estáticos + 16 de auth (limpieza verificada, 0 residuales) | STAGING · CI |
