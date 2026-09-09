@@ -202,7 +202,10 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
         new RegExp(`^\\| \\*\\*P1A-G${gate}\\*\\*[^\\n]*\\*\\*PASS\\*\\*`, 'm'),
       );
     }
-    expect(checkpoint).toMatch(/SIN MERGE · SIN TAG/);
+    // Congelación (2026-09-09): integrado en main por PR #4 y etiquetado phase-1a-v1.0.
+    expect(checkpoint).toContain('be5a26ade5ac384a572d62568d7ac29fd2a568f6');
+    expect(checkpoint).toContain('phase-1a-v1.0');
+    expect(checkpoint).toContain('PHASE 1A HUMAN ACCEPTANCE: APPROVED');
     expect(checkpoint).toContain(
       'PHASE 1A BUILD COMPLETE · PASS WITH DEBT · READY FOR HUMAN ACCEPTANCE',
     );
