@@ -1,14 +1,32 @@
 -- Rollback de 00000000000016_learning_units.sql · Phase 2 · slice S2.
 -- Devuelve la frontera de ingestión a su definición de Phase 1A (migración 13): las
 -- funciones se restauran byte a byte y el tipo `staged_item_kind` vuelve a sus diecinueve
--- valores. PostgreSQL no retira valores de un enum: se reconstruye el tipo. Las filas de
--- staging de los dos tipos de Phase 2 (auditoría de fixtures purgados) se borran antes.
+-- valores. PostgreSQL no retira valores de un enum: se reconstruye el tipo, y para eso no
+-- puede quedar ninguna fila con los dos valores de Phase 2.
+--
+-- Esas filas están entretejidas con la auditoría: `promotions.staged_item_id` apunta al
+-- ítem y `staged_items.promotion_id` apunta a la promoción, y la promoción cerrada es
+-- inmutable (PI-1A-6). La inmutabilidad de la auditoría es un invariante de **operación**:
+-- protege el historial mientras el objeto publicado existe. Aquí el objeto se está
+-- eliminando con su tabla, de modo que conservar su promoción dejaría auditoría colgando de
+-- algo que ya no está. Se levanta el trigger lo justo, se desenlaza y se borra en el orden
+-- que ambas claves foráneas admiten, y se restaura el trigger: la firma del catálogo tras
+-- reaplicar lo comprueba (`tgenabled` forma parte de ella).
 drop table if exists public.learning_unit_versions;
 drop function if exists public.check_unit_version_links();
 drop function if exists public.reject_published_unit_version_mutation();
 drop table if exists public.learning_units;
 
+alter table ingest.promotions disable trigger promotions_immutable;
+update ingest.promotions set staged_item_id = null
+ where staged_item_id in (
+   select id from ingest.staged_items where kind::text in ('learning_unit', 'learning_unit_version')
+ );
 delete from ingest.staged_items where kind::text in ('learning_unit', 'learning_unit_version');
+delete from ingest.promotions
+ where target_table in ('public.learning_units', 'public.learning_unit_versions');
+alter table ingest.promotions enable trigger promotions_immutable;
+
 drop function if exists ingest.stage_item(ingest.staged_item_kind, jsonb);
 alter type ingest.staged_item_kind rename to staged_item_kind_phase2;
 create type ingest.staged_item_kind as enum (
