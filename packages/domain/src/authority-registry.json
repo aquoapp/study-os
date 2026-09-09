@@ -8,10 +8,22 @@
     "que INV-113 (EC-019)."
   ],
   "projections": {
-    "$comment": "INV-113 · proyecciones que solo el servidor persiste.",
+    "$comment": [
+      "INV-113 · proyecciones que solo el servidor persiste.",
+      "Ampliado el 2026-09-10 por la Phase 3 Governance Landing Authorization (SD-024,",
+      "SD-025, SD-026): error_patterns, projection_watermarks y engine_config son superficies",
+      "de escritura exclusiva del motor y del servidor. Declararlas antes de que existan es la",
+      "misma disciplina que en Phase 0: la primera escritura desde el cliente falla en CI.",
+      "intervention_outcomes NO se declara: REQ-D07 queda diferido (DEF-29) y la tabla no se",
+      "crea en Phase 3. exam_readiness sigue declarada porque BD-04 la mantiene como proyección",
+      "de nivel objetivo, aunque Phase 3 no la crea ni la calcula."
+    ],
     "tables": [
       "concept_mastery",
       "mastery_history",
+      "error_patterns",
+      "projection_watermarks",
+      "engine_config",
       "exam_readiness",
       "planner_runs",
       "planner_items"

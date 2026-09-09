@@ -55,6 +55,11 @@ const LIVING = [
   'packages/domain/src/authority-registry.json',
   'supabase/config.toml',
   'supabase/functions/README.md',
+  // Aterrizaje de gobernanza de Phase 3 (2026-09-10): ADR-003 pasa a ACCEPTED y el contrato
+  // del Learning Engine es autoridad viva; ambos entran en la vigilancia de estados caducados.
+  'architecture/ADR-003-mastery-vs-readiness.md',
+  'docs/LEARNING_ENGINE_CONTRACT.md',
+  'docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md',
   'architecture/ADR-006-answer-key-data-api-boundary.md',
   'architecture/ADR-007-enforceable-item-targets.md',
   'architecture/ADR-008-per-user-event-order-and-idempotency.md',

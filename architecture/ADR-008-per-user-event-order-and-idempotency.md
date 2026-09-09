@@ -223,3 +223,57 @@ salvo `watermark.perUserPerProjection.spec` y `rebuild.deterministicOrder.spec`,
 acompañan a la primera proyección (Phase 3). `sd018.contract.spec` vigila desde esta fecha la
 correspondencia entre contrato, migraciones y suites: sin migración de eventos no puede
 existir suite alguna, y con ella deben existir todas.
+
+---
+
+## Anexo de reconciliación de watermark · Phase 3 · ACCEPTED 2026-09-10
+
+**Registro de decisión:** Phase 3 Governance Landing Authorization · 2026-09-10 · Ana Victoria ·
+copia aceptada en `docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md`. **Aclaración, no enmienda:**
+ningún punto de este ADR cambia de contenido, y el punto 10 se conserva tal como está redactado.
+
+**1 · Dos nombres, dos significados.** El repositorio contiene dos artefactos con la palabra
+«watermark» y describen cosas distintas. Quedan reconciliados así:
+
+| Artefacto | Qué es |
+| --- | --- |
+| `projection_watermarks(user_id, projection_name, consumed_position)` · punto 10 de este ADR | **progreso del consumidor**: hasta qué posición del stream de un usuario ha consumido una proyección |
+| `concept_mastery.event_watermark` · `spec/domain-model.md` §8 | **procedencia del cálculo de la fila**: hasta dónde se calculó **esa** fila |
+
+Conviven y no se sustituyen. `projection_name` es un identificador estable de proyección, no de
+tabla, para que una proyección pueda cambiar de materialización sin perder su avance. El valor
+inicial del avance es `0`: ninguna posición consumida.
+
+**2 · Atomicidad y consumo exactamente una vez.** El avance del watermark ocurre **en la misma
+transacción** que la mutación de la proyección. Una transacción de proyección fallida **no
+avanza el watermark**, y no queda ningún estado parcial presentado como actualizado. El consumo
+**exactamente una vez** es obligatorio, no opcional: la agregación de la primera proyección
+cuenta observaciones, y contar no es idempotente bajo reproceso. La transacción única lo
+garantiza sin ningún mecanismo adicional.
+
+**3 · Tupla de determinismo, explícita.** La condición de aceptación de este ADR —«los rebuilds
+son deterministas para una versión de motor y un watermark por usuario **declarados**»— se hace
+explícita, sin relajarse:
+
+```
+(engine_version, engine_config_version, attribution_pack_version_id,
+ attribution_generation, event_watermark)  ⟹  proyección idéntica byte a byte
+```
+
+Los dos términos de atribución los define `docs/LEARNING_ENGINE_CONTRACT.md` §13 y los gobierna
+SD-025. No añaden libertad: explicitan qué inputs semánticos hay que declarar para que
+«declarados» signifique algo comprobable.
+
+**4 · EC-006 no se debilita.** El diseño de agregación conmutativa de la primera proyección hace
+**tratable** la igualdad `rebuild == incremental`; **no exime de probarla**. Sigue siendo un gate
+mecánico duro, con la batería adversarial mínima de `docs/LEARNING_ENGINE_CONTRACT.md` §15.3.
+
+**5 · Sin orden global.** Se ratifica: no existe `server_sequence`, no hace falta orden global y
+`stream_position` por usuario sigue siendo la autoridad de orden. El texto de
+`spec/domain-model.md` §123–§126, que todavía describe una secuencia global y un hueco
+«abandonado por timeout», queda declarado **NO OPERATIVO** por SD-026; el fichero congelado no se
+edita.
+
+**6 · Alcance.** Este anexo es gobernanza. No autoriza crear `projection_watermarks` ni ninguna
+otra tabla: el punto 10 sigue esperando al BUILD de Phase 3, que exige autorización humana
+independiente.

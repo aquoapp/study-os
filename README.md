@@ -10,7 +10,10 @@ Sistema de estudio adaptativo. **Study OS es el producto; TAI es el primer pack 
 > congelado** (`fps-v1.0`, checkpoint **PASS WITH OBSERVATIONS** en
 > `docs/FPS_CHECKPOINT.md`): el vertical HOY → APRENDER → COMPROBAR → FEEDBACK → FIN, con
 > contenido sintético y **sin migración de esquema**, cabe entero dentro de la frontera
-> congelada. Phase 1B, Phase 3, Phase 4 y Phase 5 no autorizados.
+> congelada. **Phase 3 · gobernanza aterrizada el 2026-09-10** (`Learning Engine Contract v1.0`
+> `ACCEPTED`, ADR-003 v1.2, SD-013, BD-04 cerrada, SD-024 … SD-029): **el BUILD de runtime no
+> está autorizado** y no existe ninguna tabla, migración ni motor. Phase 1B, Phase 4 y Phase 5
+> no autorizados.
 > Ningún motor, ningún planificador y ningún contenido oficial: el corpus del primer pack no
 > entra en este repositorio público. Ver `docs/ARCHITECTURE_STATE.md`.
 

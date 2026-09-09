@@ -86,20 +86,28 @@ const PHASE_2_AUTHORIZED = new Set([
   'architecture/ADR-008-per-user-event-order-and-idempotency.md',
 ]);
 
+/**
+ * ADR-003 salió de esta lista el 2026-09-10: la Phase 3 Governance Landing Authorization la
+ * acepta como v1.2. Su bloque propio está más abajo, y `phase3.governance.spec` vigila el
+ * contenido de la enmienda.
+ */
 const PROPOSED = [
   'architecture/ADR-001-stack-and-boundaries.md',
   'architecture/ADR-002-canonical-evidence-events.md',
-  'architecture/ADR-003-mastery-vs-readiness.md',
   'architecture/ADR-004-offline-reconciliation.md',
   'architecture/ADR-005-provenance-and-official-versioning.md',
 ];
 
-/** Hashes de importación de `docs/PROVENANCE.md` §2, escritos literalmente. */
+/**
+ * Hashes de importación de `docs/PROVENANCE.md` §2, escritos literalmente.
+ *
+ * ADR-003 dejó esta lista el 2026-09-10, cuando la aceptación de Phase 3 la enmendó por
+ * anexo. Su hash de importación —`4155d6d2…`— queda como cronología en `PROVENANCE.md` §2.1,
+ * junto a los otros ADR anotados por decisión humana.
+ */
 const FROZEN_UNTOUCHED: Record<string, string> = {
   'architecture/ADR-000-template.md':
     '383782a8bbf69333c7f3d0c97b47d2993098f623a73728636580e76bd2886103',
-  'architecture/ADR-003-mastery-vs-readiness.md':
-    '4155d6d2b54caad99c9bc5ce4bd5c5e5fce9f5f66ec6f3410ff2942d52c3cf4a',
   'architecture/ADR-004-offline-reconciliation.md':
     'f7a9833f787d2d3e939f54d9b758bf1ec0a8c9f7bbd97454b6529a5a0c4518fd',
 };
@@ -236,6 +244,41 @@ describe('ADR-011 · aceptado el 2026-09-09 por la Phase 1A Build Authorization'
     };
     expect(registry.dataApi.exposedSchemas).toEqual(['public']);
     expect(registry.dataApi.nonExposedSchemas).toEqual(['content', 'ingest']);
+  });
+});
+
+describe('ADR-003 · aceptada el 2026-09-10 por la Phase 3 Governance Landing Authorization', () => {
+  const text = read('architecture/ADR-003-mastery-vs-readiness.md');
+
+  it('es v1.2, ACCEPTED, de Ana Victoria, con su registro de decisión y su aprobación', () => {
+    expect(text).toMatch(/^STATUS: ACCEPTED · v1\.2/m);
+    expect(text).toMatch(/^DATE: 2026-08-22$/m);
+    expect(text).toMatch(/^DECISION OWNER: Ana Victoria$/m);
+    expect(text).toMatch(/^Approved by: Ana Victoria$/m);
+    expect(text).toMatch(/^Date: 2026-09-10$/m);
+    expect(text).toContain('docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md');
+  });
+
+  it('aceptar sigue sin ser implementar: no autoriza migraciones ni BUILD', () => {
+    expect(text).toMatch(/^IMPLEMENTATION STATUS: NOT IMPLEMENTED/m);
+    expect(text).toContain('no autoriza migraciones');
+  });
+
+  it('es el propietario normativo único de BD-04', () => {
+    expect(text).toContain('OWNS: **BD-04**');
+    expect(text).toContain('propietario normativo único');
+    const claimants = [
+      ...ACCEPTED.map((entry) => entry.file),
+      ...PROPOSED,
+      'architecture/ADR-011-schema-topology-and-data-api-exposure.md',
+    ].filter((other) => read(other).includes('OWNS: **BD-04**'));
+    expect(claimants, 'más de un propietario para BD-04').toEqual([]);
+  });
+
+  it('sigue la plantilla ADR-000', () => {
+    for (const section of TEMPLATE_SECTIONS) {
+      expect(text, `falta ${section}`).toContain(`${section}\n`);
+    }
   });
 });
 
