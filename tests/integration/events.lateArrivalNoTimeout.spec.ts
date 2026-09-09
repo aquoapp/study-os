@@ -12,7 +12,12 @@ import {
   type Learner,
 } from '../support/phase2-fixtures';
 import { one, query } from '../support/sql';
-import { adminClient, deleteTestUser, readTestEnv, type TestEnv } from '../support/supabase-test-env';
+import {
+  adminClient,
+  deleteTestUser,
+  readTestEnv,
+  type TestEnv,
+} from '../support/supabase-test-env';
 
 /**
  * `events.lateArrivalNoTimeout.spec` · ADR-008 punto 11 · SD-023 §1.
@@ -34,7 +39,9 @@ beforeAll(async () => {
   admin = adminClient(env);
   pack = await buildSyntheticPack(admin, 'p2late');
   ana = await createLearner(env, 'late', pack);
-  session = await createSession(ana, [{ item_type: 'CONCEPT_REVIEW', target_id: pack.conceptIds[0] ?? '' }]);
+  session = await createSession(ana, [
+    { item_type: 'CONCEPT_REVIEW', target_id: pack.conceptIds[0] ?? '' },
+  ]);
   await accept(ana, eventFor(ana, session, 'SESSION_STARTED'));
 }, 240_000);
 
@@ -50,14 +57,25 @@ describe('ADR-008 punto 11 · la evidencia tardía se acepta y no reescribe la h
     const nineDaysAgo = new Date(Date.now() - 9 * 86_400_000).toISOString();
     const late = await accept(
       ana,
-      itemEvent(ana, session, item, 'HELP_REQUESTED', { topic: 'fixture: offline' }, {
-        client_created_at: nineDaysAgo,
-        created_offline: true,
-        client_sequence: 1,
-      }),
+      itemEvent(
+        ana,
+        session,
+        item,
+        'HELP_REQUESTED',
+        { topic: 'fixture: offline' },
+        {
+          client_created_at: nineDaysAgo,
+          created_offline: true,
+          client_sequence: 1,
+        },
+      ),
     );
     expect(late.stream_position).toBe(recent.stream_position + 1);
-    const stored = one<{ client_created_at: string; server_received_at: string; created_offline: boolean }>(
+    const stored = one<{
+      client_created_at: string;
+      server_received_at: string;
+      created_offline: boolean;
+    }>(
       `select client_created_at, server_received_at, created_offline from public.learning_events where event_id = '${String(late.event_id)}'`,
     );
     expect(new Date(stored.client_created_at).toISOString()).toBe(nineDaysAgo);
@@ -72,14 +90,21 @@ describe('ADR-008 punto 11 · la evidencia tardía se acepta y no reescribe la h
     const byClientTime = query<{ t: string }>(
       `select event_type as t from public.learning_events where user_id = '${ana.id}' order by client_created_at`,
     );
-    expect(byPosition.map((r) => r.t)).toEqual(['SESSION_STARTED', 'SESSION_ITEM_STARTED', 'HELP_REQUESTED']);
+    expect(byPosition.map((r) => r.t)).toEqual([
+      'SESSION_STARTED',
+      'SESSION_ITEM_STARTED',
+      'HELP_REQUESTED',
+    ]);
     expect(byClientTime.map((r) => r.t)[0]).toBe('HELP_REQUESTED');
     expect(byPosition.map((r) => Number(r.p))).toEqual([1, 2, 3]);
   });
 
   it('un instante futuro también se conserva tal cual y no altera el orden ni el estado', async () => {
     const future = new Date(Date.now() + 3 * 86_400_000).toISOString();
-    const accepted = await accept(ana, eventFor(ana, session, 'SESSION_INTERRUPTED', {}, { client_created_at: future }));
+    const accepted = await accept(
+      ana,
+      eventFor(ana, session, 'SESSION_INTERRUPTED', {}, { client_created_at: future }),
+    );
     expect(accepted.stream_position).toBe(4);
     expect(accepted.session?.status).toBe('INTERRUPTED');
     const stored = one<{ c: string }>(

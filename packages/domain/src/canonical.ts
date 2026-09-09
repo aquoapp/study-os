@@ -92,8 +92,11 @@ export function canonicalText(value: unknown): string {
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (typeof value === 'number') {
     if (!Number.isInteger(value)) throw new CanonicalizationError(`solo enteros: ${String(value)}`);
-    if (Math.abs(value) > MAX_SAFE) throw new CanonicalizationError(`fuera del rango seguro: ${String(value)}`);
-    return Object.is(value, -0) ? '0' : String(value);
+    if (Math.abs(value) > MAX_SAFE)
+      throw new CanonicalizationError(`fuera del rango seguro: ${String(value)}`);
+    // `String(-0)` ya es `"0"`: el cero negativo no sobrevive a la serialización, que es
+    // justo lo que pide el contrato («sin signo para el cero»).
+    return String(value);
   }
   if (typeof value === 'bigint') {
     if (value > BigInt(MAX_SAFE) || value < -BigInt(MAX_SAFE)) {
@@ -113,7 +116,9 @@ export function canonicalText(value: unknown): string {
     }
     entries.sort(([a], [b]) => compareCodePoints(a, b));
     return (
-      '{' + entries.map(([key, item]) => canonicalString(key) + ':' + canonicalText(item)).join(',') + '}'
+      '{' +
+      entries.map(([key, item]) => canonicalString(key) + ':' + canonicalText(item)).join(',') +
+      '}'
     );
   }
   throw new CanonicalizationError(`valor no representable: ${typeof value}`);
@@ -133,6 +138,7 @@ export async function canonicalHash(value: unknown): Promise<string> {
 /** Instante en la forma fija del contrato: UTC con milisegundos. */
 export function canonicalTimestamp(value: Date | string): string {
   const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) throw new CanonicalizationError(`instante inválido: ${String(value)}`);
+  if (Number.isNaN(date.getTime()))
+    throw new CanonicalizationError(`instante inválido: ${String(value)}`);
   return date.toISOString();
 }

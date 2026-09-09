@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { buildSyntheticPack, purgePack, question, type SyntheticPack } from '../support/phase1a-fixtures';
+import {
+  buildSyntheticPack,
+  purgePack,
+  question,
+  type SyntheticPack,
+} from '../support/phase1a-fixtures';
 import {
   accept,
   createLearner,
@@ -13,7 +18,12 @@ import {
   type Learner,
 } from '../support/phase2-fixtures';
 import { attack, one, query } from '../support/sql';
-import { adminClient, deleteTestUser, readTestEnv, type TestEnv } from '../support/supabase-test-env';
+import {
+  adminClient,
+  deleteTestUser,
+  readTestEnv,
+  type TestEnv,
+} from '../support/supabase-test-env';
 
 /**
  * `attempts.tripleMatchRequired.spec` · ADR-008 «triple coincidencia» · SD-018 corrección.
@@ -34,7 +44,8 @@ let session: CreatedSession;
 let submittedEventId = '';
 let attemptId = '';
 
-const lit = (value: Record<string, unknown>) => `'${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`;
+const lit = (value: Record<string, unknown>) =>
+  `'${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`;
 
 beforeAll(async () => {
   env = readTestEnv();
@@ -42,7 +53,9 @@ beforeAll(async () => {
   pack = await buildSyntheticPack(admin, 'p2trip');
   ana = await createLearner(env, 'trip-a', pack);
   bea = await createLearner(env, 'trip-b', pack);
-  session = await createSession(ana, [{ item_type: 'QUESTION', target_id: question(pack, 0).questionId }]);
+  session = await createSession(ana, [
+    { item_type: 'QUESTION', target_id: question(pack, 0).questionId },
+  ]);
   await accept(ana, eventFor(ana, session, 'SESSION_STARTED'));
   const q = question(pack, 0);
   const answered = await presentAndAnswer(ana, session, itemAt(session, 0), q.representationId, {
@@ -114,17 +127,22 @@ describe('ADR-008 · triple coincidencia sobre ingest.normalize_attempt', () => 
   });
 
   it('mismo identificador con otro usuario → ATTEMPT_CONFLICT_OWNER', async () => {
-    const beaSession = await createSession(bea, [{ item_type: 'QUESTION', target_id: question(pack, 0).questionId }]);
+    const beaSession = await createSession(bea, [
+      { item_type: 'QUESTION', target_id: question(pack, 0).questionId },
+    ]);
     await accept(bea, eventFor(bea, beaSession, 'SESSION_STARTED'));
     const q = question(pack, 0);
-    await accept(
-      bea,
-      {
-        ...(await import('../support/phase2-fixtures')).itemEvent(bea, beaSession, itemAt(beaSession, 0), 'QUESTION_PRESENTED', {
+    await accept(bea, {
+      ...(await import('../support/phase2-fixtures')).itemEvent(
+        bea,
+        beaSession,
+        itemAt(beaSession, 0),
+        'QUESTION_PRESENTED',
+        {
           question_representation_id: q.representationId,
-        }),
-      },
-    );
+        },
+      ),
+    });
     const payload = await basePayload();
     const outcome = attack(
       `perform ingest.normalize_attempt('${bea.id}', '${submittedEventId}', '${beaSession.session_id}', '${itemAt(beaSession, 0).session_item_id}', ${lit(payload)}, now());`,
@@ -134,11 +152,18 @@ describe('ADR-008 · triple coincidencia sobre ingest.normalize_attempt', () => 
   });
 
   it('mismo identificador sobre otra pregunta → ATTEMPT_CONFLICT_QUESTION', async () => {
-    const other = await createSession(ana, [{ item_type: 'QUESTION', target_id: question(pack, 1).questionId }]);
+    const other = await createSession(ana, [
+      { item_type: 'QUESTION', target_id: question(pack, 1).questionId },
+    ]);
     await accept(ana, eventFor(ana, other, 'SESSION_STARTED'));
     const q1 = question(pack, 1);
     const { itemEvent } = await import('../support/phase2-fixtures');
-    await accept(ana, itemEvent(ana, other, itemAt(other, 0), 'QUESTION_PRESENTED', { question_representation_id: q1.representationId }));
+    await accept(
+      ana,
+      itemEvent(ana, other, itemAt(other, 0), 'QUESTION_PRESENTED', {
+        question_representation_id: q1.representationId,
+      }),
+    );
     const options = await optionsOf(ana, q1.representationId);
     const payload = {
       question_representation_id: q1.representationId,

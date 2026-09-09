@@ -2,7 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { canonicalHash, canonicalTimestamp } from '@study-os/domain';
 
-import { buildSyntheticPack, purgePack, question, type SyntheticPack } from '../support/phase1a-fixtures';
+import {
+  buildSyntheticPack,
+  purgePack,
+  question,
+  type SyntheticPack,
+} from '../support/phase1a-fixtures';
 import {
   accept,
   createLearner,
@@ -15,7 +20,12 @@ import {
   type Learner,
 } from '../support/phase2-fixtures';
 import { one } from '../support/sql';
-import { adminClient, deleteTestUser, readTestEnv, type TestEnv } from '../support/supabase-test-env';
+import {
+  adminClient,
+  deleteTestUser,
+  readTestEnv,
+  type TestEnv,
+} from '../support/supabase-test-env';
 
 /**
  * `attempts.canonicalHashIsDeterministic.spec` · ADR-008 «dos representaciones equivalentes
@@ -38,7 +48,9 @@ beforeAll(async () => {
   admin = adminClient(env);
   pack = await buildSyntheticPack(admin, 'p2hash');
   ana = await createLearner(env, 'hash', pack);
-  session = await createSession(ana, [{ item_type: 'QUESTION', target_id: question(pack, 0).questionId }]);
+  session = await createSession(ana, [
+    { item_type: 'QUESTION', target_id: question(pack, 0).questionId },
+  ]);
   await accept(ana, eventFor(ana, session, 'SESSION_STARTED'));
 }, 240_000);
 
@@ -52,11 +64,20 @@ describe('SD-022 · el hash almacenado es reproducible desde el contrato', () =>
     const q = question(pack, 0);
     const item = itemAt(session, 0);
     const options = await optionsOf(ana, q.representationId);
-    const order = [options[2]?.id, options[0]?.id, options[1]?.id].map((id) => String(id).toUpperCase());
-    const event = itemEvent(ana, session, item, 'QUESTION_PRESENTED', {
-      presented_option_order: order,
-      question_representation_id: q.representationId.toUpperCase(),
-    }, { client_created_at: '2026-09-09T12:00:00.250+02:00', client_sequence: 41 });
+    const order = [options[2]?.id, options[0]?.id, options[1]?.id].map((id) =>
+      String(id).toUpperCase(),
+    );
+    const event = itemEvent(
+      ana,
+      session,
+      item,
+      'QUESTION_PRESENTED',
+      {
+        presented_option_order: order,
+        question_representation_id: q.representationId.toUpperCase(),
+      },
+      { client_created_at: '2026-09-09T12:00:00.250+02:00', client_sequence: 41 },
+    );
     const accepted = await accept(ana, event);
     const expected = await canonicalHash({
       event_type: 'QUESTION_PRESENTED',
@@ -128,10 +149,18 @@ describe('SD-022 · el hash almacenado es reproducible desde el contrato', () =>
     const q = question(pack, 1);
     const second = await createSession(ana, [{ item_type: 'QUESTION', target_id: q.questionId }]);
     await accept(ana, eventFor(ana, second, 'SESSION_STARTED'));
-    await accept(ana, itemEvent(ana, second, itemAt(second, 0), 'QUESTION_PRESENTED', { question_representation_id: q.representationId }));
+    await accept(
+      ana,
+      itemEvent(ana, second, itemAt(second, 0), 'QUESTION_PRESENTED', {
+        question_representation_id: q.representationId,
+      }),
+    );
     const blank = await accept(
       ana,
-      itemEvent(ana, second, itemAt(second, 0), 'ANSWER_SUBMITTED', { question_representation_id: q.representationId, answer_kind: 'BLANK' }),
+      itemEvent(ana, second, itemAt(second, 0), 'ANSWER_SUBMITTED', {
+        question_representation_id: q.representationId,
+        answer_kind: 'BLANK',
+      }),
     );
     const row = one<{ h: string }>(
       `select answer_payload_hash as h from public.question_attempts where submitted_event_id = '${blank.event_id}'`,

@@ -21,7 +21,9 @@ describe('ADR-008 punto 7 · sin ON CONFLICT DO NOTHING tras asignar posición',
   it('en el repositorio: ninguna migración de Phase 2 contiene la cláusula', () => {
     const dir = join(REPO_ROOT, 'supabase/migrations');
     for (const name of readdirSync(dir).filter((n) => /^000000000000(15|16|17|18)_/.test(n))) {
-      const sql = readFileSync(join(dir, name), 'utf8').toLowerCase().replace(/--[^\n]*/g, '');
+      const sql = readFileSync(join(dir, name), 'utf8')
+        .toLowerCase()
+        .replace(/--[^\n]*/g, '');
       expect(sql, name).not.toMatch(/on\s+conflict[^;]*?do\s+nothing/);
       expect(sql, name).not.toContain('create sequence');
       expect(sql, name).not.toContain('nextval');

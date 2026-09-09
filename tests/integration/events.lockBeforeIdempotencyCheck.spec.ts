@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { buildSyntheticPack, purgePack, question, type SyntheticPack } from '../support/phase1a-fixtures';
+import {
+  buildSyntheticPack,
+  purgePack,
+  question,
+  type SyntheticPack,
+} from '../support/phase1a-fixtures';
 import {
   accept,
   createLearner,
@@ -15,7 +20,12 @@ import {
   type Learner,
 } from '../support/phase2-fixtures';
 import { one, query } from '../support/sql';
-import { adminClient, deleteTestUser, readTestEnv, type TestEnv } from '../support/supabase-test-env';
+import {
+  adminClient,
+  deleteTestUser,
+  readTestEnv,
+  type TestEnv,
+} from '../support/supabase-test-env';
 
 /**
  * `events.lockBeforeIdempotencyCheck.spec` · ADR-008 puntos 2 y 3.
@@ -40,7 +50,9 @@ beforeAll(async () => {
   admin = adminClient(env);
   pack = await buildSyntheticPack(admin, 'p2lock');
   ana = await createLearner(env, 'lock', pack);
-  session = await createSession(ana, [{ item_type: 'QUESTION', target_id: question(pack, 0).questionId }]);
+  session = await createSession(ana, [
+    { item_type: 'QUESTION', target_id: question(pack, 0).questionId },
+  ]);
 }, 240_000);
 
 afterAll(async () => {
@@ -53,7 +65,9 @@ describe('ADR-008 puntos 2 y 3 · el bloqueo del contador precede a la comprobac
     const body = one<{ src: string }>(
       "select p.prosrc as src from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'ingest' and p.proname = 'append_learning_event'",
     ).src;
-    const lock = body.indexOf('from ingest.user_event_counters c where c.user_id = p_user for update');
+    const lock = body.indexOf(
+      'from ingest.user_event_counters c where c.user_id = p_user for update',
+    );
     const check = body.indexOf('from public.learning_events e where e.event_id = ev_id');
     expect(lock).toBeGreaterThan(0);
     expect(check).toBeGreaterThan(lock);
@@ -62,7 +76,9 @@ describe('ADR-008 puntos 2 y 3 · el bloqueo del contador precede a la comprobac
       join(REPO_ROOT, 'supabase/migrations/00000000000018_evidence_core.sql'),
       'utf8',
     );
-    expect(migration).toContain('from ingest.user_event_counters c where c.user_id = p_user for update');
+    expect(migration).toContain(
+      'from ingest.user_event_counters c where c.user_id = p_user for update',
+    );
   });
 
   it('el mismo evento enviado ocho veces en paralelo produce una fila y siete respuestas idempotentes', async () => {

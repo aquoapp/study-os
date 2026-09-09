@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { buildSyntheticPack, purgePack, question, type SyntheticPack } from '../support/phase1a-fixtures';
+import {
+  buildSyntheticPack,
+  purgePack,
+  question,
+  type SyntheticPack,
+} from '../support/phase1a-fixtures';
 import {
   accept,
   createLearner,
@@ -13,7 +18,12 @@ import {
   type Learner,
 } from '../support/phase2-fixtures';
 import { one } from '../support/sql';
-import { adminClient, deleteTestUser, readTestEnv, type TestEnv } from '../support/supabase-test-env';
+import {
+  adminClient,
+  deleteTestUser,
+  readTestEnv,
+  type TestEnv,
+} from '../support/supabase-test-env';
 
 /**
  * `attempts.idempotentBeforeAttemptNumber.spec` · ADR-008 «el mismo orden para
@@ -43,7 +53,9 @@ beforeAll(async () => {
   admin = adminClient(env);
   pack = await buildSyntheticPack(admin, 'p2idem');
   ana = await createLearner(env, 'idem', pack);
-  session = await createSession(ana, [{ item_type: 'QUESTION', target_id: question(pack, 0).questionId }]);
+  session = await createSession(ana, [
+    { item_type: 'QUESTION', target_id: question(pack, 0).questionId },
+  ]);
   await accept(ana, eventFor(ana, session, 'SESSION_STARTED'));
 }, 240_000);
 
@@ -56,7 +68,12 @@ describe('ADR-008 · la idempotencia del intento precede al attempt_number', () 
   it('cinco reenvíos del mismo ANSWER_SUBMITTED producen un único intento con attempt_number 1', async () => {
     const q = question(pack, 0);
     const item = itemAt(session, 0);
-    await accept(ana, itemEvent(ana, session, item, 'QUESTION_PRESENTED', { question_representation_id: q.representationId }));
+    await accept(
+      ana,
+      itemEvent(ana, session, item, 'QUESTION_PRESENTED', {
+        question_representation_id: q.representationId,
+      }),
+    );
     const options = await optionsOf(ana, q.representationId);
     const submitted = itemEvent(ana, session, item, 'ANSWER_SUBMITTED', {
       question_representation_id: q.representationId,
@@ -89,10 +106,18 @@ describe('ADR-008 · la idempotencia del intento precede al attempt_number', () 
     const second = await createSession(ana, [{ item_type: 'QUESTION', target_id: q.questionId }]);
     await accept(ana, eventFor(ana, second, 'SESSION_STARTED'));
     const item = itemAt(second, 0);
-    await accept(ana, itemEvent(ana, second, item, 'QUESTION_PRESENTED', { question_representation_id: q.representationId }));
+    await accept(
+      ana,
+      itemEvent(ana, second, item, 'QUESTION_PRESENTED', {
+        question_representation_id: q.representationId,
+      }),
+    );
     const blank = await accept(
       ana,
-      itemEvent(ana, second, item, 'ANSWER_SUBMITTED', { question_representation_id: q.representationId, answer_kind: 'BLANK' }),
+      itemEvent(ana, second, item, 'ANSWER_SUBMITTED', {
+        question_representation_id: q.representationId,
+        answer_kind: 'BLANK',
+      }),
     );
     expect(blank.idempotent).toBe(false);
     expect(blank.attempt?.['attempt_number']).toBe(2);

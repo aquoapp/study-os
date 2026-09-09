@@ -22,16 +22,7 @@
   {
     "name": "nested arrays keep order",
     "value": {
-      "list": [
-        3,
-        1,
-        2,
-        [
-          true,
-          false,
-          null
-        ]
-      ],
+      "list": [3, 1, 2, [true, false, null]],
       "n": 0
     },
     "canonical": "{\"list\":[3,1,2,[true,false,null]],\"n\":0}",

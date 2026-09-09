@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { buildSyntheticPack, purgePack, question, type SyntheticPack } from '../support/phase1a-fixtures';
+import {
+  buildSyntheticPack,
+  purgePack,
+  question,
+  type SyntheticPack,
+} from '../support/phase1a-fixtures';
 import {
   accept,
   createLearner,
@@ -13,7 +18,12 @@ import {
   type Learner,
 } from '../support/phase2-fixtures';
 import { one, query } from '../support/sql';
-import { adminClient, deleteTestUser, readTestEnv, type TestEnv } from '../support/supabase-test-env';
+import {
+  adminClient,
+  deleteTestUser,
+  readTestEnv,
+  type TestEnv,
+} from '../support/supabase-test-env';
 
 /**
  * `events.noGapsUnderRollback.spec` · ADR-008 puntos 6 y 8.
@@ -64,7 +74,11 @@ describe('ADR-008 puntos 6 y 8 · un rechazo no consume posición', () => {
 
     await accept(ana, eventFor(ana, session, 'SESSION_STARTED')); // 1
     // Malformado: clave desconocida.
-    await reject(ana, eventFor(ana, session, 'SESSION_INTERRUPTED', { extra: true }), 'PAYLOAD_UNKNOWN_KEY');
+    await reject(
+      ana,
+      eventFor(ana, session, 'SESSION_INTERRUPTED', { extra: true }),
+      'PAYLOAD_UNKNOWN_KEY',
+    );
     // Sin presentación previa.
     await reject(
       ana,
@@ -78,7 +92,9 @@ describe('ADR-008 puntos 6 y 8 · un rechazo no consume posición', () => {
 
     await accept(
       ana,
-      itemEvent(ana, session, item0, 'QUESTION_PRESENTED', { question_representation_id: q0.representationId }),
+      itemEvent(ana, session, item0, 'QUESTION_PRESENTED', {
+        question_representation_id: q0.representationId,
+      }),
     ); // 2
     // Representación que no es la presentada.
     await reject(

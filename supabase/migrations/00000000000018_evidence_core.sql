@@ -47,9 +47,11 @@ begin
   end if;
 end
 $$;
+-- Los comentarios de los objetos de `public` los publica PostgREST como descripciones del
+-- OpenAPI: no nombran ningún objeto de los esquemas no expuestos (ADR-011).
 comment on type public.learning_event_type is
-  'CDEM §11 · taxonomía P0 completa. Phase 2 acepta los tipos con esquema declarado en '
-  'ingest.event_field_types; el resto se rechaza hasta que su fase los produzca.';
+  'CDEM §11 · taxonomía P0 completa. Phase 2 acepta los tipos con esquema de payload '
+  'declarado en la frontera de ingestión; el resto se rechaza hasta que su fase los produzca.';
 comment on type public.answer_kind is
   'SD-022 · SD-023 · una respuesta es una opción elegida o un blanco explícito (REQ-C08).';
 
@@ -180,8 +182,8 @@ create table if not exists public.learning_events (
 );
 comment on table public.learning_events is
   'CDEM §10 · ADR-008 · registro canónico de evidencia conductual: append-only, idempotente '
-  'por event_id, posición por usuario sin huecos, hash canónico (SD-022). Solo escribe '
-  'ingest.append_learning_event.';
+  'por event_id, posición por usuario sin huecos, hash canónico (SD-022). La escribe solo la '
+  'función de ingestión de evidencia.';
 create index if not exists learning_events_user_received on public.learning_events (user_id, server_received_at);
 create index if not exists learning_events_session_position on public.learning_events (session_id, stream_position);
 

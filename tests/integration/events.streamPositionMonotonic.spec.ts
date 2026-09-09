@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { buildSyntheticPack, purgePack, question, type SyntheticPack } from '../support/phase1a-fixtures';
+import {
+  buildSyntheticPack,
+  purgePack,
+  question,
+  type SyntheticPack,
+} from '../support/phase1a-fixtures';
 import {
   accept,
   createLearner,
@@ -15,7 +20,12 @@ import {
   type Learner,
 } from '../support/phase2-fixtures';
 import { one } from '../support/sql';
-import { adminClient, deleteTestUser, readTestEnv, type TestEnv } from '../support/supabase-test-env';
+import {
+  adminClient,
+  deleteTestUser,
+  readTestEnv,
+  type TestEnv,
+} from '../support/supabase-test-env';
 
 /**
  * `events.streamPositionMonotonic.spec` · ADR-008 punto 1 · gate P2-G3.
@@ -65,7 +75,9 @@ describe('ADR-008 punto 1 · stream_position por usuario, monotónica y sin huec
     expect(started.idempotent).toBe(false);
     expect(started.payload_hash).toMatch(/^[0-9a-f]{64}$/);
     expect(started.session?.status).toBe('ACTIVE');
-    expect(started.session?.resume_cursor?.['session_item_id']).toBe(itemAt(session, 0).session_item_id);
+    expect(started.session?.resume_cursor?.['session_item_id']).toBe(
+      itemAt(session, 0).session_item_id,
+    );
 
     const q0 = question(pack, 0);
     const answered = await presentAndAnswer(ana, session, itemAt(session, 0), q0.representationId, {
@@ -77,18 +89,24 @@ describe('ADR-008 punto 1 · stream_position por usuario, monotónica y sin huec
     expect(answered.stream_position).toBe(3);
     expect(answered.attempt?.['is_correct']).toBe(true);
     expect(answered.attempt?.['attempt_number']).toBe(1);
-    expect(answered.session?.resume_cursor?.['session_item_id']).toBe(itemAt(session, 1).session_item_id);
+    expect(answered.session?.resume_cursor?.['session_item_id']).toBe(
+      itemAt(session, 1).session_item_id,
+    );
   });
 
   it('otro usuario tiene su propio stream: sus posiciones empiezan en 1 aunque se intercalen', async () => {
-    const other = await createSession(bea, [{ item_type: 'QUESTION', target_id: question(pack, 2).questionId }]);
+    const other = await createSession(bea, [
+      { item_type: 'QUESTION', target_id: question(pack, 2).questionId },
+    ]);
     const started = await accept(bea, eventFor(bea, other, 'SESSION_STARTED'));
     expect(started.stream_position).toBe(1);
     const interrupted = await accept(ana, eventFor(ana, session, 'SESSION_INTERRUPTED'));
     expect(interrupted.stream_position).toBe(4);
     const presented = await accept(
       bea,
-      itemEvent(bea, other, itemAt(other, 0), 'QUESTION_PRESENTED', { question_representation_id: question(pack, 2).representationId }),
+      itemEvent(bea, other, itemAt(other, 0), 'QUESTION_PRESENTED', {
+        question_representation_id: question(pack, 2).representationId,
+      }),
     );
     expect(presented.stream_position).toBe(2);
   });

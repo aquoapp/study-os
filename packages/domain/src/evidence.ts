@@ -74,7 +74,12 @@ export const EVENT_SCHEMAS_V1: Readonly<Partial<Record<LearningEventType, EventS
     required: { learning_unit_version_id: 'uuid' },
     optional: {},
   },
-  LEARNING_UNIT_COMPLETED: { scope: 'item', item_type: 'LEARNING_UNIT', required: {}, optional: {} },
+  LEARNING_UNIT_COMPLETED: {
+    scope: 'item',
+    item_type: 'LEARNING_UNIT',
+    required: {},
+    optional: {},
+  },
   HELP_REQUESTED: { scope: 'item', required: {}, optional: { topic: 'string' } },
   ALREADY_KNOW_CLAIMED: { scope: 'item', required: {}, optional: {} },
   QUESTION_PRESENTED: {
@@ -117,7 +122,9 @@ export const EVENT_SCHEMAS_V1: Readonly<Partial<Record<LearningEventType, EventS
   },
 };
 
-export const PHASE_2_ACCEPTED_EVENT_TYPES = Object.keys(EVENT_SCHEMAS_V1) as readonly LearningEventType[];
+export const PHASE_2_ACCEPTED_EVENT_TYPES = Object.keys(
+  EVENT_SCHEMAS_V1,
+) as readonly LearningEventType[];
 
 /** Claves del sobre que el cliente puede enviar. Cualquier otra se rechaza. */
 export const EVENT_ENVELOPE_KEYS = [
@@ -159,8 +166,19 @@ export const CONFIDENCE_SCALE_V1 = {
 } as const;
 
 export const ANSWER_KINDS = ['OPTION', 'BLANK'] as const;
-export const SESSION_STATUSES = ['PLANNED', 'ACTIVE', 'INTERRUPTED', 'COMPLETED', 'ABANDONED'] as const;
-export const SESSION_ITEM_TYPES = ['LEARNING_UNIT', 'QUESTION', 'PRACTICAL', 'CONCEPT_REVIEW'] as const;
+export const SESSION_STATUSES = [
+  'PLANNED',
+  'ACTIVE',
+  'INTERRUPTED',
+  'COMPLETED',
+  'ABANDONED',
+] as const;
+export const SESSION_ITEM_TYPES = [
+  'LEARNING_UNIT',
+  'QUESTION',
+  'PRACTICAL',
+  'CONCEPT_REVIEW',
+] as const;
 export const SESSION_ITEM_STATUSES = ['PENDING', 'ACTIVE', 'COMPLETED'] as const;
 
 export interface LearningEventEnvelope {

@@ -2,7 +2,12 @@ import { randomUUID } from 'node:crypto';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { buildSyntheticPack, purgePack, question, type SyntheticPack } from '../support/phase1a-fixtures';
+import {
+  buildSyntheticPack,
+  purgePack,
+  question,
+  type SyntheticPack,
+} from '../support/phase1a-fixtures';
 import {
   accept,
   createLearner,
@@ -15,7 +20,12 @@ import {
   type Learner,
 } from '../support/phase2-fixtures';
 import { query } from '../support/sql';
-import { adminClient, deleteTestUser, readTestEnv, type TestEnv } from '../support/supabase-test-env';
+import {
+  adminClient,
+  deleteTestUser,
+  readTestEnv,
+  type TestEnv,
+} from '../support/supabase-test-env';
 
 /**
  * `events.concurrentInsertSerialized.spec` · ADR-008 condición «inserciones concurrentes de
@@ -45,12 +55,18 @@ beforeAll(async () => {
     { item_type: 'QUESTION', target_id: question(pack, 0).questionId },
     { item_type: 'CONCEPT_REVIEW', target_id: pack.conceptIds[1] ?? '' },
   ]);
-  beaSession = await createSession(bea, [{ item_type: 'QUESTION', target_id: question(pack, 1).questionId }]);
+  beaSession = await createSession(bea, [
+    { item_type: 'QUESTION', target_id: question(pack, 1).questionId },
+  ]);
   await accept(ana, eventFor(ana, anaSession, 'SESSION_STARTED'));
   await accept(bea, eventFor(bea, beaSession, 'SESSION_STARTED'));
   const device = await ana.client
     .from('devices')
-    .insert({ user_id: ana.id, device_label: 'fixture: segundo dispositivo', installation_id: `inst-${randomUUID()}` })
+    .insert({
+      user_id: ana.id,
+      device_label: 'fixture: segundo dispositivo',
+      installation_id: `inst-${randomUUID()}`,
+    })
     .select('id')
     .single();
   anaSecondDevice = String(device.data?.id ?? '');
@@ -71,9 +87,16 @@ describe('ADR-008 · inserciones concurrentes serializadas por usuario', () => {
   it('doce eventos distintos de un mismo usuario en paralelo reciben doce posiciones consecutivas', async () => {
     const item = itemAt(anaSession, 1);
     const events = Array.from({ length: 12 }, (_, i) =>
-      itemEvent(ana, anaSession, item, i % 2 === 0 ? 'HELP_REQUESTED' : 'ALREADY_KNOW_CLAIMED', {}, {
-        device_id: i % 3 === 0 ? anaSecondDevice : ana.deviceId,
-      }),
+      itemEvent(
+        ana,
+        anaSession,
+        item,
+        i % 2 === 0 ? 'HELP_REQUESTED' : 'ALREADY_KNOW_CLAIMED',
+        {},
+        {
+          device_id: i % 3 === 0 ? anaSecondDevice : ana.deviceId,
+        },
+      ),
     );
     const results = await Promise.all(events.map((event) => send(ana, event)));
     const errors = results.filter((r) => r.error);

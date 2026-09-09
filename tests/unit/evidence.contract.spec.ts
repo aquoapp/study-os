@@ -85,7 +85,8 @@ describe('evidence.contract · taxonomía y esquemas espejo', () => {
       [...(m[1] ?? '').matchAll(/'([a-z_]+)'/g)].map((x) => x[1]).sort(),
     );
     expect(lists.length).toBeGreaterThanOrEqual(2);
-    for (const list of lists) expect(list).toEqual([...CLIENT_AUTHORITATIVE_FIELDS_REJECTED].sort());
+    for (const list of lists)
+      expect(list).toEqual([...CLIENT_AUTHORITATIVE_FIELDS_REJECTED].sort());
     for (const field of registry.clientInvokableRpcs.contracts.append_learning_event.rejects) {
       expect(CLIENT_AUTHORITATIVE_FIELDS_REJECTED).toContain(field);
     }

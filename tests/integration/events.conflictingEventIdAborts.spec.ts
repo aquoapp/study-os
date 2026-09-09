@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { buildSyntheticPack, purgePack, question, type SyntheticPack } from '../support/phase1a-fixtures';
+import {
+  buildSyntheticPack,
+  purgePack,
+  question,
+  type SyntheticPack,
+} from '../support/phase1a-fixtures';
 import {
   accept,
   createLearner,
@@ -12,7 +17,12 @@ import {
   type Learner,
 } from '../support/phase2-fixtures';
 import { one } from '../support/sql';
-import { adminClient, deleteTestUser, readTestEnv, type TestEnv } from '../support/supabase-test-env';
+import {
+  adminClient,
+  deleteTestUser,
+  readTestEnv,
+  type TestEnv,
+} from '../support/supabase-test-env';
 
 /**
  * `events.conflictingEventIdAborts.spec` · ADR-008 punto 5 · Security impact de ADR-008.
@@ -43,8 +53,12 @@ beforeAll(async () => {
   pack = await buildSyntheticPack(admin, 'p2conf');
   ana = await createLearner(env, 'conf-a', pack);
   bea = await createLearner(env, 'conf-b', pack);
-  session = await createSession(ana, [{ item_type: 'QUESTION', target_id: question(pack, 0).questionId }]);
-  beaSession = await createSession(bea, [{ item_type: 'QUESTION', target_id: question(pack, 1).questionId }]);
+  session = await createSession(ana, [
+    { item_type: 'QUESTION', target_id: question(pack, 0).questionId },
+  ]);
+  beaSession = await createSession(bea, [
+    { item_type: 'QUESTION', target_id: question(pack, 1).questionId },
+  ]);
   await accept(ana, eventFor(ana, session, 'SESSION_STARTED'));
   await accept(bea, eventFor(bea, beaSession, 'SESSION_STARTED'));
 }, 240_000);

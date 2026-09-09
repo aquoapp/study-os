@@ -39,25 +39,47 @@ export async function rpc<T = Record<string, unknown>>(
 }
 
 /** Crea usuario + ajustes + objetivo ACTIVE sobre el pack + dispositivo, por las rutas de cliente. */
-export async function createLearner(env: TestEnv, label: string, pack: SyntheticPack): Promise<Learner> {
+export async function createLearner(
+  env: TestEnv,
+  label: string,
+  pack: SyntheticPack,
+): Promise<Learner> {
   const user = await createTestUser(env, label);
-  const settings = await user.client
-    .from('learner_settings')
-    .insert({ user_id: user.id, default_daily_minutes: 40, weekly_availability_json: { mon: 40, wed: 40 } });
+  const settings = await user.client.from('learner_settings').insert({
+    user_id: user.id,
+    default_daily_minutes: 40,
+    weekly_availability_json: { mon: 40, wed: 40 },
+  });
   if (settings.error) throw new Error(`learner_settings: ${settings.error.message}`);
   const goal = await user.client
     .from('learner_exam_goals')
-    .insert({ user_id: user.id, exam_pack_id: pack.packId, target_date: '2027-06-01', starting_level: 'BEGINNER' })
+    .insert({
+      user_id: user.id,
+      exam_pack_id: pack.packId,
+      target_date: '2027-06-01',
+      starting_level: 'BEGINNER',
+    })
     .select('id')
     .single();
-  if (goal.error || !goal.data) throw new Error(`learner_exam_goals: ${goal.error?.message ?? 'sin fila'}`);
+  if (goal.error || !goal.data)
+    throw new Error(`learner_exam_goals: ${goal.error?.message ?? 'sin fila'}`);
   const device = await user.client
     .from('devices')
-    .insert({ user_id: user.id, device_label: `fixture:${label}`, installation_id: `inst-${randomUUID()}` })
+    .insert({
+      user_id: user.id,
+      device_label: `fixture:${label}`,
+      installation_id: `inst-${randomUUID()}`,
+    })
     .select('id')
     .single();
-  if (device.error || !device.data) throw new Error(`devices: ${device.error?.message ?? 'sin fila'}`);
-  return { ...user, goalId: goal.data.id as string, deviceId: device.data.id as string, packId: pack.packId };
+  if (device.error || !device.data)
+    throw new Error(`devices: ${device.error?.message ?? 'sin fila'}`);
+  return {
+    ...user,
+    goalId: goal.data.id as string,
+    deviceId: device.data.id as string,
+    packId: pack.packId,
+  };
 }
 
 export interface SessionItemRef {
@@ -84,7 +106,8 @@ export async function createSession(
     p_planned_minutes: 30,
     p_items: items,
   });
-  if (result.error || !result.data) throw new Error(`create_study_session: ${result.error?.message ?? 'sin datos'}`);
+  if (result.error || !result.data)
+    throw new Error(`create_study_session: ${result.error?.message ?? 'sin datos'}`);
   return result.data;
 }
 
@@ -133,19 +156,31 @@ export interface AcceptedEvent {
   readonly canonicalization_version: string;
   readonly server_received_at: string;
   readonly idempotent: boolean;
-  readonly session: { session_id: string; status: string; resume_cursor: Record<string, unknown> | null } | null;
+  readonly session: {
+    session_id: string;
+    status: string;
+    resume_cursor: Record<string, unknown> | null;
+  } | null;
   readonly attempt: Record<string, unknown> | null;
 }
 
-export async function send(learner: Learner, event: Record<string, unknown>): Promise<RpcResult<AcceptedEvent>> {
+export async function send(
+  learner: Learner,
+  event: Record<string, unknown>,
+): Promise<RpcResult<AcceptedEvent>> {
   return rpc<AcceptedEvent>(learner.client, 'append_learning_event', { p_event: event });
 }
 
 /** Envía y exige aceptación; devuelve el resultado. */
-export async function accept(learner: Learner, event: Record<string, unknown>): Promise<AcceptedEvent> {
+export async function accept(
+  learner: Learner,
+  event: Record<string, unknown>,
+): Promise<AcceptedEvent> {
   const result = await send(learner, event);
   if (result.error || !result.data) {
-    throw new Error(`append_learning_event rechazó ${String(event['event_type'])}: ${result.error?.message ?? 'sin datos'}`);
+    throw new Error(
+      `append_learning_event rechazó ${String(event['event_type'])}: ${result.error?.message ?? 'sin datos'}`,
+    );
   }
   return result.data;
 }
@@ -158,7 +193,9 @@ export async function reject(
 ): Promise<{ code?: string; message: string }> {
   const result = await send(learner, event);
   if (!result.error) {
-    throw new Error(`append_learning_event aceptó ${String(event['event_type'])} y debía rechazarlo con ${code}`);
+    throw new Error(
+      `append_learning_event aceptó ${String(event['event_type'])} y debía rechazarlo con ${code}`,
+    );
   }
   if (!result.error.message.includes(code)) {
     throw new Error(`rechazo con otro código: esperado ${code}, recibido ${result.error.message}`);
@@ -219,7 +256,12 @@ export async function presentAndAnswer(
   representationId: string,
   answer: { option_key?: string; blank?: boolean; confidence?: number; response_ms?: number },
 ): Promise<AcceptedEvent> {
-  await accept(learner, itemEvent(learner, session, item, 'QUESTION_PRESENTED', { question_representation_id: representationId }));
+  await accept(
+    learner,
+    itemEvent(learner, session, item, 'QUESTION_PRESENTED', {
+      question_representation_id: representationId,
+    }),
+  );
   const options = await optionsOf(learner, representationId);
   const payload: Record<string, unknown> = {
     question_representation_id: representationId,
@@ -264,27 +306,51 @@ export async function publishLearningUnit(
 export async function sessionEvents(
   learner: Learner,
   sessionId: string,
-): Promise<Array<{ event_id: string; event_type: string; session_item_id: string | null; stream_position: number; payload: Record<string, unknown> }>> {
+): Promise<
+  Array<{
+    event_id: string;
+    event_type: string;
+    session_item_id: string | null;
+    stream_position: number;
+    payload: Record<string, unknown>;
+  }>
+> {
   const { data, error } = await learner.client
     .from('learning_events')
     .select('event_id, event_type, session_item_id, stream_position, payload')
     .eq('session_id', sessionId)
     .order('stream_position');
   if (error) throw new Error(`learning_events: ${error.message}`);
-  return (data ?? []) as Array<{ event_id: string; event_type: string; session_item_id: string | null; stream_position: number; payload: Record<string, unknown> }>;
+  return (data ?? []) as Array<{
+    event_id: string;
+    event_type: string;
+    session_item_id: string | null;
+    stream_position: number;
+    payload: Record<string, unknown>;
+  }>;
 }
 
 export async function sessionRow(
   learner: Learner,
   sessionId: string,
-): Promise<{ status: string; resume_cursor_json: Record<string, unknown> | null; started_at: string | null; completed_at: string | null }> {
+): Promise<{
+  status: string;
+  resume_cursor_json: Record<string, unknown> | null;
+  started_at: string | null;
+  completed_at: string | null;
+}> {
   const { data, error } = await learner.client
     .from('study_sessions')
     .select('status, resume_cursor_json, started_at, completed_at')
     .eq('id', sessionId)
     .single();
   if (error || !data) throw new Error(`study_sessions: ${error?.message ?? 'sin fila'}`);
-  return data as { status: string; resume_cursor_json: Record<string, unknown> | null; started_at: string | null; completed_at: string | null };
+  return data as {
+    status: string;
+    resume_cursor_json: Record<string, unknown> | null;
+    started_at: string | null;
+    completed_at: string | null;
+  };
 }
 
 export type { LearningEventEnvelope };

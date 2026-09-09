@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { buildSyntheticPack, purgePack, question, type SyntheticPack } from '../support/phase1a-fixtures';
+import {
+  buildSyntheticPack,
+  purgePack,
+  question,
+  type SyntheticPack,
+} from '../support/phase1a-fixtures';
 import {
   accept,
   createLearner,
@@ -15,7 +20,12 @@ import {
   type Learner,
 } from '../support/phase2-fixtures';
 import { attack, one } from '../support/sql';
-import { adminClient, deleteTestUser, readTestEnv, type TestEnv } from '../support/supabase-test-env';
+import {
+  adminClient,
+  deleteTestUser,
+  readTestEnv,
+  type TestEnv,
+} from '../support/supabase-test-env';
 
 /**
  * `attempts.conflictDoesNotConsumeAttemptNumber.spec` · ADR-008 «mismo orden» punto 4.
@@ -32,7 +42,8 @@ let ana: Learner;
 let first: CreatedSession;
 let firstEventId = '';
 
-const lit = (value: Record<string, unknown>) => `'${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`;
+const lit = (value: Record<string, unknown>) =>
+  `'${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`;
 const attemptCounter = (userId: string, questionId: string) =>
   Number(
     one<{ n: number }>(
@@ -45,12 +56,20 @@ beforeAll(async () => {
   admin = adminClient(env);
   pack = await buildSyntheticPack(admin, 'p2cons');
   ana = await createLearner(env, 'cons', pack);
-  first = await createSession(ana, [{ item_type: 'QUESTION', target_id: question(pack, 0).questionId }]);
+  first = await createSession(ana, [
+    { item_type: 'QUESTION', target_id: question(pack, 0).questionId },
+  ]);
   await accept(ana, eventFor(ana, first, 'SESSION_STARTED'));
-  const answered = await presentAndAnswer(ana, first, itemAt(first, 0), question(pack, 0).representationId, {
-    option_key: 'B',
-    confidence: 2,
-  });
+  const answered = await presentAndAnswer(
+    ana,
+    first,
+    itemAt(first, 0),
+    question(pack, 0).representationId,
+    {
+      option_key: 'B',
+      confidence: 2,
+    },
+  );
   firstEventId = answered.event_id;
 }, 240_000);
 
@@ -67,13 +86,15 @@ describe('ADR-008 · un conflicto no consume attempt_number', () => {
     // Conflicto en el nivel de intento (payload distinto con el mismo submitted_event_id).
     const options = await optionsOf(ana, q.representationId);
     const conflict = attack(
-      `perform ingest.normalize_attempt('${ana.id}', '${firstEventId}', '${first.session_id}', '${itemAt(first, 0).session_item_id}', ${lit({
-        question_representation_id: q.representationId,
-        answer_kind: 'OPTION',
-        selected_option_id: options[2]?.id,
-        confidence_value: 4,
-        confidence_scale_version: 'v1',
-      })}, now());`,
+      `perform ingest.normalize_attempt('${ana.id}', '${firstEventId}', '${first.session_id}', '${itemAt(first, 0).session_item_id}', ${lit(
+        {
+          question_representation_id: q.representationId,
+          answer_kind: 'OPTION',
+          selected_option_id: options[2]?.id,
+          confidence_value: 4,
+          confidence_scale_version: 'v1',
+        },
+      )}, now());`,
     );
     expect(conflict.rejected).toBe(true);
     expect(conflict.message).toContain('ATTEMPT_CONFLICT_PAYLOAD');
@@ -82,11 +103,23 @@ describe('ADR-008 · un conflicto no consume attempt_number', () => {
     // Conflicto en el nivel de evento: mismo event_id con otro payload, en una segunda sesión.
     const second = await createSession(ana, [{ item_type: 'QUESTION', target_id: q.questionId }]);
     await accept(ana, eventFor(ana, second, 'SESSION_STARTED'));
-    await accept(ana, itemEvent(ana, second, itemAt(second, 0), 'QUESTION_PRESENTED', { question_representation_id: q.representationId }));
-    const reused = itemEvent(ana, second, itemAt(second, 0), 'ANSWER_SUBMITTED', {
-      question_representation_id: q.representationId,
-      answer_kind: 'BLANK',
-    }, { event_id: firstEventId });
+    await accept(
+      ana,
+      itemEvent(ana, second, itemAt(second, 0), 'QUESTION_PRESENTED', {
+        question_representation_id: q.representationId,
+      }),
+    );
+    const reused = itemEvent(
+      ana,
+      second,
+      itemAt(second, 0),
+      'ANSWER_SUBMITTED',
+      {
+        question_representation_id: q.representationId,
+        answer_kind: 'BLANK',
+      },
+      { event_id: firstEventId },
+    );
     await reject(ana, reused, 'EVENT_ID_CONFLICT_PAYLOAD');
     expect(attemptCounter(ana.id, q.questionId)).toBe(2);
 
