@@ -5,7 +5,8 @@ Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 ```text
 PHASE: 2 · Learner & Evidence Core
 BRANCH: phase/2-learner-evidence-core (parte de main = 0cf74678f80b7df19a8a61194ea9f5b3e72f4514)
-COMMIT: <HEAD final> · sin merge, sin tag: la aceptación humana no se ha producido
+COMMIT: acb82e030475f01675acac470319c4eb65e5bfb9 · línea base verificada (CI 34357221661 en verde en sus tres jobs, extracción limpia y cadena completa contra STAGING)
+COMMIT/BUNDLE: el paquete de auditoría se construye sobre el HEAD de esta rama, que difiere de la línea base solo en esta cabecera; el valor exacto y su SHA-256 constan en el fichero de evidencia entregado fuera del repositorio
 STATUS: PASS WITH DEBT
 ```
 
