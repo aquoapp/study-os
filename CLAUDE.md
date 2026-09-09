@@ -179,6 +179,22 @@ intentos registrados, y ninguna mitigación futura puede comprometer la retroali
 pedagógica veraz posterior al envío. STAGING es el único entorno mutable; PRODUCTION no se
 toca; Release, FPS, Phase 1B y Phase 3 **no** están autorizados.
 
+**First Product Slice · BUILD autorizado el 2026-09-09** por la FPS Build Authorization
+(paquete aceptado en `docs/FPS_AUTHORIZATION_PACKET.md`, tras el veredicto
+`READY WITH HUMAN DECISIONS` de la reconciliación previa). Tres decisiones humanas resueltas:
+**H-FPS-A** (SD-010 y las correcciones de C-06 `ACCEPTED`), **H-FPS-B** (contrato de pantalla
+de FPS v1 en `docs/FPS_SCREEN_CONTRACT.md`, autoridad de FPS v1 y no congelación del diseño
+futuro) y **H-FPS-C** (disposición explícita de REQ-F01 … REQ-F15, sin debilitar ningún
+requisito canónico de Phase 5). El vertical es HOY → APRENDER → COMPROBAR → FEEDBACK → FIN,
+con contenido **solo `GENERATED`**, asignación determinista `fps-fixed-v1`, marcador
+`session_type = 'FPS_FIXED'` con `planner_run_id IS NULL`, y las rutas `/hoy`,
+`/aprender/[ordinal]`, `/comprobar/[ordinal]` y `/fin` (FEEDBACK es un estado de `/comprobar`,
+no una ruta). **Sin migración de esquema**: el FPS vive entero dentro de la frontera congelada
+de Phase 2. STAGING y Preview son los únicos entornos; merge final del FPS, tag, congelación,
+Release, Phase 1B, Phase 3 y cualquier mutación de PRODUCTION **no** están autorizados.
+WATCH-P2-1 viaja sin cambios y **no se mitiga**; D-20 queda como vigilancia y el FPS no
+selecciona `source_versions.storage_path`, `checksum` ni `retrieved_at`.
+
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:
 reconstruir la realidad desde el repositorio, el historial de migraciones y el catálogo antes

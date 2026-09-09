@@ -6,12 +6,16 @@ import { describe, expect, it } from 'vitest';
 import { REPO_ROOT } from './lib/run-guard';
 
 /**
- * `phase2.scopeNegative.spec` · gate P2-G8 · autorización de Phase 2 §25 y §32.
+ * `phase2.scopeNegative.spec` · gates P2-G8 y FPS-G1 · registro de alcance vigente.
  *
- * Phase 2 entrega el núcleo de aprendiz y de evidencia, y **nada más**. Lo que aquí se
- * comprueba no es que algo funcione, sino que algo **no existe**: motores, proyecciones,
- * planner, puntuación, recálculo, corpus oficial y superficie de producto. La ausencia es
- * la garantía, y por eso se vigila mecánicamente.
+ * Phase 2 entregó el núcleo de aprendiz y de evidencia; el FPS añade **un solo vertical de
+ * producto** sobre esa base congelada. Lo que aquí se comprueba no es que algo funcione, sino
+ * que algo **no existe**: motores, proyecciones, planner, puntuación, recálculo, corpus
+ * oficial y el resto de la superficie de Phase 5. La ausencia es la garantía, y por eso se
+ * vigila mecánicamente.
+ *
+ * El aterrizaje de gobernanza del FPS actualizó este registro para autorizar exactamente
+ * cuatro rutas (`docs/FPS_AUTHORIZATION_PACKET.md` §4.5). No se relajó ninguna otra ausencia.
  *
  * `schema.drift.spec` cubre la ausencia en las migraciones; este fichero cubre el resto del
  * árbol: paquetes, código de aplicación, dependencias y semilla.
@@ -96,37 +100,50 @@ describe('no existe ningún motor ni proyección (Phases 3 y 4)', () => {
   });
 });
 
-describe('no existe superficie de producto: FPS y Phase 5 siguen sin autorizar', () => {
+describe('la superficie de producto es exactamente el vertical del FPS', () => {
   const webRoot = join(REPO_ROOT, 'apps', 'web', 'src', 'app');
 
-  it('las rutas de la aplicación son las de Phase 0 más, como mucho, el onboarding mínimo', () => {
+  /**
+   * Registro de alcance actualizado por el aterrizaje de gobernanza del FPS
+   * (`docs/FPS_AUTHORIZATION_PACKET.md` §4.5). Las cuatro rutas del vertical quedan
+   * autorizadas; todo lo demás sigue perteneciendo a Phase 5.
+   */
+  it('las rutas de la aplicación son las de Phase 0, el onboarding y el vertical del FPS', () => {
     const routes = readdirSync(webRoot, { withFileTypes: true })
       .filter((entry) => entry.isDirectory() && !entry.name.startsWith('_'))
       .map((entry) => entry.name)
       .sort();
-    const permitidas = ['actions', 'cuenta', 'entrar', 'offline', 'onboarding', 'registro'];
+    const permitidas = [
+      'actions',
+      'aprender',
+      'comprobar',
+      'cuenta',
+      'entrar',
+      'fin',
+      'hoy',
+      'offline',
+      'onboarding',
+      'registro',
+    ];
     for (const route of routes) {
-      expect(permitidas, `ruta no autorizada en Phase 2: /${route}`).toContain(route);
+      expect(permitidas, `ruta no autorizada en el FPS: /${route}`).toContain(route);
     }
   });
 
-  it('ninguna ruta implementa los cinco espacios primarios ni el vertical de FPS', () => {
-    const prohibidas = [
-      'hoy',
-      'aprender',
-      'entrenar',
-      'progreso',
-      'plan',
-      'check',
-      'feedback',
-      'sesion',
-    ];
+  it('ninguna ruta implementa los espacios primarios que el FPS no cubre', () => {
+    // FEEDBACK es un estado de /comprobar, no una ruta: crear /feedback sería surface creep.
+    const prohibidas = ['entrenar', 'progreso', 'plan', 'check', 'feedback', 'sesion'];
     const routes = readdirSync(webRoot, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name.toLowerCase());
     for (const route of prohibidas) {
-      expect(routes, `la ruta /${route} pertenece a Phase 5 o al FPS`).not.toContain(route);
+      expect(routes, `la ruta /${route} pertenece a Phase 5, no al FPS`).not.toContain(route);
     }
+  });
+
+  it('el FPS no monta la navegación de los cinco espacios primarios', () => {
+    const layout = read('apps/web/src/app/layout.tsx');
+    expect(layout).not.toMatch(/PRIMARY_SPACES|ENTRENAR|PROGRESO/);
   });
 
   it('el cliente no calcula corrección: ningún fichero de la aplicación resuelve claves', () => {
