@@ -146,10 +146,15 @@ Build Authorization (paquete aceptado en `docs/PHASE_1A_AUTHORIZATION_PACKET.md`
 `ACCEPTED`, anexos v1.1 de ADR-009 y ADR-010 `ACCEPTED`, SD-020 y SD-021 `ACCEPTED`, ADR-005
 con disposición punto por punto y aún `PROPOSED`. **Construida** en
 `phase/1a-canonical-domain-foundation` (migraciones 3–14; esquemas `content` e `ingest` no
-expuestos; sin merge ni tag hasta la aceptación humana) y **auditada adversarialmente** el
-mismo día (migración 14 de endurecimiento; pruebas que atacan cada invariante sin residuo,
-`tests/support/sql.ts` → `attack()`; roundtrip semántico). El checkpoint de Phase 1A es
-**PASS WITH DEBT** (`docs/PHASE_1A_CHECKPOINT.md`). Phase 1B, Phase 2 y FPS **no**
+expuestos), **auditada adversarialmente** el mismo día (migración 14 de endurecimiento;
+pruebas que atacan cada invariante sin residuo, `tests/support/sql.ts` → `attack()`;
+roundtrip semántico) y **aceptada y congelada** por Ana el 2026-09-09: PR #4 integrado en
+`main` (`be5a26a`), tag anotado `phase-1a-v1.0`. El checkpoint de Phase 1A es
+**PASS WITH DEBT** (`docs/PHASE_1A_CHECKPOINT.md`; D-20 y D-21 deben cerrarse antes de la
+operación de Phase 1B). Decisiones registradas para la planificación (ARCHITECTURE_STATE
+§10): custodia del contenido privado en Git privado (H-2), mapeo de campos sin duplicar
+esquema (H-3), D-20 por mínimo privilegio (H-4), derechos del corpus sin resolver (H-1), FPS
+con contenido GENERATED sin depender de Phase 1B (H-FPS-2). Phase 1B, Phase 2 y FPS **no**
 están autorizados; el corpus oficial TAI nunca entra en este repositorio público, y los
 fixtures son siempre GENERATED y visiblemente sintéticos.
 

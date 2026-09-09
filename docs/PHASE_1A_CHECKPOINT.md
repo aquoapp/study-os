@@ -5,9 +5,22 @@ Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 ```text
 PHASE: 1A · Canonical Domain Foundation
 BRANCH: phase/1a-canonical-domain-foundation (parte de main = e5fc785f86470f0da6fc533b266ab5fba7d19ecd)
-COMMIT/TAG: el HEAD de la rama es el commit que contiene este checkpoint, la migración 14 y las pruebas adversariales; el bundle de auditoría lo describe · SIN MERGE · SIN TAG
+COMMIT/TAG: c663afcd7a4747cba4569180d0a3016f9d6069b8 · código, migración 14, pruebas adversariales y este checkpoint auditados (bundle STUDY_OS_Phase_1A_Audit_Bundle_c663afc.zip) · integrado en main como be5a26ade5ac384a572d62568d7ac29fd2a568f6 (PR #4, merge commit, árbol idéntico al HEAD aceptado) · tag anotado phase-1a-v1.0
 STATUS: PASS WITH DEBT
 ```
+
+**Aceptación humana y congelación · 2026-09-09.** Tras la revisión independiente de la
+auditoría adversarial (Ana Victoria y ChatGPT), la decisión humana fue
+`PHASE 1A HUMAN ACCEPTANCE: APPROVED` sobre el HEAD `c663afc`, con esta disposición de la
+deuda: D-13 abierta y aceptada; D-17 cerrada; D-18 abierta y aceptada; D-19 cerrada; D-20
+abierta, debe cerrarse antes de la operación de Phase 1B con contenido oficial; D-21
+abierta, debe cerrarse antes de la operación de Phase 1B. El PR #4 se integró en `main` por
+el flujo protegido (`be5a26a`, padres `e5fc785` y `c663afc`); el tag anotado `phase-1a-v1.0`
+apunta a ese commit de merge y es la **congelación de la implementación**. Este párrafo y
+los registros vivos actualizados constituyen el **registro documental de la congelación**,
+integrado por un PR posterior exclusivamente documental que no mueve el tag ni exige un
+bundle nuevo. La aceptación **no** autoriza Phase 1B, Phase 2, FPS, la creación de custodia
+privada, la ingestión del corpus oficial ni ninguna mutación o despliegue de PRODUCTION.
 
 **Segunda emisión · 2026-09-09 · tras la auditoría adversarial.** La primera emisión
 (`67fb950` … `4656652`) cerró el BUILD autorizado por Ana Victoria el 2026-09-09
@@ -21,8 +34,9 @@ pruebas y de la deuda D-17/D-18/D-19. Encontró **defectos reales de enforcement
 la arquitectura aceptada; todos se repararon en la rama con una migración aditiva (14) y
 pruebas de regresión que atacan, no que describen. Ningún hallazgo fue un fallo duro:
 ninguna clave fue legible, ninguna ruta de cliente alcanzó `content` ni `ingest`, PRODUCTION
-no se tocó. La rama **se detiene aquí**: sin merge, sin tag `phase-1a-v1.0`, sin Release;
-Phase 1B, Phase 2 y FPS no han empezado. La aceptación es humana.
+no se tocó. En el momento de esta emisión la rama se detenía sin merge ni tag; la aceptación
+humana y la congelación posteriores constan en el párrafo anterior. Phase 1B, Phase 2 y FPS
+no han empezado.
 
 ---
 
@@ -461,22 +475,25 @@ MIGRATIONS). PRODUCTION: nada que revertir. Vercel: nada que revertir.
 
 ## AUDIT BUNDLE
 
-`STUDY_OS_Phase_1A_Audit_Bundle_<HEAD>.zip` = `git archive HEAD` del commit que contiene este
-checkpoint, construido dos veces de forma determinista y comparado byte a byte, con
-comprobación blob a blob contra `HEAD` y escaneo independiente del contenido extraído. Su
-SHA-256 y la salida íntegra de cada comando (extracción limpia, STAGING, CI, PRODUCTION,
-Vercel, forense del catálogo) están en `STUDY_OS_Phase_1A_Audit_Bundle_<HEAD>_AUDIT_EVIDENCE.md`,
-**fuera del repositorio**, en la carpeta STUDY_OS del escritorio de Ana. El bundle de la
-primera emisión (`4656652`) queda obsoleto.
+`STUDY_OS_Phase_1A_Audit_Bundle_c663afc.zip` = `git archive` del HEAD aceptado `c663afc`
+(SHA-256 `1e90820c8a3b2053d86b8ed3b392556bc6e629cd1397fd17b470e483437289c8`), construido
+dos veces de forma determinista y comparado byte a byte, con comprobación blob a blob y
+escaneo independiente del contenido extraído. La salida íntegra de cada comando (extracción
+limpia, STAGING, CI, PRODUCTION, Vercel, forense del catálogo) está en
+`STUDY_OS_Phase_1A_Audit_Bundle_c663afc_AUDIT_EVIDENCE.md`, **fuera del repositorio**, en la
+carpeta STUDY_OS del escritorio de Ana. El árbol de `main` en `be5a26a` es idéntico al de
+`c663afc`, por lo que el bundle describe también la línea base congelada; el commit
+documental posterior no genera bundle nuevo (Checkpoint Contract: cambio solo documental).
+El bundle de la primera emisión (`4656652`) queda obsoleto.
 
 ---
 
 ## NEXT RECOMMENDED PHASE
 
-**Ninguna se inicia.** El siguiente paso es humano: la aceptación independiente de este
-checkpoint por Ana Victoria (y la auditoría cruzada anunciada), y solo después PR → merge →
-tag `phase-1a-v1.0`. Phase 1B (corpus oficial), Phase 2 y el hito FPS siguen **no
-autorizados**; la arquitectura y el contrato de Phase 1B se proponen fuera del repositorio.
+**Ninguna se inicia.** La aceptación humana se produjo el 2026-09-09 y Phase 1A quedó
+integrada (`be5a26a`) y etiquetada (`phase-1a-v1.0`). Phase 1B (corpus oficial), Phase 2 y
+el hito FPS siguen **no autorizados**: sus paquetes de preautorización y contratos se
+proponen fuera del repositorio y exigen una decisión humana separada.
 
 ```text
 PHASE 1A BUILD COMPLETE · PASS WITH DEBT · READY FOR HUMAN ACCEPTANCE

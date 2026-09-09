@@ -3,10 +3,10 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.6 · copia viva
-**Última actualización:** 2026-09-09 · auditoría adversarial de Phase 1A: migración 14 de endurecimiento, pruebas red team y ciclo de vida, roundtrip semántico; checkpoint reemitido (`PASS WITH DEBT`), pendiente de aceptación humana
-**Fase actual:** 1A · Canonical Domain Foundation · **BUILD completado en rama, checkpoint PASS WITH DEBT, sin merge ni tag** · ver `docs/PHASE_1A_CHECKPOINT.md` (Phase 1B, Phase 2 y FPS no autorizados)
-**Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `5d8296c1776be778b075d9e239b383a0476a6514` · tag anotado `phase-0-v1.0` · ver `docs/PHASE_0_CHECKPOINT.md`
+**Versión:** 11.7 · copia viva
+**Última actualización:** 2026-09-09 · Phase 1A aceptada por Ana Victoria y **congelada**: PR #4 integrado en `main` (`be5a26a`), tag anotado `phase-1a-v1.0`; registro documental de la congelación y de las decisiones H-2, H-3, H-4 y H-FPS-2
+**Fase actual:** 1A · Canonical Domain Foundation · **CONGELADA · PASS WITH DEBT · aceptación humana** · ver `docs/PHASE_1A_CHECKPOINT.md` (Phase 1B, Phase 2 y FPS no autorizados)
+**Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `be5a26ade5ac384a572d62568d7ac29fd2a568f6` · tag anotado `phase-1a-v1.0` (Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_1A_CHECKPOINT.md`
 
 ---
 
@@ -264,5 +264,28 @@ pruebas `phase1a.redteam.spec` y `phase1a.lifecycle.spec` atacan cada invariante
 (3–14) con rollback, 23 tablas con RLS forzado, frontera `ingest`/`content`, seis guardas,
 `db:roundtrip`, pruebas de exposición, catálogo, frontera de claves, identidad de concepto,
 representaciones, mapeos, ocurrencias, procedencia y purga; todo verificado contra STAGING
-y en CI. **Sin merge, sin tag y sin PRODUCTION**: la aceptación humana es el siguiente paso.
-Inventario y evidencia en `docs/PHASE_1A_CHECKPOINT.md`.
+y en CI. Inventario y evidencia en `docs/PHASE_1A_CHECKPOINT.md`.
+
+**Congelación (2026-09-09).** Tras la revisión humana independiente de la auditoría
+adversarial, Ana aceptó Phase 1A (`PASS WITH DEBT`) sobre el HEAD `c663afc` y autorizó el
+aterrizaje protegido: PR #4 integrado en `main` con un merge commit,
+`be5a26ade5ac384a572d62568d7ac29fd2a568f6` (padres `e5fc785` y `c663afc`, árbol idéntico al
+HEAD aceptado); tag anotado `phase-1a-v1.0` sobre ese commit. Deuda dispuesta: D-13 y D-18
+abiertas y aceptadas; D-17 y D-19 cerradas; D-20 y D-21 abiertas con cierre obligatorio antes
+de la operación de Phase 1B. PRODUCTION sin mutar (0 tablas, 0 migraciones); el merge a
+`main` produjo un despliegue de Production CANCELED por el Ignored Build Step. La rama
+`phase/1a-canonical-domain-foundation` se conserva como histórica. Los commits posteriores
+al tag son exclusivamente documentales y no mueven la línea base congelada.
+
+## 10. Decisiones humanas registradas tras la aceptación · 2026-09-09
+
+Registro para la planificación; **ninguna autoriza construir**. Phase 1B, Phase 2 y FPS
+siguen sin autorización de BUILD; no se crea custodia privada ni se ingiere corpus.
+
+| ID | Decisión | Efecto |
+| --- | --- | --- |
+| H-2 · custodia del contenido privado | **Git privado** como arquitectura de custodia de Phase 1B: repositorio PRIVADO separado + manifiesto de fuentes + verificación SHA-256 + identidad de versión inmutable por commit + checkout local como copia de trabajo autorizada. El almacenamiento de objetos queda como alternativa, no como opción por defecto. Sin solución de pago | Cuando Phase 1B se autorice, el repositorio se crea y configura de forma autónoma si los permisos lo permiten, se verifica mecánicamente PRIVADO antes de que entre corpus alguno, y Ana solo interviene ante una acción humana genuina |
+| H-3 · mapeo de campos del contrato de ingestión | Mapear los campos del contrato a las primitivas de Phase 1A cuando haya equivalencia semántica; no duplicar esquema por el hecho de que una hoja lo contenga; no crear vertederos JSON genéricos. Si un campo exige semántica nueva no representable: STOP en la autorización o build de 1B con el desajuste exacto | Guía de diseño de Phase 1B |
+| H-4 · D-20 | Solución mínima robusta de mínimo privilegio: evaluar primero privilegios de columna, mecánicamente, contra `SELECT *`, selección explícita, embeds, OpenAPI/descubrimiento, metadatos y comportamiento de PostgREST; si resulta frágil o ambigua, tabla privada de custodia. Resoluble experimentalmente sin nueva decisión humana. Debe cerrarse antes de ingerir contenido oficial | Cierre de D-20 en Phase 1B |
+| H-1 · base de derechos/reutilización | **NO resuelta.** Una declaración humana sin soporte no es evidencia legal. Antes de ingerir corpus oficial literal hacen falta evidencias de las condiciones de la fuente suficientes para el almacenamiento privado, la transformación, la extracción estructurada, la reproducción literal, la redistribución si aplica y la atribución si se exige | Bloqueo de Phase 1B para contenido oficial literal |
+| H-FPS-2 · contenido de FPS | FPS **no depende de Phase 1B**: el primer vertical visible usa contenido de desarrollo GENERATED claramente etiquetado, nunca presentado como material oficial del primer pack. FPS prueba el vertical del producto, no la completitud del corpus | Dirección de planificación de FPS |
