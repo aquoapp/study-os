@@ -3,6 +3,14 @@ import { expect, test, type Page } from '@playwright/test';
 import { buildSyntheticPack, purgePack, type SyntheticPack } from '../../support/phase1a-fixtures';
 import { publishLearningUnit } from '../../support/phase2-fixtures';
 import {
+  auditContrast,
+  auditSlateOffSurface,
+  auditSlateOnCanvas,
+  auditTargets,
+  auditTextOnForbiddenBackground,
+  collectTextSamples,
+} from '../../support/a11y';
+import {
   adminClient,
   readTestEnv,
   RUN_ID_ENV_VAR,
@@ -76,6 +84,16 @@ async function assertProductSurface(page: Page): Promise<void> {
   // Las opciones y los niveles de confianza son `role="radio"`, no acciones.
   const acciones = await page.locator('button:not([role="radio"]):not([disabled])').count();
   expect(acciones, 'hay más de una acción y una salida en la pantalla').toBeLessThanOrEqual(2);
+  // Accesibilidad medida, no declarada (REQ-F15): contraste real de cada texto visible y
+  // caja real de cada control tras el layout.
+  const samples = await collectTextSamples(page);
+  expect(samples.length, 'la pantalla no tiene texto que medir').toBeGreaterThan(0);
+  expect(auditContrast(samples).map((failure) => failure.description)).toEqual([]);
+  expect(auditSlateOnCanvas(samples).map((sample) => sample.selector)).toEqual([]);
+  expect(auditTextOnForbiddenBackground(samples).map((sample) => sample.selector)).toEqual([]);
+  expect(auditSlateOffSurface(samples).map((sample) => sample.selector)).toEqual([]);
+  expect(await auditTargets(page)).toEqual([]);
+
   // Y sin desbordamiento horizontal.
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
