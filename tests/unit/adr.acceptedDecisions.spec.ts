@@ -243,7 +243,19 @@ describe('ADR-011 · aceptado el 2026-09-09 por la Phase 1A Build Authorization'
       dataApi: { exposedSchemas: string[]; nonExposedSchemas: string[] };
     };
     expect(registry.dataApi.exposedSchemas).toEqual(['public']);
-    expect(registry.dataApi.nonExposedSchemas).toEqual(['content', 'ingest']);
+    // ADR-011 anexo v1.1 (2026-09-10, Phase 3): alta de `engine`, previsto en el punto 10.
+    // La superficie **expuesta** no cambia: el anexo la reduce, al dejar el estado derivado
+    // fuera del Data API.
+    expect(registry.dataApi.nonExposedSchemas).toEqual(['content', 'ingest', 'engine']);
+  });
+
+  it('el anexo v1.1 existe, sigue sin firmar y no toca la lista expuesta', () => {
+    const annex = read('architecture/ADR-011-schema-topology-and-data-api-exposure.md');
+    expect(annex).toContain('## Anexo v1.1 · **PROPUESTO · sin aprobar**');
+    expect(annex).toContain('requiere firma humana antes del aterrizaje de');
+    // Sin firma: el bloque de aprobación del anexo está vacío a propósito.
+    expect(annex).toMatch(/### Human approval · anexo v1\.1\n\nApproved by:\s*\nDate:\s*\n/);
+    expect(annex).toContain('`dataApi.exposedSchemas` **no cambia**');
   });
 });
 
@@ -483,24 +495,34 @@ describe('aceptar no es implementar · lo que sigue sin autorizar tras Phase 2',
    * Phase 1A (2026-09-09) autoriza `answer_key_versions`, `concept_versions`,
    * `concept_key`, `exam_sittings` y `exam_occurrences`. La Phase 2 Build Authorization
    * (2026-09-09) autoriza `session_items` (ADR-007 v1.1), `learning_units` (H-FPS-1),
-   * el stream, los contadores y los intentos (ADR-008). Lo de `planner_items` (ADR-007,
-   * Phase 4), los watermarks (ADR-008 punto 10, Phase 3) y toda proyección sigue
-   * prohibido.
+   * el stream, los contadores y los intentos (ADR-008).
+   *
+   * **Actualizado el 2026-09-10 por la Phase 3 Build Authorization §4**, y solo entonces:
+   * `concept_mastery`, `mastery_history`, `error_patterns`, `projection_watermarks` y
+   * `engine_config` salen de la lista porque su migración autorizada ha aterrizado. Lo de
+   * `planner_*` (ADR-007, Phase 4) sigue prohibido, y también `exam_readiness` (BD-04: la
+   * preparación es de objetivo y es de Phase 6) e `intervention_outcomes` (REQ-D07 diferido,
+   * DEF-29). Que Phase 3 exista no relaja nada más.
    */
   const tables = [
     'planner_items',
     'planner_runs',
-    'projection_watermarks',
-    'consumed_position',
-    'concept_mastery',
     'exam_readiness',
-    'engine_config',
+    'intervention_outcomes',
+    'review_schedule',
+    'simulation_runs',
   ];
 
   for (const table of tables) {
-    it(`ninguna migración menciona ${table}`, () => {
+    it(`ninguna migración crea ${table}`, () => {
+      // Se busca la **creación**, no la mención: la migración 20 nombra `exam_readiness` e
+      // `intervention_outcomes` precisamente para explicar por qué **no** las crea, y una
+      // prueba que confundiera la explicación con el hecho obligaría a borrar la explicación.
+      const creation = new RegExp(
+        `create\\s+table\\s+(if\\s+not\\s+exists\\s+)?([a-z_]+\\.)?${table}\\b`,
+      );
       for (const file of sqlFiles) {
-        expect(readFileSync(file, 'utf8').toLowerCase(), file).not.toContain(table);
+        expect(readFileSync(file, 'utf8').toLowerCase(), file).not.toMatch(creation);
       }
     });
   }

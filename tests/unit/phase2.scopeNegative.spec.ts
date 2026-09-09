@@ -28,13 +28,18 @@ const allMigrationSql = migrations
   .map((name) => readFileSync(join(migrationsDir, name), 'utf8').toLowerCase())
   .join('\n');
 
-describe('no existe ningún motor ni proyección (Phases 3 y 4)', () => {
-  it('no hay paquete de motor de aprendizaje ni de planner', () => {
-    for (const pkg of ['learning-engine', 'planner-engine', 'risk-engine']) {
+describe('el alcance del motor es exactamente Phase 3 (nada de Phase 4 en adelante)', () => {
+  /**
+   * Actualizado el 2026-09-10 por la **Phase 3 Build Authorization §4**, y solo entonces: la
+   * migración autorizada ha aterrizado, de modo que el Learning Engine deja de estar
+   * prohibido y pasa a estar **acotado**. Lo que sigue prohibido no se relaja ni un ápice.
+   */
+  it('existe el motor de aprendizaje y no existe ningún otro motor', () => {
+    for (const pkg of ['planner-engine', 'risk-engine']) {
       expect(existsSync(join(REPO_ROOT, 'packages', pkg)), `packages/${pkg} existe`).toBe(false);
     }
     const packages = readdirSync(join(REPO_ROOT, 'packages'));
-    expect(packages.sort()).toEqual(['config', 'design-system', 'domain']);
+    expect(packages.sort()).toEqual(['config', 'design-system', 'domain', 'learning-engine']);
   });
 
   it('ninguna migración crea una tabla de proyección, de planner o de configuración de motor', () => {
@@ -68,23 +73,50 @@ describe('no existe ningún motor ni proyección (Phases 3 y 4)', () => {
     }
   });
 
-  it('ninguna columna de la evidencia agrega dominio: mastery no es readiness (EC-004)', () => {
-    // La separación se protege por ausencia: en Phase 2 no hay ninguna columna agregada
-    // —«score», «level», «readiness», «mastery»— en ninguna tabla de usuario. Sin agregado
-    // no puede confundirse el dominio del concepto con la preparación para el examen.
+  it('ninguna migración introduce una puntuación ni readiness (EC-004 · H-P3-8)', () => {
+    /*
+     * Actualizado el 2026-09-10 por la Phase 3 Build Authorization §4.
+     *
+     * `mastery_state`, `uncertainty`, `next_review_at`, `engine_version` y `event_watermark`
+     * salen de la lista porque la migración autorizada los materializa: son el estado
+     * categórico, la incertidumbre categórica, la columna que permanece `NULL` mientras la
+     * política esté sin fijar, y las dos marcas de procedencia.
+     *
+     * Lo que sigue prohibido **para siempre en v1** es la puntuación bajo cualquier nombre y
+     * cualquier forma de readiness. Sin puntuación no hay precisión falsa posible, y esa es
+     * la garantía que INV-111 deja de necesitar de la disciplina de presentación.
+     */
     for (const marker of [
-      'mastery_state',
       'mastery_score',
+      'mastery_score_internal',
       'stability_score',
       'readiness_score',
       'readiness_state',
-      'next_review_at',
-      'uncertainty',
-      'engine_version',
-      'event_watermark',
+      'probability',
     ]) {
       expect(allMigrationSql, `alguna migración introduce ${marker}`).not.toContain(marker);
     }
+    // `exam_readiness` se nombra en la migración 20 para explicar por qué **no** se crea:
+    // se vigila la creación, igual que en la prueba de tablas de más arriba.
+    expect(allMigrationSql, 'alguna migración crea exam_readiness').not.toMatch(
+      /create\s+table\s+(if\s+not\s+exists\s+)?([a-z_]+\.)?exam_readiness\b/,
+    );
+  });
+
+  it('el estado derivado no queda al alcance de ningún rol de cliente', () => {
+    // El esquema `engine` es no expuesto (ADR-011 anexo v1.1): ninguna migración le concede
+    // nada a `anon` ni a `authenticated`. La guarda `private-schema-grant-guard` lo vigila
+    // sobre el registro; esto es la comprobación redundante y barata.
+    for (const grant of [
+      'grant usage on schema engine to anon',
+      'grant usage on schema engine to authenticated',
+      'grant select on engine.concept_mastery to authenticated',
+    ]) {
+      expect(allMigrationSql, `alguna migración concede ${grant}`).not.toContain(grant);
+    }
+    expect(allMigrationSql).toContain(
+      'revoke all on schema engine from public, anon, authenticated',
+    );
   });
 
   it('no hay política de puntuación: BD-06 es de Phase 6', () => {

@@ -153,8 +153,25 @@ describe('SD-018 · las migraciones respetan los mecanismos del contrato', () =>
   const migrationsDir = join(REPO_ROOT, 'supabase', 'migrations');
   const migrations = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql'));
 
-  /** Contadores que ADR-008 bloquea con `SELECT … FOR UPDATE` (puntos 2 y «mismo orden»). */
-  const LOCKABLE_COUNTERS = ['user_event_counters', 'user_question_counters'];
+  /**
+   * Filas que se bloquean con `SELECT … FOR UPDATE`.
+   *
+   * ADR-008 puntos 2 y «mismo orden» fijan los dos contadores. El **anexo de reconciliación
+   * de watermark** (2026-09-10) añade el progreso del consumidor: dos ejecuciones concurrentes
+   * del motor para el mismo aprendiz deben serializarse, y el bloqueo precede a toda
+   * comprobación, igual que en la ingestión. SD-013 añade la versión de configuración, que se
+   * bloquea para que dos promociones simultáneas no dejen dos versiones activas.
+   */
+  const LOCKABLE_COUNTERS = [
+    'user_event_counters',
+    'user_question_counters',
+    'projection_watermarks',
+    'engine_config',
+    // D-21 · la frontera de transición de un mapeo bloquea su fila antes de validar la
+    // transición: dos cambios simultáneos del mismo mapeo se serializan, y la generación de
+    // atribución avanza una vez por cambio real.
+    'question_concepts',
+  ];
 
   it('ningún bloqueo de fila fuera de los contadores de ADR-008, ninguna secuencia global', () => {
     for (const migration of migrations) {
@@ -188,11 +205,25 @@ describe('SD-018 · las migraciones respetan los mecanismos del contrato', () =>
       // `on conflict (col) do nothing`, con la lista de columnas en medio.
       const code = withoutComments.replace(/'[^']*'/g, "''");
 
+      /**
+       * Inserciones donde `ON CONFLICT DO NOTHING` es legítimo porque **no hay ninguna
+       * posición incrementada delante**:
+       *
+       *   - el alta del perfil, para que un reintento del trigger de registro no falle;
+       *   - el alta de la fila de watermark (Phase 3, 2026-09-10), que nace en
+       *     `consumed_position = 0` y se bloquea inmediatamente después: «ya existía» es
+       *     exactamente la respuesta correcta, y ningún avance la precede.
+       */
+      const IDEMPOTENT_ROW_CREATION = [
+        'insert into public.profiles',
+        'insert into engine.projection_watermarks',
+      ];
       for (const match of code.matchAll(/on\s+conflict[^;]*?do\s+nothing/g)) {
         const window = code.slice(Math.max(0, match.index - 300), match.index);
-        expect(window, `${migration}: ON CONFLICT DO NOTHING fuera del alta de perfil`).toContain(
-          'insert into public.profiles',
-        );
+        expect(
+          IDEMPOTENT_ROW_CREATION.some((insertion) => window.includes(insertion)),
+          `${migration}: ON CONFLICT DO NOTHING fuera del alta idempotente de una fila`,
+        ).toBe(true);
       }
 
       expect(sql, `${migration} crea una secuencia global`).not.toContain('create sequence');
@@ -200,13 +231,29 @@ describe('SD-018 · las migraciones respetan los mecanismos del contrato', () =>
     }
   });
 
-  it('projection_watermarks no existe antes de la primera proyección (Phase 3)', () => {
-    for (const migration of migrations) {
-      const sql = readFileSync(join(migrationsDir, migration), 'utf8').toLowerCase();
-      expect(sql, `${migration} menciona projection_watermarks`).not.toContain(
-        'projection_watermarks',
-      );
-    }
+  /**
+   * ADR-008 punto 10 · «los watermarks acompañan a la primera proyección (Phase 3)».
+   *
+   * Actualizado el 2026-09-10 por la Phase 3 Build Authorization: la primera proyección ya
+   * existe, de modo que la tabla debe existir **y** ser exactamente la que el punto 10
+   * describe. La regla deja de ser «no existe» y pasa a ser «existe con esta forma»: por
+   * usuario y por proyección, para que un aprendiz atrasado no detenga a otro y una
+   * proyección lenta no detenga a las demás.
+   */
+  it('projection_watermarks es por usuario y por proyección, y nace con la primera proyección', () => {
+    const creators = migrations.filter((name) =>
+      /create\s+table\s+(if\s+not\s+exists\s+)?[a-z_.]*projection_watermarks\b/.test(
+        readFileSync(join(migrationsDir, name), 'utf8').toLowerCase(),
+      ),
+    );
+    expect(creators, 'la tabla de watermarks debe crearse exactamente una vez').toHaveLength(1);
+
+    const sql = readFileSync(join(migrationsDir, creators[0] as string), 'utf8').toLowerCase();
+    expect(sql).toContain('primary key (user_id, projection_name)');
+    expect(sql).toContain('consumed_position');
+    // Sigue sin existir ninguna secuencia global: el orden es `stream_position` por usuario.
+    expect(sql).not.toContain('create sequence');
+    expect(sql).not.toContain('server_sequence');
   });
 });
 
