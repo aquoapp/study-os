@@ -50,8 +50,15 @@ export {
 export {
   FPS_ASSIGNMENT_STRATEGY,
   FPS_SESSION_TYPE,
+  deriveFpsStep,
+  fpsPathForStep,
   selectFixedSessionItems,
   type FixedSessionItem,
+  type FpsEventView,
+  type FpsItemView,
+  type FpsStepKind,
+  type FpsStepRef,
+  type FpsStepResult,
   type PublishedQuestion,
   type PublishedUnit,
 } from './fps';

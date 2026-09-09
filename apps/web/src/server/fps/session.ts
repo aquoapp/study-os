@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { deriveFpsStep, fpsPathForStep } from '@study-os/domain';
 
 /**
  * Estado de la sesión del First Product Slice, **derivado de la evidencia del servidor**.
@@ -136,12 +137,6 @@ export function submittedEventFor(state: SessionState, itemId: string): EventRow
   );
 }
 
-function feedbackSeen(state: SessionState, itemId: string): boolean {
-  return state.events.some(
-    (event) => event.session_item_id === itemId && event.event_type === 'FEEDBACK_VIEWED',
-  );
-}
-
 /** La última selección guardada de un ítem, para restaurarla al volver. */
 export function lastSelectedOptionFor(state: SessionState, itemId: string): string | null {
   const selections = state.events.filter(
@@ -165,47 +160,26 @@ export function lastConfidenceFor(state: SessionState, itemId: string): number |
 /**
  * El paso exacto en el que está la sesión.
  *
- * Orden de las reglas, y el porqué de la primera:
- *
- * 1. **Corrección pendiente antes que el cursor.** Tras `ANSWER_SUBMITTED` el ítem queda
- *    `COMPLETED` y el cursor del servidor avanza al siguiente. Un aprendiz que se fuera entre
- *    el envío y la corrección volvería a la pregunta siguiente sin haber visto nunca la
- *    respuesta que se ganó. Se detecta con evidencia legible: un envío sin
- *    `FEEDBACK_VIEWED` posterior para el mismo ítem.
- * 2. El primer ítem que no está `COMPLETED`, por `sort_order`.
- * 3. Si no queda ninguno, la sesión está lista para terminar.
+ * La regla vive en `@study-os/domain` (`deriveFpsStep`) porque es **pura**: depende solo de la
+ * evidencia y por eso se puede comprobar sin base de datos ni navegador. Aquí solo se le
+ * adjuntan las filas completas que la pantalla necesita.
  */
 export function deriveStep(state: SessionState): Step {
-  if (state.session.status === 'COMPLETED' || state.session.status === 'ABANDONED') {
-    return { kind: 'end' };
-  }
-
-  for (const item of state.items) {
-    if (item.item_type !== 'QUESTION') continue;
+  const step = deriveFpsStep(state.session.status, state.items, state.events);
+  if (step.kind === 'end') return { kind: 'end' };
+  const item = state.items.find((candidate) => candidate.id === step.itemId);
+  if (!item) return { kind: 'end' };
+  if (step.kind === 'feedback') {
     const submitted = submittedEventFor(state, item.id);
-    if (submitted && !feedbackSeen(state, item.id)) {
-      return { kind: 'feedback', ordinal: item.sort_order, item, submitted };
-    }
+    if (!submitted) return { kind: 'end' };
+    return { kind: 'feedback', ordinal: step.ordinal, item, submitted };
   }
-
-  const pending = state.items.find((item) => item.status !== 'COMPLETED');
-  if (!pending) return { kind: 'end' };
-  return pending.item_type === 'LEARNING_UNIT'
-    ? { kind: 'learn', ordinal: pending.sort_order, item: pending }
-    : { kind: 'check', ordinal: pending.sort_order, item: pending };
+  return { kind: step.kind, ordinal: step.ordinal, item };
 }
 
 /** La ruta que corresponde a un paso. Única fuente de navegación del vertical. */
 export function pathForStep(step: Step): string {
-  switch (step.kind) {
-    case 'learn':
-      return `/aprender/${step.ordinal}`;
-    case 'check':
-    case 'feedback':
-      return `/comprobar/${step.ordinal}`;
-    case 'end':
-      return '/fin';
-  }
+  return fpsPathForStep(step.kind === 'end' ? { kind: 'end' } : { ...step, itemId: step.item.id });
 }
 
 /** Recuentos de FIN, derivados **solo** de la evidencia del propio aprendiz. */
