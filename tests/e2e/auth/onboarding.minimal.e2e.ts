@@ -22,6 +22,8 @@ import {
 
 let pack: SyntheticPack | null = null;
 let ordinal = 0;
+/** Correos dados de alta por este fichero: se borran antes de purgar el pack. */
+const createdEmails: string[] = [];
 
 function uniqueEmail(label: string): string {
   const runId = process.env[RUN_ID_ENV_VAR];
@@ -30,7 +32,9 @@ function uniqueEmail(label: string): string {
   }
   ordinal += 1;
   const scope = `${label}-${test.info().project.name}-w${test.info().workerIndex}`;
-  return runScopedEmail(String(runId), scope, ordinal);
+  const email = runScopedEmail(String(runId), scope, ordinal);
+  createdEmails.push(email);
+  return email;
 }
 
 const PASSWORD = 'Contrasena-De-Prueba-1!';
@@ -41,11 +45,26 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  if (pack) {
-    const env = readTestEnv();
-    await purgePack(adminClient(env), pack.packId);
-    pack = null;
+  if (!pack) return;
+  const env = readTestEnv();
+  const admin = adminClient(env);
+
+  // Primero las cuentas, después el pack. El objetivo de estudio referencia el pack con
+  // `RESTRICT`, así que mientras exista un aprendiz con objetivo sobre él la purga se niega
+  // —y hace bien: es la misma protección que impide borrar contenido que la evidencia de
+  // alguien todavía resuelve—. La limpieza global de la suite borra las cuentas al final,
+  // que es más tarde que este `afterAll`, así que este fichero se lleva las suyas.
+  const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  if (error) throw new Error(`listUsers: ${error.message}`);
+  for (const user of data.users) {
+    if (user.email && createdEmails.includes(user.email)) {
+      const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
+      if (deleteError) throw new Error(`deleteUser(${user.email}): ${deleteError.message}`);
+    }
   }
+
+  await purgePack(admin, pack.packId);
+  pack = null;
 });
 
 test.describe('onboarding mínimo · REQ-C01', () => {
