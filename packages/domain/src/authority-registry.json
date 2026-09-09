@@ -39,7 +39,8 @@
       "stage_item",
       "validate_staged_item",
       "publish_staged_item",
-      "copy_forward_question_concepts"
+      "copy_forward_question_concepts",
+      "purge_generated_pack"
     ],
     "anchors": {
       "grade_attempt": "INV-101 · la corrección ocurre en servidor y no devuelve la clave",
@@ -54,7 +55,8 @@
       "stage_item": "ADR-011 · frontera de ingestión: solo servidor deposita en ingest",
       "validate_staged_item": "INV-110 · cuarentena si OFFICIAL carece de fuente primaria",
       "publish_staged_item": "ADR-011 · Master §31 · única vía de publicación a tablas canónicas",
-      "copy_forward_question_concepts": "ADR-009 v1.1 · copy-forward con PENDING_REVALIDATION"
+      "copy_forward_question_concepts": "ADR-009 v1.1 · copy-forward con PENDING_REVALIDATION",
+      "purge_generated_pack": "PI-1A-5 · higiene de fixtures: solo packs íntegramente GENERATED; nunca contenido real"
     }
   },
   "readOnlyRpcs": {

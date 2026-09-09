@@ -124,6 +124,17 @@ jobs:
       - name: schema-drift
         run: npm run schema-drift
 
+      # Reversibilidad real (Phase 1A · P1A-G10): se revierten las migraciones posteriores a
+      # Phase 0 con sus scripts down, se comprueba que el catálogo queda limpio y se vuelven
+      # a aplicar desde cero. La deriva se vuelve a medir después.
+      - name: db:roundtrip
+        env:
+          NEXT_PUBLIC_ENVIRONMENT: local
+        run: npm run db:roundtrip
+
+      - name: schema-drift · tras el roundtrip
+        run: npm run schema-drift
+
       - name: test:integration
         run: npm run test:integration
 
