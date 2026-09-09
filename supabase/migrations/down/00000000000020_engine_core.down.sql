@@ -11,6 +11,7 @@ drop function if exists engine.rebuild_projections(uuid, jsonb, engine.projectio
 drop function if exists engine.recalculate_mastery(uuid, bigint, jsonb, engine.projection_reason);
 drop function if exists engine.apply_projection(uuid, jsonb, engine.projection_reason, bigint, boolean);
 drop function if exists engine.stale_users(text, integer);
+drop function if exists engine.evidence_snapshot(uuid);
 
 drop trigger if exists mastery_history_append_only on engine.mastery_history;
 drop function if exists engine.reject_history_mutation();

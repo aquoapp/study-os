@@ -350,6 +350,81 @@ comment on function engine.stale_users(text, integer) is
 revoke all on function engine.stale_users(text, integer) from public, anon, authenticated;
 grant execute on function engine.stale_users(text, integer) to service_role;
 
+-- Lectura de la evidencia de un aprendiz ---------------------------------------------------
+--
+-- Una sola función, y por una razón de seguridad además de eficiencia: si el motor leyera la
+-- evidencia con consultas sueltas filtrando por `user_id`, la aplicación estaría decidiendo a
+-- quién pertenece qué a partir de una variable, que es exactamente lo que Manifest §14 y la
+-- guarda de autoridad prohíben. Aquí la pertenencia la resuelve el servidor, en un esquema no
+-- expuesto y sin ningún grant de cliente.
+create or replace function engine.evidence_snapshot(p_user_id uuid)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select jsonb_build_object(
+    'accountCreatedAt', (select p.created_at from public.profiles p where p.id = p_user_id),
+    'maxPosition', coalesce(
+      (select max(e.stream_position) from public.learning_events e where e.user_id = p_user_id), 0),
+    'packVersionId', (
+      select v.id
+      from public.learner_exam_goals g
+      join public.exam_pack_versions v on v.exam_pack_id = g.exam_pack_id
+      where g.user_id = p_user_id and g.status = 'ACTIVE' and v.status = 'PUBLISHED'
+      order by v.created_at desc
+      limit 1
+    ),
+    'watermark', (
+      select jsonb_build_object(
+        'consumedPosition', w.consumed_position,
+        'engineVersion', w.engine_version,
+        'engineConfigVersion', w.engine_config_version,
+        'attributionPackVersionId', w.attribution_pack_version_id,
+        'attributionGeneration', w.attribution_generation
+      )
+      from engine.projection_watermarks w
+      where w.user_id = p_user_id and w.projection_name = 'concept_mastery'
+    ),
+    'attempts', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'attemptId', a.id,
+        'questionId', a.question_id,
+        'representationId', a.question_representation_id,
+        'sessionId', a.session_id,
+        'diagnosticRunId', a.diagnostic_run_id,
+        'streamPosition', e.stream_position,
+        'isCorrect', a.is_correct_at_submission,
+        'answerKind', a.answer_kind,
+        'confidenceValue', a.confidence_value,
+        'clientCreatedAt', e.client_created_at,
+        'serverReceivedAt', e.server_received_at
+      ) order by e.stream_position)
+      from public.question_attempts a
+      join public.learning_events e on e.event_id = a.submitted_event_id
+      where a.user_id = p_user_id
+    ), '[]'::jsonb),
+    'exposures', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'conceptId', u.concept_id,
+        'eventType', e.event_type,
+        'streamPosition', e.stream_position
+      ) order by e.stream_position)
+      from public.learning_events e
+      join public.session_items i on i.id = e.session_item_id
+      join public.learning_units u on u.id = i.learning_unit_id
+      where e.user_id = p_user_id
+        and e.event_type in ('LEARNING_UNIT_VIEWED', 'LEARNING_UNIT_COMPLETED')
+    ), '[]'::jsonb)
+  );
+$$;
+comment on function engine.evidence_snapshot(uuid) is
+  'Contrato §5.1 · toda la evidencia de un aprendiz y su semántica declarada en una sola '
+  'lectura consistente. La pertenencia la decide el servidor, nunca un filtro de aplicación.';
+revoke all on function engine.evidence_snapshot(uuid) from public, anon, authenticated;
+grant execute on function engine.evidence_snapshot(uuid) to service_role;
+
 -- Persistencia atómica del resultado del motor -------------------------------------------
 create or replace function engine.apply_projection(
   p_user_id uuid,
