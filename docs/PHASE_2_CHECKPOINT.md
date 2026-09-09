@@ -228,6 +228,29 @@ aclaración—, ninguna semántica de Phase 1A cambió, no se requirió corpus o
 expandió la frontera de seguridad más allá de las dos RPC declaradas, y ninguna prueba
 necesitó debilitar un invariante.
 
+## AUDIT BUNDLE
+
+`STUDY_OS_Phase_2_Audit_Bundle_8fc6a09.zip` = `git archive` del HEAD `8fc6a09306e20521c47192a52c988f316844944a`
+(SHA-256 `862c4ed60e27396e39569090d1b72431b3207066c9ca64ab4baf16663f3a32c1`, 737 769 bytes),
+construido **dos veces** de forma determinista y comparado byte a byte, con comprobación
+blob a blob (240 blobs, cero ficheros ajenos al árbol) y escaneo independiente del contenido
+extraído: cero secretos, cero identificadores de proyectos ajenos, cero rutas absolutas
+locales, cero corpus. El literal del primer pack aparece únicamente dentro de la guarda que
+lo prohíbe y de sus pruebas, que necesitan contenerlo para detectarlo; `correct_option_id`
+aparece solo en las dos listas de **rechazo** de campos autoritativos del cliente.
+
+La salida íntegra de cada comando —extracción limpia, cadena completa contra STAGING,
+campaña por suites, CI, PRODUCTION y Vercel— está en
+`STUDY_OS_Phase_2_Audit_Bundle_8fc6a09_AUDIT_EVIDENCE.md`, **fuera del repositorio**, en la
+carpeta STUDY_OS del escritorio de Ana, junto al registro del relevo de modelo
+`STUDY_OS_Phase_2_MODEL_HANDOFF_RECOVERY_58c21a7.md`.
+
+Esta sección es documental y **no genera un bundle nuevo** (Checkpoint Contract: cambio solo
+documental). El árbol de `8fc6a09` difiere de la línea base verificada `acb82e0` únicamente
+en la cabecera de este fichero.
+
+---
+
 ## NEXT AUTHORITY
 
 Aceptación humana de Phase 2 por Ana Victoria con revisión independiente. Hasta entonces: sin
