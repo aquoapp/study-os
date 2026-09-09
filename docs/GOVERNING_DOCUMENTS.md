@@ -139,7 +139,7 @@ necesitan las 18 familias de componentes de §16, que empiezan en Phase 5. Es un
 **diferida con plazo antes de Phase 5**, no un bloqueo de Phase 0: ningún entregable de
 Phase 0 la espera.
 
-### `SD-018` · **`ACCEPTED · NOT IMPLEMENTED`** · propietario normativo ADR-008
+### `SD-018` · **`ACCEPTED` · implementación autorizada en Phase 2** · propietario normativo ADR-008
 
 No lo gobierna el Design System, pero conviene que conste junto al resto del estado. El
 contrato de orden e idempotencia del stream de eventos —corregido dos veces: el orden de
@@ -147,9 +147,12 @@ las operaciones dentro de la transacción, y la triple coincidencia que conviert
 `submitted_event_id` repetido en idempotencia— fue **aceptado por Ana Victoria el
 2026-09-07** mediante `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md`, y tiene su
 propietario normativo en `architecture/ADR-008-per-user-event-order-and-idempotency.md`.
-SD-015 queda `SUPERSEDED BY SD-018 / ADR-008`. **No está implementado**: no existe ninguna
-migración de eventos, ninguna tabla, ningún contador y ninguna función, y un test lo
-comprueba. La aceptación no autoriza ninguna migración.
+SD-015 queda `SUPERSEDED BY SD-018 / ADR-008`. Hasta el 2026-09-09 constaba como
+`ACCEPTED · NOT IMPLEMENTED`; la Phase 2 Build Authorization de esa fecha
+(`docs/PHASE_2_AUTHORIZATION_PACKET.md`) autoriza el stream, los contadores y los intentos
+con sus prerrequisitos aceptados, **SD-022** (canonicalización v1) y **SD-023** (autoridad
+de representación y de tiempo); los watermarks por proyección esperan a Phase 3.
+`sd018.contract.spec` vigila que contrato, migración y suites vayan juntos.
 
 ### Decisiones de dominio · aceptadas el 2026-09-07, no implementadas
 
@@ -163,7 +166,7 @@ impidiéndolo es la evidencia de infraestructura real de P0-G2 y P0-G4.
 
 | Elemento | Estado |
 | --- | --- |
-| Escala de confianza | §6 dice «Four/five semantic levels». La ambigüedad que ya recogía C-05 / SD-008 sigue viva, ahora confirmada por el propio documento. Phase 5 |
+| Escala de confianza | §6 dice «Four/five semantic levels». La ambigüedad que recogía C-05 / SD-008 quedó **resuelta el 2026-09-09** (BD-03, SD-008 `ACCEPTED`): cuatro niveles, escala `v1`, etiquetas del material de pantalla. Los Hi-Fi que muestran 1–5 se corrigen en Phase 5 (Master §48) |
 | Familia tipográfica | §2 da dirección («modern humanist/grotesk sans»), no nombre. Las pilas actuales son de sistema y se sustituyen cuando se decida |
 | Tema oscuro | No especificado. No se inventa |
 | Las 18 familias de componentes de §16 | Phase 5 en adelante. Fuera del alcance de Phase 0 |

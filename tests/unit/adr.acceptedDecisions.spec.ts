@@ -71,12 +71,19 @@ const ACCEPTED: Array<{ file: string; owns: string; decision: string }> = [
 ];
 
 const PHASE_1A_PACKET_SHA256 = '806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4';
+const PHASE_2_PACKET_SHA256 = 'da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67';
 
 /** ADR aceptados cuya implementación autoriza la Phase 1A Build Authorization. */
 const PHASE_1A_AUTHORIZED = new Set([
   'architecture/ADR-006-answer-key-data-api-boundary.md',
   'architecture/ADR-009-stable-concept-identity.md',
   'architecture/ADR-010-official-exam-occurrences.md',
+]);
+
+/** ADR aceptados cuya implementación autoriza la Phase 2 Build Authorization (2026-09-09). */
+const PHASE_2_AUTHORIZED = new Set([
+  'architecture/ADR-007-enforceable-item-targets.md',
+  'architecture/ADR-008-per-user-event-order-and-idempotency.md',
 ]);
 
 const PROPOSED = [
@@ -127,7 +134,12 @@ describe('ADR-006 … ADR-010 · aceptados, con aprobación y propietario', () =
         if (/^STATUS: ACCEPTED · v1\.1/m.test(text)) {
           expect(text).toContain('## Anexo v1.1');
           expect(text).toContain('ACCEPTED 2026-09-09');
-          expect(text).toContain(PHASE_1A_PACKET_SHA256);
+          // El anexo cita el registro de decisión que lo aceptó: Phase 1A o Phase 2.
+          const annex = text.slice(text.indexOf('## Anexo v1.1'));
+          expect(
+            annex.includes(PHASE_1A_PACKET_SHA256) || annex.includes(PHASE_2_PACKET_SHA256),
+            `${file}: el anexo no cita ningún registro de decisión`,
+          ).toBe(true);
         }
         expect(text).toMatch(/^DATE: 2026-09-07$/m);
         expect(text).toMatch(/^DECISION OWNER: Ana Victoria$/m);
@@ -153,10 +165,14 @@ describe('ADR-006 … ADR-010 · aceptados, con aprobación y propietario', () =
 
       it('registra la decisión como ACCEPTED · NOT IMPLEMENTED y un estado de implementación explícito', () => {
         expect(text).toContain('ACCEPTED · NOT IMPLEMENTED');
-        // Phase 1A (2026-09-09) autoriza implementar ADR-006, ADR-009 y ADR-010; ADR-007 y
-        // ADR-008 siguen sin implementar hasta Phase 2 y Phase 4.
+        // Phase 1A (2026-09-09) autoriza implementar ADR-006, ADR-009 y ADR-010; la Phase 2
+        // Build Authorization (mismo día) autoriza ADR-007 (session_items) y ADR-008.
         if (PHASE_1A_AUTHORIZED.has(file)) {
           expect(text).toMatch(/^IMPLEMENTATION STATUS: AUTHORIZED · Phase 1A/m);
+        } else if (PHASE_2_AUTHORIZED.has(file)) {
+          expect(text).toMatch(/^IMPLEMENTATION STATUS: AUTHORIZED · Phase 2 \(2026-09-09\)/m);
+          expect(text).toContain('Hasta el 2026-09-09 constaba como NOT IMPLEMENTED');
+          expect(text).toContain(PHASE_2_PACKET_SHA256);
         } else {
           expect(text).toMatch(/^IMPLEMENTATION STATUS: NOT IMPLEMENTED/m);
           expect(text).toContain('no autoriza ninguna migración');
@@ -414,7 +430,7 @@ describe('ADR-001 … ADR-005 · siguen PROPOSED, con referencias precisas', () 
   }
 });
 
-describe('aceptar no es implementar · lo que sigue sin autorizar tras Phase 1A', () => {
+describe('aceptar no es implementar · lo que sigue sin autorizar tras Phase 2', () => {
   const migrationsDir = join(REPO_ROOT, 'supabase', 'migrations');
   const sqlFiles = readdirSync(migrationsDir)
     .filter((name) => name.endsWith('.sql'))
@@ -422,22 +438,20 @@ describe('aceptar no es implementar · lo que sigue sin autorizar tras Phase 1A'
 
   /**
    * Phase 1A (2026-09-09) autoriza `answer_key_versions`, `concept_versions`,
-   * `concept_key`, `exam_sittings` y `exam_occurrences`. Lo de ADR-007 (migraciones 7 y
-   * 11, Phase 2 y 4) y lo de ADR-008 (migraciones 8, 9 y 16, Phase 2) sigue prohibido.
+   * `concept_key`, `exam_sittings` y `exam_occurrences`. La Phase 2 Build Authorization
+   * (2026-09-09) autoriza `session_items` (ADR-007 v1.1), `learning_units` (H-FPS-1),
+   * el stream, los contadores y los intentos (ADR-008). Lo de `planner_items` (ADR-007,
+   * Phase 4), los watermarks (ADR-008 punto 10, Phase 3) y toda proyección sigue
+   * prohibido.
    */
   const tables = [
-    'session_items',
     'planner_items',
-    'study_sessions',
-    'learning_units',
-    'user_event_counters',
+    'planner_runs',
     'projection_watermarks',
-    'stream_position',
-    'answer_payload_hash',
-    'question_attempts',
-    'learning_events',
+    'consumed_position',
     'concept_mastery',
     'exam_readiness',
+    'engine_config',
   ];
 
   for (const table of tables) {

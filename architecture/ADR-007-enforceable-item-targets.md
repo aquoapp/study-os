@@ -1,10 +1,10 @@
 # ADR-007 · Destinos verificables de ítems de sesión y de planner
 
-STATUS: ACCEPTED · v1.0
+STATUS: ACCEPTED · v1.1 (anexo de implementación aceptado el 2026-09-09 · decisión H-P2-1 · el texto v1.0 se conserva íntegro)
 DATE: 2026-09-07
 DECISION OWNER: Ana Victoria
 DECISION RECORD: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` · SHA-256 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d` · baseline auditado `8823c2bdf2d31ec01a2f15b1566a94c1ad0eb04a`
-IMPLEMENTATION STATUS: NOT IMPLEMENTED · este ADR no autoriza ninguna migración ni código de dominio
+IMPLEMENTATION STATUS: AUTHORIZED · Phase 2 (2026-09-09) · `session_items` según el anexo v1.1; `planner_items` sigue en Phase 4. Hasta el 2026-09-09 constaba como NOT IMPLEMENTED
 OWNS: **SD-006** · propietario normativo único
 SPEC REFERENCES: Canonical Data & Event Model v1.0 §1, §6, §7, §9, §14, §17, §22, §23, §25, §28; Master Product Specification v1.0 §5, §8, §12, §19, §24; Technical Architecture v1.0 §2.3, §6.2; Engineering Constitution EC-005, EC-009; contradiction-register C-15; `docs/SPEC_DIFF_LOG.md` SD-006; ADR-002 punto 6 (superseded por este ADR)
 
@@ -155,3 +155,72 @@ Record: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` §3.2 y §5 · SHA-256
 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d`
 Scope of approval: gobernanza únicamente · no autoriza migraciones, implementación de
 dominio, infraestructura ni Phase 1
+
+## Anexo v1.1 · enumeración cerrada de `item_type` y comportamiento de borrado · ACCEPTED 2026-09-09
+
+**Registro de decisión:** `STUDY_OS_Phase_2_PreAuthorization_Packet_PROPOSED_be5a26a.md` · SHA-256 `da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67` · decisión **H-P2-1** aceptada en la
+Phase 2 Build Authorization del 2026-09-09 (copia aceptada en `docs/PHASE_2_AUTHORIZATION_PACKET.md`).
+El texto v1.0 no se modifica; este anexo fija las dos celdas que v1.0 dejaba como
+**PRERREQUISITO DE IMPLEMENTACIÓN** y cierra la deuda D-12 (a). Ambas celdas quedaron
+determinadas por los documentos gobernantes y por la propia Phase 1A; la aceptación es el
+acto de gobernanza, no una elección entre opciones.
+
+### A · Enumeración cerrada de `item_type`
+
+1. `item_type` es un tipo enumerado de base de datos con **exactamente cuatro** valores:
+   `LEARNING_UNIT`, `QUESTION`, `PRACTICAL`, `CONCEPT_REVIEW`. Son los cuatro nombres
+   recomendados de la matriz v1.0, ahora vinculantes como literales.
+2. Los tres candidatos no determinados por los documentos gobernantes (simulacro, material
+   de repaso personal, diagnóstico) **siguen excluidos**. Incorporar cualquiera exige, como
+   dice el punto 6 del patrón, migración, actualización de esta matriz y tests.
+3. Cada valor corresponde a una única columna de destino, y el `CHECK` del punto 2 del patrón
+   exige que la columna poblada sea exactamente la del `item_type` declarado.
+
+### B · Comportamiento de borrado
+
+1. **`ON DELETE RESTRICT` en las cuatro claves foráneas de destino**, en `session_items` y,
+   cuando se implemente en Phase 4, en `planner_items`.
+2. Motivo: Phase 1A hizo regla de base de datos que **una fila canónica publicada no se borra,
+   se retira** (DI-1A-3; triggers de las migraciones 04, 08 y 14). Un destino retirado sigue
+   siendo resoluble, de modo que el historial de sesión conserva a qué apuntó cada ítem
+   (EC-005). `RESTRICT` es la única opción compatible con el punto 5 del patrón: ni
+   `CASCADE` (borraría evidencia de sesión en silencio) ni `SET NULL` (dejaría un ítem sin
+   destino, prohibido por el `CHECK`).
+3. El único borrado admitido de filas canónicas es la purga de packs íntegramente GENERATED
+   (`purge_generated_pack`, PI-1A-5). Con `RESTRICT`, la purga de un pack que tenga ítems de
+   sesión referenciándolo falla; la purga de fixtures de Phase 2 borra antes las sesiones,
+   ítems, eventos e intentos sintéticos de los usuarios de prueba, que se dan de baja al
+   terminar cada ejecución (§33 de la autorización de Phase 2).
+
+### C · Matriz completa (sustituye las celdas PRERREQUISITO de v1.0)
+
+| `item_type` | Columna FK → tabla | Clasificación | Regla de propiedad | `ON DELETE` | `session_items` | `planner_items` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `LEARNING_UNIT` | `learning_unit_id → learning_units(id)` | Canónico | No aplica | **RESTRICT** | Sí · Phase 2 | Sí · Phase 4 |
+| `QUESTION` | `question_id → canonical_questions(id)` | Canónico | No aplica | **RESTRICT** | Sí · Phase 2 | Sí · Phase 4 |
+| `PRACTICAL` | `practical_id → practicals(id)` | Canónico | No aplica | **RESTRICT** | Sí · Phase 2 | Sí · Phase 4 |
+| `CONCEPT_REVIEW` | `concept_id → concepts(id)` | Canónico | No aplica | **RESTRICT** | Sí · Phase 2 | Sí · Phase 4 |
+
+### D · Prerrequisito de existencia del destino `LEARNING_UNIT`
+
+`learning_units` no existía en Phase 1A (SD-020 lo difirió). La decisión **H-FPS-1**
+(opción A, misma autorización) lo crea en Phase 2 como adenda de contenido canónico a través
+de la frontera `ingest` de Phase 1A: identidad estable (`learning_units`) más contenido
+versionado e inmutable (`learning_unit_versions`), en el mismo patrón que SD-021 para las
+preguntas. Solo contenido GENERATED en Phase 2; el contenido oficial llega por Phase 1B.
+
+### E · Qué registra el ítem además del destino
+
+El destino identifica **qué** se programó; la evidencia necesita además **qué versión se
+presentó**. Para `QUESTION`, el ítem registra `presented_representation_id`
+(`question_representations`), fijado por el servidor al aceptar `QUESTION_PRESENTED` y
+inmutable desde entonces (SD-023). Para `LEARNING_UNIT`, `presented_learning_unit_version_id`
+del mismo modo al aceptar `LEARNING_UNIT_VIEWED`. Ninguna de las dos columnas es un destino
+alternativo: el `CHECK` de exclusividad no las contempla y solo pueden poblarse cuando el
+`item_type` correspondiente lo admite.
+
+### F · Alcance de la autorización
+
+Este anexo autoriza la migración de `session_items` de Phase 2 con las pruebas negativas del
+punto 7 del patrón y la prueba de que cada columna de destino tiene clave foránea real con
+`RESTRICT`. **No autoriza** `planner_items` (Phase 4) ni ningún motor.

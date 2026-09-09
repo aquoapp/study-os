@@ -873,3 +873,252 @@ sus migraciones son de Phase 2 y Phase 4.
 errata.** SD-020 y SD-021 `ACCEPTED`; SD-018 `ACCEPTED · NOT IMPLEMENTED`; SD-001, SD-002,
 SD-006 y SD-007 `ACCEPTED` y en implementación parcial en Phase 1A (solo lo que sus ADR
 autorizan para esta fase); SD-015 `SUPERSEDED`; SD-016 implementada; el resto `PROPOSED`.
+
+---
+
+## SD-008 · **aceptación** · escala de confianza v1 · BD-03 resuelta
+
+**Corrige el estado de:** la entrada SD-008 del cuerpo congelado, que quedó con
+«**Aprobación:** pendiente» en la ronda de Phase −1 (histórica: se conserva sin editar).
+**Documentos afectados:** `Design System v1.0` §6 («cuatro/cinco niveles», ambiguo); Hi-Fi
+LEARN/CHECK/PRÁCTICO (muestran 1–5; corrección de diseño pendiente de Phase 5 bajo Master
+§48); `Canonical Data & Event Model v1.0` §12 (`question_attempts.confidence_value`).
+**Origen:** C-05 · BD-03 · decisión humana en la Phase 2 Build Authorization.
+**Estado:** **`ACCEPTED`** · 2026-09-09 · Ana Victoria · `STUDY_OS_Phase_2_PreAuthorization_Packet_PROPOSED_be5a26a.md` · SHA-256 `da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67`.
+
+**Cambio aceptado:**
+
+1. **Cuatro niveles**, versión de escala **`v1`**, etiquetas canónicas tomadas del material de
+   pantalla y de dominio (`Screen Design Spec v0.1` · 04_CHECK; `Learning System v0.4` y
+   `Pre-Build Intelligence v0.5` usan 1–4):
+
+   | `confidence_value` | Etiqueta |
+   | --- | --- |
+   | 1 | Nada segura |
+   | 2 | Dudosa |
+   | 3 | Bastante |
+   | 4 | Segura |
+
+2. La escala es un **registro versionado en base de datos** (`confidence_scales`: versión,
+   número de niveles, etiquetas, estado `ACTIVE`/`RETIRED`), sembrado por migración con `v1`
+   activa. Todo intento persiste **`confidence_value` y `confidence_scale_version`**; el
+   servidor rechaza un valor fuera de la escala y cualquier versión que no esté `ACTIVE`.
+   Una escala nunca se edita: cambiarla es publicar `v2` y retirar `v1`, porque la
+   calibración acumulada depende de la escala con la que se recogió.
+3. **Antes del feedback** (Master §14, INV-102): la confianza se fija en el envío
+   (`ANSWER_SUBMITTED` con `answer_kind = OPTION` la exige; una respuesta en blanco no la
+   exige) y `FEEDBACK_VIEWED` solo se acepta para un ítem con intento ya normalizado.
+   `CONFIDENCE_RECORDED` sigue siendo evento de evidencia (CDEM §11) con la misma validación.
+4. La misma constante vive en `@study-os/domain` (`CONFIDENCE_SCALE_V1`) para la UI de Phase 5
+   y FPS, con un test que la compara con la fila sembrada.
+
+**Justificación:** todos los contratos de dominio usan 1–4; la escala alimenta la calibración
+y no puede cambiar tras acumular evidencia; el Design System es ambiguo en su propio texto.
+**Impacto:** Phase 2 (columna, registro y validación); Phase 5 y FPS (captura en pantalla;
+corrección de los Hi-Fi que muestran 1–5).
+
+---
+
+## SD-022 · Contrato de canonicalización v1 · hash canónico de eventos y respuestas
+
+**Documentos afectados:** ADR-008 («Contrato de canonicalización · prerrequisito de la
+migración»); `Canonical Data & Event Model v1.0` §10 y §12.
+**Origen:** deuda D-12 (b); decisión H-P2-2 de la Phase 2 Build Authorization.
+**Estado:** **`ACCEPTED`** · 2026-09-09 · Ana Victoria · `STUDY_OS_Phase_2_PreAuthorization_Packet_PROPOSED_be5a26a.md` · SHA-256 `da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67`.
+Satisface el prerrequisito de ADR-008 **sin enmendarlo**.
+
+### Forma canónica (CJF-1)
+
+1. **Objetos:** claves ordenadas por **punto de código Unicode** de la clave normalizada
+   (equivale al orden de bytes UTF-8); sin espacios ni saltos de línea insignificantes;
+   `{"a":1,"b":[2,3]}`.
+2. **Cadenas:** normalizadas a **NFC** antes de serializar; escapes mínimos y fijos: `\"`,
+   `\\`, `\n`, `\r`, `\t`, `\b`, `\f`; cualquier otro carácter de control U+0000–U+001F como
+   `\u00xx` con hexadecimal en minúsculas; todo lo demás, incluido lo no ASCII, se emite tal
+   cual en UTF-8. No se recortan espacios ni se alteran mayúsculas: una diferencia de
+   contenido es una diferencia de hecho.
+3. **Ausente ≠ nulo:** una clave ausente no se serializa; una clave presente con valor nulo
+   se serializa como `"clave":null`. Dos payloads que difieren solo en eso tienen hashes
+   distintos.
+4. **Colecciones:** los arrays conservan el orden recibido; el orden es semántico (por
+   ejemplo, el orden presentado de las opciones).
+5. **Numéricos deterministas:** en los payloads que entran en el hash solo se admiten
+   **enteros** en el rango seguro (|n| ≤ 2⁵³ − 1), serializados en decimal sin signo para el
+   cero, sin ceros a la izquierda y sin exponente. Un numérico no entero se **rechaza** en la
+   validación, no se canonicaliza.
+6. **Booleanos** `true`/`false`; **nulo** `null`.
+7. **Tipos con forma fija:** los UUID se serializan en minúsculas con la forma
+   8-4-4-4-12; los instantes (`client_created_at`) se serializan por el servidor en UTC con
+   milisegundos, `AAAA-MM-DDTHH:MM:SS.sssZ`, tras interpretar el valor recibido. Dos
+   codificaciones equivalentes del mismo instante producen el mismo hash.
+8. **Algoritmo:** SHA-256 sobre los bytes UTF-8 del texto canónico; hexadecimal en minúsculas
+   (64 caracteres).
+9. **Versión almacenada por fila:** `canonicalization_version` (`'v1'`) en `learning_events`
+   y en `question_attempts`. Un cambio de cualquier regla o de cualquier conjunto de campos
+   es `v2`, con entrada nueva en este registro; los hashes históricos siguen siendo
+   interpretables porque cada fila declara con qué versión se calculó.
+
+### Conjunto de campos del hash de evento (`learning_events.payload_hash`)
+
+Exactamente estos, y solo estos, tal como los declara el cliente:
+`event_type`, `schema_version`, `session_id`, `session_item_id`, `device_id`,
+`client_created_at`, `client_sequence`, `created_offline`, `source_event_id`, `payload`.
+Los opcionales ausentes se omiten (regla 3). Quedan **fuera** por ser competencia del
+servidor: `user_id` (se compara aparte, ADR-008 punto 4), `event_id` (es la clave),
+`stream_position`, `server_received_at`, `engine_processed_at`, el propio hash y la versión.
+
+### Conjunto de campos del hash de respuesta (`question_attempts.answer_payload_hash`)
+
+Exactamente estos: `question_id`, `question_representation_id`, `answer_kind`
+(`OPTION` | `BLANK`), `selected_option_id` (nulo si `BLANK`), `presented_option_order`
+(array de identificadores de opción, si el cliente lo declara), `confidence_value`,
+`confidence_scale_version`, `response_ms`, `answer_key_version_id`. Es el «payload canónico
+completo de la respuesta» de ADR-008: incluye la versión del ítem (la representación
+presentada, SD-021 y SD-023) y la versión de clave usada (EC-007), que el servidor resuelve
+antes de calcular el hash. No hay texto libre en Phase 2: si una fase posterior lo
+incorpora, el conjunto pasa a `v2`. Quedan fuera `user_id` (se compara aparte),
+`attempt_number`, `is_correct_at_submission`, `correct_option_id` y `submitted_event_id`
+(es la clave).
+
+**Nota de alcance de la triple coincidencia.** Un reenvío del mismo `ANSWER_SUBMITTED` se
+resuelve primero en el nivel de evento (mismo `event_id`, mismo usuario, mismo hash de
+evento → se devuelve el evento y su intento sin recorrer de nuevo la normalización), de modo
+que una enmienda de clave entre dos reenvíos no convierte un reintento legítimo en conflicto.
+La triple coincidencia del intento se conserva íntegra como defensa en profundidad y se
+ejercita directamente sobre la función de normalización.
+
+### Pruebas asociadas
+
+- `canonical.hashIsDeterministic.spec` · dos codificaciones equivalentes (orden de claves,
+  espacios, NFD frente a NFC, desplazamiento horario, UUID en mayúsculas) → mismo hash;
+  ausente frente a nulo → hashes distintos; cualquier diferencia semántica → hash distinto.
+- `canonical.crossImplementation.spec` · la implementación SQL del servidor y la de
+  `@study-os/domain` producen el mismo hash para un conjunto fijo de vectores.
+- `attempts.canonicalHashIsDeterministic.spec` (declarada en ADR-008) · sobre el conjunto de
+  campos de respuesta.
+
+**Impacto:** migraciones de eventos e intentos de Phase 2; ninguna tabla de Phase 1A.
+
+---
+
+## SD-023 · Autoridad de representación y de tiempo en la evidencia de respuesta · aclaración de ADR-008, SD-021 y EC-007
+
+**Documentos afectados:** ADR-008 (punto 11 y «El mismo orden para `question_attempts`»;
+**aclarado, no enmendado**); SD-021 (puntos 2 y 5); Engineering Constitution EC-005 y
+EC-007; `Canonical Data & Event Model v1.0` §12 y reglas de integridad («un intento debe
+referenciar la versión de clave usada para evaluarlo»); Builder Handoff Manifest, líneas
+rojas de seguridad («nunca confiar en un `user_id` suministrado por el usuario»).
+**Origen:** corrección obligatoria §2 de la Phase 2 Build Authorization.
+**Estado:** **`ACCEPTED`** · 2026-09-09 · Ana Victoria · `STUDY_OS_Phase_2_PreAuthorization_Packet_PROPOSED_be5a26a.md` · SHA-256 `da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67`.
+
+### Comprobación de implicación (por qué es aclaración y no enmienda)
+
+- ADR-008 punto 11 define `client_created_at` como «la referencia temporal del hecho para el
+  motor» y `server_received_at` como auditoría. Ningún punto de ADR-008 le asigna la elección
+  de la versión del ítem ni de la clave.
+- SD-021 punto 5 exige que la evidencia referencie `question_representation_id`; el punto 2
+  hace inmutable la representación publicada. La representación que la evidencia debe
+  referenciar es, por EC-005 («la evidencia referencia lo que realmente se estudió», citada
+  por ADR-007), la que se presentó.
+- EC-007 y la regla de integridad del CDEM exigen que el intento conserve «la versión de
+  clave usada para evaluarlo»: la evaluación ocurre en el servidor (INV-101), luego la
+  elección de clave es del servidor.
+- La línea roja del Manifest prohíbe confiar en identidad suministrada por el cliente; por
+  el mismo principio, ningún campo autoritativo del intento puede venir del cliente.
+
+Ninguna de estas fuentes queda contradicha; el contrato de abajo las hace ejecutables.
+**No se activa STOP.**
+
+### Contrato
+
+1. **`client_created_at` nunca es autoridad** para elegir representación ni versión de
+   clave. Se conserva tal como lo declara el cliente, solo como referencia temporal del hecho
+   (ADR-008 punto 11). Un reloj manipulado, futuro o atrasado cambia ese dato y **nada
+   más**.
+2. **Cadena de autoridad de la representación:**
+   `session_items` (destino `QUESTION`, ADR-007 v1.1) → `QUESTION_PRESENTED` declara el
+   `question_representation_id` **exacto** que se mostró → el servidor verifica que es una
+   representación de la pregunta del ítem que ha estado publicada (`PUBLISHED`, o publicada
+   y después superseded o retirada) y la fija en `session_items.presented_representation_id`
+   → una presentación posterior del mismo ítem debe repetir la misma representación, y en
+   caso contrario se rechaza (`REPRESENTATION_MISMATCH`) → `ANSWER_SUBMITTED` debe referenciar
+   la representación presentada, y la opción elegida debe pertenecer a ella; cualquier
+   discrepancia se rechaza y **nunca** se reata a otra representación → el servidor resuelve
+   la versión de clave (punto 3) → el intento nace inmutable con ambas referencias.
+   Un `ANSWER_SUBMITTED` sin `QUESTION_PRESENTED` previo aceptado para el ítem se rechaza
+   (`NOT_PRESENTED`).
+3. **Resolución de clave, en servidor y para la representación presentada** (semántica de
+   Phase 1A: `content.answer_key_versions` está ligada a una representación y su opción
+   correcta pertenece a esa representación):
+   a. el conjunto candidato son las claves de la representación presentada;
+   b. se elige la **vigente en la aceptación** por fechas de vigencia del servidor
+      (`effective_from ≤ hoy` y `effective_to` nula o posterior);
+   c. si ninguna está vigente porque la representación fue superseded —la única forma en que
+      Phase 1A cierra la clave de una representación sin publicarle otra, ya que solo liga
+      claves nuevas a la representación vigente—, se usa la **última clave de esa
+      representación** (mayor `effective_from`), que es la que estaba vigente para ella en
+      el momento de la supersesión. No es un «último valor» arbitrario: es determinista y
+      es la única clave que evaluó alguna vez esa representación;
+   d. si la representación **no tiene clave**, la pregunta no es respondible: se rechaza
+      `QUESTION_PRESENTED` (`NO_ANSWER_KEY`) y, defensivamente, `ANSWER_SUBMITTED`. Nunca
+      nace un intento sin `answer_key_version_id` (EC-007, invariant register).
+   Queda **prohibido** cualquier retroceso a «la clave más reciente de la pregunta»: la
+   clave vigente de la pregunta puede pertenecer a una representación distinta de la
+   presentada y evaluaría opciones que el aprendiz nunca vio.
+4. **Campos autoritativos rechazados en el payload del cliente:** `user_id`,
+   `stream_position`, `server_received_at`, `engine_processed_at`, `attempt_number`,
+   `is_correct_at_submission`, `correct_option_id`, `answer_key_version_id`. Su presencia
+   hace **malformado** el payload y el evento se rechaza; por tanto nunca influyen.
+5. **Inmutabilidad del intento:** una representación posterior de la misma pregunta no
+   cambia el intento; una clave `AMENDED` posterior no reescribe `answer_key_version_id` ni
+   `is_correct_at_submission` (EC-007; el recálculo es un registro aparte, Phase 10). Un
+   trigger rechaza `UPDATE` y `DELETE` sobre `question_attempts` fuera de la purga de
+   fixtures.
+
+### Pruebas de regresión exigidas
+
+- `attempt.representationAuthority.presentedWins.spec` · A presentada, B publicada después,
+  respuesta aceptada → intento ligado a A y a la clave de A; B no sustituye a A.
+- `attempt.representationAuthority.mismatchRejected.spec` · `ANSWER_SUBMITTED` con otra
+  representación u opción ajena → rechazado; sin intento; sin posición consumida.
+- `attempt.clockManipulation.spec` · `client_created_at` futuro, atrasado y obsoleto → misma
+  representación y misma clave que con el reloj correcto; solo cambia el dato conservado.
+- `attempt.clientAuthoritativeFields.rejected.spec` · cada campo del punto 4 → rechazo.
+- `attempt.keyAmendmentDoesNotRewrite.spec` · clave `AMENDED` tras el intento → fila intacta.
+- `attempt.notPresented.rejected.spec` · respuesta sin presentación previa → rechazo.
+- `attempt.noAnswerKey.rejected.spec` · representación sin clave → presentación rechazada.
+
+**Impacto:** función `append_learning_event` y migraciones de ítems, eventos e intentos de
+Phase 2; ninguna tabla de Phase 1A cambia de semántica.
+
+---
+
+## Estado de la adenda · tras la Phase 2 Build Authorization · 2026-09-09
+
+Sustituye a «Estado de la adenda · tras la Phase 1A Build Authorization» como resumen
+operativo; aquel texto se conserva íntegro como cronología.
+
+**Registro de decisión:** `STUDY_OS_Phase_2_PreAuthorization_Packet_PROPOSED_be5a26a.md` · SHA-256 `da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67` · Phase 2 Build
+Authorization · 2026-09-09 · decisora Ana Victoria · revisión independiente (ChatGPT) ·
+copia aceptada en `docs/PHASE_2_AUTHORIZATION_PACKET.md` · **alcance: gobernanza e
+implementación de Phase 2 únicamente, en STAGING.** No autoriza Phase 1B, Phase 3, FPS,
+merge final, tag, Release, custodia privada ni ninguna mutación de PRODUCTION.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| H-P2-1 | ADR-007 v1.1 · anexo (cuatro `item_type`; `ON DELETE RESTRICT`) | **`ACCEPTED`** · implementación de `session_items` autorizada en Phase 2 |
+| H-P2-2 | SD-022 · contrato de canonicalización v1 | **`ACCEPTED`** |
+| H-P2-3 | Corrección dentro de la normalización del intento; `append_learning_event` primera RPC invocable por cliente, con `create_study_session` como función de flujo de sesión declarada en el registro | **`ACCEPTED`** · ADR-008 pasa a implementación autorizada sin enmienda |
+| H-FPS-1 | `learning_units` como adenda de contenido canónico de Phase 2 (opción A) a través de la frontera `ingest` de Phase 1A; identidad estable + versiones inmutables; solo GENERATED | **`ACCEPTED`** |
+| BD-03 | SD-008 · escala de confianza v1 (cuatro niveles) | **`ACCEPTED`** · `SD-008` deja de estar pendiente |
+| §2 | SD-023 · autoridad de representación y de tiempo | **`ACCEPTED`** · aclaración; no exige enmienda de ADR-008 |
+
+**Qué pasa a estar implementándose:** ADR-007 (v1.1, `session_items`) y ADR-008 (puntos 1–9
+y 11; intentos) en Phase 2. ADR-006, ADR-009, ADR-010 y ADR-011 siguen implementados en el
+alcance de Phase 1A. `planner_items` (ADR-007) y los watermarks (ADR-008 punto 10) esperan a
+Phase 4 y Phase 3.
+
+**Total tras esta adenda: 23 entradas SPEC_DIFF** (15 congeladas + SD-016 … SD-023) **y 1
+errata.** SD-008, SD-020, SD-021, SD-022 y SD-023 `ACCEPTED`; SD-006 y SD-018 `ACCEPTED` con
+implementación autorizada en Phase 2; SD-001, SD-002 y SD-007 `ACCEPTED` en implementación
+parcial desde Phase 1A; SD-015 `SUPERSEDED`; SD-016 implementada; el resto `PROPOSED`.

@@ -158,6 +158,18 @@ con contenido GENERATED sin depender de Phase 1B (H-FPS-2). Phase 1B, Phase 2 y 
 están autorizados; el corpus oficial TAI nunca entra en este repositorio público, y los
 fixtures son siempre GENERATED y visiblemente sintéticos.
 
+**Phase 2 · Learner & Evidence Core · BUILD autorizado el 2026-09-09** por la Phase 2 Build
+Authorization (paquete aceptado en `docs/PHASE_2_AUTHORIZATION_PACKET.md`): ADR-007 v1.1
+(anexo: cuatro `item_type`, `ON DELETE RESTRICT`) y ADR-008 pasan a implementación
+autorizada; SD-022 (canonicalización v1), SD-023 (autoridad de representación y de tiempo:
+`client_created_at` nunca elige representación ni clave) y SD-008 (escala de confianza v1,
+cuatro niveles) `ACCEPTED`; `learning_units` entra como adenda de contenido canónico (H-FPS-1,
+opción A, solo GENERATED); `append_learning_event` y `create_study_session` son las únicas RPC
+invocables por cliente, declaradas en `authority-registry.json`. El aterrizaje de gobernanza
+va en `phase/2-governance`; el BUILD en `phase/2-learner-evidence-core`. STAGING es el único
+entorno mutable; PRODUCTION no se toca; merge final, tag, Release, FPS, Phase 1B y Phase 3
+**no** están autorizados.
+
 **INV-101 ya no está abierto.** Ana lo aprobó, con su redacción congelada, en la
 autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante
 vigente, no como decisión pendiente. Lo mismo ocurre con **INV-113**.

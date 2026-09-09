@@ -6,21 +6,25 @@ import { describe, expect, it } from 'vitest';
 import { REPO_ROOT } from './lib/run-guard';
 
 /**
- * `sd018.contract.spec` · SD-018 sigue siendo un contrato, no una implementación.
+ * `sd018.contract.spec` · SD-018 es un contrato, y la implementación se corresponde con él.
  *
  * ---------------------------------------------------------------------------
  * Qué vigila este fichero
  *
  * SD-018 corrige la interacción entre el contador de posición y la clave de
  * idempotencia. La decisión humana llegó el 2026-09-07 —ADR-008, `ACCEPTED · NOT
- * IMPLEMENTED`— y **no autoriza ninguna migración**: nada de eso está implementado y
- * no debe estarlo sin una autorización de implementación que este repositorio no
- * tiene. Estas pruebas verifican dos cosas distintas:
+ * IMPLEMENTED` hasta el 2026-09-09— y la Phase 2 Build Authorization (2026-09-09)
+ * autoriza su implementación con dos prerrequisitos aceptados: SD-022 (canonicalización)
+ * y SD-023 (autoridad de representación y de tiempo). Estas pruebas verifican tres cosas:
  *
  *   1. que el contrato escrito dice lo que tiene que decir —el orden de las
  *      operaciones es el punto entero de SD-018, y una redacción que lo pierda
  *      reintroduce el defecto sin que nadie lo note—;
- *   2. que **nada** de eso ha llegado al esquema.
+ *   2. que las migraciones no usan los mecanismos que el contrato prohíbe: secuencias
+ *      globales, `nextval`, `ON CONFLICT DO NOTHING` tras asignar posición, y bloqueos
+ *      de fila fuera de los contadores que ADR-008 define;
+ *   3. que contrato, migración y suites van juntos: sin migración de eventos no existe
+ *      ninguna suite de ADR-008, y con ella existen todas las exigibles en Phase 2.
  * ---------------------------------------------------------------------------
  */
 
@@ -99,7 +103,7 @@ describe('SD-018 · el contrato dice lo que debe', () => {
     });
   }
 
-  it('las pruebas de la triple coincidencia están declaradas y ninguna existe', () => {
+  it('las pruebas de la triple coincidencia están declaradas en el contrato', () => {
     for (const spec of [
       'attempts.tripleMatchRequired.spec',
       'attempts.conflictDoesNotConsumeAttemptNumber.spec',
@@ -109,55 +113,65 @@ describe('SD-018 · el contrato dice lo que debe', () => {
     }
   });
 
-  it('está ACCEPTED · NOT IMPLEMENTED, con ADR-008 como propietario normativo', () => {
+  it('consta ACCEPTED con ADR-008 como propietario normativo y autorizada en Phase 2', () => {
     const fromFirstHeading = log.slice(log.indexOf('## SD-018 · Orden total de eventos'));
     const correction = log.slice(log.indexOf('## SD-018 · **corrección del contrato**'));
 
+    // La corrección se conserva tal como se aceptó el 2026-09-07 (cronología).
     expect(correction).toContain('ACCEPTED · NOT IMPLEMENTED');
     expect(correction).toContain('ADR-008');
     expect(correction).toContain('2026-09-07');
     expect(correction).toContain('no autoriza');
+    expect(correction).toContain('No se ha creado ninguna migración');
     // Ninguna de las dos redacciones de SD-018 sigue diciendo «pendiente».
     expect(fromFirstHeading).not.toContain('**Aprobación:** pendiente.');
-    // Y lo que sigue sin existir sigue sin existir.
-    expect(correction).toContain('No se ha creado ninguna migración');
+
+    // Y el estado operativo vigente es el de la Phase 2 Build Authorization.
+    const phase2 = log.slice(
+      log.indexOf('## Estado de la adenda · tras la Phase 2 Build Authorization'),
+    );
+    expect(phase2.length, 'falta el estado de la adenda tras Phase 2').toBeGreaterThan(0);
+    expect(phase2).toContain('SD-018 `ACCEPTED` con');
+    expect(phase2).toContain('implementación autorizada en Phase 2');
+    expect(read('architecture/ADR-008-per-user-event-order-and-idempotency.md')).toMatch(
+      /^IMPLEMENTATION STATUS: AUTHORIZED · Phase 2 \(2026-09-09\)/m,
+    );
+  });
+
+  it('sus prerrequisitos están aceptados: SD-022 (canonicalización) y SD-023 (autoridad)', () => {
+    expect(log).toContain('## SD-022 · Contrato de canonicalización v1');
+    expect(log).toContain('## SD-023 · Autoridad de representación y de tiempo');
+    for (const heading of ['## SD-022 ·', '## SD-023 ·']) {
+      const entry = log.slice(log.indexOf(heading));
+      const status = entry.slice(0, entry.indexOf('###'));
+      expect(status, `${heading} no consta ACCEPTED`).toContain('**`ACCEPTED`** · 2026-09-09');
+    }
   });
 });
 
-describe('SD-018 · nada de esto está implementado', () => {
+describe('SD-018 · las migraciones respetan los mecanismos del contrato', () => {
   const migrationsDir = join(REPO_ROOT, 'supabase', 'migrations');
   const migrations = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql'));
 
-  const forbidden = [
-    'learning_events',
-    'user_event_counters',
-    'projection_watermarks',
-    'stream_position',
-    'question_attempts',
-    'server_sequence',
-  ];
+  /** Contadores que ADR-008 bloquea con `SELECT … FOR UPDATE` (puntos 2 y «mismo orden»). */
+  const LOCKABLE_COUNTERS = ['user_event_counters', 'user_question_counters'];
 
-  for (const table of forbidden) {
-    it(`ninguna migración menciona ${table}`, () => {
-      for (const migration of migrations) {
-        const sql = readFileSync(join(migrationsDir, migration), 'utf8').toLowerCase();
-        expect(sql, `${migration} menciona ${table}`).not.toContain(table);
-      }
-    });
-  }
-
-  it('no existe ningún bloqueo de fila ni secuencia global en el esquema', () => {
+  it('ningún bloqueo de fila fuera de los contadores de ADR-008, ninguna secuencia global', () => {
     for (const migration of migrations) {
       const sql = readFileSync(join(migrationsDir, migration), 'utf8').toLowerCase();
 
       // `for update` aparece legítimamente en `create policy … for update`, que es
-      // el verbo de la política RLS y suele escribirse en varias líneas. Lo que no
-      // puede haber es el bloqueo de fila `select … for update`, que es el
-      // mecanismo de SD-018. Por eso se mira la sentencia completa, no la línea.
+      // el verbo de la política RLS. El bloqueo de fila `select … for update` solo
+      // puede recaer sobre los contadores que ADR-008 define; se mira la sentencia
+      // completa, no la línea.
       const withoutComments = sql.replace(/--[^\n]*/g, '');
       for (const statement of withoutComments.split(';')) {
         if (!statement.includes('for update')) continue;
-        expect(statement.trim(), `${migration}: bloqueo de fila`).toContain('create policy');
+        if (statement.includes('create policy')) continue;
+        expect(
+          LOCKABLE_COUNTERS.some((counter) => statement.includes(counter)),
+          `${migration}: bloqueo de fila fuera de los contadores de ADR-008:\n${statement.trim()}`,
+        ).toBe(true);
       }
 
       /**
@@ -186,34 +200,79 @@ describe('SD-018 · nada de esto está implementado', () => {
     }
   });
 
-  it('las suites de intentos declaradas en el contrato no existen todavía', () => {
-    // Declarar una prueba en el contrato no es escribirla. Si algún día aparecen,
-    // será porque SD-018 se implementó, y eso exige una autorización de
-    // implementación que la aceptación de ADR-008 no da.
-    const testsDir = join(REPO_ROOT, 'tests');
-    const existing = new Set<string>();
-    const walk = (dir: string) => {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        if (entry.isDirectory()) walk(join(dir, entry.name));
-        else existing.add(entry.name);
-      }
-    };
-    walk(testsDir);
+  it('projection_watermarks no existe antes de la primera proyección (Phase 3)', () => {
+    for (const migration of migrations) {
+      const sql = readFileSync(join(migrationsDir, migration), 'utf8').toLowerCase();
+      expect(sql, `${migration} menciona projection_watermarks`).not.toContain(
+        'projection_watermarks',
+      );
+    }
+  });
+});
 
-    for (const spec of [
-      'attempts.tripleMatchRequired.spec.ts',
-      'attempts.conflictDoesNotConsumeAttemptNumber.spec.ts',
-      'attempts.canonicalHashIsDeterministic.spec.ts',
-      'events.lockBeforeIdempotencyCheck.spec.ts',
-    ]) {
-      expect(existing.has(spec), `${spec} existe: SD-018 estaría implementándose`).toBe(false);
+describe('SD-018 · contrato, migración y suites van juntos', () => {
+  const migrationsDir = join(REPO_ROOT, 'supabase', 'migrations');
+  const migrations = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql'));
+  const eventsMigrated = migrations.some((name) =>
+    /create\s+table\s+(if\s+not\s+exists\s+)?[a-z_.]*learning_events\b/.test(
+      readFileSync(join(migrationsDir, name), 'utf8').toLowerCase(),
+    ),
+  );
+
+  /**
+   * Suites de ADR-008 exigibles en Phase 2. Las dos de proyección
+   * (`watermark.perUserPerProjection`, `rebuild.deterministicOrder`) acompañan a la
+   * primera proyección, en Phase 3, y no entran aquí.
+   */
+  const PHASE_2_SUITES = [
+    'events.lockBeforeIdempotencyCheck.spec.ts',
+    'events.duplicateEventIdReturnsExisting.spec.ts',
+    'events.conflictingEventIdAborts.spec.ts',
+    'events.noGapsUnderRollback.spec.ts',
+    'events.noOnConflictDoNothing.spec.ts',
+    'events.streamPositionMonotonic.spec.ts',
+    'events.concurrentInsertSerialized.spec.ts',
+    'events.lateArrivalNoTimeout.spec.ts',
+    'attempts.idempotentBeforeAttemptNumber.spec.ts',
+    'attempts.tripleMatchRequired.spec.ts',
+    'attempts.conflictDoesNotConsumeAttemptNumber.spec.ts',
+    'attempts.canonicalHashIsDeterministic.spec.ts',
+  ];
+
+  const existing = new Set<string>();
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) walk(join(dir, entry.name));
+      else existing.add(entry.name);
+    }
+  };
+  walk(join(REPO_ROOT, 'tests'));
+
+  it('sin migración de eventos no existe ninguna suite; con ella existen todas', () => {
+    for (const spec of PHASE_2_SUITES) {
+      expect(
+        existing.has(spec),
+        eventsMigrated
+          ? `${spec} falta: la migración de eventos existe y ADR-008 la exige`
+          : `${spec} existe sin migración de eventos: estaría implementándose sin esquema`,
+      ).toBe(eventsMigrated);
     }
   });
 
-  it('el andamiaje de tipos no pretende ser una implementación', () => {
+  it('las suites de proyección esperan a Phase 3', () => {
+    for (const spec of [
+      'watermark.perUserPerProjection.spec.ts',
+      'rebuild.deterministicOrder.spec.ts',
+    ]) {
+      expect(existing.has(spec), `${spec} existe antes de la primera proyección`).toBe(false);
+    }
+  });
+
+  it('el andamiaje de tipos declara el estado real del contrato', () => {
     const authority = read('packages/domain/src/authority.ts');
     expect(authority).toContain('SD-018');
-    expect(authority).toContain('no implementado');
+    expect(authority).toContain('implementación autorizada en Phase 2');
+    expect(authority).toContain('ACCEPTED · NOT IMPLEMENTED');
     // Y ya no cita el contrato que quedó superseded como si estuviera vigente.
     expect(authority).not.toContain('pendiente de SD-015');
   });

@@ -74,6 +74,54 @@
     ],
     "names": []
   },
+  "clientInvokableRpcs": {
+    "$comment": [
+      "Phase 2 · RPC invocables por el cliente autenticado que SÍ escriben. Son la única",
+      "vía de escritura de evidencia: el cliente no tiene INSERT sobre eventos, intentos,",
+      "sesiones ni ítems. Cada una es SECURITY DEFINER endurecida (search_path vacío,",
+      "EXECUTE solo a authenticated, validación antes de cualquier escritura), toma la",
+      "identidad exclusivamente de auth.uid() y rechaza todo campo autoritativo que llegue",
+      "del cliente (SD-023 punto 4). Decisión H-P2-3 de la Phase 2 Build Authorization.",
+      "",
+      "La guarda admite estos nombres solo como invocación directa con literal, igual que",
+      "readOnlyRpcs. Añadir una entrada amplía la frontera de seguridad del producto:",
+      "exige decisión humana registrada, contrato de seguridad completo y pruebas",
+      "negativas (STOP 12 de la autorización de Phase 2)."
+    ],
+    "names": ["append_learning_event", "create_study_session"],
+    "contracts": {
+      "append_learning_event": {
+        "anchor": "ADR-008 · SD-022 · SD-023 · CDEM «learning events: owner insert» · Manifest §14",
+        "identity": "auth.uid() · nunca un user_id del cliente",
+        "writes": [
+          "learning_events",
+          "user_event_counters",
+          "user_question_counters",
+          "question_attempts",
+          "study_sessions",
+          "session_items"
+        ],
+        "rejects": [
+          "user_id",
+          "stream_position",
+          "server_received_at",
+          "engine_processed_at",
+          "attempt_number",
+          "is_correct_at_submission",
+          "correct_option_id",
+          "answer_key_version_id"
+        ],
+        "returns": "evento aceptado (posición, hash) y, para ANSWER_SUBMITTED, el resultado del intento tras existir la fila; nunca la clave (INV-101)"
+      },
+      "create_study_session": {
+        "anchor": "ADR-007 v1.1 · CDEM «study sessions/items: owner via validated app flow» · REQ-C04",
+        "identity": "auth.uid() · el objetivo debe ser del propio usuario",
+        "writes": ["study_sessions", "session_items"],
+        "rejects": ["user_id", "status", "planner_run_id"],
+        "returns": "sesión PLANNED con sus ítems tipados; ningún contenido de corrección"
+      }
+    }
+  },
   "browserApiExceptions": {
     "$comment": [
       "La UNICA excepcion a la politica conservadora del cliente, y es un par exacto:",

@@ -63,6 +63,7 @@ const LIVING = [
 ];
 
 const PHASE_1A_PACKET_SHA256 = '806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4';
+const PHASE_2_PACKET_SHA256 = 'da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67';
 
 /** El SPEC_DIFF_LOG es vivo solo en su adenda: las primeras 174 líneas son el cuerpo congelado. */
 const FROZEN_BODY_LINES = 174;
@@ -166,6 +167,25 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
     expect(addendum).toContain('tras la Phase 1A Build Authorization');
     expect(addendum).toMatch(/^\| C-1 \| ADR-011[^\n]*`ACCEPTED`/m);
     expect(addendum).toMatch(/^\| C-6 \| ADR-005[^\n]*sigue `PROPOSED`/m);
+  });
+
+  it('SPEC_DIFF_LOG · SD-008, SD-022 y SD-023 constan ACCEPTED con el registro de Phase 2', () => {
+    const addendum = read('docs/SPEC_DIFF_LOG.md').split('\n').slice(FROZEN_BODY_LINES).join('\n');
+    expect(addendum).toContain('## SD-008 · **aceptación**');
+    expect(addendum).toContain('## SD-022 ·');
+    expect(addendum).toContain('## SD-023 ·');
+    expect(addendum).toContain(PHASE_2_PACKET_SHA256);
+    expect(addendum).toContain('tras la Phase 2 Build Authorization');
+    expect(addendum).toMatch(/^\| H-P2-1 \| ADR-007 v1\.1[^\n]*`ACCEPTED`/m);
+    expect(addendum).toMatch(/^\| H-P2-2 \| SD-022[^\n]*`ACCEPTED`/m);
+    expect(addendum).toMatch(/^\| H-P2-3 \|[^\n]*`ACCEPTED`/m);
+    expect(addendum).toMatch(/^\| H-FPS-1 \| `learning_units`[^\n]*`ACCEPTED`/m);
+    expect(addendum).toMatch(/^\| BD-03 \| SD-008[^\n]*`ACCEPTED`/m);
+    expect(addendum).toMatch(/^\| §2 \| SD-023[^\n]*aclaración/m);
+    // Las entradas aceptadas en Phase 2 citan la copia aceptada del paquete.
+    expect(addendum).toContain('docs/PHASE_2_AUTHORIZATION_PACKET.md');
+    expect(read('docs/PHASE_2_AUTHORIZATION_PACKET.md')).toContain(PHASE_2_PACKET_SHA256);
+    expect(read('docs/PHASE_2_AUTHORIZATION_PACKET.md')).toContain('ACEPTADO · 2026-09-09');
   });
 
   it('ARCHITECTURE_STATE · ADR-006 … ADR-011 ACCEPTED, ADR-001 … ADR-005 PROPOSED', () => {

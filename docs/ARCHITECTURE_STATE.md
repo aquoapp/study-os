@@ -3,9 +3,9 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.7 · copia viva
-**Última actualización:** 2026-09-09 · Phase 1A aceptada por Ana Victoria y **congelada**: PR #4 integrado en `main` (`be5a26a`), tag anotado `phase-1a-v1.0`; registro documental de la congelación y de las decisiones H-2, H-3, H-4 y H-FPS-2
-**Fase actual:** 1A · Canonical Domain Foundation · **CONGELADA · PASS WITH DEBT · aceptación humana** · ver `docs/PHASE_1A_CHECKPOINT.md` (Phase 1B, Phase 2 y FPS no autorizados)
+**Versión:** 11.8 · copia viva
+**Última actualización:** 2026-09-09 · Phase 2 · Learner & Evidence Core · **BUILD autorizado** por la Phase 2 Build Authorization: aterrizaje de gobernanza (ADR-007 v1.1, SD-008, SD-022, SD-023, H-FPS-1, H-P2-3, registro de RPC invocables por cliente) en `phase/2-governance`; ningún objeto de runtime de Phase 2 existe todavía
+**Fase actual:** 2 · Learner & Evidence Core · **BUILD autorizado el 2026-09-09** (`docs/PHASE_2_AUTHORIZATION_PACKET.md`) · gobernanza aterrizada; construcción en `phase/2-learner-evidence-core` sobre STAGING · Phase 1A **CONGELADA · PASS WITH DEBT** (`docs/PHASE_1A_CHECKPOINT.md`) · Phase 1B, Phase 3, FPS, merge final y PRODUCTION no autorizados
 **Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `be5a26ade5ac384a572d62568d7ac29fd2a568f6` · tag anotado `phase-1a-v1.0` (Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_1A_CHECKPOINT.md`
 
 ---
@@ -62,7 +62,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | Guardas de invariante | **6 activas** (5 de Phase 0 por propagación de punto fijo + `private-schema-grant-guard` de Phase 1A, estática sobre las migraciones y `config.toml`) | import · tai-literal · secret-scan · client-authority (capacidades) · auth-authority (procedencia). **169 casos de guardas** que ejecutan las guardas reales —10 de sumidero computado extraído, 13 de procedencia PostgREST, 19 de cierre transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión, 21 adversariales— **más 26 bypasses operacionales**. Sin cambios en esta ronda |
 | Contenido ingerido | NINGUNO | Ni siquiera de prueba. Execution Plan §9 |
 | Contenido canónico (Phase 1A) | **19 tablas en `public`, 1 en `content`, 2 en `ingest`** · sin contenido oficial | `public`: `exam_packs`, `exam_pack_versions`, `syllabus_blocks`, `topics`, `concepts`, `concept_versions`, `concept_prerequisites`, `sources`, `source_versions`, `canonical_questions`, `question_representations`, `question_options`, `question_concepts`, `exam_sections`, `exam_sittings`, `exam_sitting_models`, `exam_occurrences`, `practicals`, `practical_questions`. `content`: `answer_key_versions` (no expuesto). `ingest`: `promotions`, `staged_items` (no expuesto) más las funciones `stage_item`, `validate_staged_item`, `publish_staged_item`, `copy_forward_question_concepts`, `purge_generated_pack` y `concept_key`. Todas con RLS habilitado y **forzado**; lectura de lo publicado para `authenticated`; ninguna escritura de cliente; `anon` sin acceso. Solo fixtures GENERATED sintéticos, purgados al terminar cada ejecución |
-| Tablas de Phase 2 en adelante | **NINGUNA** | Verificado por test: ninguna migración crea `learning_events`, `question_attempts`, `concept_mastery`, `exam_readiness`, `planner_*`, `learning_units`, `study_sessions`, `session_items`, `learner_settings`, `learner_exam_goals`, `diagnostic_runs`, `user_event_counters`, `projection_watermarks` ni `stream_position` |
+| Tablas de Phase 2 | **NINGUNA todavía · BUILD autorizado el 2026-09-09** | El aterrizaje de gobernanza no crea objetos de runtime. Las de Phase 3 en adelante siguen prohibidas y verificadas por test: ninguna migración crea `concept_mastery`, `exam_readiness`, `planner_*`, `projection_watermarks`, `engine_config` ni `attempt_recalculations` |
 | Artefactos de Phase −1 | **IMPORTADOS** | 19 ficheros, byte a byte, con SHA-256 en `docs/PROVENANCE.md` · tres ADR anotados el 2026-09-07 (§2.1) |
 | Documentos gobernantes | **8 de 8 disponibles y verificados** | Ver `docs/GOVERNING_DOCUMENTS.md`. AMB-01 resuelto |
 | Registro de decisión humana | **Recibido y verificado por hash** | `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` · `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d` · no versionado, citado en cada ADR aceptado |
@@ -77,15 +77,16 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | ADR-004 | Reconciliación offline y continuidad | PROPOSED · v1.1 · intacto |
 | ADR-005 | Procedencia y versionado oficial | PROPOSED · punto 4 subordinado a ADR-006; punto 5 superseded por ADR-010 · **disposición punto por punto para Phase 1A aprobada el 2026-09-09** (puntos 1, 2, 3, 6-frontera, 8 y 9 subsumidos por fuentes superiores; 6-lista de campos y 7-`mapping_confidence` siguen PROPOSED hacia Phase 1B) |
 | ADR-006 | Frontera del Data API para las claves de respuesta · **SD-007** | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **implementación de la frontera autorizada en Phase 1A** (la corrección en servidor es de fases posteriores) |
-| ADR-007 | Destinos verificables de ítems de sesión y de planner · **SD-006** | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **NOT IMPLEMENTED** · matriz con celdas marcadas como prerrequisito |
-| ADR-008 | Orden de eventos por usuario e idempotencia · **SD-018** · supersede a SD-015 | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **NOT IMPLEMENTED** · exige contrato de canonicalización antes de migrar |
+| ADR-007 | Destinos verificables de ítems de sesión y de planner · **SD-006** | **ACCEPTED** · v1.1 · 2026-09-07 (v1.0) y 2026-09-09 (anexo: cuatro `item_type`, `ON DELETE RESTRICT`) · Ana Victoria · **implementación de `session_items` autorizada en Phase 2**; `planner_items` en Phase 4 |
+| ADR-008 | Orden de eventos por usuario e idempotencia · **SD-018** · supersede a SD-015 | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **implementación autorizada en Phase 2** (2026-09-09) con SD-022 (canonicalización v1) y SD-023 (autoridad de representación y de tiempo) aceptadas; watermarks por proyección en Phase 3 |
 | ADR-009 | Identidad estable de concepto · **BD-02** / SD-002 | **ACCEPTED** · v1.1 · 2026-09-07 (v1.0) y 2026-09-09 (anexo) · Ana Victoria · **implementación autorizada en Phase 1A** |
 | ADR-010 | Convocatorias y ocurrencias oficiales · **BD-05** / SD-001 | **ACCEPTED** · v1.1 · 2026-09-07 (v1.0) y 2026-09-09 (anexo) · Ana Victoria · **implementación de la estructura autorizada en Phase 1A** (carga oficial en Phase 1B) |
 | ADR-011 | Topología de esquemas y frontera de exposición del Data API | **ACCEPTED** · v1.0 · 2026-09-09 · Ana Victoria · **implementación autorizada en Phase 1A** |
 
-**Cinco decisiones están ACCEPTED y ninguna está implementada.** Cada una en
+**Las cinco decisiones del 2026-09-07 están ACCEPTED.** Cada una nació en
 `ACCEPTED · NOT IMPLEMENTED`, con un único propietario normativo, aprobada mediante el
-registro de decisión de §1. La aceptación **no autoriza ninguna migración**: las
+registro de decisión de §1; Phase 1A autorizó ADR-006, ADR-009 y ADR-010, y la Phase 2
+Build Authorization (2026-09-09) autorizó ADR-007 y ADR-008. La aceptación **no autoriza ninguna migración**: las
 migraciones **no** crean los esquemas `content` / `engine` / `audit` que propone ADR-001
 —que sigue PROPOSED— ni ninguna tabla de dominio, y `adr.acceptedDecisions.spec` lo
 verifica. ADR-001 … ADR-005 siguen `PROPOSED`; solo sus puntos solapados apuntan al ADR
@@ -133,14 +134,15 @@ control suficiente»— deja de aplicarse a estos veinticuatro. Sigue aplicándo
 Las cinco decisiones humanas que bloqueaban el cierre de Phase 0 **quedaron cerradas el
 2026-09-07**; la Phase 1A Build Authorization (2026-09-09) autorizó implementar ADR-006 (frontera),
 ADR-009 y ADR-010 (con sus anexos v1.1) y ADR-011. En la rama de Phase 1A: **ADR-006, ADR-009,
-ADR-010 y ADR-011 implementados** en el alcance de 1A; **ADR-007 y ADR-008 siguen sin
-implementar** (migraciones de Phase 2 y Phase 4).
+ADR-010 y ADR-011 implementados** en el alcance de 1A; **ADR-007 y ADR-008 pasan a
+implementación autorizada** con la Phase 2 Build Authorization del 2026-09-09 (`session_items`,
+stream, contadores e intentos; `planner_items` y watermarks esperan a Phase 4 y Phase 3).
 
 | Decisión | Resultado | Propietario normativo | Determina | Prerrequisitos antes de migrar |
 | --- | --- | --- | --- | --- |
 | **SD-007** | `ACCEPTED · NOT IMPLEMENTED` · ratifica INV-101 | ADR-006 | Separación de esquemas desde la primera migración de contenido (5, 9) | Pruebas de fuga sobre respuestas y bundles |
-| **SD-006** | `ACCEPTED · NOT IMPLEMENTED` · aceptado según aclaración | ADR-007 | `session_items` y `planner_items` (7, 11) | Completar la matriz: `ON DELETE` y enumeración cerrada de `item_type` (v1.1 del ADR) |
-| **SD-018** | `ACCEPTED · NOT IMPLEMENTED` · contrato final corregido · SD-015 superseded | ADR-008 | Stream de eventos e intentos (8, 9, 16) | Contrato de canonicalización versionado; las catorce suites declaradas |
+| **SD-006** | `ACCEPTED` · **implementación autorizada en Phase 2** (2026-09-09) · hasta entonces `ACCEPTED · NOT IMPLEMENTED` | ADR-007 | `session_items` y `planner_items` (7, 11) | Completar la matriz: `ON DELETE` y enumeración cerrada de `item_type` (v1.1 del ADR) |
+| **SD-018** | `ACCEPTED` · **implementación autorizada en Phase 2** (2026-09-09) · contrato final corregido · SD-015 superseded · hasta entonces `ACCEPTED · NOT IMPLEMENTED` | ADR-008 | Stream de eventos e intentos (8, 9, 16) | Contrato de canonicalización versionado; las catorce suites declaradas |
 | **BD-02** / SD-002 | `ACCEPTED · NOT IMPLEMENTED` · modelo de dos capas | ADR-009 | Jerarquía de contenido (3) y mapeos (5) | Forma de los mapeos versionados; política de recálculo |
 | **BD-05** / SD-001 | `ACCEPTED · NOT IMPLEMENTED` | ADR-010 | Preguntas, claves, ocurrencias (5) | Columnas de unicidad y estado de reserva |
 
@@ -151,12 +153,13 @@ implementar** (migraciones de Phase 2 y Phase 4).
 | MI-05a · **resuelto** | ~~MISSING_INPUT~~ | Repositorio remoto público, `main` protegida por ruleset y demostrada, CI en verde, Supabase y Vercel con Preview real (2026-09-08, coste 0 €) | Nada |
 | **SD-019** | Opción A **autorizada, implementada y verificada** · el cambio de especificación (B o C) sigue PROPOSED y **diferido** | La paleta congelada no alcanza el AA que exige §14 | **Nada de Phase 0.** El uso sin restricciones de la paleta, que necesitan los componentes de §16 · antes de Phase 5 |
 | MI-01 | MISSING_INPUT | 6 PDF oficiales | PASS de **Phase 1** |
-| BD-03 | BLOCKED_DECISION | Escala de confianza 4 o 5 | Confirmada por el propio Design System §6 · Phases 3 y 5 |
+| BD-03 · **resuelto** | ~~BLOCKED_DECISION~~ | Escala de confianza: **cuatro niveles**, `v1`, SD-008 `ACCEPTED` el 2026-09-09 | Nada · los Hi-Fi con 1–5 se corrigen en Phase 5 |
 | BD-04 · BD-06 | BLOCKED_DECISION | Readiness por concepto · puntuación oficial | Phases 6 y 7 |
 | SD-017 · ERRATA P0-IN-1 | SPEC_DIFF PROPOSED | Naturaleza real de los documentos gobernantes; versión citada en P0-IN-1 | La auditoría de Drive · no bloquea Phase 0 |
 
-**Ya no figuran aquí:** INV-101 (aprobado en la autorización de arranque), y SD-018,
-SD-006, SD-007, BD-02 y BD-05 (aceptados el 2026-09-07, §4).
+**Ya no figuran aquí:** INV-101 (aprobado en la autorización de arranque), SD-018,
+SD-006, SD-007, BD-02 y BD-05 (aceptados el 2026-09-07, §4), y BD-03 (resuelto el
+2026-09-09, SD-008 `ACCEPTED`, §11).
 
 ## 6. Deuda técnica
 
@@ -174,7 +177,7 @@ SD-006, SD-007, BD-02 y BD-05 (aceptados el 2026-09-07, §4).
 | D-09 | La resolución de ámbitos no sigue tipos ni `export *`, y trata las declaraciones de función como de bloque | Aceptable · cuando no resuelve devuelve `null`, y `null` es «no demostrado» | — |
 | D-10 | El motor de propagación es insensible al flujo, sigue un nivel de propiedades y no distingue instancias de una declaración entre llamadas | Aceptable · cada simplificación produce más hechos, no menos | — |
 | D-11 | Un cliente Supabase que cruce la frontera del fichero sin tipo demostrable cae en «procedencia opaca» y falla cerrado en los métodos computados | Aceptable mientras no haya superficie de dominio | Cuando la haya |
-| D-12 | ADR-007 deja `ON DELETE` y la enumeración cerrada de `item_type` como prerrequisito; ADR-008 exige un contrato de canonicalización que no está redactado | Los documentos gobernantes no los determinan y la regla de no invención impide fijarlos aquí | Antes de las migraciones 7, 8 y 11 · fuera de Phase 0 |
+| D-12 | ~~ADR-007 deja `ON DELETE` y la enumeración cerrada de `item_type` como prerrequisito; ADR-008 exige un contrato de canonicalización que no está redactado~~ **Cerrada el 2026-09-09**: anexo v1.1 de ADR-007 (cuatro `item_type`, `ON DELETE RESTRICT`) y SD-022 (canonicalización v1) aceptados en la Phase 2 Build Authorization | — | — |
 | D-13 | `schema-drift` nivel B no puede ejecutarse en la máquina de desarrollo | `supabase db diff` construye una base sombra con Docker, que no está instalado (decisión humana: no instalarlo). El control corre en CI contra el stack local y contra STAGING | Aceptable · la evidencia es la de CI |
 | D-14 | ~~Token de acceso personal de Supabase `STUDY_OS Phase 0` (30 días) en un fichero local ignorado por Git~~ **Cerrada el 2026-09-08**: Ana lo revocó tras la entrega de la undécima reemisión. Fue necesario para la Management API (configuración de Auth de STAGING, rotación de claves); ninguna herramienta del repositorio ni de CI lo usa | — | — |
 | D-15 | ~~La `service_role` legacy de STAGING quedó expuesta en un mensaje de error de shell~~ **Cerrada el 2026-09-08**: clave `sb_secret` `phase0_tests` nueva, claves legacy de STAGING desactivadas (Management API: `enabled: false`), checks reejecutados; PRODUCTION no afectado | — | — |
@@ -228,6 +231,45 @@ D-06, D-07, D-09, D-10, D-11, D-12 y D-16. La rama `phase/0-foundation` se conse
 histórica. Los commits posteriores a la etiqueta son exclusivamente documentales y no
 mueven la línea base congelada. Phase 1 exige una decisión humana separada.
 Detalle en `docs/PHASE_0_CHECKPOINT.md`.
+
+## 11. Phase 2 · autorización de BUILD · 2026-09-09
+
+**Registro de decisión:** `STUDY_OS_Phase_2_PreAuthorization_Packet_PROPOSED_be5a26a.md` · SHA-256 `da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67` · Phase 2 Build
+Authorization · Ana Victoria · revisión independiente previa · copia aceptada en
+`docs/PHASE_2_AUTHORIZATION_PACKET.md`.
+
+**Decisiones aceptadas:** H-P2-1 (ADR-007 v1.1: `item_type` exactamente `LEARNING_UNIT`,
+`QUESTION`, `PRACTICAL`, `CONCEPT_REVIEW`; `ON DELETE RESTRICT`), H-P2-2 (SD-022,
+canonicalización v1), H-P2-3 (corrección dentro de la normalización del intento;
+`append_learning_event` primera RPC invocable por cliente, `create_study_session` como
+función de flujo de sesión, ambas declaradas en `authority-registry.json` con contrato de
+seguridad), H-FPS-1 opción A (`learning_units` como adenda de contenido canónico a través de
+la frontera `ingest` de Phase 1A; identidad estable + versiones inmutables; solo GENERATED),
+BD-03 (SD-008: cuatro niveles, escala `v1`, etiquetas del material de pantalla). La
+corrección obligatoria §2 quedó registrada como **SD-023**: `client_created_at` nunca elige
+representación ni clave; la representación es la presentada y verificada; la clave la
+resuelve el servidor para esa representación; el intento nace inmutable. Se comprobó que
+está implicada por ADR-008, SD-021, EC-007 y el CDEM: aclaración, no enmienda.
+
+**Qué se autoriza:** el alcance del paquete aceptado, en STAGING: núcleo de aprendiz
+(`learner_settings`, `learner_exam_goals`, `devices`, `sync_state`, `diagnostic_runs`),
+`learning_units` con versiones, sesiones e ítems tipados, stream de eventos con orden e
+idempotencia de ADR-008, intentos con corrección en servidor, confianza v1, respuesta en
+blanco como evidencia, autoguardado y reanudación exacta, onboarding mínimo, matrices de RLS
+e inmutabilidad, pruebas adversariales, reversibilidad y checkpoint.
+
+**Qué no se autoriza:** merge final, tag, Release, congelación, FPS, Phase 1B, Phase 3,
+motores, proyecciones, planner, watermarks, custodia privada, corpus oficial, pgvector, IA,
+cola offline y cualquier mutación de PRODUCTION.
+
+**Aterrizaje de gobernanza (rama `phase/2-governance`):** anexo v1.1 de ADR-007; cabeceras
+de ADR-007 y ADR-008 en `AUTHORIZED · Phase 2`; SD-008, SD-022 y SD-023 en la adenda del
+`SPEC_DIFF_LOG`; paquete aceptado; registro de RPC invocables por cliente y guarda
+correspondiente; revisión mínima de las pruebas negativas (`sd018.contract.spec` pasa a
+vigilar la correspondencia contrato ↔ migración ↔ suites; `adr.acceptedDecisions.spec` y
+`schema.drift.spec` prohíben ahora lo de Phase 3 en adelante); vigilancia documental nueva
+en `phase2.governance.spec`. **Ningún objeto de runtime de Phase 2** se crea en este
+aterrizaje.
 
 ---
 

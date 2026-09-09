@@ -95,8 +95,8 @@ de creación (2026-09-07) y hash vigente tras la Phase 1A Build Authorization (2
 | Ruta | SHA-256 de creación | SHA-256 vigente | Qué cambió el 2026-09-09 |
 |---|---|---|---|
 | `architecture/ADR-006-answer-key-data-api-boundary.md` | `96f955c1a9e063141005f7091db18093af529cbea836b8e84764280ad8a191ef` | `2fee211783f1e3f9ad334669754aa1ca510c1ebae6bd2072951f6e9602b6e096` | cabecera IMPLEMENTATION STATUS → AUTHORIZED · Phase 1A |
-| `architecture/ADR-007-enforceable-item-targets.md` | `d0af2c3acba40b7ec9b18e21bdb6f00a2647eddfee97ca5aee28cdf5ccb5e520` | (sin cambios) | — |
-| `architecture/ADR-008-per-user-event-order-and-idempotency.md` | `0282ad130f28ac303e6a2f85ce5eb5fa683a491452a6964ed19a35ec52d5c7bc` | (sin cambios) | — |
+| `architecture/ADR-007-enforceable-item-targets.md` | `d0af2c3acba40b7ec9b18e21bdb6f00a2647eddfee97ca5aee28cdf5ccb5e520` | `bc2f45dcbbddbd0ed2ad57ff68403175d61b076c65d55acbd7a93bdccf327d3e` | sin cambios en Phase 1A; el 2026-09-09 (Phase 2 Build Authorization) anexo v1.1 aceptado (H-P2-1) y cabecera AUTHORIZED · Phase 2 |
+| `architecture/ADR-008-per-user-event-order-and-idempotency.md` | `0282ad130f28ac303e6a2f85ce5eb5fa683a491452a6964ed19a35ec52d5c7bc` | `fcc4385fd36dafe0e99b0c024b697a366140fc993d29345beafffda0f98b84bd` | sin cambios en Phase 1A; el 2026-09-09 (Phase 2 Build Authorization) registro de autorización de implementación sin enmienda y cabecera AUTHORIZED · Phase 2 |
 | `architecture/ADR-009-stable-concept-identity.md` | `105b441b5ad572b38c8b100be735e1e3344f99cda8d22bdecbc321be2429f225` | `defe63ec63e004a778ea6a2d388b70bc81d9f0c0a989c65d383af53fee6e484d` | anexo v1.1 aceptado (C-2); cabecera AUTHORIZED |
 | `architecture/ADR-010-official-exam-occurrences.md` | `6a19b7e3cc494edc12f613fb8ee52b27501781320cca967751b471744bc1c463` | `0467e3e28932d3c86666875c156c606f956305c486ca2397cfc41ffcb6ed7116` | anexo v1.1 aceptado (C-3); cabecera AUTHORIZED |
 | `architecture/ADR-011-schema-topology-and-data-api-exposure.md` | — | `4b7a80cf1ea349be0dd5d775ab8007a8d5bd90447a5a5e75d36a290ae27eb9a0` | creado y aceptado el 2026-09-09 (C-1) |
@@ -104,6 +104,10 @@ de creación (2026-09-07) y hash vigente tras la Phase 1A Build Authorization (2
 Registro de decisión de Phase 1A: `STUDY_OS_Phase_1A_Authorization_Packet_PROPOSED_a263ec1.md`
 · SHA-256 `806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4` · copia
 aceptada en `docs/PHASE_1A_AUTHORIZATION_PACKET.md`.
+
+Registro de decisión de Phase 2: `STUDY_OS_Phase_2_PreAuthorization_Packet_PROPOSED_be5a26a.md`
+· SHA-256 `da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67` · copia
+aceptada en `docs/PHASE_2_AUTHORIZATION_PACKET.md` (2026-09-09).
 
 El registro de decisión no se versiona: es material de entrada, como los originales de
 §3, y su hash queda aquí y en cada ADR aceptado.
