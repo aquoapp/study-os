@@ -117,7 +117,7 @@ Artefactos **creados** en este aterrizaje, no importados:
 
 | Ruta | SHA-256 |
 |---|---|
-| `docs/LEARNING_ENGINE_CONTRACT.md` | `baa27f1a162b1f8f5449cdd56abb2ab04c92dd6ab1be746f458b26394d07b0dc` |
+| `docs/LEARNING_ENGINE_CONTRACT.md` | `3770d7d903af7e092d97b7279867a84dbcca75ba825488aecffa1e2f332d6068` |
 | `docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md` | `3b1bcc38ca3e13d7a75d7e0ab3ff2b4ffbdf2a2d396cf77308ee5b92fae423d4` |
 
 Los ADR aceptados son artefactos **creados en Phase 0 y Phase 1A** (§6), no importados. Hash

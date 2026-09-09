@@ -18,9 +18,10 @@ grant, worker ni despliegue nace de este documento.
 ## 0 · De dónde sale este contrato
 
 `Learning System v0.4` es la fuente citada de los seis estados internos, de las bandas de
-puntuación y de los seis pesos. **No está en `_handoff/originals/`** —los catorce artefactos
-presentes están registrados en `docs/PROVENANCE.md` §3— y la decisión humana H-P3-1 lo declara
-no disponible. Tampoco lo está `Pre-Build Intelligence`, fuente citada de REQ-D07.
+puntuación y de los seis pesos. **No está en `_handoff/originals/`** —los documentos
+gobernantes de origen que sí están presentes se registran en `docs/PROVENANCE.md` §3— y la
+decisión humana H-P3-1 lo declara no disponible. Tampoco lo está `Pre-Build Intelligence`,
+fuente citada de REQ-D07.
 
 Este contrato se **deriva** de lo que sí es autoridad:
 
