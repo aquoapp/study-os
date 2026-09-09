@@ -146,7 +146,8 @@ Build Authorization (paquete aceptado en `docs/PHASE_1A_AUTHORIZATION_PACKET.md`
 `ACCEPTED`, anexos v1.1 de ADR-009 y ADR-010 `ACCEPTED`, SD-020 y SD-021 `ACCEPTED`, ADR-005
 con disposición punto por punto y aún `PROPOSED`. **Construida** en
 `phase/1a-canonical-domain-foundation` (migraciones 3–13; esquemas `content` e `ingest` no
-expuestos; sin merge ni tag hasta la aceptación humana). Phase 1B, Phase 2 y FPS **no**
+expuestos; sin merge ni tag hasta la aceptación humana). El checkpoint de Phase 1A es
+**PASS WITH DEBT** (`docs/PHASE_1A_CHECKPOINT.md`). Phase 1B, Phase 2 y FPS **no**
 están autorizados; el corpus oficial TAI nunca entra en este repositorio público, y los
 fixtures son siempre GENERATED y visiblemente sintéticos.
 
@@ -155,4 +156,5 @@ autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante
 vigente, no como decisión pendiente. Lo mismo ocurre con **INV-113**.
 
 Estado real del repositorio: [`docs/ARCHITECTURE_STATE.md`](docs/ARCHITECTURE_STATE.md).
-Informe de fase: [`docs/PHASE_0_CHECKPOINT.md`](docs/PHASE_0_CHECKPOINT.md).
+Informes de fase: [`docs/PHASE_0_CHECKPOINT.md`](docs/PHASE_0_CHECKPOINT.md) y
+[`docs/PHASE_1A_CHECKPOINT.md`](docs/PHASE_1A_CHECKPOINT.md).

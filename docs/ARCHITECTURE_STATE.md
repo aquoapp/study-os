@@ -3,9 +3,9 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.4 · copia viva
-**Última actualización:** 2026-09-09 · Phase 1A construida en `phase/1a-canonical-domain-foundation`, pendiente de aceptación humana
-**Fase actual:** 1A · Canonical Domain Foundation · **BUILD completado en rama, sin merge** · ver `docs/PHASE_1A_CHECKPOINT.md` (Phase 1B, Phase 2 y FPS no autorizados)
+**Versión:** 11.5 · copia viva
+**Última actualización:** 2026-09-09 · checkpoint de Phase 1A emitido (`PASS WITH DEBT`), pendiente de aceptación humana
+**Fase actual:** 1A · Canonical Domain Foundation · **BUILD completado en rama, checkpoint PASS WITH DEBT, sin merge ni tag** · ver `docs/PHASE_1A_CHECKPOINT.md` (Phase 1B, Phase 2 y FPS no autorizados)
 **Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `5d8296c1776be778b075d9e239b383a0476a6514` · tag anotado `phase-0-v1.0` · ver `docs/PHASE_0_CHECKPOINT.md`
 
 ---
@@ -177,6 +177,9 @@ SD-006, SD-007, BD-02 y BD-05 (aceptados el 2026-09-07, §4).
 | D-13 | `schema-drift` nivel B no puede ejecutarse en la máquina de desarrollo | `supabase db diff` construye una base sombra con Docker, que no está instalado (decisión humana: no instalarlo). El control corre en CI contra el stack local y contra STAGING | Aceptable · la evidencia es la de CI |
 | D-14 | ~~Token de acceso personal de Supabase `STUDY_OS Phase 0` (30 días) en un fichero local ignorado por Git~~ **Cerrada el 2026-09-08**: Ana lo revocó tras la entrega de la undécima reemisión. Fue necesario para la Management API (configuración de Auth de STAGING, rotación de claves); ninguna herramienta del repositorio ni de CI lo usa | — | — |
 | D-15 | ~~La `service_role` legacy de STAGING quedó expuesta en un mensaje de error de shell~~ **Cerrada el 2026-09-08**: clave `sb_secret` `phase0_tests` nueva, claves legacy de STAGING desactivadas (Management API: `enabled: false`), checks reejecutados; PRODUCTION no afectado | — | — |
+| D-17 | Las filas de auditoría de `ingest.staged_items` e `ingest.promotions` sobreviven en STAGING a la purga de los packs sintéticos | Por diseño: `purge_generated_pack` elimina contenido, no auditoría; la política de retención no está decidida | Phase 1B / operación |
+| D-18 | Las pruebas de catálogo lanzan el CLI fijado de Supabase por consulta | No añadir un driver de PostgreSQL (Manifest §7); la suite de integración tarda ~1 min contra STAGING | Revisar en Phase 2 si el volumen crece |
+| D-19 | `public.set_updated_at` (función de trigger de Phase 0) conserva `EXECUTE` para `authenticated` | PostgREST no expone funciones que devuelven `trigger`, así que no es invocable por RPC; la revocación explícita queda pendiente | Próxima migración que toque `profiles` |
 
 **Deuda documental heredada:** 26 contradicciones registradas (C-01…C-26). SD-019
 añade una vigesimoséptima, detectada al incorporar el Design System. `spec/contradiction-register.md`
