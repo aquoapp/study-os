@@ -48,7 +48,7 @@ export function query<Row = Record<string, unknown>>(sql: string): Row[] {
   const url = dbUrl();
   const result = spawnSync(
     process.execPath,
-    [launcher, 'db', 'query', '--db-url', url, '--output', 'json', sql],
+    [launcher, 'db', 'query', '--db-url', url, '--output', 'json', '--agent', 'no', sql],
     { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
   );
   // El CLI reparte su salida entre stdout y stderr según el modo (TTY, agente, CI).
@@ -56,17 +56,20 @@ export function query<Row = Record<string, unknown>>(sql: string): Row[] {
   if (result.status !== 0) {
     throw new Error(`La consulta de catálogo falló: ${output || String(result.error)}`);
   }
+  // Modo normal: un array JSON de filas. Modo agente: {boundary, rows, warning}.
   const candidates: string[] = [];
-  const start = output.indexOf('{');
-  const end = output.lastIndexOf('}');
-  if (start >= 0 && end > start) candidates.push(output.slice(start, end + 1));
-  for (const line of output.split(NEWLINE)) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) candidates.push(trimmed);
+  for (const [open, close] of [
+    ['[', ']'],
+    ['{', '}'],
+  ] as const) {
+    const start = output.indexOf(open);
+    const end = output.lastIndexOf(close);
+    if (start >= 0 && end > start) candidates.push(output.slice(start, end + 1));
   }
   for (const candidate of candidates) {
     try {
-      const parsed = JSON.parse(candidate) as { rows?: Row[] };
+      const parsed = JSON.parse(candidate) as Row[] | { rows?: Row[] };
+      if (Array.isArray(parsed)) return parsed;
       if (parsed && Array.isArray(parsed.rows)) return parsed.rows;
     } catch {
       /* siguiente candidato */

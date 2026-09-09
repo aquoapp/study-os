@@ -94,17 +94,20 @@ function cli(args) {
 
 /** Extrae el objeto JSON con `rows` de la salida del CLI, esté donde esté. */
 function parseRows(out, expectRows) {
+  // Modo normal: un array JSON de filas. Modo agente: {boundary, rows, warning}.
   const candidates = [];
-  const start = out.indexOf('{');
-  const end = out.lastIndexOf('}');
-  if (start >= 0 && end > start) candidates.push(out.slice(start, end + 1));
-  for (const line of out.split(NEWLINE)) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) candidates.push(trimmed);
+  for (const [open, close] of [
+    ['[', ']'],
+    ['{', '}'],
+  ]) {
+    const start = out.indexOf(open);
+    const end = out.lastIndexOf(close);
+    if (start >= 0 && end > start) candidates.push(out.slice(start, end + 1));
   }
   for (const candidate of candidates) {
     try {
       const parsed = JSON.parse(candidate);
+      if (Array.isArray(parsed)) return parsed;
       if (parsed && Array.isArray(parsed.rows)) return parsed.rows;
     } catch {
       /* siguiente candidato */
@@ -117,7 +120,7 @@ function parseRows(out, expectRows) {
 }
 
 function query(sql, { expectRows = true } = {}) {
-  const out = cli(['db', 'query', '--db-url', dbUrl, '--output', 'json', sql]);
+  const out = cli(['db', 'query', '--db-url', dbUrl, '--output', 'json', '--agent', 'no', sql]);
   return parseRows(out, expectRows);
 }
 
