@@ -18,7 +18,6 @@ import {
   envelopeFromStored,
   EventRejected,
   newEventId,
-  type AppendResult,
 } from '../../server/fps/events';
 import {
   deriveStep,
@@ -27,7 +26,6 @@ import {
   pathForStep,
   submittedEventFor,
   type ItemRow,
-  type SessionState,
 } from '../../server/fps/session';
 import { loadQuestionContent, loadUnitContent } from '../../server/fps/content';
 
@@ -320,8 +318,8 @@ export async function selectAnswerAction(
 
 export async function recordConfidenceAction(
   itemId: string,
-  value: number,
   scaleVersion: string,
+  value: number,
 ): Promise<FpsActionState> {
   try {
     const { supabase } = await context();
@@ -356,9 +354,9 @@ export async function recordConfidenceAction(
 export async function submitAnswerAction(
   itemId: string,
   representationId: string,
+  scaleVersion: string,
   optionId: string | null,
   confidenceValue: number | null,
-  scaleVersion: string | null,
 ): Promise<FpsActionState> {
   let destination = '/hoy';
   try {
@@ -405,23 +403,6 @@ export async function submitAnswerAction(
     return { error: messageFor(error) };
   }
   redirect(destination);
-}
-
-/**
- * Recupera el resultado de un envío ya aceptado, repitiendo su sobre exacto.
- *
- * `question_attempts` no guarda la opción correcta ni la explicación, así que esta es la única
- * vía dentro del contrato congelado. No crea intento, no consume posición y devuelve
- * `idempotent: true`.
- */
-export async function recoverOutcome(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  state: SessionState,
-  itemId: string,
-): Promise<AppendResult | null> {
-  const stored = submittedEventFor(state, itemId);
-  if (!stored) return null;
-  return appendEvent(supabase, envelopeFromStored(stored));
 }
 
 export async function viewFeedbackAction(itemId: string): Promise<FpsActionState> {

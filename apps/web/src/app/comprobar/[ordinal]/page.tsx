@@ -13,11 +13,11 @@ import {
 import {
   interruptSessionAction,
   recordConfidenceAction,
-  recoverOutcome,
   selectAnswerAction,
   submitAnswerAction,
   viewFeedbackAction,
 } from '../../actions/fps';
+import { recoverOutcome } from '../../../server/fps/events';
 import { getVerifiedIdentity } from '../../../server/auth/identity';
 import { createSupabaseServerClient } from '../../../server/supabase/server-client';
 import { loadConfidenceScale, loadQuestionContent } from '../../../server/fps/content';
@@ -27,6 +27,7 @@ import {
   lastConfidenceFor,
   lastSelectedOptionFor,
   loadSessionState,
+  submittedEventFor,
   pathForStep,
 } from '../../../server/fps/session';
 
@@ -75,7 +76,7 @@ export default async function ComprobarPage({
   const total = state.items.length;
 
   if (step.kind === 'feedback') {
-    const result = await recoverOutcome(supabase, state, step.item.id);
+    const result = await recoverOutcome(supabase, submittedEventFor(state, step.item.id));
     const outcome = result?.attempt;
     if (!outcome) redirect('/hoy');
 
@@ -134,18 +135,13 @@ export default async function ComprobarPage({
           initialSelectedOptionId={selected}
           initialConfidence={confidence}
           onSelect={selectAnswerAction.bind(null, step.item.id, question.representationId)}
-          onConfidence={async (value: number) =>
-            recordConfidenceAction(step.item.id, value, scale?.version ?? 'v1')
-          }
-          onSubmit={async (optionId: string | null, value: number | null) =>
-            submitAnswerAction(
-              step.item.id,
-              question.representationId,
-              optionId,
-              value,
-              scale?.version ?? 'v1',
-            )
-          }
+          onConfidence={recordConfidenceAction.bind(null, step.item.id, scale?.version ?? 'v1')}
+          onSubmit={submitAnswerAction.bind(
+            null,
+            step.item.id,
+            question.representationId,
+            scale?.version ?? 'v1',
+          )}
         />
       </FpsSurface>
       <FpsActions>

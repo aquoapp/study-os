@@ -134,3 +134,21 @@ export async function appendEvent(
   if (error) throw new EventRejected(rejectionCode(error.message), error.message);
   return data as AppendResult;
 }
+
+/**
+ * Recupera el resultado de un envío ya aceptado, repitiendo su sobre exacto.
+ *
+ * `question_attempts` no guarda la opción correcta ni la explicación, así que esta es la única
+ * vía dentro del contrato congelado para volver a mostrar la corrección después de una
+ * recarga. No crea intento, no consume posición y devuelve `idempotent: true`.
+ *
+ * Vive aquí y no entre las acciones porque no es una acción: no la invoca el navegador, la
+ * usa la pantalla al pintarse.
+ */
+export async function recoverOutcome(
+  supabase: SupabaseClient,
+  stored: EventRow | null,
+): Promise<AppendResult | null> {
+  if (!stored) return null;
+  return appendEvent(supabase, envelopeFromStored(stored));
+}
