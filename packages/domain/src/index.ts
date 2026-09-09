@@ -46,3 +46,12 @@ export {
   type VerifiedIdentity,
   type VerifiedIdentityMethod,
 } from './identity';
+
+export {
+  FPS_ASSIGNMENT_STRATEGY,
+  FPS_SESSION_TYPE,
+  selectFixedSessionItems,
+  type FixedSessionItem,
+  type PublishedQuestion,
+  type PublishedUnit,
+} from './fps';

@@ -94,6 +94,16 @@ export default async function OnboardingPage() {
               indicado.
             </p>
           </section>
+
+          {/*
+            Salida al vertical. El onboarding termina donde empieza el estudio: sin este enlace
+            la persona se queda en una pantalla de confirmación sin nada que hacer.
+          */}
+          <p style={{ marginTop: 24 }}>
+            <a className="so-action" href="/hoy" data-testid="onboarding-ir-a-hoy">
+              Empezar a estudiar
+            </a>
+          </p>
         </section>
       ) : (
         <>

@@ -44,6 +44,18 @@ const USER_FACING_SOURCES = [
   // comprueba que el texto no afirma nada que el sistema no pueda cumplir (EC-012).
   'apps/web/src/app/onboarding/page.tsx',
   'apps/web/src/app/_components/onboarding-form.tsx',
+  // First Product Slice · las cinco superficies del vertical y su capa de componentes. Son
+  // las primeras pantallas de estudio reales: hablan de guardar respuestas y de retomar una
+  // sesión, que es exactamente donde una promesa de persistencia sería mentira (EC-012), y
+  // donde el léxico de culpa por interrumpir sería más fácil de colar (INV-107).
+  'apps/web/src/app/hoy/page.tsx',
+  'apps/web/src/app/aprender/[ordinal]/page.tsx',
+  'apps/web/src/app/comprobar/[ordinal]/page.tsx',
+  'apps/web/src/app/fin/page.tsx',
+  'apps/web/src/app/_components/fps/fps-shell.tsx',
+  'apps/web/src/app/_components/fps/fps-action-button.tsx',
+  'apps/web/src/app/_components/fps/fps-answer-form.tsx',
+  'apps/web/src/app/_components/fps/fps-feedback.tsx',
 ];
 
 /**

@@ -21,7 +21,14 @@ import { NextResponse, type NextRequest } from 'next/server';
  */
 
 /** Prefijos que exigen identidad verificada. */
-const PROTECTED_PREFIXES = ['/cuenta', '/onboarding'] as const;
+const PROTECTED_PREFIXES = [
+  '/cuenta',
+  '/onboarding',
+  '/hoy',
+  '/aprender',
+  '/comprobar',
+  '/fin',
+] as const;
 
 /** Rutas de autenticación: un usuario ya identificado no debe quedarse en ellas. */
 const AUTH_ROUTES = ['/entrar', '/registro'] as const;

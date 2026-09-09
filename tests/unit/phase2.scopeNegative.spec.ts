@@ -155,14 +155,51 @@ describe('la superficie de producto es exactamente el vertical del FPS', () => {
             ? [join(dir, entry.name)]
             : [],
       );
+    /*
+     * La regla es «el cliente no calcula corrección», no «el cliente no nombra el resultado».
+     * El FPS **muestra** el resultado que devuelve la RPC tras el envío, porque esa es la
+     * pantalla de FEEDBACK y sin ella no hay producto (REQ-F10). Lo que sigue prohibido es:
+     *
+     *  · tocar la clave: `answer_key_versions`, `resolve_answer_key` o cualquier consulta
+     *    contra una tabla de claves —viven en un esquema no expuesto y no son alcanzables—;
+     *  · nombrar el identificador de la versión de clave, que es una referencia opaca del
+     *    servidor y nunca material de pantalla (EC-007);
+     *  · **decidir** si una respuesta es correcta comparando lo elegido con lo correcto.
+     */
+    const forbidden: Array<{ pattern: RegExp; why: string }> = [
+      { pattern: /answer_key_versions/, why: 'consulta la tabla de claves' },
+      { pattern: /resolve_answer_key/, why: 'resuelve la clave en el cliente' },
+      { pattern: /answer_key_version_id/, why: 'nombra el identificador de la versión de clave' },
+      { pattern: /from\(\s*['"][^'"]*answer_key/, why: 'consulta una tabla de claves' },
+      {
+        pattern: /(selected\w*\s*===?\s*correct\w*)|(correct\w*\s*===?\s*selected\w*)/i,
+        why: 'compara la opción elegida con la correcta',
+      },
+    ];
     const offenders: string[] = [];
     for (const file of walk(join(REPO_ROOT, 'apps', 'web', 'src'))) {
       const source = readFileSync(file, 'utf8');
-      if (/answer_key|correct_option|is_correct\s*=|resolve_answer_key/.test(source)) {
-        offenders.push(file.replace(REPO_ROOT, ''));
+      for (const rule of forbidden) {
+        if (rule.pattern.test(source)) {
+          offenders.push(`${file.replace(REPO_ROOT, '')} · ${rule.why}`);
+        }
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it('la corrección que se muestra viene del resultado de la RPC, no de una tabla', () => {
+    // `question_attempts` no guarda la opción correcta ni la explicación: si aparecieran en un
+    // `select`, alguien habría inventado una fuente que no existe.
+    const sources = [
+      'apps/web/src/server/fps/events.ts',
+      'apps/web/src/server/fps/session.ts',
+      'apps/web/src/server/fps/content.ts',
+    ].map((relative) => read(relative));
+    for (const source of sources) {
+      expect(source).not.toMatch(/select\([^)]*correct_option_id/);
+      expect(source).not.toMatch(/select\([^)]*explanation/);
+    }
   });
 });
 
