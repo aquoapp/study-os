@@ -119,9 +119,12 @@ describe('descubrimiento y metadatos: la frontera de Phase 1A sigue cerrada con 
     });
     expect(withService.status).toBe(200);
     expect(withService.body).not.toMatch(PRIVATE_WORDS);
-    // Y sí describe lo que el cliente puede usar en Phase 2.
+    // Control positivo: la respuesta describe de verdad el esquema expuesto, de modo que
+    // «no aparece nada privado» no se cumple por venir vacía. Se comprueba con una tabla y
+    // no con una función: el stack local y el proyecto gestionado no listan las funciones
+    // igual, y una aserción que dependa de eso vigila el entorno en vez del invariante.
     expect(withService.body).toMatch(/learning_events/);
-    expect(withService.body).toMatch(/append_learning_event/);
+    expect(withService.body.length).toBeGreaterThan(1000);
   });
 
   it('Accept-Profile con un esquema privado se rechaza también para las tablas de Phase 2', async () => {
