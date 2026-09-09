@@ -76,6 +76,9 @@
 }
 
 .reading {
+  /* REQ-F04 · medida de lectura de 45 a 70 caracteres. La columna de la superficie es más
+     ancha porque también sostiene opciones y controles; el cuerpo de lectura se acota aquí. */
+  max-width: 33rem;
   font-family: var(--so-font-reading);
   font-size: var(--so-text-body-max);
   line-height: var(--so-leading-reading);

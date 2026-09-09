@@ -56,10 +56,13 @@ export function FpsAnswerForm({
   const [selected, setSelected] = useState<string | null>(initialSelectedOptionId);
   const [confidence, setConfidence] = useState<number | null>(initialConfidence);
   const [error, setError] = useState<string | null>(null);
-  const [saving, startSaving] = useTransition();
+  const [, startSaving] = useTransition();
   const [submitting, startSubmitting] = useTransition();
 
-  const canSubmit = confidence !== null && !submitting && !saving;
+  // El autoguardado es evidencia de fondo: no puede bloquear la acción principal. La
+  // confianza viaja también en el envío, así que comprobar antes de que aterrice no pierde
+  // nada, y un botón que parpadea entre habilitado y no lo hace parecer roto.
+  const canSubmit = confidence !== null && !submitting;
 
   return (
     <>
