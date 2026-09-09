@@ -34,7 +34,7 @@
     "guard:tai-literal": "node tools/guards/tai-literal.mjs",
     "guard:import": "node tools/guards/import-guard.mjs",
     "guard:auth-authority": "node tools/guards/auth-authority-guard.mjs",
-    "guards": "npm run guard:import && npm run guard:tai-literal && npm run guard:auth-authority && npm run client-authority-guard",
+    "guards": "npm run guard:import && npm run guard:tai-literal && npm run guard:auth-authority && npm run guard:private-schemas && npm run client-authority-guard",
     "verify": "node tools/verify.mjs",
     "verify:originals": "node tools/verify-originals.mjs",
     "db:start": "node tools/db.mjs start",
@@ -42,7 +42,9 @@
     "db:reset": "node tools/db.mjs reset",
     "db:diff": "node tools/db.mjs diff",
     "db:status": "node tools/db.mjs status",
-    "secret-scan:no-build": "node tools/guards/secret-scan.mjs"
+    "secret-scan:no-build": "node tools/guards/secret-scan.mjs",
+    "guard:private-schemas": "node tools/guards/private-schema-grant-guard.mjs",
+    "db:roundtrip": "node tools/db-roundtrip.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

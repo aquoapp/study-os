@@ -45,6 +45,7 @@ const LIVING = [
   'docs/ARCHITECTURE_STATE.md',
   'docs/GOVERNING_DOCUMENTS.md',
   'docs/PHASE_0_CHECKPOINT.md',
+  'docs/PHASE_1A_CHECKPOINT.md',
   'docs/PROVENANCE.md',
   'docs/DEPENDENCY_PROPOSAL.md',
   'CLAUDE.md',
@@ -188,6 +189,39 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
     for (const [decision, adr] of MATRIX) {
       expect(doc, `${decision} → ${adr}`).toMatch(new RegExp(`${decision}[^\\n]*${adr}`));
     }
+  });
+
+  it('PHASE_1A_CHECKPOINT · PASS WITH DEBT solo por deuda registrada; diez gates PASS; sin merge ni tag', () => {
+    const checkpoint = read('docs/PHASE_1A_CHECKPOINT.md');
+    expect(checkpoint).toContain('STATUS: PASS WITH DEBT');
+    expect(checkpoint).not.toContain('STATUS: BLOCKED');
+    expect(checkpoint).not.toContain('STATUS: FAIL');
+    expect(checkpoint).toContain(PHASE_1A_PACKET_SHA256);
+    for (let gate = 1; gate <= 10; gate += 1) {
+      expect(checkpoint).toMatch(
+        new RegExp(`^\\| \\*\\*P1A-G${gate}\\*\\*[^\\n]*\\*\\*PASS\\*\\*`, 'm'),
+      );
+    }
+    expect(checkpoint).toMatch(/SIN MERGE · SIN TAG/);
+    expect(checkpoint).toContain(
+      'PHASE 1A BUILD COMPLETE · PASS WITH DEBT · READY FOR HUMAN ACCEPTANCE',
+    );
+    // La deuda que justifica el WITH DEBT es técnica; ninguna decisión de dominio pendiente.
+    const section = checkpoint.slice(
+      checkpoint.indexOf('## Por qué PASS WITH DEBT'),
+      checkpoint.indexOf('## 0.'),
+    );
+    const rows = section.split('\n').filter((line) => line.startsWith('| **'));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row, row).not.toMatch(/SD-018|SD-007|SD-006|BD-02|BD-05|MI-01|MI-04/);
+    }
+    // BLOCKED DECISIONS nombra solo entradas de Phase 1B o diferidas, nunca una de 1A.
+    const blocked = checkpoint.slice(
+      checkpoint.indexOf('## BLOCKED DECISIONS'),
+      checkpoint.indexOf('## STOP CONDITIONS'),
+    );
+    expect(blocked).toContain('| Ninguna en Phase 1A | — |');
   });
 
   it('PHASE_0_CHECKPOINT · PASS WITH DEBT solo por deuda registrada; gates con su vocabulario', () => {

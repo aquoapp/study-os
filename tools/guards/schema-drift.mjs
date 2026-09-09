@@ -147,7 +147,14 @@ if (!dbUrl) {
   );
 } else {
   try {
-    const output = runSupabase(['db', 'diff', '--db-url', dbUrl, '--schema', 'public']);
+    const output = runSupabase([
+      'db',
+      'diff',
+      '--db-url',
+      dbUrl,
+      '--schema',
+      'public,content,ingest',
+    ]);
 
     const meaningful = output
       .split('\n')

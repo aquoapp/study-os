@@ -1,5 +1,10 @@
 # STUDY OS · Propuesta de dependencias · Phase 0
 
+> **Phase 1A (2026-09-09).** Sin dependencias nuevas. Las pruebas de catálogo reutilizan el
+> CLI fijado de Supabase (`supabase db query`) en lugar de añadir un driver de PostgreSQL;
+> el roundtrip y la guarda de esquemas privados son scripts de Node sin paquetes
+> adicionales.
+
 **Contrato:** `Builder Handoff Manifest §7` · «New dependencies require a concrete
 reason… Avoid infrastructure novelty.»
 **Estado:** propuesto con la fundación de Phase 0. Ninguna dependencia cae fuera del

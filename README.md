@@ -4,7 +4,8 @@ Sistema de estudio adaptativo. **Study OS es el producto; TAI es el primer pack 
 (Engineering Constitution EC-018, Builder Handoff Manifest §5).
 
 > **Estado actual:** Phase 0 congelada (`phase-0-v1.0`) · Phase 1A · Canonical Domain
-> Foundation con BUILD autorizado el 2026-09-09 (`docs/PHASE_1A_AUTHORIZATION_PACKET.md`).
+> Foundation construida en su rama con checkpoint **PASS WITH DEBT**
+> (`docs/PHASE_1A_CHECKPOINT.md`), pendiente de aceptación humana: sin merge ni tag.
 > Ningún motor, ninguna pantalla de producto y ningún contenido oficial: el corpus TAI no
 > entra en este repositorio público. Ver `docs/ARCHITECTURE_STATE.md`.
 
@@ -40,13 +41,13 @@ Flujo por fase: rama de fase → commits → CI en verde → PR → revisión hu
 /packages/design-system Tokens y primitivas visuales
 /packages/domain       Tipos y contratos de dominio compartidos
 /packages/config       Resolución de configuración por entorno
-/supabase/migrations   Migraciones versionadas (EC-011)
+/supabase/migrations   Migraciones versionadas (EC-011) · con `down/` y `.lock.json`
 /supabase/functions    Edge Functions
 /supabase/seed         Semillas (vacío en Phase 0)
 /tests/unit            Tests unitarios
 /tests/integration     Tests de integración y RLS
 /tests/e2e             Tests end-to-end
-/tools/guards          Guardas de invariante ejecutables
+/tools/guards          Guardas de invariante ejecutables (seis desde Phase 1A)
 /spec                  Outputs de Phase −1 (congelados)
 /architecture          ADR
 /docs                  Estado, plan de fase, diffs de especificación, checkpoints
@@ -62,6 +63,19 @@ npm run verify
 ```
 
 Ejecuta los nueve checks bloqueantes de CI. Ver `docs/PHASE_0_EXECUTION_PLAN.md` §4.
+
+```bash
+npm run db:roundtrip
+```
+
+Reversibilidad real de las migraciones posteriores a Phase 0: toma la firma semántica del
+catálogo, revierte con los scripts `down/` en orden inverso, comprueba por firma que solo
+queda Phase 0, vuelve a aplicar y exige una firma idéntica. Es destructiva: local sin más,
+STAGING con autorización explícita, PRODUCTION nunca.
+
+Esquemas (ADR-011): `public` es la única superficie expuesta al Data API; `content`
+(claves de respuesta) e `ingest` (frontera de ingestión) no se exponen y ningún rol de
+cliente los alcanza.
 
 Aparte, y **fuera** de esos nueve:
 
