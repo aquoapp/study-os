@@ -179,3 +179,50 @@ describe('el contrato de pantalla es autoridad de FPS v1 y no congela el futuro'
     expect(contract).toContain('nunca es el único portador de significado');
   });
 });
+
+describe('el checkpoint del FPS dice la verdad sobre su propio estado', () => {
+  const checkpoint = read('docs/FPS_CHECKPOINT.md');
+
+  it('declara los diez gates, con FPS-G10 pendiente y sin marcar', () => {
+    for (let gate = 1; gate <= 9; gate += 1) {
+      expect(checkpoint, `falta FPS-G${gate}`).toMatch(
+        new RegExp(String.raw`\| \*\*FPS-G${gate}\*\*[^\n]*\*\*PASS\*\*`),
+      );
+    }
+    expect(checkpoint).toMatch(/\| \*\*FPS-G10\*\*[^\n]*\*\*PENDING HUMAN WALKTHROUGH\*\*/);
+    // Y no se marca por error en ninguna otra parte del documento.
+    expect(checkpoint).not.toMatch(/FPS-G10[^\n]*\*\*PASS\*\*/);
+  });
+
+  it('no reclama merge, tag ni congelación', () => {
+    expect(checkpoint).toContain('Merge / tag | **ninguno**');
+    expect(checkpoint).toContain('sin merge, sin tag');
+  });
+
+  it('declara que el FPS no toca la frontera congelada', () => {
+    expect(checkpoint).toContain('Migraciones nuevas | **0**');
+    expect(checkpoint).toContain('RPC nuevas | **0**');
+    expect(checkpoint).toContain('Grants nuevos | **0**');
+  });
+
+  it('incluye el guion del recorrido manual y no pide nada técnico', () => {
+    const guion = checkpoint.slice(
+      checkpoint.indexOf('## ANA WALKTHROUGH INSTRUCTIONS'),
+      checkpoint.indexOf('## NEXT AUTHORITY'),
+    );
+    expect(guion).toContain('Doce pasos');
+    for (const forbidden of ['consola', 'SQL', 'Supabase', 'GitHub']) {
+      // Solo pueden aparecer en la frase que dice que **no** hay que abrirlos.
+      const mentions = guion.split(forbidden).length - 1;
+      expect(mentions, `«${forbidden}» aparece ${mentions} veces en el guion`).toBeLessThanOrEqual(
+        1,
+      );
+    }
+  });
+
+  it('hereda WATCH-P2-1 y D-20 sin cerrarlas y sin añadir deuda nueva', () => {
+    expect(checkpoint).toContain('**no añade deuda nueva**');
+    expect(checkpoint).toContain('WATCH-P2-1');
+    expect(checkpoint).toContain('ni cerrada ni ampliada');
+  });
+});

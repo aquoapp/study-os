@@ -195,6 +195,14 @@ Release, Phase 1B, Phase 3 y cualquier mutación de PRODUCTION **no** están aut
 WATCH-P2-1 viaja sin cambios y **no se mitiga**; D-20 queda como vigilancia y el FPS no
 selecciona `source_versions.storage_path`, `checksum` ni `retrieved_at`.
 
+**Construido el 2026-09-09** en `milestone/fps-first-product-slice`: cuatro rutas protegidas,
+la primera capa de componentes de producto, la asignación determinista en `@study-os/domain`,
+tres módulos de servidor y las acciones que envían la evidencia por las dos RPC ya
+declaradas. Un pack de demostración sintético y estable vive en STAGING, sembrado por
+`tools/seed-fps-demo.mjs` de forma idempotente y por la frontera de ingestión. El checkpoint
+es `docs/FPS_CHECKPOINT.md`: nueve gates en PASS y **FPS-G10 pendiente del recorrido manual
+de Ana**. Sin merge, sin tag y sin congelación: la aceptación es humana y no se ha producido.
+
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:
 reconstruir la realidad desde el repositorio, el historial de migraciones y el catálogo antes
