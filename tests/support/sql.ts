@@ -60,7 +60,19 @@ export function query<Row = Record<string, unknown>>(sql: string): Row[] {
     // El CLI reparte su salida entre stdout y stderr según el modo (TTY, agente, CI).
     output = `${result.stdout ?? ''}${result.stderr ?? ''}`.split(url).join('<db-url>');
     status = result.status;
-    const databaseSpoke = /failed to execute query|SQLSTATE|ERROR:/.test(output);
+    // Un problema de **transporte** no es un rechazo de la base. Con varias suites de
+    // integración en paralelo, cada consulta abre su propia sesión por el pooler y una
+    // puede encontrarse la conexión cerrada; el CLI lo comunica con el mismo prefijo que
+    // usa para un error de SQL, y sin esta distinción el arnés lo tomaría por un rechazo y
+    // dejaría pasar un ataque «rechazado» por la red (D-22). El patrón es estrecho: un
+    // rechazo real de PostgreSQL —restricción, trigger, RLS, permiso— trae su SQLSTATE y
+    // nunca casa aquí, así que sigue sin reintentarse.
+    const connectionTrouble =
+      /connection reset|connection refused|could not connect|server closed the connection|EOF detected|connection timed out|broken pipe|too many( clients|connections)/i.test(
+        output,
+      );
+    const databaseSpoke =
+      !connectionTrouble && /failed to execute query|SQLSTATE|ERROR:/.test(output);
     if (status === 0 || databaseSpoke) break;
     if (attempt === 3)
       throw new Error(

@@ -46,6 +46,7 @@ const LIVING = [
   'docs/GOVERNING_DOCUMENTS.md',
   'docs/PHASE_0_CHECKPOINT.md',
   'docs/PHASE_1A_CHECKPOINT.md',
+  'docs/PHASE_2_CHECKPOINT.md',
   'docs/PROVENANCE.md',
   'docs/DEPENDENCY_PROPOSAL.md',
   'CLAUDE.md',
@@ -245,6 +246,37 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
       checkpoint.indexOf('## STOP CONDITIONS'),
     );
     expect(blocked).toContain('| Ninguna en Phase 1A | — |');
+  });
+
+  it('PHASE_2_CHECKPOINT · PASS WITH DEBT, nueve gates PASS, sin merge ni tag, y el relevo de modelo declarado', () => {
+    const checkpoint = read('docs/PHASE_2_CHECKPOINT.md');
+    expect(checkpoint).toContain('STATUS: PASS WITH DEBT');
+    expect(checkpoint).not.toContain('STATUS: BLOCKED');
+    expect(checkpoint).not.toContain('STATUS: FAIL');
+    expect(checkpoint).toContain(PHASE_2_PACKET_SHA256);
+
+    // Los nueve gates, con el vocabulario del Checkpoint Contract y ningún «casi».
+    for (let gate = 1; gate <= 9; gate += 1) {
+      expect(checkpoint, `falta P2-G${gate}`).toMatch(
+        new RegExp(`\\| \\*\\*P2-G${gate}\\*\\*[^\\n]*\\*\\*PASS\\*\\*`),
+      );
+    }
+
+    // La base y el estado son los reales, y no se ha movido nada de Phase 1A.
+    expect(checkpoint).toContain('0cf74678f80b7df19a8a61194ea9f5b3e72f4514');
+    expect(checkpoint).toContain('phase/2-learner-evidence-core');
+    expect(checkpoint).toContain('Merge / tag | **ninguno**');
+    expect(checkpoint).toContain('phase-1a-v1.0');
+
+    // El relevo de modelo se declara: quién construyó qué y qué resultó no verificado.
+    expect(checkpoint).toContain('MODEL HANDOFF RECOVERY');
+    expect(checkpoint).toContain('Fable 5.1');
+    expect(checkpoint).toContain('Opus 5');
+
+    // Y la deuda nueva consta con su identificador, no como prosa suelta.
+    for (const debt of ['D-22', 'D-23']) {
+      expect(checkpoint, `falta la deuda ${debt}`).toContain(debt);
+    }
   });
 
   it('PHASE_0_CHECKPOINT · PASS WITH DEBT solo por deuda registrada; gates con su vocabulario', () => {

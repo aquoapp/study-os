@@ -39,6 +39,11 @@ const USER_FACING_SOURCES = [
   'apps/web/src/app/_components/credentials-form.tsx',
   'apps/web/src/app/_components/service-worker-registrar.tsx',
   'apps/web/src/app/layout.tsx',
+  // Phase 2 · onboarding mínimo (REQ-C01). Es la primera pantalla que podría prometer un
+  // plan, y en Phase 2 no hay Planner: su marcador se declara provisional y esta vigilancia
+  // comprueba que el texto no afirma nada que el sistema no pueda cumplir (EC-012).
+  'apps/web/src/app/onboarding/page.tsx',
+  'apps/web/src/app/_components/onboarding-form.tsx',
 ];
 
 /**

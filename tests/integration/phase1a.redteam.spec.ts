@@ -86,7 +86,12 @@ describe('descubrimiento por el Data API: nada de content ni ingest es visible',
     return { status: response.status, body: await response.text() };
   }
 
-  const PRIVATE_WORDS = /answer_key|correct_option|staged_items|promotions|content\.|ingest\./i;
+  // Desde Phase 2, `question_attempts` expone `answer_key_version_id`: una referencia opaca
+  // a una fila de `content` que el cliente no puede leer, exigida por EC-007 para que el
+  // intento conserve con qué versión de clave se evaluó. El patrón nombra por eso la TABLA
+  // de claves y el material de corrección, no el prefijo `answer_key`.
+  const PRIVATE_WORDS =
+    /answer_key_versions|correct_option|explanation|staged_items|promotions|content\.|ingest\./i;
 
   it('el OpenAPI de la raíz se niega a los roles de cliente y, para el servidor, no describe nada privado', async () => {
     // El proyecto gestionado exige una clave secreta para el descubrimiento (401 para anon
@@ -530,10 +535,14 @@ describe('claves de respuesta (EC-007 · INV-101)', () => {
     const grants = query<{ table: string; privilege: string }>(
       "select table_schema || '.' || table_name as table, privilege_type as privilege from information_schema.role_table_grants where grantee = 'service_role' and table_schema in ('content','ingest') order by 1, 2",
     );
+    // Phase 2 añade los dos contadores de la frontera, con el mismo contrato: el rol de
+    // servicio los lee y no los escribe. Quien asigna posición e intento es la función.
     expect(grants.map((g) => `${g.table}:${g.privilege}`)).toEqual([
       'content.answer_key_versions:SELECT',
       'ingest.promotions:SELECT',
       'ingest.staged_items:SELECT',
+      'ingest.user_event_counters:SELECT',
+      'ingest.user_question_counters:SELECT',
     ]);
   });
 });

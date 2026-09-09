@@ -25,7 +25,8 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
@@ -119,7 +120,41 @@ function parseRows(out, expectRows) {
   );
 }
 
+/**
+ * Longitud a partir de la cual la sentencia viaja por fichero y no por línea de comandos.
+ *
+ * Windows corta la línea de comandos en 32 767 caracteres, y el rollback de una migración
+ * que restaura funciones enteras roza ese techo: al pasarlo, el proceso no llega a nacer y
+ * el CLI «falla» sin decir nada, que es la peor forma de fallar. El CLI fijado acepta
+ * `--file`, así que por encima del umbral se escribe la sentencia en un fichero temporal.
+ * El umbral es holgado a propósito: el coste de un fichero temporal es irrelevante al lado
+ * de un rollback que no se puede ejecutar en una de las plataformas del equipo.
+ */
+const ARGV_SAFE_LENGTH = 8000;
+
 function query(sql, { expectRows = true } = {}) {
+  if (sql.length > ARGV_SAFE_LENGTH) {
+    const dir = mkdtempSync(join(tmpdir(), 'study-os-roundtrip-'));
+    const file = join(dir, 'statement.sql');
+    try {
+      writeFileSync(file, sql, 'utf8');
+      const fromFile = cli([
+        'db',
+        'query',
+        '--db-url',
+        dbUrl,
+        '--output',
+        'json',
+        '--agent',
+        'no',
+        '--file',
+        file,
+      ]);
+      return parseRows(fromFile, expectRows);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
   const out = cli(['db', 'query', '--db-url', dbUrl, '--output', 'json', '--agent', 'no', sql]);
   return parseRows(out, expectRows);
 }

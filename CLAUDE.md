@@ -166,9 +166,19 @@ autorizada; SD-022 (canonicalización v1), SD-023 (autoridad de representación 
 cuatro niveles) `ACCEPTED`; `learning_units` entra como adenda de contenido canónico (H-FPS-1,
 opción A, solo GENERATED); `append_learning_event` y `create_study_session` son las únicas RPC
 invocables por cliente, declaradas en `authority-registry.json`. El aterrizaje de gobernanza
-va en `phase/2-governance`; el BUILD en `phase/2-learner-evidence-core`. STAGING es el único
-entorno mutable; PRODUCTION no se toca; merge final, tag, Release, FPS, Phase 1B y Phase 3
-**no** están autorizados.
+se integró en `main` (PR #6, `0cf7467`). **Construida** en `phase/2-learner-evidence-core`:
+migraciones 15–18 con rollback, 12 tablas de `public` y 2 de `ingest` con RLS forzado,
+canonicalización v1, stream de eventos sin huecos, intentos inmutables con corrección en
+servidor, continuidad de sesión y onboarding mínimo en `/onboarding`. El checkpoint de
+Phase 2 es **PASS WITH DEBT** (`docs/PHASE_2_CHECKPOINT.md`), **sin merge y sin tag**: la
+aceptación humana no se ha producido. STAGING es el único entorno mutable; PRODUCTION no se
+toca; merge final, tag, Release, FPS, Phase 1B y Phase 3 **no** están autorizados.
+
+El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
+una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:
+reconstruir la realidad desde el repositorio, el historial de migraciones y el catálogo antes
+de escribir nada, y avanzar por commits coherentes para que la siguiente sesión pueda
+retomarlo con Git.
 
 **INV-101 ya no está abierto.** Ana lo aprobó, con su redacción congelada, en la
 autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante
