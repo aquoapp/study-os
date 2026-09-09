@@ -12,7 +12,7 @@ import {
   validate,
   type SyntheticPack,
 } from '../support/phase1a-fixtures';
-import { one, query } from '../support/sql';
+import { attack, one, query } from '../support/sql';
 import { adminClient, readTestEnv, type TestEnv } from '../support/supabase-test-env';
 
 /**
@@ -577,66 +577,39 @@ describe('P1A-G8 · procedencia e ingest', () => {
     expect(row.dangling).toBe(0);
   });
 
-  it('la purga se niega mientras el pack tenga una fila no GENERATED', async () => {
-    const { targetId: draft } = await publish(admin, 'question_representation', {
-      question_id: question(packB, 0).questionId,
-      stem: 'fixture: borrador verificado',
-      provenance_class: 'VERIFIED',
-      source_version_id: packB.sourceVersionId,
-      status: 'DRAFT',
-      options: [
-        { option_key: 'A', body: 'fixture: a' },
-        { option_key: 'B', body: 'fixture: b' },
-      ],
-    });
-    await expect(purgePack(admin, packB.packId)).rejects.toThrow(/no GENERATED|no se purga/);
-    // Un borrador no publicado sí puede retirarse por el servidor: se limpia y la purga vuelve a ser posible.
-    const { error: optionsError } = await admin
-      .from('question_options')
-      .delete()
-      .eq('representation_id', draft);
-    expect(optionsError).toBeNull();
-    const { error } = await admin.from('question_representations').delete().eq('id', draft);
-    expect(error).toBeNull();
+  it('la purga se niega mientras el pack tenga una fila no GENERATED', () => {
+    // Sin residuo: el borrador VERIFIED se inserta y la purga se intenta dentro de una
+    // transacción que siempre se revierte. Ninguna promoción no GENERATED queda en la
+    // auditoría de STAGING por culpa de esta prueba (D-17).
+    const outcome = attack(
+      `declare promo uuid; begin insert into ingest.promotions (target_table) values ('public.question_representations') returning id into promo; ` +
+        `insert into public.question_representations (question_id, representation_no, stem, provenance_class, source_version_id, status, promotion_id) ` +
+        `values ('${question(packB, 0).questionId}', 40, 'fixture: borrador verificado', 'VERIFIED', '${packB.sourceVersionId}', 'DRAFT', promo); ` +
+        `perform ingest.purge_generated_pack('${packB.packId}'); end;`,
+    );
+    expect(outcome.rejected).toBe(true);
+    expect(outcome.message).toMatch(/no GENERATED|no se purga/);
   });
 });
 
 describe('fuentes y versiones', () => {
-  it('una versión OFFICIAL vigente exige checksum y la cadena de supersesión es de la misma fuente', async () => {
-    const { targetId: officialSource } = await publish(admin, 'source', {
-      title: `fixture: fuente que se declara oficial ${fixtureSlug('src')}`,
-      authority: 'fixture',
-      source_type: 'FIXTURE',
-      provenance_class: 'OFFICIAL',
-    });
-    await expect(
-      publish(admin, 'source_version', {
-        source_id: officialSource,
-        version_label: 'v1',
-        effective_from: '2026-01-01',
-        status: 'CURRENT',
-      }),
-    ).rejects.toThrow(/checksum|INV-110/);
-    const { targetId: v1 } = await publish(admin, 'source_version', {
-      source_id: officialSource,
-      version_label: 'v1',
-      effective_from: '2026-01-01',
-      status: 'CURRENT',
-      checksum: 'a'.repeat(64),
-    });
-    await expect(
-      publish(admin, 'source_version', {
-        source_id: packA.sourceId,
-        version_label: 'v9',
-        effective_from: '2026-05-01',
-        supersedes_version_id: v1,
-      }),
-    ).rejects.toThrow(/misma fuente|DI-1A-7/);
-    // Limpieza: la fuente oficial sintética no pertenece a ningún pack y se retira por el servidor.
-    const { error: e1 } = await admin.from('source_versions').delete().eq('id', v1);
-    expect(e1).toBeNull();
-    const { error: e2 } = await admin.from('sources').delete().eq('id', officialSource);
-    expect(e2).toBeNull();
+  it('una versión OFFICIAL vigente exige checksum y la cadena de supersesión es de la misma fuente', () => {
+    // Sin residuo (D-17): la fuente que «se declara oficial» solo existe dentro de una
+    // transacción que se revierte; ninguna promoción OFFICIAL queda en la auditoría.
+    const declared = attack(
+      `declare promo uuid; src uuid; begin insert into ingest.promotions (target_table) values ('public.sources') returning id into promo; ` +
+        `insert into public.sources (title, authority, source_type, provenance_class, promotion_id) values ('fixture: fuente que se declara oficial', 'fixture', 'FIXTURE', 'OFFICIAL', promo) returning id into src; ` +
+        `insert into ingest.promotions (target_table) values ('public.source_versions') returning id into promo; ` +
+        `insert into public.source_versions (source_id, version_label, effective_from, status, promotion_id) values (src, 'v1', '2026-01-01', 'CURRENT', promo); end;`,
+    );
+    expect(declared.rejected).toBe(true);
+    expect(declared.message).toMatch(/checksum|INV-110/);
+    const crossed = attack(
+      `declare promo uuid; begin insert into ingest.promotions (target_table) values ('public.source_versions') returning id into promo; ` +
+        `insert into public.source_versions (source_id, version_label, effective_from, status, supersedes_version_id, promotion_id) values ('${packA.sourceId}', 'v9', '2026-05-01', 'CURRENT', '${packB.sourceVersionId}', promo); end;`,
+    );
+    expect(crossed.rejected).toBe(true);
+    expect(crossed.message).toMatch(/misma fuente|DI-1A-7/);
   });
 
   it('una versión nueva que supersede cierra la anterior', async () => {

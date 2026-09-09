@@ -56,6 +56,22 @@ describe('private-schema-grant-guard · ADR-011', () => {
     expect(result.exitCode).toBe(1);
   });
 
+  it('falla ante una tabla creada sin FORCE RLS o sin revocar a los roles de cliente en la misma migración', () => {
+    const open = withViolation(
+      VIOLATION,
+      'create table if not exists public.leaky (id uuid primary key);\nalter table public.leaky enable row level security;\n',
+      () => runGuard('private-schema-grant-guard.mjs'),
+    );
+    expect(open.exitCode).toBe(1);
+    expect(open.output).toContain('public.leaky');
+    const closed = withViolation(
+      VIOLATION,
+      'create table if not exists public.closed (id uuid primary key);\nalter table public.closed enable row level security;\nalter table public.closed force row level security;\nrevoke all on public.closed from public, anon, authenticated;\ngrant select on public.closed to authenticated;\n',
+      () => runGuard('private-schema-grant-guard.mjs'),
+    );
+    expect(closed.exitCode).toBe(0);
+  });
+
   it('no salta con el texto de un comentario ni de una cadena', () => {
     const result = withViolation(
       VIOLATION,

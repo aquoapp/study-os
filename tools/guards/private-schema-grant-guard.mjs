@@ -152,6 +152,37 @@ for (const file of migrations) {
   }
 }
 
+// ---------------------------------------------------------------- tablas cerradas al crearse
+// SI-1A-4 · EC-009. Toda tabla que una migración crea queda, en esa MISMA migración, con
+// RLS forzado y sin privilegios para los roles de cliente. Los privilegios por defecto de
+// la plataforma pueden conceder TRUNCATE, REFERENCES o TRIGGER a `anon` sobre una tabla
+// nueva: la revocación explícita no es opcional.
+for (const file of migrations) {
+  if (/[\\/]down[\\/]/.test(file)) continue;
+  const raw = read(file);
+  const source = stripSql(raw).toLowerCase();
+  const flat = source.replace(/\s+/g, ' ');
+  for (const match of raw
+    .replace(/--[^\n]*/g, '')
+    .matchAll(/create\s+table\s+(?:if\s+not\s+exists\s+)?([a-z_]+\.[a-z_]+)/gi)) {
+    const table = match[1].toLowerCase();
+    const escaped = table.replace('.', '\\.');
+    const forced = new RegExp(`alter table ${escaped} force row level security`).test(flat);
+    const revoked = new RegExp(
+      `revoke all on ${escaped} from (?=[^;]*\\banon\\b)(?=[^;]*\\bauthenticated\\b)`,
+    ).test(flat);
+    if (!forced || !revoked) {
+      findings.push({
+        file,
+        line: lineOf(raw, match.index ?? 0),
+        message:
+          `La tabla ${table} se crea sin ${!forced ? 'FORCE ROW LEVEL SECURITY' : ''}${!forced && !revoked ? ' ni ' : ''}` +
+          `${!revoked ? 'REVOKE ALL … FROM anon, authenticated' : ''} en la misma migración (SI-1A-4 · EC-009).`,
+      });
+    }
+  }
+}
+
 console.log(
   `  (${migrations.length} migración(es) analizadas · no expuestos: ${NON_EXPOSED.join(', ')} · expuestos: ${EXPOSED.join(', ')})`,
 );

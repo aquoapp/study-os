@@ -80,6 +80,48 @@ export function query<Row = Record<string, unknown>>(sql: string): Row[] {
   );
 }
 
+export interface AttackOutcome {
+  /** Verdadero si la base rechazó el ataque (la excepción no fue la centinela). */
+  readonly rejected: boolean;
+  /** Mensaje de error de PostgreSQL, ya redactado. */
+  readonly message: string;
+}
+
+const ATTACK_SENTINEL = 'STUDY_OS_ATTACK_SUCCEEDED';
+
+/**
+ * Ataque **sin residuo** contra los invariantes de la base.
+ *
+ * Ejecuta `statements` dentro de un bloque `DO` que termina SIEMPRE con una excepción:
+ * si los ataques prosperan, la centinela; si un trigger o una restricción los rechaza,
+ * el error del rechazo. En ambos casos la transacción se revierte y no queda ninguna
+ * fila. Se ejecuta con el usuario de la cadena de conexión (propietario de los
+ * objetos), de modo que lo que se prueba es el enforcement de la base —triggers,
+ * restricciones, índices—, no la RLS de un rol: eso lo prueban los clientes de
+ * PostgREST. «El código de aplicación nunca lo haría» no es enforcement.
+ *
+ * Solo tiene sentido fuera de PRODUCTION; se niega si el entorno no es local ni staging.
+ */
+export function attack(statements: string): AttackOutcome {
+  const environment = process.env['NEXT_PUBLIC_ENVIRONMENT'] ?? '';
+  if (environment !== 'local' && environment !== 'staging') {
+    throw new Error(`attack(): entorno "${environment}" no admitido (solo local o staging)`);
+  }
+  if (statements.includes('$attack$')) throw new Error('attack(): etiqueta reservada');
+  const block =
+    `do $attack$ begin${NEWLINE}${statements}${NEWLINE}` +
+    `raise exception '${ATTACK_SENTINEL}';${NEWLINE}end $attack$;`;
+  try {
+    query(block);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { rejected: !message.includes(ATTACK_SENTINEL), message };
+  }
+  // Un bloque que termina en excepción nunca «devuelve filas»: llegar aquí es un fallo
+  // del arnés, no de la base.
+  throw new Error('attack(): el bloque no lanzó ninguna excepción');
+}
+
 /** Exactamente una fila. Falla si no la hay: una consulta de catálogo vacía es un hallazgo. */
 export function one<Row = Record<string, unknown>>(sql: string): Row {
   const rows = query<Row>(sql);

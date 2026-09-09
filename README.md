@@ -68,9 +68,10 @@ Ejecuta los nueve checks bloqueantes de CI. Ver `docs/PHASE_0_EXECUTION_PLAN.md`
 npm run db:roundtrip
 ```
 
-Reversibilidad real de las migraciones posteriores a Phase 0: revierte con los scripts
-`down/` en orden inverso, comprueba que el catálogo queda limpio y vuelve a aplicar. Es
-destructiva: local sin más, STAGING con autorización explícita, PRODUCTION nunca.
+Reversibilidad real de las migraciones posteriores a Phase 0: toma la firma semántica del
+catálogo, revierte con los scripts `down/` en orden inverso, comprueba por firma que solo
+queda Phase 0, vuelve a aplicar y exige una firma idéntica. Es destructiva: local sin más,
+STAGING con autorización explícita, PRODUCTION nunca.
 
 Esquemas (ADR-011): `public` es la única superficie expuesta al Data API; `content`
 (claves de respuesta) e `ingest` (frontera de ingestión) no se exponen y ningún rol de

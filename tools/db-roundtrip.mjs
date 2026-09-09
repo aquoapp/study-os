@@ -124,6 +124,81 @@ function query(sql, { expectRows = true } = {}) {
   return parseRows(out, expectRows);
 }
 
+/**
+ * Firma semántica del catálogo (esquemas `public`, `content` e `ingest`): esquemas,
+ * tablas (ACL, RLS, comentario), columnas, restricciones, índices, triggers, funciones
+ * (firma, resultado, definer, configuración, ACL, huella del cuerpo), políticas y tipos.
+ * Una sola sentencia, ordenada, para comparar estados byte a byte.
+ *
+ * Quedan fuera a propósito los privilegios por defecto (su estado previo es de plataforma,
+ * no de migración: ver la migración 14) y el historial de migraciones (se compara aparte).
+ */
+const SIGNATURE_SQL = `
+select kind, identity, definition from (
+  select 'schema' as kind, n.nspname as identity, coalesce(n.nspacl::text, '') as definition
+    from pg_namespace n where n.nspname in ('public','content','ingest')
+  union all
+  select 'table', n.nspname || '.' || c.relname,
+         coalesce(c.relacl::text, '') || '|rls=' || c.relrowsecurity || '|forced=' || c.relforcerowsecurity || '|' || coalesce(obj_description(c.oid, 'pg_class'), '')
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+   where c.relkind in ('r','v','m','S') and n.nspname in ('public','content','ingest')
+  union all
+  select 'column', table_schema || '.' || table_name || '.' || column_name,
+         udt_name || '|' || is_nullable || '|' || coalesce(column_default, '') || '|' || ordinal_position
+    from information_schema.columns where table_schema in ('public','content','ingest')
+  union all
+  select 'constraint', c.conrelid::regclass::text || '.' || c.conname, pg_get_constraintdef(c.oid)
+    from pg_constraint c join pg_namespace n on n.oid = c.connamespace
+   where n.nspname in ('public','content','ingest')
+  union all
+  select 'index', schemaname || '.' || indexname, indexdef
+    from pg_indexes where schemaname in ('public','content','ingest')
+  union all
+  select 'trigger', n.nspname || '.' || c.relname || '.' || t.tgname, pg_get_triggerdef(t.oid) || '|' || t.tgenabled::text
+    from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_namespace n on n.oid = c.relnamespace
+   where not t.tgisinternal and n.nspname in ('public','content','ingest')
+  union all
+  select 'function', n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')',
+         pg_get_function_result(p.oid) || '|secdef=' || p.prosecdef || '|' || coalesce(p.proconfig::text, '') || '|' || coalesce(p.proacl::text, '') || '|' || p.provolatile::text || '|' || md5(p.prosrc) || '|' || coalesce(obj_description(p.oid, 'pg_proc'), '')
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname in ('public','content','ingest')
+  union all
+  select 'policy', schemaname || '.' || tablename || '.' || policyname,
+         cmd || '|' || permissive || '|' || roles::text || '|' || coalesce(qual, '') || '|' || coalesce(with_check, '')
+    from pg_policies where schemaname in ('public','content','ingest')
+  union all
+  select 'type', n.nspname || '.' || t.typname,
+         t.typtype::text || '|' || coalesce((select string_agg(e.enumlabel, ',' order by e.enumsortorder) from pg_enum e where e.enumtypid = t.oid), '')
+    from pg_type t join pg_namespace n on n.oid = t.typnamespace
+   where n.nspname in ('public','content','ingest') and t.typtype in ('e','d')
+) s order by kind, identity`;
+
+function catalogSignature() {
+  return query(SIGNATURE_SQL).map((row) => `${row.kind} ${row.identity} :: ${row.definition}`);
+}
+
+function diffSignatures(before, after) {
+  const a = new Set(before);
+  const b = new Set(after);
+  return {
+    missing: before.filter((line) => !b.has(line)),
+    extra: after.filter((line) => !a.has(line)),
+  };
+}
+
+/** Objetos que Phase 0 deja en `public`; cualquier otro tras revertir es un resto. */
+const PHASE_0_ALLOWED = [
+  /^schema public /,
+  /^table public\.profiles /,
+  /^column public\.profiles\./,
+  /^constraint (public\.)?profiles\./,
+  /^index public\.profiles_pkey /,
+  /^trigger public\.profiles\./,
+  /^function public\.(handle_new_user|set_updated_at)\(\) /,
+  /^policy public\.profiles\./,
+  /^type public\.provenance_class /,
+];
+
 const ups = readdirSync(MIGRATIONS_DIR)
   .filter((name) => /^\d{14}_[a-z0-9_]+\.sql$/.test(name))
   .sort();
@@ -137,6 +212,13 @@ if (reversible.length === 0) {
 console.log(
   `db:roundtrip · entorno ${environment} · ${reversible.length} migración(es) a revertir`,
 );
+
+// ---------------------------------------------------------------- 0 · firma inicial
+const signatureBefore = catalogSignature();
+const migrationsBefore = query(
+  'select version, name from supabase_migrations.schema_migrations order by version',
+).map((row) => `${row.version} ${row.name}`);
+console.log(`  firma del catálogo antes de revertir: ${signatureBefore.length} entradas`);
 
 // ---------------------------------------------------------------- 1 · downs
 for (const name of [...reversible].reverse()) {
@@ -166,11 +248,22 @@ if (state.public_tables !== 'profiles') {
   leftovers.push(`public contiene ${state.public_tables}`);
 }
 if (state.phase1a_enums !== 0) leftovers.push(`quedan ${state.phase1a_enums} enum(s) de Phase 1A`);
+// Firma semántica tras revertir: nada fuera de lo que Phase 0 deja.
+const signatureDown = catalogSignature();
+for (const line of signatureDown) {
+  if (!PHASE_0_ALLOWED.some((pattern) => pattern.test(line))) {
+    leftovers.push(`resto tras revertir: ${line.slice(0, 160)}`);
+  }
+}
 if (leftovers.length > 0) {
-  console.error(`✘ db:roundtrip: tras revertir quedan restos: ${leftovers.join('; ')}`);
+  console.error(
+    `✘ db:roundtrip: tras revertir quedan restos:${NEWLINE}  ${leftovers.join(`${NEWLINE}  `)}`,
+  );
   process.exit(1);
 }
-console.log('  ✔ catálogo limpio tras revertir: solo public.profiles y los objetos de Phase 0');
+console.log(
+  `  ✔ catálogo limpio tras revertir: solo public.profiles y los objetos de Phase 0 (${signatureDown.length} entradas)`,
+);
 
 // ---------------------------------------------------------------- 3 · reaplicar
 if (environment === 'local') {
@@ -197,6 +290,32 @@ const [after] = query(
     "(select count(*)::int from pg_tables where schemaname in ('public','content','ingest')) as tables",
 );
 console.log(`  ✔ reaplicadas: esquemas privados=${after.private_schemas} · tablas=${after.tables}`);
+
+// ---------------------------------------------------------------- 4 · firma final
+// up → down → up deja el catálogo idéntico (Phase 1A Authorization Packet §Q): misma firma
+// semántica y mismo historial de migraciones.
+const signatureAfter = catalogSignature();
+const { missing, extra } = diffSignatures(signatureBefore, signatureAfter);
+const migrationsAfter = query(
+  'select version, name from supabase_migrations.schema_migrations order by version',
+).map((row) => `${row.version} ${row.name}`);
+const historyDiff = diffSignatures(migrationsBefore, migrationsAfter);
+if (
+  missing.length > 0 ||
+  extra.length > 0 ||
+  historyDiff.missing.length > 0 ||
+  historyDiff.extra.length > 0
+) {
+  console.error('✘ db:roundtrip: el catálogo tras reaplicar no es idéntico al de partida.');
+  for (const line of missing) console.error(`  − ${line.slice(0, 200)}`);
+  for (const line of extra) console.error(`  + ${line.slice(0, 200)}`);
+  for (const line of historyDiff.missing) console.error(`  − migración ${line}`);
+  for (const line of historyDiff.extra) console.error(`  + migración ${line}`);
+  process.exit(1);
+}
 console.log(
-  '✔ db:roundtrip: down → catálogo limpio → up. Ejecuta schema-drift para cerrar el ciclo.',
+  `  ✔ firma semántica idéntica tras reaplicar (${signatureAfter.length} entradas · ${migrationsAfter.length} migraciones)`,
+);
+console.log(
+  '✔ db:roundtrip: down → catálogo limpio → up → catálogo idéntico. Ejecuta schema-drift para cerrar el ciclo.',
 );

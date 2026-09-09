@@ -145,8 +145,10 @@ Production automáticamente desde Git: exige decisión humana.
 Build Authorization (paquete aceptado en `docs/PHASE_1A_AUTHORIZATION_PACKET.md`): ADR-011
 `ACCEPTED`, anexos v1.1 de ADR-009 y ADR-010 `ACCEPTED`, SD-020 y SD-021 `ACCEPTED`, ADR-005
 con disposición punto por punto y aún `PROPOSED`. **Construida** en
-`phase/1a-canonical-domain-foundation` (migraciones 3–13; esquemas `content` e `ingest` no
-expuestos; sin merge ni tag hasta la aceptación humana). El checkpoint de Phase 1A es
+`phase/1a-canonical-domain-foundation` (migraciones 3–14; esquemas `content` e `ingest` no
+expuestos; sin merge ni tag hasta la aceptación humana) y **auditada adversarialmente** el
+mismo día (migración 14 de endurecimiento; pruebas que atacan cada invariante sin residuo,
+`tests/support/sql.ts` → `attack()`; roundtrip semántico). El checkpoint de Phase 1A es
 **PASS WITH DEBT** (`docs/PHASE_1A_CHECKPOINT.md`). Phase 1B, Phase 2 y FPS **no**
 están autorizados; el corpus oficial TAI nunca entra en este repositorio público, y los
 fixtures son siempre GENERATED y visiblemente sintéticos.

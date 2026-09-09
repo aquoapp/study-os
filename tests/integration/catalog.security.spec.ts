@@ -23,8 +23,25 @@ const AUTHENTICATED_WRITE_ALLOWLIST: Record<string, string[]> = {
   profiles: ['SELECT', 'UPDATE'],
 };
 
-/** Funciones de `public` que `authenticated` puede ejecutar (Phase 0: utilidades). */
-const AUTHENTICATED_FUNCTION_ALLOWLIST = ['set_updated_at'];
+/**
+ * Funciones de `public` que un rol de cliente puede ejecutar: ninguna. `set_updated_at`
+ * lo era en Phase 0 (D-19); la migración 14 lo revocó: un trigger se dispara sin EXECUTE.
+ */
+const AUTHENTICATED_FUNCTION_ALLOWLIST: string[] = [];
+
+/** Privilegios esperados por rol y esquema; `profiles` conserva su UPDATE de Phase 0. */
+function expectedPrivileges(schema: string, _table: string, role: string): string[] {
+  if (role === 'anon') return [];
+  if (role === 'authenticated') {
+    // El UPDATE de `profiles` es de columna (display_name, locale), no de tabla: se
+    // comprueba aparte con role_column_grants.
+    return schema === 'public' ? ['SELECT'] : [];
+  }
+  if (role === 'service_role') {
+    return schema === 'public' ? ['DELETE', 'INSERT', 'SELECT', 'UPDATE'] : ['SELECT'];
+  }
+  throw new Error(`rol inesperado ${role}`);
+}
 
 interface TableRow {
   schema: string;
@@ -140,7 +157,7 @@ describe('en public, anon no tiene nada y authenticated solo lee', () => {
     expect(offending).toEqual([]);
   });
 
-  it('las funciones de public ejecutables por roles de cliente son solo las de Phase 0', () => {
+  it('ninguna función de public es ejecutable por roles de cliente (D-19 cerrada)', () => {
     const fns = query<{ role: string; name: string }>(
       'select r.rolname as role, p.proname as name from pg_proc p join pg_namespace n on n.oid = p.pronamespace ' +
         "cross join (values ('anon'), ('authenticated')) as r(rolname) " +
@@ -162,6 +179,78 @@ describe('en public, anon no tiene nada y authenticated solo lee', () => {
       expect(fn.secdef, `${fn.name} no es SECURITY DEFINER`).toBe(true);
       expect(fn.config ?? '', `${fn.name} sin search_path vacío`).toMatch(/search_path=/);
     }
+  });
+});
+
+describe('matriz rol × privilegio derivada del catálogo (SI-1A-4)', () => {
+  const tables = query<{ schema: string; table: string; forced: boolean }>(
+    'select n.nspname as schema, c.relname as table, c.relforcerowsecurity as forced from pg_class c join pg_namespace n on n.oid = c.relnamespace ' +
+      "where c.relkind = 'r' and n.nspname in ('public','content','ingest') order by 1, 2",
+  );
+  const grants = query<{ schema: string; table: string; grantee: string; privilege: string }>(
+    'select table_schema as schema, table_name as table, grantee, privilege_type as privilege from information_schema.role_table_grants ' +
+      "where table_schema in ('public','content','ingest') and grantee in ('anon','authenticated','service_role') order by 1, 2, 3, 4",
+  );
+
+  for (const row of tables) {
+    for (const role of ['anon', 'authenticated', 'service_role']) {
+      it(`${row.schema}.${row.table} × ${role}`, () => {
+        const actual = grants
+          .filter((g) => g.schema === row.schema && g.table === row.table && g.grantee === role)
+          .map((g) => g.privilege)
+          .sort();
+        expect(actual).toEqual(expectedPrivileges(row.schema, row.table, role));
+        expect(row.forced).toBe(true);
+      });
+    }
+  }
+
+  it('authenticated solo puede actualizar dos columnas de su perfil (Phase 0)', () => {
+    const columns = query<{ table: string; column: string; privilege: string }>(
+      "select table_name as table, column_name as column, privilege_type as privilege from information_schema.role_column_grants where grantee = 'authenticated' and table_schema = 'public' and privilege_type <> 'SELECT' order by 1, 2, 3",
+    );
+    expect(columns).toEqual([
+      { table: 'profiles', column: 'display_name', privilege: 'UPDATE' },
+      { table: 'profiles', column: 'locale', privilege: 'UPDATE' },
+    ]);
+  });
+
+  it('los privilegios por defecto de postgres en public no conceden nada a ningún rol de la API', () => {
+    const defaults = query<{ objtype: string; acl: string }>(
+      'select d.defaclobjtype as objtype, d.defaclacl::text as acl from pg_default_acl d join pg_namespace n on n.oid = d.defaclnamespace join pg_roles r on r.oid = d.defaclrole ' +
+        "where n.nspname = 'public' and r.rolname = 'postgres'",
+    );
+    for (const row of defaults) {
+      expect(row.acl, `${row.objtype}: ${row.acl}`).not.toMatch(
+        /\b(anon|authenticated|service_role)=/,
+      );
+    }
+  });
+
+  it('toda política de public es permisiva de SELECT para authenticated, salvo el perfil propio; solo sources lee sin condición', () => {
+    const policies = query<{
+      table: string;
+      name: string;
+      cmd: string;
+      roles: string;
+      qual: string;
+      permissive: string;
+    }>(
+      "select tablename as table, policyname as name, cmd, roles::text as roles, qual, permissive from pg_policies where schemaname = 'public' order by 1, 2",
+    );
+    expect(policies.length).toBeGreaterThanOrEqual(21);
+    for (const p of policies) {
+      expect(p.roles, p.name).toBe('{authenticated}');
+      expect(p.permissive, p.name).toBe('PERMISSIVE');
+      if (p.table === 'profiles') {
+        expect(['SELECT', 'UPDATE']).toContain(p.cmd);
+        expect(p.qual).toContain('auth.uid()');
+      } else {
+        expect(p.cmd, p.name).toBe('SELECT');
+      }
+    }
+    const unconditional = policies.filter((p) => p.qual === 'true').map((p) => p.name);
+    expect(unconditional).toEqual(['sources_select_authenticated']);
   });
 });
 
