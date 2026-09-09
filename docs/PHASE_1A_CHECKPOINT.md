@@ -36,7 +36,7 @@ procede únicamente de deuda técnica registrada, nunca de una decisión de domi
 | Deuda | Estado |
 | --- | --- |
 | **D-13** · `schema-drift` nivel B exige Docker en local; corre en CI contra el stack local migrado desde cero y contra STAGING real | Heredada · aceptada · evidencia en CI |
-| **D-18** · Las pruebas de catálogo lanzan el CLI fijado de Supabase por consulta (≈1,7 s cada una; la suite de integración tarda ≈4 min contra STAGING) para no añadir un driver (Manifest §7) | Retenida con medida · revisar en Phase 2 |
+| **D-18** · Las pruebas de catálogo lanzan el CLI fijado de Supabase por consulta (≈1,7 s cada una; la suite de integración tarda ≈4 min contra STAGING) para no añadir un driver (Manifest §7). Fiabilidad: en la ronda final el proceso del CLI se cayó una vez antes de hablar con la base (≈900 lanzamientos en la sesión); el arnés reintenta hasta dos veces **solo** cuando la salida no contiene un error de PostgreSQL, nunca un rechazo de la base | Retenida con medida · revisar en Phase 2 |
 | **D-20** · `source_versions.storage_path`, `checksum` y `retrieved_at` son legibles por `authenticated` (política `status <> 'DRAFT'`, CDEM §22): hoy no existe ninguna fuente oficial, pero en Phase 1B la ruta de custodia privada no debe salir por el Data API | Nueva · sin efecto en 1A · **bloquea la primera versión de fuente OFFICIAL de 1B** |
 | **D-21** · Las transiciones de ciclo de vida (borrador → vigente de una representación, revalidación de un mapeo, retirada, `WITHDRAWN` de una versión de fuente) no tienen función de frontera: hoy son escrituras directas del rol de servicio, que los triggers acotan pero no auditan como promoción | Nueva · aceptable en 1A (no hay contenido real) · **decisión de Phase 1B** |
 | **D-04 · D-05 · D-06 · D-07 · D-09 … D-12 · D-16** · sin cambios respecto a Phase 0 | Heredadas |
@@ -360,7 +360,7 @@ podría confundirlo con contenido oficial. Tras la ronda final STAGING contiene 
 | D-13 | `schema-drift` nivel B exige Docker en local | Aceptable · evidencia en CI |
 | D-16 | Historia original en el archivo privado | Aceptada |
 | D-17 | ~~Filas de auditoría no GENERATED de pruebas negativas en STAGING~~ **Cerrada** en esta emisión: ataques sin residuo; solo queda auditoría GENERATED veraz de packs purgados, que el roundtrip de cierre elimina; detector de residuo engañoso en la suite | — |
-| D-18 | Consultas de catálogo por proceso del CLI (≈1,7 s cada una) | Revisar en Phase 2 si el volumen crece; un driver sería una dependencia (Manifest §7) |
+| D-18 | Consultas de catálogo por proceso del CLI (≈1,7 s cada una); un fallo interno del CLI observado en ≈900 lanzamientos, reintentado por el arnés solo cuando la base no ha hablado | Revisar en Phase 2 si el volumen crece; un driver sería una dependencia (Manifest §7) |
 | D-19 | ~~`public.set_updated_at` con `EXECUTE` para `authenticated`~~ **Cerrada** (migración 14) | — |
 | **D-20** | Metadatos de custodia de `source_versions` legibles por `authenticated` | Antes de la primera fuente OFFICIAL (Phase 1B) |
 | **D-21** | Transiciones de ciclo de vida sin función de frontera (borrador → vigente, revalidación, retirada, `WITHDRAWN`) | Phase 1B |

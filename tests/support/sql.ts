@@ -46,15 +46,29 @@ export function query<Row = Record<string, unknown>>(sql: string): Row[] {
     throw new Error(`No se encuentra el CLI de Supabase en ${launcher}. Ejecuta \`npm ci\`.`);
   }
   const url = dbUrl();
-  const result = spawnSync(
-    process.execPath,
-    [launcher, 'db', 'query', '--db-url', url, '--output', 'json', '--agent', 'no', sql],
-    { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-  );
-  // El CLI reparte su salida entre stdout y stderr según el modo (TTY, agente, CI).
-  const output = `${result.stdout ?? ''}${result.stderr ?? ''}`.split(url).join('<db-url>');
-  if (result.status !== 0) {
-    throw new Error(`La consulta de catálogo falló: ${output || String(result.error)}`);
+  let output = '';
+  let status: number | null = null;
+  // El propio proceso del CLI puede caerse antes de hablar con la base (D-18: se observó un
+  // fallo interno en ~900 lanzamientos). Se reintenta SOLO cuando la salida no contiene un
+  // error de PostgreSQL: un rechazo de la base nunca se reintenta ni se enmascara.
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const result = spawnSync(
+      process.execPath,
+      [launcher, 'db', 'query', '--db-url', url, '--output', 'json', '--agent', 'no', sql],
+      { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    // El CLI reparte su salida entre stdout y stderr según el modo (TTY, agente, CI).
+    output = `${result.stdout ?? ''}${result.stderr ?? ''}`.split(url).join('<db-url>');
+    status = result.status;
+    const databaseSpoke = /failed to execute query|SQLSTATE|ERROR:/.test(output);
+    if (status === 0 || databaseSpoke) break;
+    if (attempt === 3)
+      throw new Error(
+        `El CLI de Supabase falló tres veces sin llegar a la base: ${output.slice(0, 500)}`,
+      );
+  }
+  if (status !== 0) {
+    throw new Error(`La consulta de catálogo falló: ${output}`);
   }
   // Modo normal: un array JSON de filas. Modo agente: {boundary, rows, warning}.
   const candidates: string[] = [];
