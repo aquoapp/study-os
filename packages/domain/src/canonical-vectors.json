@@ -1,0 +1,108 @@
+[
+  {
+    "name": "empty object",
+    "value": {},
+    "canonical": "{}",
+    "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  },
+  {
+    "name": "key order by code point",
+    "value": {
+      "9": 7,
+      "10": 6,
+      "b": 1,
+      "a": 2,
+      "é": 3,
+      "Z": 4,
+      "_": 5
+    },
+    "canonical": "{\"10\":6,\"9\":7,\"Z\":4,\"_\":5,\"a\":2,\"b\":1,\"é\":3}",
+    "sha256": "395b14b93e90c406bcb5f409bc6aa7c72cc8b9fbd554013bf68672815e337eb8"
+  },
+  {
+    "name": "nested arrays keep order",
+    "value": {
+      "list": [
+        3,
+        1,
+        2,
+        [
+          true,
+          false,
+          null
+        ]
+      ],
+      "n": 0
+    },
+    "canonical": "{\"list\":[3,1,2,[true,false,null]],\"n\":0}",
+    "sha256": "a3805ba5798c4a2d31533ba4bdec86eb7773060d6a0b1422c75fd469779ee10a"
+  },
+  {
+    "name": "nfc composed vs decomposed",
+    "value": {
+      "café": "café é",
+      "k": "café"
+    },
+    "canonical": "{\"café\":\"café é\",\"k\":\"café\"}",
+    "sha256": "c4c3e2ca24c80dba4f751b59ca95af5afa22565e48f37028ee2a8e2faf7f125b"
+  },
+  {
+    "name": "escapes",
+    "value": {
+      "s": "a\"b\\c\nd\te\u0001f\u001f/ "
+    },
+    "canonical": "{\"s\":\"a\\\"b\\\\c\\nd\\te\\u0001f\\u001f/ \"}",
+    "sha256": "b616a5c7fcc5067e9dd24b8e40383005d30de87770850eebbab02b6412a347ae"
+  },
+  {
+    "name": "absent vs null",
+    "value": {
+      "a": null,
+      "c": "x"
+    },
+    "canonical": "{\"a\":null,\"c\":\"x\"}",
+    "sha256": "870c0881e65c905bf2f84b0a161a648af47a57fba33ca8a5f7db3dfe752925ab"
+  },
+  {
+    "name": "uuid and timestamp strings",
+    "value": {
+      "id": "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+      "at": "2026-09-09T08:00:00.500Z"
+    },
+    "canonical": "{\"at\":\"2026-09-09T08:00:00.500Z\",\"id\":\"0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9\"}",
+    "sha256": "e94f640f9b2884aaa3bf80ee7df592f0384bba6bc915cc7b9b059e172c23ab55"
+  },
+  {
+    "name": "safe integer bounds",
+    "value": {
+      "max": 9007199254740991,
+      "min": -9007199254740991,
+      "zero": 0
+    },
+    "canonical": "{\"max\":9007199254740991,\"min\":-9007199254740991,\"zero\":0}",
+    "sha256": "b7b2401ddca2165824e98c61890c0aaec470258d3119dd265d02be9438bf47e6"
+  },
+  {
+    "name": "event envelope shape",
+    "value": {
+      "event_type": "ANSWER_SUBMITTED",
+      "schema_version": 1,
+      "client_created_at": "2026-09-09T08:00:00.000Z",
+      "payload": {
+        "question_representation_id": "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+        "answer_kind": "OPTION",
+        "selected_option_id": "1a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+        "confidence_value": 3,
+        "confidence_scale_version": "v1",
+        "response_ms": 4200
+      },
+      "session_id": "2a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+      "session_item_id": "3a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+      "device_id": "4a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+      "client_sequence": 17,
+      "created_offline": false
+    },
+    "canonical": "{\"client_created_at\":\"2026-09-09T08:00:00.000Z\",\"client_sequence\":17,\"created_offline\":false,\"device_id\":\"4a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9\",\"event_type\":\"ANSWER_SUBMITTED\",\"payload\":{\"answer_kind\":\"OPTION\",\"confidence_scale_version\":\"v1\",\"confidence_value\":3,\"question_representation_id\":\"0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9\",\"response_ms\":4200,\"selected_option_id\":\"1a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9\"},\"schema_version\":1,\"session_id\":\"2a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9\",\"session_item_id\":\"3a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9\"}",
+    "sha256": "7b89bfc5afece1fa7feaeee71f95bf23088f919767b9698c7b8255e459369ba6"
+  }
+]

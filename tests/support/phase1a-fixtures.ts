@@ -27,22 +27,58 @@ export interface PublishResult {
   readonly targetId: string;
 }
 
+/**
+ * Errores de **validación de token de la plataforma**, ajenos a la base de datos.
+ *
+ * Observado en Phase 2 (D-22): con varias suites de integración arrancando a la vez contra
+ * el proyecto gestionado, una de ellas recibe `JWT issued at future` en su primera llamada
+ * con rol de servicio, mientras las demás publican sin incidencia con la misma clave y en el
+ * mismo instante. No es un rechazo de la base: es la validación del token en el borde.
+ *
+ * La lista es **cerrada y estrecha a propósito**. Un rechazo de PostgreSQL —restricción,
+ * trigger, RLS, permiso— nunca se reintenta: enmascararlo convertiría un fallo de invariante
+ * en un test verde. Mismo criterio que D-18 con el CLI.
+ */
+const TRANSIENT_TOKEN_ERROR = /JWT (issued at future|expired)|token has invalid claims/i;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Ejecuta una llamada a la frontera reintentando **solo** ante un transitorio de token.
+ * Tres intentos como máximo, con espera creciente; el último error se propaga tal cual.
+ */
+async function throughBoundary<T>(
+  label: string,
+  // El constructor de PostgREST es *thenable*, no una `Promise`: se tipa como tal.
+  call: () => PromiseLike<{ data: unknown; error: { message: string } | null }>,
+): Promise<T> {
+  let lastMessage = '';
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const { data, error } = await call();
+    if (!error) return data as T;
+    lastMessage = error.message;
+    if (!TRANSIENT_TOKEN_ERROR.test(error.message)) break;
+    if (attempt < 3) await sleep(attempt * 1500);
+  }
+  throw new Error(`${label} falló: ${lastMessage}`);
+}
+
 export async function stage(admin: SupabaseClient, kind: string, payload: Json): Promise<string> {
-  const { data, error } = await admin.rpc('stage_item', { p_kind: kind, p_payload: payload });
-  if (error) throw new Error(`stage_item(${kind}) falló: ${error.message}`);
-  return data as string;
+  return throughBoundary<string>(`stage_item(${kind})`, () =>
+    admin.rpc('stage_item', { p_kind: kind, p_payload: payload }),
+  );
 }
 
 export async function validate(admin: SupabaseClient, stagedId: string): Promise<string> {
-  const { data, error } = await admin.rpc('validate_staged_item', { p_id: stagedId });
-  if (error) throw new Error(`validate_staged_item falló: ${error.message}`);
-  return data as string;
+  return throughBoundary<string>('validate_staged_item', () =>
+    admin.rpc('validate_staged_item', { p_id: stagedId }),
+  );
 }
 
 export async function publishStaged(admin: SupabaseClient, stagedId: string): Promise<string> {
-  const { data, error } = await admin.rpc('publish_staged_item', { p_id: stagedId });
-  if (error) throw new Error(`publish_staged_item falló: ${error.message}`);
-  return data as string;
+  return throughBoundary<string>('publish_staged_item', () =>
+    admin.rpc('publish_staged_item', { p_id: stagedId }),
+  );
 }
 
 /** stage → validate → publish. Falla si la validación no devuelve VALIDATED. */
@@ -311,9 +347,11 @@ export async function purgePack(
   admin: SupabaseClient,
   packId: string,
 ): Promise<Record<string, number>> {
-  const { data, error } = await admin.rpc('purge_generated_pack', { p_pack_id: packId });
-  if (error) throw new Error(`purge_generated_pack falló: ${error.message}`);
-  return data as Record<string, number>;
+  // La purga también atraviesa la frontera: un transitorio de token dejaría residuo en
+  // STAGING, que es peor que un test rojo. Mismo reintento estrecho (D-22).
+  return throughBoundary<Record<string, number>>('purge_generated_pack', () =>
+    admin.rpc('purge_generated_pack', { p_pack_id: packId }),
+  );
 }
 
 /** Pregunta i-ésima del pack; falla si no existe (los fixtures son deterministas). */
