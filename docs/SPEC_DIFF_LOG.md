@@ -1122,3 +1122,63 @@ Phase 4 y Phase 3.
 errata.** SD-008, SD-020, SD-021, SD-022 y SD-023 `ACCEPTED`; SD-006 y SD-018 `ACCEPTED` con
 implementación autorizada en Phase 2; SD-001, SD-002 y SD-007 `ACCEPTED` en implementación
 parcial desde Phase 1A; SD-015 `SUPERSEDED`; SD-016 implementada; el resto `PROPOSED`.
+
+---
+
+## SD-010 · **aceptación** · correcciones de referencias visuales aprobadas · C-06 resuelta
+
+**Corrige el estado de:** la entrada SD-010 del cuerpo congelado, que quedó con
+«**Aprobación:** pendiente» en la ronda de Phase −1 (histórica: se conserva sin editar).
+**Documentos afectados:** Hi-Fi HOY; Hi-Fi SESSION END / PROGRESS / PLAN; Hi-Fi
+LEARN / CHECK / FEEDBACK; Hi-Fi PRÁCTICO.
+**Origen:** C-06 · decisión humana H-FPS-A en la FPS Build Authorization.
+**Estado:** **`ACCEPTED`** · 2026-09-09 · Ana Victoria · copia aceptada en
+`docs/FPS_AUTHORIZATION_PACKET.md`.
+
+**Por qué la resolución no estaba en duda y sí lo estaba el registro.** C-06 se resolvió en su
+día «por autoridad: INEQUÍVOCA» (Builder Handoff Manifest §C y Master §48: si una referencia
+visual contradice una regla funcional congelada, gana la regla y la pantalla se corrige). Lo
+que faltaba era la línea de aprobación de esta entrada, que la Phase 2 Build Authorization
+situó como requisito **antes del BUILD del FPS**, no antes del de Phase 2.
+
+**Cambio aceptado, tal como estaba redactado:** eliminar confeti y trofeo de SESSION END;
+reducir HOY a la jerarquía SD-01; etiquetar explícitamente o retirar el «nivel global»;
+eliminar la tarjeta motivacional; sustituir el icono de robot del Tutor por uno neutro;
+retirar el acceso rápido «Resúmenes»; sustituir los porcentajes exactos por banda e
+interpretación textual bajo el umbral de evidencia (INV-111).
+
+**Disposición en el alcance del FPS** (el detalle, en `docs/FPS_AUTHORIZATION_PACKET.md` §3):
+a y d se aplican como prohibición; b se aplica como jerarquía; g se aplica porque FPS no
+muestra ningún porcentaje proyectado; c no es construible, porque ni dominio ni preparación
+existen; e y f quedan fuera del vertical. **Ninguna corrección se debilita:** las siete siguen
+vigentes para Phase 5 y Phase 7.
+
+**Qué no cambia:** las referencias visuales siguen en el nivel 5 de autoridad y siguen sin
+invalidar ninguna regla funcional o de accesibilidad. Esta aceptación no aprueba ningún Hi-Fi:
+aprueba sus correcciones.
+
+---
+
+## Estado de la adenda · tras la FPS Build Authorization · 2026-09-09
+
+Sustituye a «Estado de la adenda · tras la Phase 2 Build Authorization» como resumen vigente.
+Las entradas anteriores se conservan sin editar.
+
+**Registro de decisión:** FPS Build Authorization · 2026-09-09 · decisora Ana Victoria ·
+revisión independiente (ChatGPT) · copia aceptada en `docs/FPS_AUTHORIZATION_PACKET.md` ·
+basada en `STUDY_OS_FPS_Pre_Build_Reconciliation_Packet_0678e08` · **alcance: gobernanza e
+implementación del First Product Slice únicamente, en STAGING y en Preview.** No autoriza
+Phase 1B, Phase 3, merge final de FPS, tag, congelación, Release, custodia privada ni ninguna
+mutación de PRODUCTION.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| H-FPS-A | SD-010 · correcciones de C-06 | **`ACCEPTED`** · `SD-010` deja de estar pendiente |
+| H-FPS-B | `docs/FPS_SCREEN_CONTRACT.md` · contrato de pantalla de FPS v1 | **`ACCEPTED`** · autoridad de FPS v1, no congelación del diseño futuro |
+| H-FPS-C | Disposición REQ-F01 … REQ-F15 en el alcance del FPS | **`ACCEPTED`** · sin debilitar ningún requisito canónico de Phase 5 |
+
+**Total tras esta adenda: 23 entradas SPEC_DIFF y 1 errata.** SD-008, SD-010, SD-020, SD-021,
+SD-022 y SD-023 `ACCEPTED`; SD-006 y SD-018 `ACCEPTED` con implementación autorizada desde
+Phase 2; SD-001, SD-002 y SD-007 `ACCEPTED` en implementación parcial desde Phase 1A;
+SD-015 `SUPERSEDED`; SD-016 implementada; SD-019 diferida antes de Phase 5, con la **opción A
+aplicada y suficiente** para el FPS; el resto `PROPOSED`.

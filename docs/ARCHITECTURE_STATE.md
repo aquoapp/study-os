@@ -3,9 +3,9 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.10 · copia viva
+**Versión:** 11.11 · copia viva
 **Última actualización:** 2026-09-09 · Phase 2 · Learner & Evidence Core **aceptada y congelada**: PR #7 integrado en `main` (`46b8fcd`) y tag anotado `phase-2-v1.0`. BUILD ejecutado por dos modelos: Fable 5.1 hasta su límite de uso y Opus 5 tras la recuperación forense
-**Fase actual:** 2 · Learner & Evidence Core · **FROZEN · PASS WITH DEBT · HUMAN ACCEPTED** · ver `docs/PHASE_2_CHECKPOINT.md` · Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 3, FPS y PRODUCTION no autorizados
+**Fase actual:** **First Product Slice · BUILD AUTORIZADO** sobre la Phase 2 congelada · ver `docs/FPS_AUTHORIZATION_PACKET.md` y `docs/FPS_SCREEN_CONTRACT.md` · Phase 2 `FROZEN · PASS WITH DEBT · HUMAN ACCEPTED`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 3, merge final del FPS y PRODUCTION no autorizados
 **Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `46b8fcd705e32c86ed6ddac225cd50f80e4faca9` · tag anotado `phase-2-v1.0` (Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_2_CHECKPOINT.md`
 
 ---
@@ -234,6 +234,54 @@ D-06, D-07, D-09, D-10, D-11, D-12 y D-16. La rama `phase/0-foundation` se conse
 histórica. Los commits posteriores a la etiqueta son exclusivamente documentales y no
 mueven la línea base congelada. Phase 1 exige una decisión humana separada.
 Detalle en `docs/PHASE_0_CHECKPOINT.md`.
+
+## 12. First Product Slice · autorización de BUILD · 2026-09-09
+
+**Registro de decisión:** FPS Build Authorization · Ana Victoria · revisión independiente
+previa (`STUDY_OS_FPS_Pre_Build_Reconciliation_Packet_0678e08`, veredicto
+`FPS · READY WITH HUMAN DECISIONS`) · copia aceptada en
+`docs/FPS_AUTHORIZATION_PACKET.md`.
+
+**Decisiones aceptadas:** **H-FPS-A** (SD-010 y las correcciones de C-06, aprobadas tal como
+estaban redactadas; la resolución ya era inequívoca por autoridad y lo que faltaba era el
+registro), **H-FPS-B** (contrato de pantalla de FPS v1 en `docs/FPS_SCREEN_CONTRACT.md`,
+derivado de los requisitos, los invariantes, la terminología, los tokens, la accesibilidad y
+C-06; autoridad de FPS v1, no congelación del diseño futuro) y **H-FPS-C** (disposición
+explícita de REQ-F01 … REQ-F15: nueve satisfechos, dos parcialmente satisfechos, cuatro
+diferidos, sin debilitar ningún requisito canónico de Phase 5).
+
+**Semántica aceptada:** `fps-fixed-v1` es un algoritmo de asignación **determinista**, función
+pura sobre el contenido publicado del pack del objetivo, derivado y no almacenado; el marcador
+persistido de la sesión es `session_type = 'FPS_FIXED'` con `planner_run_id IS NULL`, sin
+columna de metadatos nueva; una sesión abierta gana siempre sobre crear otra; una corrección
+pendiente se muestra antes de seguir el cursor del servidor.
+
+**Superficie autorizada:** `/hoy`, `/aprender/[ordinal]`, `/comprobar/[ordinal]` y `/fin`.
+FEEDBACK es un estado de `/comprobar`, no una ruta. El ordinal es el orden del ítem dentro de
+la sesión del aprendiz, nunca un identificador. No se monta la navegación de los cinco
+espacios primarios.
+
+**Qué se autoriza:** el vertical de producto sobre la base congelada de Phase 2, con contenido
+sintético `GENERATED` únicamente, en STAGING y en Preview, con sembrado idempotente de un pack
+de demostración estable.
+
+**Qué no se autoriza:** Phase 1B, Phase 3, motores, planificador, dominio, preparación,
+proyecciones, puntuación, simulación, corpus oficial, custodia privada, dependencia nueva,
+recurso de pago, **migración de esquema**, merge final del FPS, tag, congelación, Release y
+cualquier mutación o despliegue de PRODUCTION.
+
+**Deuda y vigilancia heredadas:** **WATCH-P2-1** viaja sin cambios y **no se mitiga** en el
+FPS; ninguna mitigación futura puede comprometer la retroalimentación pedagógica veraz
+posterior al envío. **D-20** queda como vigilancia del FPS, ni cerrada ni ampliada: el FPS usa
+solo contenido `GENERATED` y no selecciona `source_versions.storage_path`, `checksum` ni
+`retrieved_at`.
+
+**Aterrizaje de gobernanza (rama `milestone/fps-governance`):** aceptación de SD-010 en el
+`SPEC_DIFF_LOG`; paquete aceptado; contrato de pantalla; registro de alcance actualizado en
+`phase2.scopeNegative.spec` para autorizar exactamente cuatro rutas; vigilancia documental
+nueva en `fps.governance.spec`. **Ningún objeto de runtime** se crea en este aterrizaje.
+
+---
 
 ## 11. Phase 2 · autorización de BUILD · 2026-09-09
 
