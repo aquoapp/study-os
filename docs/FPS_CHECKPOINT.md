@@ -5,9 +5,13 @@ Conforme a `STUDY_OS_Checkpoint_Contract_v1.0`.
 ```text
 MILESTONE: First Product Slice · HOY → APRENDER → COMPROBAR → FEEDBACK → FIN
 BRANCH: milestone/fps-first-product-slice (parte de main = e32727c3f40c5534632d675d6def5afd70b9cfc4)
-STATUS: PASS · READY FOR ANA WALKTHROUGH
-FPS-G10: PENDING HUMAN WALKTHROUGH
+STATUS: PASS WITH OBSERVATIONS · HUMAN ACCEPTED
+FPS-G10: PASS · recorrido manual humano · 2026-09-09
 ```
+
+**FPS · HUMAN WALKTHROUGH: PASS** · 2026-09-09 · Ana Victoria, sobre el Preview desplegado.
+La aceptación es **PASS WITH OBSERVATIONS**: cuatro observaciones de producto registradas,
+ninguna bloqueante, ninguna corregida durante la congelación.
 
 ## AUTHORITY
 
@@ -383,6 +387,121 @@ pago y despliegue de Production. `packages/` sigue siendo `config`, `design-syst
 `domain`. Las rutas de la aplicación son las de Phase 0, el onboarding y las cuatro del
 vertical; `entrenar`, `progreso`, `plan` y `feedback` no existen.
 
+## HUMAN WALKTHROUGH
+
+**Decisión: `FPS · HUMAN WALKTHROUGH: PASS`** · 2026-09-09 · Ana Victoria, a través de la
+interfaz real del producto en el Preview desplegado.
+
+Recorrido realizado: alta por el producto, onboarding, disponibilidad declarada, entrada al
+estudio, las dos unidades de APRENDER, las cinco preguntas de COMPROBAR con confianza,
+corrección veraz de un fallo y de los aciertos, cierre de sesión y FIN.
+
+Evidencia final que el producto le mostró:
+
+| Dato | Valor |
+| --- | --- |
+| Unidades leídas | 2 |
+| Preguntas respondidas | 5 |
+| Aciertos | 4 |
+| Fallos | 1 |
+
+**Valoración cualitativa:** el producto es funcional y se entiende. La experiencia visual
+resulta algo plana, lo cual se acepta en esta etapa y **no bloquea el FPS**. Esa aceptación
+**no** aprueba el diseño visual definitivo de STUDY OS, que sigue siendo trabajo de Phase 5.
+
+## WALKTHROUGH EVIDENCE RECONCILIATION
+
+Reconciliación **de solo lectura** entre lo que el producto mostró y lo que STAGING guarda.
+No se ha borrado, reparado ni maquillado ninguna fila.
+
+| Comprobación | Evidencia en STAGING |
+| --- | --- |
+| Cuenta creada por el producto | 1 cuenta, 1 perfil |
+| Onboarding persistido | ajustes y objetivo guardados |
+| Objetivo | `ACTIVE` sobre el pack `demo-estudio-eficaz` |
+| Sesiones | **2**, ambas `FPS_FIXED` con `planner_run_id` nulo y ambas `COMPLETED` |
+| Ítems por sesión | 7 · 2 de unidad y 5 de pregunta, **todos completados** |
+| Intentos por sesión | 5 · **4 aciertos y 1 fallo**, coincide con lo mostrado |
+| Confianza | los 10 intentos llevan valor y escala `v1` |
+| Vinculación de contenido | 4 de 4 unidades y 10 de 10 preguntas con lo presentado vinculado |
+| Clave y opción | 0 intentos con clave o con opción de otra representación |
+| Orden del stream | 62 eventos, posiciones 1 … 62, **sin huecos y sin repetidas** |
+| Orden de la corrección | 0 casos de `FEEDBACK_VIEWED` anterior a su envío |
+| Intentos duplicados | **0** |
+| Cursor tras terminar | nulo en las dos sesiones |
+| Anomalías de autoridad | ninguna: 0 eventos o ítems de otro usuario, 0 hashes malformados, canonicalización `v1` en todos |
+
+**Tres precisiones, ninguna contradictoria con lo que el producto mostró:**
+
+1. **Dos sesiones, no una.** Ana completó el recorrido **dos veces**. Es el comportamiento
+   diseñado: al terminar, HOY vuelve a ofrecer una sesión, y como la asignación es fija
+   contiene los mismos ítems. Cada sesión muestra exactamente 2 unidades, 5 preguntas, 4
+   aciertos y 1 fallo, que es lo que ella reportó. El número de intento llegó a 2 en las
+   preguntas repetidas, que es la enumeración registrada de WATCH-P2-1 funcionando a la vista.
+2. **Disponibilidad.** El registro guarda `default_daily_minutes = 30` —el valor por defecto
+   del formulario— y una disponibilidad semanal de **20 minutos en seis días y 30 el lunes**.
+   Los «20 minutos al día» del acta corresponden a la disponibilidad por día que ella
+   introdujo, no al valor por defecto diario.
+3. **Sin respuesta en blanco.** Los 10 intentos son de tipo `OPTION`. El guion ofrecía dejar
+   alguna sin responder y no se hizo; el blanco sigue probado mecánicamente.
+
+## MANUAL INTERRUPTION SUB-GATE
+
+**NOT OBSERVED IN HUMAN EVIDENCE · MECHANICALLY PROVEN BY FPS-G6.**
+
+La evidencia contiene **0 eventos** `SESSION_INTERRUPTED` y **0** `SESSION_RESUMED`: el paso
+de interrupción deliberada del guion no se ejecutó. No se inventa evidencia de algo que no
+ocurrió.
+
+FPS-G10 sigue en PASS porque lo que ese gate mide es que **una persona use el producto de
+principio a fin**, y eso ocurrió. La continuidad ya está probada mecánicamente en FPS-G6, con
+las tres interrupciones que importan —durante APRENDER, durante COMPROBAR antes de enviar y
+entre el envío y la corrección— en navegador real, en móvil y en escritorio.
+
+## PRODUCT OBSERVATIONS
+
+Cuatro observaciones de producto, **no bloqueantes** y **no corregidas** durante la
+congelación. Ninguna es deuda técnica.
+
+### FPS-OBS-01 · planitud visual
+
+El vertical es funcional pero visualmente plano: se repite el patrón título → superficie con
+borde → texto → botón a lo largo de casi todo el recorrido. La jerarquía es usable, pero
+todavía no expresa la profundidad ni la inteligencia que STUDY OS quiere transmitir.
+
+**Clasificación:** observación de producto y UX · no bloqueante · propietaria natural: la UX
+de producto futura y la integración de Phase 5. **No es deuda técnica.**
+
+### FPS-OBS-02 · copy de calibración
+
+El copy de calibración es mecánicamente veraz pero de poco valor en algunas combinaciones,
+por ejemplo «Segura. Acertaste y estabas segura», y su equivalente con fallo y confianza alta.
+Es aceptable para el FPS: dice la verdad y no juzga.
+
+La calibración futura debería ser más informativa **cuando exista evidencia suficiente e
+inteligencia de aprendizaje** que la sostenga. Ahora mismo no existen, y fabricar una
+interpretación más rica sería exactamente la mentira que EC-012 prohíbe.
+
+**Clasificación:** observación de producto y UX de aprendizaje · no bloqueante.
+
+### FPS-OBS-03 · doble final de sesión
+
+El aprendiz ve primero un resumen previo, «Ya casi está» con la acción **Terminar la sesión**,
+y después «Sesión terminada» con recuentos que se solapan en buena parte. Es comprensible
+desde la transacción —el cierre es un evento que hay que emitir— pero duplica la experiencia.
+
+**Clasificación:** observación de producto y de flujo · no bloqueante. No se colapsan los dos
+estados en esta congelación: no hay ningún defecto de corrección detrás.
+
+### FPS-OBS-04 · disponibilidad frente a duración de la sesión
+
+Ana declaró 20 minutos al día y la sesión fija duró unos 3 minutos. **Es lo esperado.**
+`fps-fixed-v1` es determinista y no es el Planner: no dimensiona la sesión según la
+disponibilidad, y no pretende hacerlo.
+
+**Clasificación:** hueco de capacidad esperado · propiedad del comportamiento futuro del
+Planner. No se implementa planificación por tiempo ahora.
+
 ## FPS GATES
 
 | Gate | Resultado |
@@ -396,9 +515,10 @@ vertical; `entrenar`, `progreso`, `plan` y `feedback` no existen.
 | **FPS-G7** seguridad | **PASS** |
 | **FPS-G8** calidad de producto | **PASS** |
 | **FPS-G9** entorno | **PASS** |
-| **FPS-G10** recorrido manual de Ana | **PENDING HUMAN WALKTHROUGH** |
+| **FPS-G10** recorrido manual de Ana | **PASS** · recorrido humano real, 2026-09-09 |
 
-FPS-G10 no lo puede marcar Claude, y no está marcado.
+FPS-G10 lo aporta **el recorrido humano**, no una prueba automática. Ninguna suite lo
+sustituye ni lo declara: lo que lo cierra es que Ana usó el producto de principio a fin.
 
 ## ANA WALKTHROUGH INSTRUCTIONS
 
@@ -438,8 +558,17 @@ trabajo de Phase 5. Ninguno se descarta y ninguno se incorpora sin registro.
 
 ## NEXT AUTHORITY
 
-El recorrido manual de Ana. Después, Ana y ChatGPT revisan los hallazgos de producto y deciden
-si el FPS se acepta, necesita corrección o falla.
+El First Product Slice queda **aceptado y congelado**: `PASS WITH OBSERVATIONS`. La
+congelación **no autoriza nada más**.
 
-Hasta entonces: **sin PR final, sin merge, sin tag, sin congelación, sin Release, sin Phase
-1B, sin Phase 3 y sin PRODUCTION.**
+Siguen **sin autorizar**, y cada uno exige una autorización humana nueva y explícita:
+Phase 1B, Phase 3, Phase 4 y Phase 5; Learning Engine y Planner; la integración del corpus
+oficial y la custodia privada; Release; y cualquier mutación o despliegue de PRODUCTION.
+
+Las cuatro observaciones viajan con la fase, sin corregir y sin caducar. **FPS-OBS-01** y
+**FPS-OBS-03** pertenecen a la UX de producto y a la integración de Phase 5; **FPS-OBS-02**
+espera a que exista evidencia e inteligencia que sostengan una calibración más informativa;
+**FPS-OBS-04** pertenece al Planner. Ninguna se resuelve de forma oportunista.
+
+**WATCH-P2-1** sigue heredado y sin mitigar, con su restricción vinculante intacta: ninguna
+mitigación futura puede comprometer la retroalimentación pedagógica veraz posterior al envío.
