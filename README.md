@@ -6,9 +6,10 @@ Sistema de estudio adaptativo. **Study OS es el producto; TAI es el primer pack 
 > **Estado actual:** Phase 0 congelada (`phase-0-v1.0`) · Phase 1A · Canonical Domain
 > Foundation **aceptada y congelada** (`phase-1a-v1.0`) · Phase 2 · Learner & Evidence Core
 > **aceptada y congelada** (`phase-2-v1.0`, checkpoint **PASS WITH DEBT** en
-> `docs/PHASE_2_CHECKPOINT.md`). **First Product Slice** con BUILD autorizado sobre esa base
-> (`docs/FPS_AUTHORIZATION_PACKET.md`): el vertical HOY → APRENDER → COMPROBAR → FEEDBACK →
-> FIN, con contenido sintético y sin migración de esquema. Phase 1B y Phase 3 no autorizados.
+> `docs/PHASE_2_CHECKPOINT.md`). **First Product Slice construido** sobre esa base y pendiente
+> del recorrido manual de aceptación (`docs/FPS_CHECKPOINT.md`): el vertical HOY → APRENDER →
+> COMPROBAR → FEEDBACK → FIN, con contenido sintético y **sin migración de esquema**: cabe
+> entero dentro de la frontera congelada. Phase 1B y Phase 3 no autorizados.
 > Ningún motor, ningún planificador y ningún contenido oficial: el corpus del primer pack no
 > entra en este repositorio público. Ver `docs/ARCHITECTURE_STATE.md`.
 

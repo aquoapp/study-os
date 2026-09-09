@@ -179,3 +179,85 @@ describe('el contrato de pantalla es autoridad de FPS v1 y no congela el futuro'
     expect(contract).toContain('nunca es el único portador de significado');
   });
 });
+
+describe('el checkpoint del FPS dice la verdad sobre su propio estado', () => {
+  const checkpoint = read('docs/FPS_CHECKPOINT.md');
+
+  it('declara los diez gates en PASS, y FPS-G10 solo por recorrido humano', () => {
+    for (let gate = 1; gate <= 10; gate += 1) {
+      expect(checkpoint, `falta FPS-G${gate}`).toMatch(
+        new RegExp(String.raw`\| \*\*FPS-G${gate}\*\*[^\n]*\*\*PASS\*\*`),
+      );
+    }
+    // Lo que cierra G10 es que una persona usó el producto, no una suite. El documento tiene
+    // que decirlo, porque un gate humano declarado por una prueba automática no es un gate.
+    expect(checkpoint).toMatch(/\| \*\*FPS-G10\*\*[^\n]*recorrido humano real/);
+    expect(checkpoint).toContain('no una prueba automática');
+  });
+
+  it('registra el recorrido humano con su decisión y su evidencia', () => {
+    expect(checkpoint).toContain('FPS · HUMAN WALKTHROUGH: PASS');
+    expect(checkpoint).toContain('PASS WITH OBSERVATIONS');
+    expect(checkpoint).toContain('## WALKTHROUGH EVIDENCE RECONCILIATION');
+    // La reconciliación es de solo lectura: no se repara ni se borra evidencia para cuadrar.
+    expect(checkpoint).toContain('No se ha borrado, reparado ni maquillado ninguna fila');
+  });
+
+  it('el sub-gate de interrupción dice la verdad sobre lo que ocurrió', () => {
+    expect(checkpoint).toContain('NOT OBSERVED IN HUMAN EVIDENCE');
+    expect(checkpoint).toContain('MECHANICALLY PROVEN BY FPS-G6');
+    expect(checkpoint).toContain('No se inventa evidencia');
+  });
+
+  it('las cuatro observaciones constan, no bloquean y no se corrigen', () => {
+    for (const obs of ['FPS-OBS-01', 'FPS-OBS-02', 'FPS-OBS-03', 'FPS-OBS-04']) {
+      expect(checkpoint, `falta ${obs}`).toContain(obs);
+    }
+    expect(checkpoint).toContain('no bloqueantes');
+    expect(checkpoint).toContain('**no corregidas**');
+    // La planitud visual es observación de producto, nunca deuda técnica.
+    expect(checkpoint).toContain('**No es deuda técnica.**');
+    // Y la aceptación no aprueba el diseño visual definitivo.
+    expect(checkpoint).toMatch(
+      /no\*\* aprueba el diseño visual definitivo|no.. aprueba el diseño visual definitivo/,
+    );
+  });
+
+  it('la congelación no autoriza la fase siguiente', () => {
+    const next = checkpoint.slice(checkpoint.indexOf('## NEXT AUTHORITY'));
+    expect(next).toContain('no autoriza nada más');
+    for (const forbidden of ['Phase 1B', 'Phase 3', 'Planner', 'PRODUCTION']) {
+      expect(next, `la frontera no nombra ${forbidden}`).toContain(forbidden);
+    }
+    // Y WATCH-P2-1 viaja con la fase, sin mitigar.
+    expect(next).toContain('WATCH-P2-1');
+    expect(next).toContain('sin mitigar');
+  });
+
+  it('declara que el FPS no toca la frontera congelada', () => {
+    expect(checkpoint).toContain('Migraciones nuevas | **0**');
+    expect(checkpoint).toContain('RPC nuevas | **0**');
+    expect(checkpoint).toContain('Grants nuevos | **0**');
+  });
+
+  it('incluye el guion del recorrido manual y no pide nada técnico', () => {
+    const guion = checkpoint.slice(
+      checkpoint.indexOf('## ANA WALKTHROUGH INSTRUCTIONS'),
+      checkpoint.indexOf('## NEXT AUTHORITY'),
+    );
+    expect(guion).toContain('Doce pasos');
+    for (const forbidden of ['consola', 'SQL', 'Supabase', 'GitHub']) {
+      // Solo pueden aparecer en la frase que dice que **no** hay que abrirlos.
+      const mentions = guion.split(forbidden).length - 1;
+      expect(mentions, `«${forbidden}» aparece ${mentions} veces en el guion`).toBeLessThanOrEqual(
+        1,
+      );
+    }
+  });
+
+  it('hereda WATCH-P2-1 y D-20 sin cerrarlas y sin añadir deuda nueva', () => {
+    expect(checkpoint).toContain('**no añade deuda nueva**');
+    expect(checkpoint).toContain('WATCH-P2-1');
+    expect(checkpoint).toContain('ni cerrada ni ampliada');
+  });
+});

@@ -88,10 +88,17 @@ describe('P0-S7 y REQ-A06 · satisfechos bajo la opción A', () => {
   });
 
   it('la prueba de accesibilidad renderizada existe y mide, no enumera', () => {
-    const spec = read('tests/e2e/static/accessibility.a11y.spec.ts');
-    expect(spec).toContain('getComputedStyle');
-    expect(spec).toContain('boundingBox()');
-    expect(spec).toContain('effectiveBackground');
+    // El arnés vive en `tests/support/a11y.ts` desde el First Product Slice: hay dos
+    // superficies que medir, y una de ellas exige sesión.
+    const harness = read('tests/support/a11y.ts');
+    expect(harness).toContain('getComputedStyle');
+    expect(harness).toContain('boundingBox()');
+    expect(harness).toContain('effectiveBackground');
+    // Y las dos suites lo usan: la pública y la del vertical de estudio.
+    expect(read('tests/e2e/static/accessibility.a11y.spec.ts')).toContain(
+      "from '../../support/a11y'",
+    );
+    expect(read('tests/e2e/auth/fps.vertical.e2e.ts')).toContain("from '../../support/a11y'");
   });
 
   it('el fixture negativo es automático y se ejecuta en cada pasada', () => {
@@ -152,8 +159,8 @@ describe('el umbral de 3:1 no admite texto', () => {
   });
 
   it('la prueba renderizada solo baja a 3:1 por tamaño, nunca por rol', () => {
-    const spec = read('tests/e2e/static/accessibility.a11y.spec.ts');
-    expect(spec).toContain('isLargeText(sample) ? 3 : 4.5');
-    expect(spec).toContain('todo texto normal exige 4.5:1');
+    const harness = read('tests/support/a11y.ts');
+    expect(harness).toContain('isLargeText(sample) ? 3 : 4.5');
+    expect(harness).toContain('todo texto normal exige 4.5:1');
   });
 });

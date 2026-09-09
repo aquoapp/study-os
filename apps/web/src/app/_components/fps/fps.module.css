@@ -1,0 +1,296 @@
+/*
+ * Capa de estilo del First Product Slice.
+ *
+ * Solo tokens: ningún valor literal de espaciado, radio, color, tipografía o movimiento se
+ * escribe aquí. Restricciones de SD-019 opción A: `teal` y `amber` no llevan texto normal
+ * encima, y `slate` solo sobre `surface`.
+ */
+
+.shell {
+  min-height: 100dvh;
+  background: var(--so-color-canvas);
+  color: var(--so-color-ink);
+  font-family: var(--so-font-ui);
+  padding: var(--so-space-xl) var(--so-space-lg) var(--so-space-4xl);
+}
+
+.column {
+  max-width: 42rem; /* ~68 caracteres de medida con el cuerpo de lectura */
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--so-space-xl);
+}
+
+.kicker {
+  font-size: var(--so-text-metadata-max);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--so-color-navy);
+  margin: 0;
+}
+
+.title {
+  font-size: var(--so-text-headline-min);
+  line-height: var(--so-leading-tight);
+  font-weight: var(--so-weight-semibold);
+  margin: 0;
+}
+
+.sectionTitle {
+  font-size: var(--so-text-title-max);
+  line-height: var(--so-leading-snug);
+  font-weight: var(--so-weight-semibold);
+  margin: 0;
+}
+
+.surface {
+  background: var(--so-color-surface);
+  border: 1px solid var(--so-color-slate);
+  border-radius: var(--so-radius-card);
+  padding: var(--so-space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--so-space-lg);
+}
+
+.card {
+  composes: surface;
+  border-radius: var(--so-radius-hero);
+}
+
+.secondary {
+  color: var(--so-color-slate);
+  font-size: var(--so-text-secondary-max);
+  line-height: var(--so-leading-normal);
+  margin: 0;
+}
+
+.note {
+  border-left: 3px solid var(--so-color-navy);
+  padding-left: var(--so-space-md);
+  margin: 0;
+  font-size: var(--so-text-secondary-max);
+  line-height: var(--so-leading-normal);
+  color: var(--so-color-ink);
+}
+
+.reading {
+  /* REQ-F04 · medida de lectura de 45 a 70 caracteres. La columna de la superficie es más
+     ancha porque también sostiene opciones y controles; el cuerpo de lectura se acota aquí. */
+  max-width: 33rem;
+  font-family: var(--so-font-reading);
+  font-size: var(--so-text-body-max);
+  line-height: var(--so-leading-reading);
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--so-space-md);
+  align-items: flex-start;
+}
+
+.primary {
+  min-height: var(--so-touch-target-min);
+  min-width: var(--so-touch-target-min);
+  padding: 0 var(--so-space-xl);
+  border: 0;
+  border-radius: var(--so-radius-control);
+  background: var(--so-color-navy);
+  color: var(--so-color-on-dark);
+  font-family: inherit;
+  font-size: var(--so-text-body-min);
+  font-weight: var(--so-weight-medium);
+  cursor: pointer;
+}
+
+.primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.textAction {
+  min-height: var(--so-touch-target-min);
+  padding: 0 var(--so-space-sm);
+  border: 0;
+  background: none;
+  color: var(--so-color-navy);
+  font-family: inherit;
+  font-size: var(--so-text-secondary-max);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--so-space-md);
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.legend {
+  font-size: var(--so-text-body-min);
+  font-weight: var(--so-weight-medium);
+  padding: 0;
+  margin-bottom: var(--so-space-md);
+}
+
+.option {
+  display: flex;
+  gap: var(--so-space-md);
+  align-items: flex-start;
+  width: 100%;
+  min-height: var(--so-touch-target-min);
+  padding: var(--so-space-md) var(--so-space-lg);
+  text-align: left;
+  background: var(--so-color-surface);
+  border: 1px solid var(--so-color-slate);
+  border-radius: var(--so-radius-control);
+  color: var(--so-color-ink);
+  font-family: inherit;
+  font-size: var(--so-text-body-min);
+  line-height: var(--so-leading-normal);
+  cursor: pointer;
+}
+
+/* Énfasis neutral: confirma la elección sin insinuar corrección (INV-103). */
+.optionSelected {
+  border: 2px solid var(--so-color-navy);
+  padding: calc(var(--so-space-md) - 1px) calc(var(--so-space-lg) - 1px);
+  font-weight: var(--so-weight-medium);
+}
+
+.optionKey {
+  font-weight: var(--so-weight-semibold);
+  min-width: 1.25rem;
+}
+
+.confidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--so-space-sm);
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.level {
+  min-height: var(--so-touch-target-min);
+  padding: 0 var(--so-space-lg);
+  background: var(--so-color-surface);
+  border: 1px solid var(--so-color-slate);
+  border-radius: var(--so-radius-full);
+  color: var(--so-color-ink);
+  font-family: inherit;
+  font-size: var(--so-text-secondary-max);
+  cursor: pointer;
+}
+
+.levelSelected {
+  border: 2px solid var(--so-color-navy);
+  font-weight: var(--so-weight-medium);
+}
+
+.outcome {
+  display: flex;
+  align-items: center;
+  gap: var(--so-space-md);
+  padding: var(--so-space-md) var(--so-space-lg);
+  border-radius: var(--so-radius-control);
+  font-size: var(--so-text-title-min);
+  font-weight: var(--so-weight-semibold);
+  color: var(--so-color-on-dark);
+}
+
+.outcomeCorrect {
+  background: var(--so-color-forest);
+}
+
+.outcomeIncorrect {
+  background: var(--so-color-brick);
+}
+
+.outcomeBlank {
+  background: var(--so-color-navy);
+}
+
+/* La forma, no solo el color, distingue el resultado. */
+.mark {
+  font-size: var(--so-text-title-max);
+  line-height: 1;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--so-space-xs);
+}
+
+.blockLabel {
+  font-size: var(--so-text-metadata-max);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--so-color-slate);
+  margin: 0;
+}
+
+.blockValue {
+  font-size: var(--so-text-body-min);
+  line-height: var(--so-leading-normal);
+  margin: 0;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--so-space-sm) var(--so-space-lg);
+  margin: 0;
+}
+
+.summaryTerm {
+  font-size: var(--so-text-body-min);
+  margin: 0;
+}
+
+.summaryValue {
+  font-family: var(--so-font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--so-text-body-min);
+  font-weight: var(--so-weight-semibold);
+  text-align: right;
+  margin: 0;
+}
+
+.skeleton {
+  height: var(--so-space-4xl);
+  border-radius: var(--so-radius-control);
+  background: var(--so-color-surface);
+  border: 1px solid var(--so-color-slate);
+}
+
+.error {
+  border-left: 3px solid var(--so-color-brick);
+  padding-left: var(--so-space-md);
+  margin: 0;
+  font-size: var(--so-text-secondary-max);
+  color: var(--so-color-ink);
+}
+
+@media (min-width: 48rem) {
+  .shell {
+    padding: var(--so-space-3xl) var(--so-space-2xl) var(--so-space-4xl);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary,
+  .option,
+  .level {
+    transition: none;
+  }
+}

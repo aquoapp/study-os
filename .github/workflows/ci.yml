@@ -3,13 +3,14 @@ name: CI
 # Los nueve checks bloqueantes de Phase 0 (Execution Plan §4).
 #
 # `main` está protegida: no se empuja a ella. Este pipeline corre sobre las ramas de
-# fase y sobre los PR hacia `main`, y su verde es condición para el merge.
+# fase, sobre las ramas de milestone —el First Product Slice usa `milestone/**`— y sobre
+# los PR hacia `main`, y su verde es condición para el merge.
 #
 # EC-020 · «Fase completa solo con gates ejecutables en verde».
 
 on:
   push:
-    branches: ['phase/**']
+    branches: ['phase/**', 'milestone/**']
   pull_request:
     branches: [main]
   workflow_dispatch:
