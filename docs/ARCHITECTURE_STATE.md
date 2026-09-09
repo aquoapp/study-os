@@ -3,10 +3,10 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.9 · copia viva
-**Última actualización:** 2026-09-09 · Phase 2 · Learner & Evidence Core **construida** en `phase/2-learner-evidence-core` (migraciones 15–18, evidencia, sesiones, unidades de aprendizaje y onboarding mínimo); checkpoint `PASS WITH DEBT` a la espera de aceptación humana. BUILD ejecutado por dos modelos: Fable 5.1 hasta su límite de uso y Opus 5 tras la recuperación forense
-**Fase actual:** 2 · Learner & Evidence Core · **CONSTRUIDA · PASS WITH DEBT · pendiente de aceptación humana** · ver `docs/PHASE_2_CHECKPOINT.md` · sin merge y sin tag · Phase 1A congelada (`phase-1a-v1.0`) · Phase 1B, Phase 3, FPS y PRODUCTION no autorizados
-**Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `be5a26ade5ac384a572d62568d7ac29fd2a568f6` · tag anotado `phase-1a-v1.0` (Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_1A_CHECKPOINT.md`
+**Versión:** 11.10 · copia viva
+**Última actualización:** 2026-09-09 · Phase 2 · Learner & Evidence Core **aceptada y congelada**: PR #7 integrado en `main` (`46b8fcd`) y tag anotado `phase-2-v1.0`. BUILD ejecutado por dos modelos: Fable 5.1 hasta su límite de uso y Opus 5 tras la recuperación forense
+**Fase actual:** 2 · Learner & Evidence Core · **FROZEN · PASS WITH DEBT · HUMAN ACCEPTED** · ver `docs/PHASE_2_CHECKPOINT.md` · Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 3, FPS y PRODUCTION no autorizados
+**Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `46b8fcd705e32c86ed6ddac225cd50f80e4faca9` · tag anotado `phase-2-v1.0` (Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_2_CHECKPOINT.md`
 
 ---
 
@@ -271,8 +271,20 @@ canonicalización v1 en SQL y en `@study-os/domain`, `append_learning_event` y
 `create_study_session` como únicas RPC de cliente, onboarding mínimo en `/onboarding`, y una
 campaña adversarial que no encontró ninguna fuga de clave ni ningún acceso cruzado. Roundtrip
 semántico contra STAGING: 944 entradas → catálogo limpio → 944 idénticas. Checkpoint
-`PASS WITH DEBT` en `docs/PHASE_2_CHECKPOINT.md`, **sin merge y sin tag**: la aceptación
-humana no se ha producido.
+`PASS WITH DEBT` en `docs/PHASE_2_CHECKPOINT.md`.
+
+**Aceptada y congelada el 2026-09-09.** `PHASE 2 HUMAN ACCEPTANCE: APPROVED` (Ana Victoria,
+sobre revisión independiente de arquitectura y aceptación), candidato aceptado
+`2658608faba2f5a793680200590603bb633f44ce`. Integrada en `main` por el PR #7 con las tres
+comprobaciones exigidas en verde (CI `34373601082`): commit de merge
+`46b8fcd705e32c86ed6ddac225cd50f80e4faca9`, padres `0cf7467` y `2658608`, árbol idéntico al
+HEAD aceptado; tag anotado `phase-2-v1.0` sobre ese merge. Sin Release y sin despliegue de
+Production: el Ignored Build Step canceló el despliegue con destino Production del merge.
+Deuda abierta y aceptada D-13, D-18, D-22 (solo arnés de pruebas) y D-23 (solo rollback);
+D-12 cerrada. **WATCH-P2-1** queda registrado como vigilancia y **no** como deuda: la
+corrección posterior al envío es enumerable mediante intentos registrados, el comportamiento
+actual está aceptado, y ninguna mitigación futura puede comprometer la retroalimentación
+pedagógica veraz posterior al envío.
 
 **Relevo de modelo durante el BUILD.** Fable 5.1 agotó su límite de uso con la
 implementación entera sin confirmar en el árbol de trabajo; Opus 5 reconstruyó el estado de

@@ -13,9 +13,25 @@ STATUS: PASS WITH DEBT
 **Autorización.** Phase 2 Build Authorization del 2026-09-09
 (`STUDY_OS_Phase_2_PreAuthorization_Packet_PROPOSED_be5a26a.md` · SHA-256
 `da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67`, copiado con cabecera de
-aceptación en `docs/PHASE_2_AUTHORIZATION_PACKET.md`). Autoriza BUILD sobre STAGING; **no**
-autoriza merge final, tag, Release, congelación, FPS, Phase 1B, Phase 3 ni ninguna mutación
-de PRODUCTION. La rama se detiene aquí.
+aceptación en `docs/PHASE_2_AUTHORIZATION_PACKET.md`). Autorizó BUILD sobre STAGING; **no**
+autorizaba merge final, tag, Release, congelación, FPS, Phase 1B, Phase 3 ni ninguna
+mutación de PRODUCTION.
+
+**PHASE 2 HUMAN ACCEPTANCE: APPROVED** · 2026-09-09 · Ana Victoria, sobre la revisión
+independiente de la autoridad de arquitectura y aceptación. Candidato aceptado
+`phase/2-learner-evidence-core` → `2658608faba2f5a793680200590603bb633f44ce`, con estado
+`PASS WITH DEBT`. La aceptación integra las deudas D-13, D-18, D-22 y D-23 como abiertas y
+aceptadas, declara D-12 cerrada y admite **WATCH-P2-1** como vigilancia, no como deuda.
+Autoriza PR protegido, CI exigida, merge, tag canónico y congelación documental; **no**
+autoriza Phase 1B, FPS, Phase 3, motores, scoring, simulación, corpus oficial, custodia
+privada ni ninguna mutación o despliegue de PRODUCTION.
+
+**PHASE 2 · FROZEN · PASS WITH DEBT · HUMAN ACCEPTED.** La implementación quedó integrada en
+`main` por el PR #7 (commit de merge `46b8fcd705e32c86ed6ddac225cd50f80e4faca9`, padres
+`0cf7467` y `2658608`, árbol idéntico al HEAD aceptado) y etiquetada con el tag anotado
+`phase-2-v1.0`. Las tres comprobaciones exigidas por el ruleset de `main` pasaron en verde
+sobre el PR (CI `34373601082`). Phase 0 y Phase 1A siguen congeladas y sus tags no se han
+movido.
 
 ---
 
@@ -90,7 +106,7 @@ evento se corrompió, ninguna idempotencia falló y PRODUCTION no se tocó.
 | Rama | `phase/2-learner-evidence-core` |
 | Base | `main` = `0cf74678f80b7df19a8a61194ea9f5b3e72f4514` (merge del aterrizaje de gobernanza, PR #6) |
 | Commits | siete slices coherentes desde `58c21a7` |
-| Merge / tag | **ninguno** · la aceptación humana no se ha producido |
+| Merge / tag | PR #7 integrado en `main` (`46b8fcd705e32c86ed6ddac225cd50f80e4faca9`) · tag anotado `phase-2-v1.0` |
 | Phase 1A | congelada e intacta: tag `phase-1a-v1.0` → `be5a26a`, no se ha movido |
 
 ## MIGRATIONS · DOWNS · LOCK
@@ -194,6 +210,19 @@ FPS. Neutralidad de examen mantenida: el literal del primer pack no aparece en e
 **D-12 quedó cerrada** en el aterrizaje de gobernanza: el anexo v1.1 de ADR-007 y SD-022
 fijaron las celdas que estaban pendientes.
 
+## WATCH ITEMS
+
+Vigilancia **no es deuda**: no hay invariante incumplido ni requisito de Phase 2 pendiente.
+Se registra aquí lo que una fase futura debe tener presente.
+
+| # | Vigilancia | Por qué no es deuda | Restricción vinculante | Propietaria |
+| --- | --- | --- | --- | --- |
+| **WATCH-P2-1** | La corrección posterior al envío es **enumerable**: un aprendiz puede obtener la opción correcta y la explicación de cualquier pregunta publicada enviando una respuesta en blanco, a un intento registrado por pregunta | INV-101 rige la divulgación **antes** del envío y se cumple: antes de `ANSWER_SUBMITTED` la RPC no devuelve clave, corrección ni explicación. Lo que ocurre después es el contrato CHECK → FEEDBACK funcionando como está especificado, y cada intento queda registrado como evidencia | **Ninguna mitigación futura puede comprometer la retroalimentación pedagógica veraz posterior al envío.** Quien responde honestamente tiene que seguir sabiendo si acertó y por qué. Las vías admisibles son de política de producto (economía de intentos, modos de examen que difieren la corrección al final, selección mediada por el planner); retener o falsear el resultado de un intento honesto no lo es | La fase que introduzca scoring y simulación, junto con las superficies de producto |
+
+En esta congelación **no** se implementa mitigación alguna: ni limitación de frecuencia, ni
+scoring, ni penalizaciones, ni simulación, ni modos de retroalimentación diferida, ni acceso
+mediado por planner. Todo eso exige arquitectura de producto autorizada en el futuro.
+
 ## GATES
 
 | Gate | Resultado |
@@ -253,5 +282,15 @@ en la cabecera de este fichero.
 
 ## NEXT AUTHORITY
 
-Aceptación humana de Phase 2 por Ana Victoria con revisión independiente. Hasta entonces: sin
-merge, sin tag, sin Release, sin FPS, sin Phase 1B, sin Phase 3 y sin despliegue.
+Phase 2 está **congelada**: aceptada por Ana Victoria el 2026-09-09, integrada en `main`
+(`46b8fcd`) y etiquetada `phase-2-v1.0`. La congelación **no** autoriza nada más.
+
+Cualquier avance exige una autorización humana nueva y explícita. Siguen **sin autorizar**:
+Phase 1B, FPS, Phase 3, Learning Engine, Planner Engine, proyecciones, mastery, Exam
+Readiness, scoring, simulación, ingesta del corpus oficial, creación de custodia privada,
+Release y cualquier mutación o despliegue de PRODUCTION.
+
+**WATCH-P2-1** viaja con la fase: la corrección posterior al envío es enumerable mediante
+intentos registrados, el comportamiento actual está aceptado, y **ninguna mitigación futura
+puede comprometer la retroalimentación pedagógica veraz posterior al envío**. Su propietaria
+es la fase que introduzca scoring y simulación, junto con las superficies de producto.

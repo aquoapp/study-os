@@ -169,10 +169,15 @@ invocables por cliente, declaradas en `authority-registry.json`. El aterrizaje d
 se integró en `main` (PR #6, `0cf7467`). **Construida** en `phase/2-learner-evidence-core`:
 migraciones 15–18 con rollback, 12 tablas de `public` y 2 de `ingest` con RLS forzado,
 canonicalización v1, stream de eventos sin huecos, intentos inmutables con corrección en
-servidor, continuidad de sesión y onboarding mínimo en `/onboarding`. El checkpoint de
-Phase 2 es **PASS WITH DEBT** (`docs/PHASE_2_CHECKPOINT.md`), **sin merge y sin tag**: la
-aceptación humana no se ha producido. STAGING es el único entorno mutable; PRODUCTION no se
-toca; merge final, tag, Release, FPS, Phase 1B y Phase 3 **no** están autorizados.
+servidor, continuidad de sesión y onboarding mínimo en `/onboarding`. **Aceptada y
+congelada** por Ana el 2026-09-09: PR #7 integrado en `main` (`46b8fcd`), tag anotado
+`phase-2-v1.0`. El checkpoint de Phase 2 es **PASS WITH DEBT**
+(`docs/PHASE_2_CHECKPOINT.md`): D-13, D-18, D-22 (solo arnés de pruebas) y D-23 (solo
+rollback) quedan abiertas y aceptadas, y D-12 cerrada. **WATCH-P2-1** se registra como
+vigilancia y **no** como deuda: la corrección posterior al envío es enumerable mediante
+intentos registrados, y ninguna mitigación futura puede comprometer la retroalimentación
+pedagógica veraz posterior al envío. STAGING es el único entorno mutable; PRODUCTION no se
+toca; Release, FPS, Phase 1B y Phase 3 **no** están autorizados.
 
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:

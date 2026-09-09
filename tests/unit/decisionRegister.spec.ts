@@ -248,7 +248,7 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
     expect(blocked).toContain('| Ninguna en Phase 1A | — |');
   });
 
-  it('PHASE_2_CHECKPOINT · PASS WITH DEBT, nueve gates PASS, sin merge ni tag, y el relevo de modelo declarado', () => {
+  it('PHASE_2_CHECKPOINT · PASS WITH DEBT, nueve gates PASS, congelación registrada y relevo de modelo declarado', () => {
     const checkpoint = read('docs/PHASE_2_CHECKPOINT.md');
     expect(checkpoint).toContain('STATUS: PASS WITH DEBT');
     expect(checkpoint).not.toContain('STATUS: BLOCKED');
@@ -265,8 +265,28 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
     // La base y el estado son los reales, y no se ha movido nada de Phase 1A.
     expect(checkpoint).toContain('0cf74678f80b7df19a8a61194ea9f5b3e72f4514');
     expect(checkpoint).toContain('phase/2-learner-evidence-core');
-    expect(checkpoint).toContain('Merge / tag | **ninguno**');
+    // Congelación (2026-09-09): integrada en main por el PR #7 y etiquetada phase-2-v1.0.
+    expect(checkpoint).toContain('46b8fcd705e32c86ed6ddac225cd50f80e4faca9');
+    expect(checkpoint).toContain('phase-2-v1.0');
+    expect(checkpoint).toContain('PHASE 2 HUMAN ACCEPTANCE: APPROVED');
+    expect(checkpoint).toContain('PHASE 2 · FROZEN · PASS WITH DEBT · HUMAN ACCEPTED');
     expect(checkpoint).toContain('phase-1a-v1.0');
+
+    // WATCH-P2-1 vive en su propia sección: vigilancia, nunca una fila de deuda.
+    const debt = checkpoint.slice(
+      checkpoint.indexOf('## KNOWN DEBT'),
+      checkpoint.indexOf('## WATCH ITEMS'),
+    );
+    expect(debt).not.toContain('WATCH-P2-1');
+    const watch = checkpoint.slice(
+      checkpoint.indexOf('## WATCH ITEMS'),
+      checkpoint.indexOf('## GATES'),
+    );
+    expect(watch).toContain('WATCH-P2-1');
+    expect(watch).toContain('Vigilancia **no es deuda**');
+    expect(watch).toMatch(
+      /Ninguna mitigación futura puede comprometer la retroalimentación\s+pedagógica veraz posterior al envío/,
+    );
 
     // El relevo de modelo se declara: quién construyó qué y qué resultó no verificado.
     expect(checkpoint).toContain('MODEL HANDOFF RECOVERY');
