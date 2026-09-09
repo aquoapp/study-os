@@ -55,24 +55,28 @@ describe('schema.drift · REQ-A04 · EC-011', () => {
     }
   });
 
-  it('ninguna migración crea tablas de Phase 2 en adelante: Phase 1A no las entrega', () => {
+  it('ninguna migración crea tablas de Phase 3 en adelante: Phase 2 no las entrega', () => {
     // Execution Plan §9 · «No crear tablas de dominio ni de contenido» regía Phase 0.
-    // Phase 1A (2026-09-09) autoriza el contenido canónico; lo de aprendiz, evidencia,
-    // motores y planner sigue prohibido hasta su fase.
+    // Phase 1A (2026-09-09) autoriza el contenido canónico; la Phase 2 Build
+    // Authorization (2026-09-09) autoriza aprendiz, sesiones, evidencia e intentos.
+    // Proyecciones, motores, planner y watermarks siguen prohibidos hasta su fase.
     const domainTables = [
-      'learning_events',
-      'question_attempts',
       'concept_mastery',
+      'mastery_history',
       'exam_readiness',
+      'error_patterns',
+      'intervention_outcomes',
       'planner_runs',
       'planner_items',
-      'learning_units',
+      'projection_watermarks',
+      'engine_config',
+      'attempt_recalculations',
+      'content_change_events',
+      'notes',
+      'source_chunks',
+      'ai_interactions',
+      'simulation_runs',
       'sessions',
-      'study_sessions',
-      'session_items',
-      'learner_settings',
-      'learner_exam_goals',
-      'diagnostic_runs',
     ];
 
     for (const name of migrations) {

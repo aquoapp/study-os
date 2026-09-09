@@ -1,7 +1,9 @@
 export {
+  CLIENT_INVOKABLE_RPCS,
   SERVER_AUTHORITATIVE_PROJECTIONS,
   SERVER_AUTHORITATIVE_RPCS,
   isAuthoritative,
+  isClientInvokableRpc,
   isServerAuthoritativeProjection,
   isServerAuthoritativeRpc,
   localProjection,

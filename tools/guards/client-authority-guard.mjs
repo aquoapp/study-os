@@ -55,6 +55,13 @@ const registry = JSON.parse(
 const PROJECTIONS = new Set(registry.projections.tables);
 const AUTHORITATIVE_RPCS = new Set(registry.rpcs.names);
 const READ_ONLY_RPCS = new Set(registry.readOnlyRpcs.names);
+/**
+ * Phase 2 · RPC invocables por cliente que escriben (H-P2-3). Mismo trato que la
+ * allowlist de lectura: solo invocación directa con nombre literal. Su contrato de
+ * seguridad vive en el registro; aquí solo se comprueba que el nombre esté declarado.
+ */
+const CLIENT_INVOKABLE_RPCS = new Set(registry.clientInvokableRpcs?.names ?? []);
+const ALLOWED_RPCS = new Set([...READ_ONLY_RPCS, ...CLIENT_INVOKABLE_RPCS]);
 const WRITE_METHODS = new Set(registry.writeMethods.names);
 const SERVICE_ROLE_MARKERS = new Set(registry.serviceRoleMarkers.names);
 /** Pares exactos `receptor global + miembro` que se admiten en invocación directa. */
@@ -301,12 +308,13 @@ for (const [file, info] of clientFiles) {
           'Llamada .rpc() cuyo nombre no puede resolverse a un literal. No poder demostrar ' +
             'que es de solo lectura no equivale a que lo sea.',
         );
-      } else if (!READ_ONLY_RPCS.has(rpcName)) {
+      } else if (!ALLOWED_RPCS.has(rpcName)) {
         const anchor = registry.rpcs.anchors?.[rpcName];
         add(
           node,
           `Llamada de cliente a la RPC "${rpcName}", que no está en la allowlist de solo ` +
-            `lectura (${READ_ONLY_RPCS.size} entradas)` +
+            `lectura (${READ_ONLY_RPCS.size} entradas) ni entre las RPC invocables por ` +
+            `cliente declaradas (${CLIENT_INVOKABLE_RPCS.size} entradas)` +
             `${AUTHORITATIVE_RPCS.has(rpcName) ? ` · RPC autoritativa · ${anchor}` : ''}.`,
         );
       }
@@ -394,7 +402,8 @@ for (const violation of boundaryViolations) {
 console.log(
   `  (superficie de cliente: ${clientFiles.size} fichero(s); propagación de capacidades por ` +
     `punto fijo; 0 escrituras permitidas, ${READ_ONLY_RPCS.size} RPC en la allowlist de ` +
-    `lectura; ${PROJECTIONS.size} proyecciones registradas; excepción de navegador: ` +
+    `lectura, ${CLIENT_INVOKABLE_RPCS.size} RPC invocables por cliente declaradas; ` +
+    `${PROJECTIONS.size} proyecciones registradas; excepción de navegador: ` +
     `${[...BROWSER_API_PAIRS.keys()].join(', ')} en invocación directa)`,
 );
 

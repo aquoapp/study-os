@@ -4,7 +4,7 @@ STATUS: ACCEPTED · v1.0
 DATE: 2026-09-07
 DECISION OWNER: Ana Victoria
 DECISION RECORD: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` · SHA-256 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d` · baseline auditado `8823c2bdf2d31ec01a2f15b1566a94c1ad0eb04a`
-IMPLEMENTATION STATUS: NOT IMPLEMENTED · este ADR no autoriza ninguna migración ni código de dominio
+IMPLEMENTATION STATUS: AUTHORIZED · Phase 2 (2026-09-09) · stream de eventos, contadores por usuario e intentos según los puntos 1–9 y 11 y «El mismo orden para `question_attempts`»; los watermarks del punto 10 acompañan a la primera proyección (Phase 3). Hasta el 2026-09-09 constaba como NOT IMPLEMENTED
 OWNS: **SD-018** · propietario normativo único · **supersede a SD-015** y a toda parte de **ADR-002 v1.2** que lo contradiga
 SPEC REFERENCES: Canonical Data & Event Model v1.0 §10, §12, §14, §16, §25, §26, §29 (P0-2, P0-3, P0-5, P0-9); Master Product Specification v1.0 §42, §43; Technical Architecture v1.0 §4, §6; Engineering Constitution EC-005, EC-006, EC-013; contradiction-register C-26; `docs/SPEC_DIFF_LOG.md` SD-015 (superseded), SD-018 y su corrección; ADR-002 puntos 4 y 10 (superseded por este ADR); ADR-004 puntos 1–3
 
@@ -193,3 +193,33 @@ Record: `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` §3.3 y §5 · SHA-256
 `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d`
 Scope of approval: gobernanza únicamente · no autoriza migraciones, implementación de
 dominio, infraestructura ni Phase 1
+
+## Registro de autorización de implementación · Phase 2 · 2026-09-09 · sin enmienda
+
+**Registro de decisión:** `STUDY_OS_Phase_2_PreAuthorization_Packet_PROPOSED_be5a26a.md` · SHA-256 `da4558c54ce25825d5a75da9021f65e082964885295a92d523a6a7eadcba2a67` · Phase 2 Build
+Authorization · Ana Victoria (copia aceptada en `docs/PHASE_2_AUTHORIZATION_PACKET.md`).
+
+El contrato de los puntos 1–11 y de «El mismo orden para `question_attempts`» **no cambia**.
+Lo que la autorización añade son sus dos prerrequisitos y una aclaración, todos en
+`docs/SPEC_DIFF_LOG.md`:
+
+- **SD-022 · Contrato de canonicalización v1** (decisión H-P2-2): satisface el prerrequisito
+  «Contrato de canonicalización · prerrequisito de la migración» —orden de claves,
+  normalización de cadenas, nulos y ausentes, colecciones, conjunto completo de campos para
+  eventos y para respuestas, algoritmo y versión almacenados por fila—.
+- **SD-023 · Autoridad de representación y de tiempo** (corrección obligatoria §2 de la
+  autorización): `client_created_at` conserva la semántica del punto 11 —referencia temporal
+  del hecho para el motor— y **nunca** elige representación ni versión de clave; la
+  representación es la presentada y verificada por el servidor, y la clave la resuelve el
+  servidor para esa representación. Es una aclaración: ningún punto de este ADR asigna a
+  `client_created_at` la elección de versión.
+- **H-P2-3**: la corrección se ejecuta dentro de la normalización del intento, en la misma
+  transacción que acepta `ANSWER_SUBMITTED`, mediante `append_learning_event`, primera RPC
+  invocable por cliente, con `auth.uid()` como única identidad; el punto 10 (watermarks por
+  proyección) se implementa con la primera proyección, en Phase 3.
+
+Las catorce suites declaradas en «Test/acceptance impact» pasan a ser exigibles en Phase 2
+salvo `watermark.perUserPerProjection.spec` y `rebuild.deterministicOrder.spec`, que
+acompañan a la primera proyección (Phase 3). `sd018.contract.spec` vigila desde esta fecha la
+correspondencia entre contrato, migraciones y suites: sin migración de eventos no puede
+existir suite alguna, y con ella deben existir todas.
