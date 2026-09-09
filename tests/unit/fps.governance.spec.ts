@@ -195,6 +195,14 @@ describe('el checkpoint del FPS dice la verdad sobre su propio estado', () => {
     expect(checkpoint).toContain('no una prueba automática');
   });
 
+  it('registra la congelación con su merge y su tag', () => {
+    expect(checkpoint).toContain('FPS · FROZEN · HUMAN ACCEPTED · PASS WITH OBSERVATIONS');
+    expect(checkpoint).toContain('6bde0a045532c8ffb2769c0a24d4bbb94958dd57');
+    expect(checkpoint).toContain('fps-v1.0');
+    // El tag va sobre el merge de implementación, no sobre un commit documental posterior.
+    expect(checkpoint).toContain('árbol idéntico al HEAD aceptado');
+  });
+
   it('registra el recorrido humano con su decisión y su evidencia', () => {
     expect(checkpoint).toContain('FPS · HUMAN WALKTHROUGH: PASS');
     expect(checkpoint).toContain('PASS WITH OBSERVATIONS');

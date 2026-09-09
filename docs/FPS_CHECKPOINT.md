@@ -13,6 +13,12 @@ FPS-G10: PASS · recorrido manual humano · 2026-09-09
 La aceptación es **PASS WITH OBSERVATIONS**: cuatro observaciones de producto registradas,
 ninguna bloqueante, ninguna corregida durante la congelación.
 
+**FPS · FROZEN · HUMAN ACCEPTED · PASS WITH OBSERVATIONS.** La implementación quedó integrada
+en `main` por el PR #10 (commit de merge `6bde0a045532c8ffb2769c0a24d4bbb94958dd57`, padres
+`e32727c` y `d3f1086`, árbol idéntico al HEAD aceptado) y etiquetada con el tag anotado
+`fps-v1.0`. Las tres comprobaciones exigidas pasaron en verde sobre el PR (CI `34400908876`).
+Phase 0, Phase 1A y Phase 2 siguen congeladas y sus tags no se han movido.
+
 ## AUTHORITY
 
 FPS Build Authorization del 2026-09-09, sobre el veredicto
@@ -54,7 +60,7 @@ registro de pruebas, sin ningún objeto de runtime.
 | Rama de implementación | `milestone/fps-first-product-slice` |
 | Base | `main` = `e32727c` |
 | Commits | siete slices coherentes |
-| Merge / tag | **ninguno** · la aceptación humana no se ha producido |
+| Merge / tag | PR #10 integrado en `main` (`6bde0a045532c8ffb2769c0a24d4bbb94958dd57`) · tag anotado `fps-v1.0` |
 | Phase 0, 1A y 2 | congeladas e intactas; sus tags no se han movido |
 
 ## IMPLEMENTATION HEAD
