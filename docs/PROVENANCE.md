@@ -40,7 +40,7 @@ con los del paquete. Cualquier divergencia futura es una modificación y debe ju
 | `architecture/ADR-000-template.md` | `383782a8bbf69333c7f3d0c97b47d2993098f623a73728636580e76bd2886103` |
 | `architecture/ADR-001-stack-and-boundaries.md` | `9eeb3be861da6b1b0eb1bedfa70e33e5e06908042e5eda37ce1f7c135de3990c` (**anotado el 2026-09-07**, ver §2.1) |
 | `architecture/ADR-002-canonical-evidence-events.md` | `2234c873a809503fe4137997902a8771298350464795a0557597729f6424e03e` (**anotado el 2026-09-07**, ver §2.1) |
-| `architecture/ADR-003-mastery-vs-readiness.md` | `4155d6d2b54caad99c9bc5ce4bd5c5e5fce9f5f66ec6f3410ff2942d52c3cf4a` |
+| `architecture/ADR-003-mastery-vs-readiness.md` | `4155d6d2b54caad99c9bc5ce4bd5c5e5fce9f5f66ec6f3410ff2942d52c3cf4a` (**enmendado el 2026-09-10**, ver §2.1) |
 | `architecture/ADR-004-offline-reconciliation.md` | `f7a9833f787d2d3e939f54d9b758bf1ec0a8c9f7bbd97454b6529a5a0c4518fd` |
 | `architecture/ADR-005-provenance-and-official-versioning.md` | `aa5414eb34f024f03778ea4456e56a3159ce02e391d1fee3458d2cac5d833406` (**anotado el 2026-09-07**, ver §2.1) |
 | `docs/ARCHITECTURE_STATE.md` | `595437cca7ed13d09f78a0544fa26a8ad034d28b0cb8ecd97a71e08aff6b7fa1` (**estado de importación**) |
@@ -48,9 +48,9 @@ con los del paquete. Cualquier divergencia futura es una modificación y debe ju
 | `docs/PHASE_MINUS_1_INDEX.md` | `769c24175400db4e5fb5359025fbf509cbecd8e088fc09e3ca1a5cf79cd8b415` |
 | `docs/SPEC_DIFF_LOG.md` | `4a4ba01d3e211aa0c2200239826a14f3b56dbe788fe40064a5f0a087da6f2fd3` (**estado de importación**) |
 
-> **Cinco artefactos importados divergen de su hash base, y solo cinco.** Dos son copias
-> vivas por su propia regla; tres son ADR anotados por decisión humana el 2026-09-07
-> (§2.1).
+> **Seis artefactos importados divergen de su hash base, y solo seis.** Dos son copias
+> vivas por su propia regla; tres son ADR anotados por decisión humana el 2026-09-07 y uno
+> —ADR-003— es un ADR **enmendado y aceptado** por decisión humana el 2026-09-10 (§2.1).
 >
 > **`ARCHITECTURE_STATE.md`** es una **copia viva**: su propia regla de mantenimiento
 > dice que «se actualiza en cada checkpoint» y que «si describe estado futuro o
@@ -65,11 +65,18 @@ con los del paquete. Cualquier divergencia futura es una modificación y debe ju
 > `head -174 docs/SPEC_DIFF_LOG.md | sha256sum`. Adenda actual: ERRATA P0-IN-1, SD-016,
 > SD-017, SD-018, SD-019 y el **registro de aceptación del 2026-09-07**.
 >
-> Los otros 14 artefactos importados conservan su hash original sin excepción. En
+> Los otros 13 artefactos importados conservan su hash original sin excepción. En
 > particular, `docs/PHASE_0_EXECUTION_PLAN.md`, `docs/PHASE_MINUS_1_INDEX.md` y todo
 > `spec/` siguen intactos: lo que dicen sobre BD-02, BD-05, SD-006, SD-007 o SD-015
 > —«pendiente», «PROPUESTO»— es cronología histórica del paquete importado, y el estado
 > operativo lo fijan los registros vivos. Un test lo verifica por hash.
+>
+> El aterrizaje de gobernanza de Phase 3 (2026-09-10) **no editó ningún fichero de
+> `spec/`**: sus nueve hashes siguen siendo los de importación, y `phase3.governance.spec`
+> los comprueba uno a uno. Las disposiciones de Phase 3 sobre `requirement-index`,
+> `acceptance-matrix`, `contradiction-register`, `deferred-requirements` y `domain-model`
+> viven como adenda en `docs/SPEC_DIFF_LOG.md` (SD-024 … SD-029), que es el mecanismo de
+> supersesión del repositorio.
 
 ### 2.1 ADR anotados por decisión humana · 2026-09-07
 
@@ -86,8 +93,32 @@ por eso —y solo por eso— divergen de su hash de importación:
 | `architecture/ADR-002-canonical-evidence-events.md` | `2234c873a809503fe4137997902a8771298350464795a0557597729f6424e03e` | `c6f1192883aa1f3214031ffc35a36245a37650beccc39fa2d414b24916fb804c` | Nota de supersesión parcial; punto 6 superseded por ADR-007; puntos 4 y 10 superseded por ADR-008; SD-015 superseded |
 | `architecture/ADR-005-provenance-and-official-versioning.md` | `aa5414eb34f024f03778ea4456e56a3159ce02e391d1fee3458d2cac5d833406` | `333b18e9a5694556f61584c6c613247c5816574315fa15d3ea43084043cd4e8a` (antes `abafcd77b056588dd09e63dd2652a94b71534cbfd3bd5fef62224bbb7f8a76e1`) | Nota de supersesión parcial (2026-09-07); nota de disposición para Phase 1A (2026-09-09): sigue PROPOSED |
 
-Los tres siguen `PROPOSED` en conjunto. `ADR-000`, `ADR-003` y `ADR-004` no se han
-tocado y conservan su hash, verificado por `adr.acceptedDecisions.spec`.
+Los tres siguen `PROPOSED` en conjunto. `ADR-000` y `ADR-004` no se han tocado y conservan su
+hash, verificado por `adr.acceptedDecisions.spec`.
+
+### 2.2 ADR-003 · enmendado y aceptado por decisión humana · 2026-09-10
+
+La Phase 3 Governance Landing Authorization (copia aceptada en
+`docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md`, SHA-256
+`3b1bcc38ca3e13d7a75d7e0ab3ff2b4ffbdf2a2d396cf77308ee5b92fae423d4`; propuesta de entrada
+`STUDY_OS_Learning_Engine_Contract_v1.0_Proposal_d3581ba.md`, SHA-256
+`cfb07a1ed05602b74daacb742472e21a94c7b602c6bbae634d9d2df42b33f6c7`) acepta ADR-003 como v1.2.
+
+| Ruta | Hash de importación (histórico) | Hash tras la enmienda | Qué se anotó |
+|---|---|---|---|
+| `architecture/ADR-003-mastery-vs-readiness.md` | `4155d6d2b54caad99c9bc5ce4bd5c5e5fce9f5f66ec6f3410ff2942d52c3cf4a` | `2514bb12683618161ed3afd40a88c1d9d93970f8d11d0fae1e826bb86893e191` | Cabecera `ACCEPTED · v1.2` con registro de decisión, `IMPLEMENTATION STATUS: NOT IMPLEMENTED` y `OWNS: BD-04`; nota de supersesión parcial; punto 1 superseded y punto 6 no operativo, **con su texto histórico intacto**; Anexo v1.2; bloque de aprobación cumplimentado |
+
+`ADR-008` recibe además un **anexo de reconciliación de watermark** el 2026-09-10, sin
+enmendar ninguno de sus once puntos: hash vigente
+`d1f0ee49265c4cef1ab033737d2840fedc455233f99c2896cb3273764208007a` (antes
+`fcc4385fd36dafe0e99b0c024b697a366140fc993d29345beafffda0f98b84bd`).
+
+Artefactos **creados** en este aterrizaje, no importados:
+
+| Ruta | SHA-256 |
+|---|---|
+| `docs/LEARNING_ENGINE_CONTRACT.md` | `3770d7d903af7e092d97b7279867a84dbcca75ba825488aecffa1e2f332d6068` |
+| `docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md` | `3b1bcc38ca3e13d7a75d7e0ab3ff2b4ffbdf2a2d396cf77308ee5b92fae423d4` |
 
 Los ADR aceptados son artefactos **creados en Phase 0 y Phase 1A** (§6), no importados. Hash
 de creación (2026-09-07) y hash vigente tras la Phase 1A Build Authorization (2026-09-09):

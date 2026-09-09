@@ -3,9 +3,9 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.13 · copia viva
-**Última actualización:** 2026-09-09 · First Product Slice **aceptado por recorrido humano y congelado**: PR #10 integrado en `main` (`6bde0a0`) y tag anotado `fps-v1.0`, con cuatro observaciones de producto registradas y sin corregir
-**Fase actual:** **First Product Slice · FROZEN · HUMAN ACCEPTED · PASS WITH OBSERVATIONS** · ver `docs/FPS_CHECKPOINT.md` · Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 3, Phase 4, Phase 5, Planner, Learning Engine y PRODUCTION no autorizados
+**Versión:** 11.14 · copia viva
+**Última actualización:** 2026-09-10 · **aterrizaje de gobernanza de Phase 3**: `Learning Engine Contract v1.0` `ACCEPTED`, ADR-003 aceptada como v1.2, SD-013 aceptada, BD-04 cerrada, anexo de reconciliación de watermark en ADR-008 y SD-024 … SD-029. **Ningún objeto de runtime, ninguna migración**
+**Fase actual:** **First Product Slice · FROZEN · HUMAN ACCEPTED · PASS WITH OBSERVATIONS** · ver `docs/FPS_CHECKPOINT.md` · Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · **Phase 3 · gobernanza aterrizada, BUILD no autorizado** (§13) · Phase 1B, Phase 4, Phase 5, Planner, motor de aprendizaje y PRODUCTION no autorizados
 **Estado global:** **PASS WITH OBSERVATIONS** · línea base congelada `main` = `6bde0a045532c8ffb2769c0a24d4bbb94958dd57` · tag anotado `fps-v1.0` (Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/FPS_CHECKPOINT.md`
 
 ---
@@ -22,9 +22,11 @@ Phase −1, era:
 | Paquete de origen | `STUDY_OS_Phase_Minus_1_v1_2.zip` · `8193934333099c0af331acbb12f590af8dc9b6d9026436f585265a87f763814a` |
 
 El **ZIP congelado no se ha tocado** y sigue fuera del control de versiones en
-`_handoff/`. Catorce artefactos importados conservan su hash original; los otros cuatro
-son `docs/SPEC_DIFF_LOG.md` (crece por adenda) y los tres ADR anotados por decisión
-humana el 2026-09-07 (`docs/PROVENANCE.md` §2.1).
+`_handoff/`. Trece artefactos importados conservan su hash original; los otros cinco son
+`docs/SPEC_DIFF_LOG.md` (crece por adenda), los tres ADR anotados por decisión humana el
+2026-09-07 (`docs/PROVENANCE.md` §2.1) y **ADR-003, enmendado y aceptado como v1.2 el
+2026-09-10** (`docs/PROVENANCE.md` §2.2). Los nueve ficheros de `spec/` siguen intactos
+byte a byte, y `phase3.governance.spec` lo comprueba por hash.
 
 Este documento diverge de su versión base **a propósito y por su propia regla de
 mantenimiento**: «este documento se actualiza en cada checkpoint; si describe estado
@@ -155,7 +157,10 @@ stream, contadores e intentos; `planner_items` y watermarks esperan a Phase 4 y 
 | **SD-019** | Opción A **autorizada, implementada y verificada** · el cambio de especificación (B o C) sigue PROPOSED y **diferido** | La paleta congelada no alcanza el AA que exige §14 | **Nada de Phase 0.** El uso sin restricciones de la paleta, que necesitan los componentes de §16 · antes de Phase 5 |
 | MI-01 | MISSING_INPUT | 6 PDF oficiales | PASS de **Phase 1** |
 | BD-03 · **resuelto** | ~~BLOCKED_DECISION~~ | Escala de confianza: **cuatro niveles**, `v1`, SD-008 `ACCEPTED` el 2026-09-09 | Nada · los Hi-Fi con 1–5 se corrigen en Phase 5 |
-| BD-04 · BD-06 | BLOCKED_DECISION | Readiness por concepto · puntuación oficial | Phases 6 y 7 |
+| BD-04 · **resuelta** | ~~BLOCKED_DECISION~~ | Readiness **solo a nivel de objetivo**; `◆ Preparado para examen` no se emite por concepto. Cerrada el 2026-09-10 por ADR-003 Anexo v1.2 §E | Nada · REQ-D11 deja de estar `BLOQ` |
+| BD-06 | BLOCKED_DECISION | Puntuación oficial | Phase 6 |
+| **Y·4** | ARCHITECTURE_DECISION · direccional aceptada | Mecanismo exacto de invocación diferida del motor, sin recursos de pago y sin autoridad nueva | El BUILD de Phase 3 · si la plataforma no ofrece un mecanismo recuperable de coste cero, **STOP** |
+| DEF-28 · DEF-29 · DEF-30 | Políticas diferidas con propietario | Intervalos de repaso · sustrato de intervención · suficiencia de mastery | Nada de v1: el motor **no emite** ninguna salida que dependa de ellas |
 | SD-017 · ERRATA P0-IN-1 | SPEC_DIFF PROPOSED | Naturaleza real de los documentos gobernantes; versión citada en P0-IN-1 | La auditoría de Drive · no bloquea Phase 0 |
 
 **Ya no figuran aquí:** INV-101 (aprobado en la autorización de arranque), SD-018,
@@ -188,7 +193,7 @@ SD-006, SD-007, BD-02 y BD-05 (aceptados el 2026-09-07, §4), y BD-03 (resuelto 
 | D-20 | `source_versions.storage_path`, `checksum` y `retrieved_at` son legibles por `authenticated` (política `status <> 'DRAFT'`, CDEM §22) | Hoy no hay fuentes oficiales; la ruta de custodia privada de Phase 1B no debe salir por el Data API | Antes de la primera fuente OFFICIAL (Phase 1B): privilegio de columna o tabla privada de custodia |
 | D-22 | El arnés de pruebas reintenta de forma acotada un transitorio de validación de token del borde gestionado, y distingue un fallo de transporte de un rechazo de la base | Los patrones son cerrados: un rechazo de PostgreSQL nunca se reintenta, de modo que un ataque no puede quedar «rechazado» por la red | Revisar en Phase 3 |
 | D-23 | El rollback de la migración 16 restaura funciones enteras de Phase 1A y ronda los 33 KB | El roundtrip ya no depende del límite de línea de comandos de Windows (pasa por fichero); el tamaño solo incomoda la lectura | Al dividir la frontera de ingestión, si se divide |
-| D-21 | Borrador → vigente de una representación, revalidación de un mapeo, retirada y `WITHDRAWN` no tienen función de frontera: son escrituras directas del rol de servicio, acotadas por triggers pero sin promoción auditada | Phase 1A solo necesitaba la creación; 1B necesita el ciclo de vida completo | Phase 1B |
+| D-21 | Borrador → vigente de una representación, revalidación de un mapeo, retirada y `WITHDRAWN` no tienen función de frontera: son escrituras directas del rol de servicio, acotadas por triggers pero sin promoción auditada | Phase 1A solo necesitaba la creación; 1B necesita el ciclo de vida completo. **Desde el 2026-09-10 también lo necesita Phase 3**: sin frontera auditada, un mapeo puede mutar entre el cálculo incremental y el rebuild y romper el gate duro de EC-006 sin que nada esté roto (SD-025) | Phase 1B · **y prerrequisito de BUILD de Phase 3** |
 
 **Deuda documental heredada:** 26 contradicciones registradas (C-01…C-26). SD-019
 añade una vigesimoséptima, detectada al incorporar el Design System. `spec/contradiction-register.md`
@@ -419,3 +424,64 @@ siguen sin autorización de BUILD; no se crea custodia privada ni se ingiere cor
 | H-4 · D-20 | Solución mínima robusta de mínimo privilegio: evaluar primero privilegios de columna, mecánicamente, contra `SELECT *`, selección explícita, embeds, OpenAPI/descubrimiento, metadatos y comportamiento de PostgREST; si resulta frágil o ambigua, tabla privada de custodia. Resoluble experimentalmente sin nueva decisión humana. Debe cerrarse antes de ingerir contenido oficial | Cierre de D-20 en Phase 1B |
 | H-1 · base de derechos/reutilización | **NO resuelta.** Una declaración humana sin soporte no es evidencia legal. Antes de ingerir corpus oficial literal hacen falta evidencias de las condiciones de la fuente suficientes para el almacenamiento privado, la transformación, la extracción estructurada, la reproducción literal, la redistribución si aplica y la atribución si se exige | Bloqueo de Phase 1B para contenido oficial literal |
 | H-FPS-2 · contenido de FPS | FPS **no depende de Phase 1B**: el primer vertical visible usa contenido de desarrollo GENERATED claramente etiquetado, nunca presentado como material oficial del primer pack. FPS prueba el vertical del producto, no la completitud del corpus | Dirección de planificación de FPS |
+
+## 13. Phase 3 · Learning Engine · aterrizaje de gobernanza · 2026-09-10
+
+**Registro de decisión:** Phase 3 Governance Landing Authorization · Ana Victoria · revisión
+independiente · copia aceptada en `docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md` · propuesta de
+entrada `STUDY_OS_Learning_Engine_Contract_v1.0_Proposal_d3581ba.md` · SHA-256
+`cfb07a1ed05602b74daacb742472e21a94c7b602c6bbae634d9d2df42b33f6c7`.
+
+**Alcance: gobernanza únicamente. El BUILD de runtime de Phase 3 NO está autorizado.**
+
+### 13.1 Qué se ha aterrizado
+
+| Artefacto | Estado |
+| --- | --- |
+| `docs/LEARNING_ENGINE_CONTRACT.md` v1.0 | **`ACCEPTED`** · contrato semántico autoritativo del motor v1 |
+| ADR-003 | **`ACCEPTED · v1.2`** · punto 1 superseded, punto 6 no operativo en v1, Anexo v1.2, `OWNS: BD-04` |
+| SD-013 | **`ACCEPTED`** · gobierno de `engine_config` · deja de estar pendiente |
+| BD-04 | **CERRADA** · readiness solo por objetivo · REQ-D11 desbloqueado |
+| ADR-008 | **anexo de reconciliación de watermark**, sin enmendar ninguno de sus once puntos |
+| SD-024 … SD-029 | **`ACCEPTED`** · contrato, atribución, watermark, disposición REQ-D, contradicciones, requisitos diferidos |
+| `authority-registry.json` | `error_patterns`, `projection_watermarks` y `engine_config` pasan a proyecciones de escritura exclusiva del servidor |
+| `tests/unit/phase3.governance.spec.ts` | prueba documental · 55 casos · convierte el contrato en mecánico |
+
+### 13.2 El modelo, en cuatro frases
+
+1. La proyección autoritativa es un **vector de evidencia** —recuentos, conjuntos, mínimos y
+   máximos sobre intentos reales—, no una puntuación.
+2. El estado es una **función pura y total** del vector, sin ningún parámetro libre:
+   `NEW · EXPOSED · EVIDENCE_POSITIVE · EVIDENCE_NEGATIVE · EVIDENCE_CONFLICTING`.
+3. **No hay puntuación numérica autoritativa** en v1, luego tampoco pesos: `engine_config v1`
+   contiene **cero parámetros numéricos de aprendizaje**.
+4. Lo que no se puede afirmar **no se emite**: `✓ Dominado` y `⟳ Repaso pendiente` son
+   inalcanzables mientras sus políticas estén sin fijar, y `◆ Preparado para examen` no se
+   emite nunca a nivel de concepto.
+
+### 13.3 Lo que este aterrizaje NO hace
+
+Ninguna tabla, ninguna migración —siguen siendo 19—, ningún trigger, ninguna función de
+frontera, ningún grant, ningún worker, ninguna dependencia, ningún despliegue y ninguna
+mutación de STAGING ni de PRODUCTION. `packages/learning-engine` no existe. El registro de
+alcance negativo (`phase2.scopeNegative.spec`, `schema.drift.spec`) **no se ha relajado**: su
+actualización es prerrequisito del BUILD, porque mientras nada exista la prohibición es la
+única garantía de que nada existe.
+
+### 13.4 Prerrequisitos del BUILD de Phase 3
+
+| # | Prerrequisito | Origen |
+| --- | --- | --- |
+| 1 | **D-21** · función de frontera auditada para las transiciones de `question_concepts` | SD-025 · sin ella el gate duro de EC-006 es inestable |
+| 2 | Generación de atribución (`attribution_pack_version_id`, `attribution_generation`) especificada en migración, con recálculo registrado | SD-025 |
+| 3 | Mecanismo de invocación diferida recuperable, de coste cero y sin autoridad nueva | H-P3-9 · si no existe, **STOP como ARCHITECTURE DECISION REQUIRED** |
+| 4 | Actualización del registro de alcance negativo para autorizar exactamente las tablas del contrato §Z.1 y ninguna más | este aterrizaje lo deja sin tocar a propósito |
+| 5 | Autorización humana independiente de BUILD | Checkpoint Contract · CLAUDE.md §3 |
+
+### 13.5 Condiciones de parada declaradas
+
+- Si el diseño de implementación de la atribución **no preserva los invariantes congelados de
+  Phase 1A** o introduce una frontera de autoridad de cliente nueva: **STOP**.
+- Si la plataforma no ofrece un mecanismo de invocación recuperable y fiable de **coste cero**
+  dentro de la autoridad vigente: **STOP**. No se disimula la fiabilidad con comportamiento
+  «best-effort» en el cliente.

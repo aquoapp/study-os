@@ -209,6 +209,24 @@ al Planner. La aceptación **no** aprueba el diseño visual definitivo. Phase 1B
 Phase 4, Phase 5, Planner, Learning Engine, corpus oficial, Release y PRODUCTION **siguen sin
 autorizar**.
 
+**Phase 3 · Learning Engine · aterrizaje de gobernanza el 2026-09-10.** La Phase 3 Governance
+Landing Authorization (copia aceptada en `docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md`) resuelve
+diez decisiones humanas y aterriza **solo gobernanza**: `docs/LEARNING_ENGINE_CONTRACT.md` v1.0
+`ACCEPTED`, **ADR-003 `ACCEPTED · v1.2`** (punto 1 superseded, punto 6 no operativo en v1),
+**SD-013 `ACCEPTED`**, **BD-04 cerrada** (readiness solo por objetivo; REQ-D11 desbloqueado),
+anexo de reconciliación de watermark en ADR-008 sin enmendar sus once puntos, y
+**SD-024 … SD-029**. `Learning System v0.4` queda declarado **NO DISPONIBLE** y deja de ser
+referencia normativa. El modelo v1: la proyección autoritativa es un **vector de evidencia**,
+el estado es una función pura y total —`NEW · EXPOSED · EVIDENCE_POSITIVE · EVIDENCE_NEGATIVE ·
+EVIDENCE_CONFLICTING`—, **no hay puntuación numérica autoritativa** y por tanto tampoco pesos,
+y lo que no se puede afirmar **no se emite**. La evidencia de diagnóstico queda **excluida** del
+estado autoritativo y se contabiliza aparte. `rebuild == incremental` **sigue siendo un gate
+mecánico duro**: la conmutatividad lo hace tratable, no lo exime. **El BUILD de runtime de
+Phase 3 no está autorizado**: no hay ninguna tabla, migración, trigger, función, grant ni
+worker, `spec/` no se ha editado —las disposiciones viven como adenda del SPEC_DIFF_LOG— y el
+registro de alcance negativo sigue vigilando la ausencia sin relajarse. **D-21 pasa a ser
+prerrequisito de BUILD de Phase 3.** Detalle en `docs/ARCHITECTURE_STATE.md` §13.
+
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:
 reconstruir la realidad desde el repositorio, el historial de migraciones y el catálogo antes

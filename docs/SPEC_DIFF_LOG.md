@@ -1182,3 +1182,283 @@ SD-022 y SD-023 `ACCEPTED`; SD-006 y SD-018 `ACCEPTED` con implementación autor
 Phase 2; SD-001, SD-002 y SD-007 `ACCEPTED` en implementación parcial desde Phase 1A;
 SD-015 `SUPERSEDED`; SD-016 implementada; SD-019 diferida antes de Phase 5, con la **opción A
 aplicada y suficiente** para el FPS; el resto `PROPOSED`.
+
+---
+
+## SD-013 · **aceptación** · gobierno de `engine_config` · prerrequisito de Phase 3 satisfecho
+
+**Corrige el estado de:** la entrada SD-013 del cuerpo congelado, que quedó con
+«**Aprobación:** pendiente» en la ronda de Phase −1 (histórica: se conserva sin editar).
+**Documentos afectados:** `Technical Architecture v1.0` §6.1; `Canonical Data & Event Model v1.0` §14.
+**Origen:** ADR-003 v1.2; OBS-01; Phase 3 Governance Landing Authorization.
+**Estado:** **`ACCEPTED`** · 2026-09-10 · Ana Victoria · copia aceptada en
+`docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md`.
+
+**Se acepta el cambio tal como estaba redactado**, sin debilitar ninguno de sus siete
+controles: versión identificable; inmutabilidad por versión publicada con trigger que rechaza
+UPDATE y DELETE; validación de esquema y rangos antes de aceptar; estados
+`DRAFT → ACTIVE → SUPERSEDED` con promoción explícita y registrada; aprobación humana
+obligatoria ante cambio de semántica de motor; ausencia de grants de escritura para el rol de
+aplicación; trazabilidad por versión en cada proyección.
+
+**Precisión de v1, no debilitamiento:** la validación de la **suma de pesos** se aplica *cuando
+existan pesos*. `engine_config v1` no tiene ninguno, porque no hay puntuación numérica que
+ponderar (SD-024). La comprobación queda vacía sin quedar eliminada, y vuelve a ser exigible en
+cuanto una versión futura declare pesos.
+
+**Forma de `engine_config v1`**, detallada en `docs/LEARNING_ENGINE_CONTRACT.md` §16:
+identidad de algoritmo y versión; dimensiones activas (`accuracy_observations`,
+`confidence_calibration_observations`); dimensiones inactivas con motivo auditable
+(`retention`, `transfer`, `stability`, `speed`); ranuras de política **explícitamente sin
+fijar** (`mastery_sufficiency`, `review_intervals`); taxonomía de patrones de error; ciclo de
+vida y promoción. **Cero parámetros numéricos de aprendizaje.**
+
+**Impacto:** Phase 3. **No autoriza ninguna migración:** `engine_config` no existe y no se crea
+en este aterrizaje.
+
+---
+
+## SD-024 · Learning Engine Contract v1.0 · vector de evidencia, vocabulario de estado y ausencia de puntuación
+
+**Documentos afectados:** `spec/domain-model.md` §8 (forma de `concept_mastery`) y la línea de
+§9 que enumera los estados internos; ADR-003 puntos 1 y 6 (superseded / no operativos por su
+Anexo v1.2); `Master Product Specification v1.0` §13 por vinculación.
+**Origen:** Phase 3 Governance Landing Authorization · decisiones H-P3-1, H-P3-2, H-P3-7,
+H-P3-8, H-P3-5.
+**Estado:** **`ACCEPTED`** · 2026-09-10 · Ana Victoria.
+**Fichero canónico:** `docs/LEARNING_ENGINE_CONTRACT.md` v1.0.
+
+**A · `Learning System v0.4` NO DISPONIBLE.** No está en `_handoff/originals/`; no se busca
+más, no se inventa y no se afirma haberlo recuperado. El contrato canónico lo sustituye para
+todo lo que gobierna Phase 3.
+
+**B · La proyección autoritativa es un vector de evidencia, no una puntuación.** Cada campo es
+un recuento, un conjunto, un mínimo o un máximo sobre intentos elegibles reales. El estado
+categórico es una **función pura y total** de ese vector, sin ningún parámetro libre.
+
+**C · Vocabulario de estado v1:** `NEW · EXPOSED · EVIDENCE_POSITIVE · EVIDENCE_NEGATIVE ·
+EVIDENCE_CONFLICTING`. `LEARNING · CONSOLIDATING · MASTERED · STRONG` quedan **RESERVED /
+FUTURE**: no se emiten y no se redefinen. Motivo registrado: la escalera monótona heredada no
+puede representar evidencia contradictoria, que Master §12 exige como `△ Frágil` (C-27).
+
+**D · Sin puntuación numérica autoritativa.** `mastery_score_internal` y `stability_score`
+numérico quedan **superseded** de la forma de `concept_mastery` de §8. Ningún porcentaje
+sustituto, puntuación normalizada, probabilidad ni pseudopuntuación bajo otro nombre.
+`uncertainty` pasa a ser **categórica**: `NO_EVIDENCE · SINGLE_OBSERVATION ·
+REPEATED_SAME_QUESTION · MULTIPLE_QUESTIONS`.
+
+**E · Dimensiones inactivas, declaradas.** `retention`, `transfer`, `stability` y `speed` no
+contribuyen numéricamente en v1, **sus pesos no se redistribuyen** y su sustrato se registra
+para que su activación futura no exija backfill. `speed` carece además de datos:
+`response_ms` es opcional en el esquema y ninguna ruta de `apps/web/src` lo envía.
+
+**F · Políticas sin fijar.** `mastery_sufficiency` y `review_intervals` quedan explícitamente
+sin fijar, y **ninguna salida emitida por el motor v1 depende de ellas**: `✓ Dominado` y
+`⟳ Repaso pendiente` son inalcanzables en v1.
+
+**Justificación.** El modelo heredado da por supuesto que el estado de aprendizaje es un número
+que hay que estimar; aceptada esa premisa hacen falta coeficientes, bandas y umbrales que
+ninguna fuente disponible aprueba, y el resultado sería el riesgo R-01 —«Mastery decorativo»,
+crítico y de detección difícil—. Registrar lo observado y derivar de ahí un estado categórico es
+verdad comprobable, deja INV-111 protegido por estructura y permite recalibrar sin reescribir la
+historia.
+
+**Impacto:** Phase 3. Alto en semántica, **nulo en esquema**: no se crea ninguna tabla.
+**Pruebas asociadas:** `phase3.governance.spec` (documental, en este aterrizaje);
+`mastery.projectionShape.spec`, `mastery.deterministic.golden.spec`,
+`mastery.confidenceCalibration.spec`, `masteryState.presentation.spec` (BUILD).
+
+---
+
+## SD-025 · Semántica histórica de atribución · generación de mapeo y frontera auditada
+
+**Documentos afectados:** `Canonical Data & Event Model v1.0` §6 y §25; `spec/domain-model.md`
+§8 (columnas de control de la proyección); ADR-009 v1.1 §B por vinculación, **sin enmendarla**.
+**Origen:** Phase 3 Governance Landing Authorization · decisiones H-P3-3 y H-P3-6; hallazgo de
+la reconciliación de pre-autorización.
+**Estado:** **`ACCEPTED` en principio, exactamente para el propósito semántico descrito** ·
+2026-09-10 · Ana Victoria. **No implementado y no autorizado a implementarse en este
+aterrizaje.**
+
+**El defecto.** `public.question_concepts` tiene ámbito de versión de pack **y** es modificable
+en sitio por el rol de servicio, sin trigger de inmutabilidad; ninguna tabla de evidencia
+—incluida `question_attempts`— registra `exam_pack_version_id`. La misma evidencia puede por
+tanto reconstruirse de dos maneras distintas sin que nada esté roto, y el gate duro de EC-006
+se vuelve inestable sin que exista ningún defecto en el motor.
+
+**Contrato aceptado.**
+
+1. **Atribución:** solo el mapeo `PRIMARY` con `mapping_status = 'VALIDATED'` de la versión de
+   pack declarada aporta evidencia autoritativa en v1. Los `SECONDARY` siguen siendo metadatos
+   canónicos. El `weight` no se aplica en v1: con un solo mapeo contribuyente no hay reparto.
+2. **`attribution_pack_version_id`:** input **declarado** de la ejecución del motor, persistido
+   en cada fila de proyección y recibido explícitamente por el rebuild.
+3. **`attribution_generation`:** contador monótono por versión de pack que avanza ante **toda
+   mutación semántica** de sus mapeos, persistido con la proyección.
+4. **Prohibición de mezclar generaciones:** una fila con generación distinta de la declarada
+   está **obsoleta**, y no se continúa incrementalmente sobre ella. **Una mutación de atribución
+   nunca es continuación incremental ordinaria.**
+5. **Recálculo registrado:** un cambio de generación obliga a recálculo completo de los usuarios
+   afectados, con registro en `mastery_history` (`RECALCULATION_ATTRIBUTION_CHANGED`). Es EC-007
+   aplicado a la atribución: la rectificación crea registro y nunca reinterpreta la historia en
+   silencio.
+6. **Frontera de mutación auditada:** las transiciones de estado de mapeo pasan por una función
+   de frontera auditada en lugar de `UPDATE` directo del rol de servicio. Es exactamente
+   **D-21**, que deja de ser deuda diferida y pasa a **prerrequisito de BUILD de Phase 3**.
+7. **Evidencia no atribuible:** un intento sin mapeo elegible **no desaparece**; se contabiliza
+   en `unattributed_attempt_count`.
+
+**Descartado explícitamente:** convertir `question_concepts` en append-only. Permitiría
+reconstruir generaciones antiguas —capacidad que nadie ha pedido— a cambio de rehacer el modelo
+de mapeos de Phase 1A y su restricción de unicidad.
+
+**Condición de parada.** Si el diseño detallado de implementación revelara que este mecanismo
+mínimo no preserva los invariantes congelados de Phase 1A o introduce una frontera de autoridad
+de cliente nueva: **STOP**, y vuelve a decisión humana.
+
+**Impacto:** Phase 3 y frontera de contenido de Phase 1A. **No se implementa aquí:** ninguna
+columna, ningún trigger, ninguna función, ningún grant.
+
+---
+
+## SD-026 · Reconciliación de watermark y supersesión del texto de orden global
+
+**Documentos afectados:** `spec/domain-model.md` §123–§126 (orden de eventos y watermark);
+`Canonical Data & Event Model v1.0` §14 y §25.
+**Origen:** Phase 3 Governance Landing Authorization §13; anexo de reconciliación de ADR-008.
+**Estado:** **`ACCEPTED`** · 2026-09-10 · Ana Victoria.
+
+**A · Dos nombres, dos significados.** `projection_watermarks(user_id, projection_name,
+consumed_position)` es **progreso del consumidor**; `concept_mastery.event_watermark` es
+**procedencia del cálculo de la fila**. Conviven; ninguno sustituye al otro.
+
+**B · Atomicidad.** El avance del watermark ocurre en la **misma transacción** que la mutación
+de la proyección. Una transacción de proyección fallida **no avanza el watermark**. El consumo
+**exactamente una vez** es obligatorio: contar observaciones no es idempotente bajo reproceso.
+
+**C · Texto NO OPERATIVO.** `spec/domain-model.md` §123–§126 describe todavía una secuencia
+global y un hueco «abandonado por timeout». Ambas cosas quedan **NO OPERATIVAS**: el orden es
+`stream_position` por usuario, sin huecos por construcción, y **ninguna ausencia se declara
+definitiva por timeout**. El fichero congelado **no se edita**; esta entrada es su supersesión.
+
+**D · EC-006 no se debilita.** La agregación conmutativa de la primera proyección hace
+**tratable** la igualdad `rebuild == incremental`; no exime de probarla. Sigue siendo gate
+mecánico duro, con la batería adversarial mínima de `docs/LEARNING_ENGINE_CONTRACT.md` §15.3.
+
+**Impacto:** Phase 3. Documental en este aterrizaje; **no se crea ninguna tabla**.
+
+---
+
+## SD-027 · Disposición de REQ-D01 … REQ-D11 y de sus filas de aceptación
+
+**Documentos afectados:** `spec/requirement-index.md` §D; `spec/acceptance-matrix.md` §D.
+**Origen:** Phase 3 Governance Landing Authorization.
+**Estado:** **`ACCEPTED`** · 2026-09-10 · Ana Victoria. **Sin renumerar ni desplazar ningún
+requisito.**
+
+| REQ | Disposición | Detalle |
+| --- | --- | --- |
+| REQ-D01 | **SATISFECHO CON ENMIENDA** | estado, incertidumbre (categórica), versión y watermark se cumplen; **estabilidad** queda declarada inactiva con su sustrato registrado (`distinct_session_count`). El criterio de PASS conserva íntegra la fila única (user, concept) con `engine_version` y `event_watermark` no nulos, y pierde toda exigencia implícita de puntuación |
+| REQ-D02 | **SATISFECHO** | criterio de PASS sin cambio. Fallo duro |
+| REQ-D03 | **SATISFECHO Y REFORZADO** | criterio de PASS sin cambio, más la batería adversarial mínima del contrato §15.3. Fallo duro |
+| REQ-D04 | **SATISFECHO** | comprobable con los extremos declarados de la escala `v1`, sin punto de corte inventado |
+| REQ-D05 | **PARCIALMENTE DIFERIDO** | mecanismo construible; `review_intervals` sin fijar; `next_review_at` es `NULL`. **No se marca PASS.** Propietario en DEF-28 |
+| REQ-D06 | **SATISFECHO CON ENMIENDA** | taxonomía estructural de tres tipos. El recuento **3** conserva su autoridad citada |
+| REQ-D07 | **DIFERIDO** | sin sustrato: los eventos de intervención se rechazan hoy y no hay taxonomía ni superficie. **No se marca PASS.** Propietario en DEF-29 |
+| REQ-D08 | **SATISFECHO** | SD-013 aceptada |
+| REQ-D09 | **SATISFECHO** | aritmética determinista; criterio de PASS sin cambio |
+| REQ-D10 | **PARCIALMENTE SATISFECHO** | Phase 3 entrega la **frontera**, verificable por ausencia. AT-32 exige evidencia práctica que la base congelada no produce: pertenece a Phase 6, como ya anticipaba la fila «3–6» |
+| REQ-D11 | **DESBLOQUEADO** · `BLOQ (BD-04)` deja de aplicarse | la función es pura, total y comprobable. `✓ Dominado` y `⟳ Repaso pendiente` son **inalcanzables** en v1 por política sin fijar, y `◆ Preparado para examen` no se emite nunca a nivel de concepto |
+
+**Ningún requisito canónico se debilita.** Lo diferido queda diferido con propietario, y lo
+parcial queda parcial por escrito: **un requisito diferido no se marca PASS**.
+
+**Pruebas nuevas exigidas en el BUILD**, además de las once canónicas:
+`watermark.perUserPerProjection.spec` · `rebuild.deterministicOrder.spec` ·
+`rebuild.adversarialEquivalence.spec` · `attribution.primaryValidatedOnly.spec` ·
+`attribution.generationBlocksIncremental.spec` · `evidence.diagnosticExcluded.spec` ·
+`evidence.repetitionNoDiversity.spec` · `clock.anomalyBounds.spec` ·
+`readiness.boundaryAbsent.spec`.
+
+---
+
+## SD-028 · Registro de contradicciones · cierres de v1 y alta de C-27
+
+**Documento afectado:** `spec/contradiction-register.md` (congelado; **no se edita**).
+**Origen:** Phase 3 Governance Landing Authorization.
+**Estado:** **`ACCEPTED`** · 2026-09-10 · Ana Victoria.
+
+| Contradicción | Disposición |
+| --- | --- |
+| **C-09** · los siete estados visibles mezclan mastery, error, repaso y readiness | **CERRADA.** BD-04 resuelta por ADR-003 Anexo v1.2 §E; la función de presentación del contrato §23 separa base, superposiciones y la etiqueta que no se emite |
+| **C-10** · dos modelos de pesos de Mastery | **CERRADA para v1.** Sin puntuación no hay pesos que aplicar; ninguno de los dos modelos rivales se usa. Vuelve a estar viva el día que se gobierne una puntuación |
+| **C-24** · precisión numérica no sostenida por evidencia | **CERRADA estructuralmente para v1.** No existe ningún porcentaje que mostrar; INV-111 deja de depender de la disciplina de presentación |
+| **C-27** · **ALTA** | **El vocabulario heredado de seis estados no puede expresar evidencia contradictoria.** `NEW → EXPOSED → LEARNING → CONSOLIDATING → MASTERED → STRONG` es monótono y describe progreso; Master §12 y Design System §7 exigen `△ Frágil`, que es evidencia contradictoria y no un peldaño intermedio. **Resolución: INEQUÍVOCA.** Gana el Master: el vocabulario interno se supersede (SD-024, ADR-003 Anexo v1.2 §B). Ningún umbral resuelve esto, porque no es un problema de calibración sino de vocabulario |
+
+**Alta sin renumerar:** C-27 es la primera contradicción posterior a C-26 y no desplaza ninguna
+existente.
+
+---
+
+## SD-029 · Requisitos diferidos nuevos · DEF-28, DEF-29 y DEF-30
+
+**Documento afectado:** `spec/deferred-requirements.md` (congelado; **no se edita**).
+**Origen:** Phase 3 Governance Landing Authorization · decisiones H-P3-5, §8 y §11.
+**Estado:** **`ACCEPTED`** · 2026-09-10 · Ana Victoria.
+
+| ID | Qué se difiere | Propietario y prerrequisito de activación |
+| --- | --- | --- |
+| **DEF-28** | **Política de intervalos de repaso** (`review_intervals`). Sin ella `next_review_at` es `NULL` y `⟳ Repaso pendiente` no se emite. REQ-D05 queda parcial | Decisión humana de política de ciencia del aprendizaje. Prerrequisito: un criterio de intervalo gobernado, no un número elegido por conveniencia. **Ningún intervalo se inventa entretanto** |
+| **DEF-29** | **Sustrato de intervención** (REQ-D07 y `intervention_outcomes`) | La fase que introduzca realmente la intervención. Prerrequisitos acumulativos: esquema de payload declarado en la frontera de ingestión para `INTERVENTION_SHOWN` e `INTERVENTION_COMPLETED` —hoy **se rechazan**—, taxonomía canónica de `intervention_type`, y una superficie de producto que entregue la intervención |
+| **DEF-30** | **Política de suficiencia de mastery** (`mastery_sufficiency`) y, con ella, el umbral de evidencia de INV-111. Sin ella `✓ Dominado` no se emite | Decisión humana de política de ciencia del aprendizaje, o un dataset representativo con criterio de suficiencia aprobado (OBS-01). La **forma** de la política queda especificada en el contrato §22 para que decidirla no exija rediseñar nada |
+
+**Regla común:** mientras una de estas políticas esté sin fijar, **el motor no emite ninguna
+salida que dependa de ella**. Eso es lo que permite diferirlas sin que el producto mienta.
+
+**DEF-10, DEF-14, DEF-24 y DEF-27 no cambian.** DEF-14 pierde urgencia: en v1 no hay pesos que
+calibrar. DEF-24 queda absorbida por el cierre de BD-04.
+
+---
+
+## Estado de la adenda · tras la Phase 3 Governance Landing Authorization · 2026-09-10
+
+Sustituye a «Estado de la adenda · tras la FPS Build Authorization» como resumen vigente. Las
+entradas anteriores se conservan sin editar.
+
+**Registro de decisión:** Phase 3 Governance Landing Authorization · 2026-09-10 · decisora Ana
+Victoria · revisión independiente · copia aceptada en
+`docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md` · propuesta de entrada
+`STUDY_OS_Learning_Engine_Contract_v1.0_Proposal_d3581ba.md` · SHA-256
+`cfb07a1ed05602b74daacb742472e21a94c7b602c6bbae634d9d2df42b33f6c7` · **alcance: aterrizaje de
+gobernanza únicamente.** No autoriza BUILD de runtime de Phase 3, migraciones, triggers,
+funciones, grants, despliegue, Phase 1B, corpus oficial, IA, infraestructura de pago ni ninguna
+mutación de PRODUCTION.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| H-P3-1 | `Learning System v0.4` declarado **NO DISPONIBLE**; contrato canónico nuevo | **`ACCEPTED`** · `docs/LEARNING_ENGINE_CONTRACT.md` v1.0 |
+| H-P3-2 | Modelo reducido y honesto: solo exactitud y calibración de confianza | **`ACCEPTED`** · SD-024 |
+| H-P3-3 | Atribución solo por mapeo `PRIMARY` `VALIDATED` | **`ACCEPTED`** · SD-025 |
+| H-P3-4 | **BD-04 cerrada**: readiness solo por objetivo | **`ACCEPTED`** · ADR-003 Anexo v1.2 §E · REQ-D11 desbloqueado |
+| H-P3-5 | `mastery_sufficiency` sin fijar | **`ACCEPTED`** · DEF-30 · `✓ Dominado` inalcanzable en v1 |
+| H-P3-6 | Generación de atribución y frontera auditada; **D-21 prerrequisito de Phase 3** | **`ACCEPTED` en principio** · SD-025 · no implementado |
+| H-P3-7 | Vocabulario de estado v1 · escalera heredada superseded | **`ACCEPTED`** · SD-024 · ADR-003 Anexo v1.2 §B · C-27 |
+| H-P3-8 | Sin puntuación numérica autoritativa de mastery en v1 | **`ACCEPTED`** · SD-024 · ADR-003 Anexo v1.2 §C |
+| H-P3-9 | Invocación diferida recuperable; evidencia duradera primero | **`ACCEPTED` direccionalmente** · mecanismo exacto en diseño técnico, sin autoridad nueva |
+| H-P3-10 | Evidencia de diagnóstico **excluida** del estado autoritativo v1 | **`ACCEPTED`** · SD-024 y contrato §5.1 · contabilizada aparte |
+| §7 | `rebuild == incremental` sigue siendo **gate mecánico duro** | **`ACCEPTED`** · SD-026 · EC-006 no se debilita |
+| §10 | Taxonomía de patrones de error con autoridad citada del recuento `3` | **`ACCEPTED`** · SD-027 · contrato §17 |
+| SD-013 | Gobierno de `engine_config` | **`ACCEPTED`** · deja de estar pendiente |
+
+**Qué pasa a estar gobernado, no implementado:** el contrato semántico del Learning Engine v1,
+la disposición de REQ-D01 … REQ-D11, la semántica histórica de atribución y la reconciliación
+de watermark. **Nada de Phase 3 existe en el esquema**, y el registro de alcance negativo lo
+sigue vigilando sin relajarse: su actualización es un **prerrequisito del BUILD**, no de este
+aterrizaje.
+
+**Total tras esta adenda: 29 entradas SPEC_DIFF** (15 congeladas + SD-016 … SD-029) **y 1
+errata.** SD-008, SD-010, SD-013, SD-020, SD-021, SD-022, SD-023, SD-024, SD-025, SD-026,
+SD-027, SD-028 y SD-029 `ACCEPTED`; SD-006 y SD-018 `ACCEPTED` con implementación autorizada
+desde Phase 2; SD-001, SD-002 y SD-007 `ACCEPTED` en implementación parcial desde Phase 1A;
+SD-015 `SUPERSEDED`; SD-016 implementada; SD-019 diferida antes de Phase 5, con la opción A
+aplicada y suficiente para el FPS; el resto `PROPOSED`.
