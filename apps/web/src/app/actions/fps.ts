@@ -266,15 +266,22 @@ export async function completeUnitAction(itemId: string): Promise<FpsActionState
     const { supabase } = await context();
     const session = await findOpenSession(supabase);
     if (!session) redirect('/hoy');
-    await appendEvent(
-      supabase,
-      buildEnvelope({
-        eventId: derivedEventId(`unit-done:${itemId}`),
-        type: 'LEARNING_UNIT_COMPLETED',
-        sessionId: session.id,
-        itemId,
-      }),
-    );
+    // Idempotente a propósito. El botón atrás del navegador puede devolver una pantalla ya
+    // superada desde su caché: repetir la acción desde ahí tiene que **avanzar al paso real**,
+    // no fallar. Un producto que castiga usar el botón atrás no es un producto.
+    const state = await loadSessionState(supabase, session);
+    const item = state.items.find((candidate) => candidate.id === itemId);
+    if (item && item.status !== 'COMPLETED') {
+      await appendEvent(
+        supabase,
+        buildEnvelope({
+          eventId: derivedEventId(`unit-done:${itemId}`),
+          type: 'LEARNING_UNIT_COMPLETED',
+          sessionId: session.id,
+          itemId,
+        }),
+      );
+    }
     destination = await advance(supabase);
   } catch (error) {
     if (isRedirect(error)) throw error;
@@ -411,15 +418,22 @@ export async function viewFeedbackAction(itemId: string): Promise<FpsActionState
     const { supabase } = await context();
     const session = await findOpenSession(supabase);
     if (!session) redirect('/hoy');
-    await appendEvent(
-      supabase,
-      buildEnvelope({
-        eventId: derivedEventId(`feedback:${itemId}`),
-        type: 'FEEDBACK_VIEWED',
-        sessionId: session.id,
-        itemId,
-      }),
+    // Misma razón que en APRENDER: volver atrás y pulsar otra vez avanza, no rompe.
+    const state = await loadSessionState(supabase, session);
+    const yaVista = state.events.some(
+      (event) => event.session_item_id === itemId && event.event_type === 'FEEDBACK_VIEWED',
     );
+    if (!yaVista) {
+      await appendEvent(
+        supabase,
+        buildEnvelope({
+          eventId: derivedEventId(`feedback:${itemId}`),
+          type: 'FEEDBACK_VIEWED',
+          sessionId: session.id,
+          itemId,
+        }),
+      );
+    }
     destination = await advance(supabase);
   } catch (error) {
     if (isRedirect(error)) throw error;

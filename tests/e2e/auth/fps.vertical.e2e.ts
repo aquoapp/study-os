@@ -256,3 +256,83 @@ test.describe('First Product Slice · el recorrido completo', () => {
     await expect(page.getByTestId('hoy-primaria')).toHaveText('Empezar la sesión');
   });
 });
+
+test.describe('First Product Slice · lo que no se puede forzar desde el navegador', () => {
+  test('la URL no adelanta el paso, no abre el de otra persona y no revive lo terminado', async ({
+    page,
+  }) => {
+    await registerAndOnboard(page, 'fps-rt');
+    await page.getByTestId('hoy-primaria').click();
+    await expect(page).toHaveURL(/\/aprender\/1/);
+
+    // Adelantar por la barra de direcciones no sirve: el paso lo decide la evidencia.
+    await page.goto('/comprobar/5');
+    await expect(page).toHaveURL(/\/aprender\/1/);
+    await page.goto('/aprender/2');
+    await expect(page).toHaveURL(/\/aprender\/1/);
+    await page.goto('/fin');
+    await expect(page).toHaveURL(/\/aprender\/1/);
+
+    // Un ordinal que no existe en la sesión tampoco inventa nada.
+    await page.goto('/comprobar/99');
+    await expect(page).toHaveURL(/\/aprender\/1/);
+
+    // El botón atrás puede devolver una pantalla ya superada desde la caché del navegador:
+    // eso lo hace el navegador y no se le discute. Lo que no puede ocurrir es que repetir la
+    // acción desde ahí rompa. Tiene que avanzar al paso real y no dejar ningún error a la
+    // vista, porque un producto que castiga usar el botón atrás no es un producto.
+    await page.getByTestId('aprender-continuar').click();
+    await expect(page.getByTestId('fps-error')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/aprender\/2/);
+    await page.goBack();
+    await page.getByTestId('aprender-continuar').click();
+    await expect(page.getByTestId('fps-error')).toHaveCount(0);
+    // Avanza al paso real, que sigue siendo la segunda unidad: ni repite ni retrocede.
+    await expect(page).toHaveURL(/\/aprender\/2/);
+
+    // Desde la pantalla real, el recorrido continúa con normalidad.
+    await page.reload();
+    await page.getByTestId('aprender-continuar').click();
+    await expect(page).toHaveURL(/\/comprobar\/3/);
+
+    // Terminar y volver: una sesión terminada no reanuda.
+    for (const paso of [3, 4, 5]) {
+      await expect(page).toHaveURL(new RegExp(`/comprobar/${paso}`));
+      await page.getByTestId('confianza-2').click();
+      await page.getByTestId('comprobar').click();
+      await expect(page.getByTestId('feedback')).toBeVisible();
+      await page.getByTestId('feedback-siguiente').click();
+    }
+    await expect(page).toHaveURL(/\/fin/);
+    await page.getByTestId('fin-cerrar').click();
+    await expect(page.getByTestId('fin-titulo')).toHaveText('Sesión terminada');
+
+    await page.goto('/comprobar/3');
+    await expect(page).toHaveURL(/\/hoy/);
+    await expect(page.getByTestId('hoy-primaria')).toHaveText('Empezar la sesión');
+  });
+
+  test('el ordinal de otra persona resuelve dentro de la sesión propia', async ({ page }) => {
+    // Primera aprendiz: deja una sesión abierta en su paso 1.
+    await registerAndOnboard(page, 'fps-a');
+    await page.getByTestId('hoy-primaria').click();
+    await expect(page).toHaveURL(/\/aprender\/1/);
+    const suyo = await page.getByTestId('aprender-titulo').innerText();
+
+    // Segunda aprendiz, en el mismo navegador: sesión propia y contenido propio.
+    await page.goto('/cuenta');
+    await page.getByTestId('signout-button').click();
+    await expect(page.getByTestId('signout-button')).toHaveCount(0);
+    await registerAndOnboard(page, 'fps-b');
+
+    // Sin sesión abierta todavía, el ordinal ajeno no abre nada.
+    await page.goto('/aprender/1');
+    await expect(page).toHaveURL(/\/hoy/);
+
+    await page.getByTestId('hoy-primaria').click();
+    await expect(page).toHaveURL(/\/aprender\/1/);
+    // El paso 1 existe para las dos, y cada una ve el suyo: el ordinal no es una identidad.
+    await expect(page.getByTestId('aprender-titulo')).toHaveText(suyo);
+    await expect(page.getByTestId('aprender-cuerpo')).toBeVisible();
+  });
+});
