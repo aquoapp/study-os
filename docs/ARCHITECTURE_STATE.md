@@ -3,9 +3,9 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.3 · copia viva
-**Última actualización:** 2026-09-08 · Phase 0 integrada en `main`, etiquetada y congelada; Production de Vercel sin despliegue automático
-**Fase actual:** 1A · Canonical Domain Foundation · **BUILD autorizado el 2026-09-09** (Phase 1B, Phase 2 y FPS no autorizados)
+**Versión:** 11.4 · copia viva
+**Última actualización:** 2026-09-09 · Phase 1A construida en `phase/1a-canonical-domain-foundation`, pendiente de aceptación humana
+**Fase actual:** 1A · Canonical Domain Foundation · **BUILD completado en rama, sin merge** · ver `docs/PHASE_1A_CHECKPOINT.md` (Phase 1B, Phase 2 y FPS no autorizados)
 **Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `5d8296c1776be778b075d9e239b383a0476a6514` · tag anotado `phase-0-v1.0` · ver `docs/PHASE_0_CHECKPOINT.md`
 
 ---
@@ -44,7 +44,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | Repositorio de aplicación | **EXISTE · remoto · público** | `aquoapp/study-os`, **PUBLIC** desde el 2026-09-08, `origin`, `main` por defecto. `main` **protegida por ruleset** (PR obligatorio, tres checks de estado estrictos, sin force-push, sin borrado, sin bypass) y demostrada con cuatro rechazos. Historia canónica: 47 commits; `main` = `6086537`. El repositorio privado anterior es `aquoapp/study-os-archive-private` (archivo, nunca público) |
 | Aplicación Next.js | **EXISTE** | Next 16.3.2 · App Router · TypeScript `strict` · PWA instalable · 8 rutas |
 | Proyecto Supabase | **EXISTE · organización dedicada `STUDY_OS`** | `STUDY_OS_STAGING` (`xzcrqsolxarutlvvkzfp`, eu-west-1) es el **único entorno mutable**; `STUDY_OS_PRODUCTION` (`nzcgufeycvehczroryoe`, eu-central-1) existe como frontera real y **no se ha mutado**. Plan Free. Data API con exposición automática desactivada: los grants los dan las migraciones |
-| Migraciones | **3 escritas · 3 aplicadas en STAGING · 0 en PRODUCTION** | `0000_init`, `0001_profiles` y `0002_profiles_service_role` (grants DML al rol de servicio, autorizada el 2026-09-08 tras la primera evidencia real). Con rollback y huellas en `.lock.json`; las de 0 y 1 intactas. Aplicadas también desde cero en CI en cada run |
+| Migraciones | **14 escritas · 14 aplicadas en STAGING · 0 en PRODUCTION** | Phase 0: `0000_init`, `0001_profiles`, `0002_profiles_service_role`, intactas. Phase 1A (rama, sin merge): `0003_schema_topology` … `0013_ingest_boundary`, todas con rollback en `down/`, registradas en `.lock.json` y **revertidas y reaplicadas de verdad** por `db:roundtrip` (en CI sobre el stack local y contra STAGING). Ninguna edita una migración aplicada |
 | Políticas RLS | **Verificadas en ejecución** | `profiles` con `enable` + `force`, solo-propio. `test:rls` 11/11 contra STAGING y en CI: User A no lee ni muta a User B; `anon` sin acceso |
 | `packages/design-system` | **EXISTE · satisfecho bajo SD-019 opción A** | Valores literales de `STUDY_OS_Design_System_v1.0` y defaults de implementación, separados en `TOKEN_PROVENANCE`. REQ-A06 se cumple bajo las restricciones de la opción A, verificadas en el navegador |
 | `packages/config` | **EXISTE** | Tres entornos, políticas, allowlist pública, frontera `server-only`, guardas destructivas |
@@ -59,9 +59,10 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | Tests de RLS | **11 ejecutados y en verde** | Contra STAGING y en CI |
 | CI | **EXISTE · ejecutado · en verde** | `.github/workflows/ci.yml`, tres jobs: estático, base de datos (stack local migrado desde cero) y **deriva de esquema contra STAGING real** con guarda fail-closed. Run `34234262313` sobre `253e9c1`: los nueve checks en verde. Seis runs anteriores con fallos reales, corregidos y registrados |
 | Proyecto Vercel | **EXISTE · vinculado al repositorio público** | Equipo `STUDY_OS`, proyecto `study-os` revinculado el 2026-09-08 al nuevo `aquoapp/study-os` (protección de forks activa), `apps/web`, Next.js, Node 24. Variables públicas separadas: Preview → STAGING, Production → PRODUCTION; ningún secreto de servidor. **Preview real desde `phase/0-foundation`: READY** (`study-os-git-phase-0-foundation-study-os6.vercel.app`, protegido por Vercel Authentication). Un alta real por formulario a través del Preview aterrizó en STAGING con perfil 1:1 y PRODUCTION siguió en 0 usuarios; el fixture se borró. Los dos intentos anteriores fallaron por el correo del autor de los commits (asociado por Ana) y por instalar solo las dependencias de `apps/web` (corregido con `installCommand: cd ../.. && npm ci`). Production de Vercel: el merge del PR #1 en `main` (`5d8296c`) provocó un **despliegue automático de Production** por la integración Git de Vercel, sin acción manual; Ana lo aceptó el 2026-09-08 como desviación no destructiva de Phase 0 (solo la aplicación de Phase 0, solo variables públicas de PRODUCTION, protegido por Vercel Authentication, sin dominio propio, sin migraciones, Supabase PRODUCTION sin mutar) y se conserva como evidencia. Desde entonces el proyecto lleva un *Ignored Build Step* (`commandForIgnoringBuildStep`, ajuste del proyecto, no del repositorio) que cancela toda construcción con `VERCEL_ENV=production` o rama `main`: **ningún push o merge a `main` despliega Production automáticamente**; los Preview siguen construyéndose. Un despliegue de Production exige una decisión humana explícita (por ejemplo `vercel deploy --prod --force` o «Redeploy» en el panel). Asignaciones de entorno, Vercel Authentication y raíz `apps/web` sin cambios |
-| Guardas de invariante | **5 activas, por propagación de punto fijo** | import · tai-literal · secret-scan · client-authority (capacidades) · auth-authority (procedencia). **169 casos de guardas** que ejecutan las guardas reales —10 de sumidero computado extraído, 13 de procedencia PostgREST, 19 de cierre transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión, 21 adversariales— **más 26 bypasses operacionales**. Sin cambios en esta ronda |
+| Guardas de invariante | **6 activas** (5 de Phase 0 por propagación de punto fijo + `private-schema-grant-guard` de Phase 1A, estática sobre las migraciones y `config.toml`) | import · tai-literal · secret-scan · client-authority (capacidades) · auth-authority (procedencia). **169 casos de guardas** que ejecutan las guardas reales —10 de sumidero computado extraído, 13 de procedencia PostgREST, 19 de cierre transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión, 21 adversariales— **más 26 bypasses operacionales**. Sin cambios en esta ronda |
 | Contenido ingerido | NINGUNO | Ni siquiera de prueba. Execution Plan §9 |
-| Tablas de dominio | **NINGUNA** | Verificado por test: ninguna migración crea `learning_events`, `question_attempts`, `concept_mastery`, `exam_readiness`, `planner_*`, `canonical_questions`, `answer_key_versions`, `learning_units`, `sessions`, `session_items`, `planner_items`, `user_event_counters`, `projection_watermarks`, `concept_versions`, `exam_sittings` ni `exam_occurrences`. **Aceptar cinco decisiones no ha creado ninguna** |
+| Contenido canónico (Phase 1A) | **19 tablas en `public`, 1 en `content`, 2 en `ingest`** · sin contenido oficial | `public`: `exam_packs`, `exam_pack_versions`, `syllabus_blocks`, `topics`, `concepts`, `concept_versions`, `concept_prerequisites`, `sources`, `source_versions`, `canonical_questions`, `question_representations`, `question_options`, `question_concepts`, `exam_sections`, `exam_sittings`, `exam_sitting_models`, `exam_occurrences`, `practicals`, `practical_questions`. `content`: `answer_key_versions` (no expuesto). `ingest`: `promotions`, `staged_items` (no expuesto) más las funciones `stage_item`, `validate_staged_item`, `publish_staged_item`, `copy_forward_question_concepts`, `purge_generated_pack` y `concept_key`. Todas con RLS habilitado y **forzado**; lectura de lo publicado para `authenticated`; ninguna escritura de cliente; `anon` sin acceso. Solo fixtures GENERATED sintéticos, purgados al terminar cada ejecución |
+| Tablas de Phase 2 en adelante | **NINGUNA** | Verificado por test: ninguna migración crea `learning_events`, `question_attempts`, `concept_mastery`, `exam_readiness`, `planner_*`, `learning_units`, `study_sessions`, `session_items`, `learner_settings`, `learner_exam_goals`, `diagnostic_runs`, `user_event_counters`, `projection_watermarks` ni `stream_position` |
 | Artefactos de Phase −1 | **IMPORTADOS** | 19 ficheros, byte a byte, con SHA-256 en `docs/PROVENANCE.md` · tres ADR anotados el 2026-09-07 (§2.1) |
 | Documentos gobernantes | **8 de 8 disponibles y verificados** | Ver `docs/GOVERNING_DOCUMENTS.md`. AMB-01 resuelto |
 | Registro de decisión humana | **Recibido y verificado por hash** | `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` · `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d` · no versionado, citado en cada ADR aceptado |
@@ -113,14 +114,26 @@ Ya no es «ninguno». Lo que sigue está **ejecutándose**, no solo escrito:
 | Procedencia de consulta (INV-116) | Tres capacidades encadenadas: `supabase-client` nace solo en un origen registrado en `authority-registry.json`, resuelto por módulo y export; `postgrest-from` nace al acceder a `.from` sobre un cliente; `postgrest-query` nace al invocarlo y se conserva por la cadena. Llamarse `from` no implica PostgREST: `Array.from` y un objeto local con `from()` no son consultas. Leer `q[m]` no resoluble sobre una consulta produce `postgrest-computed-sink`, que viaja como una función-valor y falla cerrado al invocarse, esté donde esté la llamada | **Activo** |
 | INV-101 | **Aprobado por Ana.** Ratificado como cambio de especificación por SD-007 / ADR-006. Sin superficie que pueda violarlo todavía | N/A en Phase 0 |
 
-Lo que la Engineering Constitution advertía —«los documentos por sí solos no son
-control suficiente»— deja de aplicarse a estos quince. Sigue aplicándose al resto.
+| ADR-011 · SI-1A-1…3 | Lista de exposición = `public`, declarada en `authority-registry.json` y en `config.toml`; `content` e `ingest` sin USAGE ni grants ni políticas para roles de cliente; guarda estática sobre las migraciones; prueba contra PostgREST (ni el rol de servicio los alcanza por el Data API) | **Activo** (rama Phase 1A) |
+| INV-101 · ADR-006 · SI-1A-5 | `content.answer_key_versions` fuera de todo esquema expuesto; ninguna columna de `public` nombra corrección; la opción correcta pertenece a la representación y esta a la pregunta (FK compuestas) | **Activo** · frontera de esquema verificada |
+| REQ-B10 · SI-1A-4 | Toda tabla de `public` con RLS forzado; `authenticated` solo SELECT (salvo su perfil); `anon` sin grants; prueba dirigida por el catálogo, no por una lista manual | **Activo** |
+| ADR-009 v1.1 · DI-1A-1/2/6 | `concept_key` con convención `<slug>-<hash8>`, única por pack, inmutable por trigger; colocación en `concept_versions` por versión; prerrequisitos sobre identidad estable, sin autorreferencia, mismo pack por FK compuestas; mapeos por versión con un PRIMARY y copy-forward `PENDING_REVALIDATION` | **Activo** |
+| SD-021 · DI-1A-4/5 | Representaciones publicadas inmutables (trigger), una vigente por pregunta (índice único parcial), opciones inmutables con ella, supersesión fijada una sola vez | **Activo** |
+| ADR-010 v1.1 · EC-018 | Secciones y modelos como datos del pack (sin enum global); posiciones oficiales únicas; una pregunta por modelo; reserva explícita; procedencia obligatoria; dos packs sintéticos con dimensiones disjuntas sin cambio de esquema | **Activo** |
+| INV-110 · EC-008 · PI-1A-1…6 | `provenance_class` NOT NULL; OFFICIAL exige fuente OFFICIAL o queda en QUARANTINE; el contenido parseado solo entra en tablas canónicas por `ingest.publish_staged_item`; sin ruta GENERATED → VERIFIED; toda fila publicada enlaza su promoción | **Activo** |
+| DI-1A-3 | Una fila canónica PUBLISHED no se borra: se retira; solo la purga de un pack íntegramente GENERATED (higiene de fixtures) puede eliminarla | **Activo** |
+| EC-011 · reversibilidad | `db:roundtrip`: down en orden inverso → catálogo limpio verificado → up; en CI y contra STAGING | **Activo** |
 
-## 4. Decisiones aceptadas · no implementadas
+Lo que la Engineering Constitution advertía —«los documentos por sí solos no son
+control suficiente»— deja de aplicarse a estos veinticuatro. Sigue aplicándose al resto.
+
+## 4. Decisiones aceptadas · estado de implementación tras Phase 1A
 
 Las cinco decisiones humanas que bloqueaban el cierre de Phase 0 **quedaron cerradas el
-2026-09-07**. Ninguna está implementada; ninguna implementación queda autorizada por
-la aceptación. Lo que necesitan ahora es un plan de implementación, y eso no es Phase 0.
+2026-09-07**; la Phase 1A Build Authorization (2026-09-09) autorizó implementar ADR-006 (frontera),
+ADR-009 y ADR-010 (con sus anexos v1.1) y ADR-011. En la rama de Phase 1A: **ADR-006, ADR-009,
+ADR-010 y ADR-011 implementados** en el alcance de 1A; **ADR-007 y ADR-008 siguen sin
+implementar** (migraciones de Phase 2 y Phase 4).
 
 | Decisión | Resultado | Propietario normativo | Determina | Prerrequisitos antes de migrar |
 | --- | --- | --- | --- | --- |
@@ -233,5 +246,9 @@ sintéticos, pruebas, reversibilidad, deriva y checkpoint.
 UI, `learning_units`, FPS (aprobado solo como hito conceptual), pgvector, IA, offline y
 cualquier mutación de PRODUCTION.
 
-**Este documento se actualiza en el checkpoint de Phase 1A** con el inventario real de
-esquemas, tablas, funciones, políticas y pruebas.
+**Construido el 2026-09-09** en `phase/1a-canonical-domain-foundation`: once migraciones
+(3–13) con rollback, 23 tablas con RLS forzado, frontera `ingest`/`content`, seis guardas,
+`db:roundtrip`, pruebas de exposición, catálogo, frontera de claves, identidad de concepto,
+representaciones, mapeos, ocurrencias, procedencia y purga; todo verificado contra STAGING
+y en CI. **Sin merge, sin tag y sin PRODUCTION**: la aceptación humana es el siguiente paso.
+Inventario y evidencia en `docs/PHASE_1A_CHECKPOINT.md`.

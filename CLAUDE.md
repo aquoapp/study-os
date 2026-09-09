@@ -99,7 +99,9 @@ npm run verify
 ```
 
 Los nueve checks bloqueantes. Los que necesitan base de datos se reportan como
-**BLOQUEADO** si no la encuentran; nunca se omiten en silencio. `secret-scan`
+**BLOQUEADO** si no la encuentran; nunca se omiten en silencio. Desde Phase 1A, `guards`
+incluye una sexta guarda (`private-schema-grant-guard`, ADR-011) y el job de base de datos
+de CI ejecuta además `db:roundtrip` (reversibilidad real de las migraciones). `secret-scan`
 construye por sí mismo con un centinela de servidor, de modo que `verify` es
 reproducible desde un checkout limpio.
 
@@ -142,8 +144,11 @@ Production automáticamente desde Git: exige decisión humana.
 **Phase 1A · Canonical Domain Foundation · BUILD autorizado el 2026-09-09** por la Phase 1A
 Build Authorization (paquete aceptado en `docs/PHASE_1A_AUTHORIZATION_PACKET.md`): ADR-011
 `ACCEPTED`, anexos v1.1 de ADR-009 y ADR-010 `ACCEPTED`, SD-020 y SD-021 `ACCEPTED`, ADR-005
-con disposición punto por punto y aún `PROPOSED`. Phase 1B, Phase 2 y FPS **no** están
-autorizados; el corpus oficial TAI nunca entra en este repositorio público.
+con disposición punto por punto y aún `PROPOSED`. **Construida** en
+`phase/1a-canonical-domain-foundation` (migraciones 3–13; esquemas `content` e `ingest` no
+expuestos; sin merge ni tag hasta la aceptación humana). Phase 1B, Phase 2 y FPS **no**
+están autorizados; el corpus oficial TAI nunca entra en este repositorio público, y los
+fixtures son siempre GENERATED y visiblemente sintéticos.
 
 **INV-101 ya no está abierto.** Ana lo aprobó, con su redacción congelada, en la
 autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante

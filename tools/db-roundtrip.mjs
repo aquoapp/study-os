@@ -69,17 +69,17 @@ if (environment !== 'local' && isLoopbackUrl(dbUrl)) {
   process.exit(1);
 }
 
+const NEWLINE = String.fromCharCode(10);
 const redact = (text) =>
   String(text ?? '')
     .split(dbUrl)
     .join('<db-url>');
 
-function cli(args, { input } = {}) {
+function cli(args) {
   assertPinnedCli();
   const result = spawnSync(process.execPath, launchArgs(args), {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    input,
     env: { ...process.env },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -87,16 +87,38 @@ function cli(args, { input } = {}) {
   if (result.status !== 0) {
     throw new Error(redact(output));
   }
-  return redact(result.stdout);
+  // El CLI reparte su salida entre stdout y stderr según el modo (TTY, agente, CI):
+  // se devuelve todo y quien parsea busca el JSON donde esté.
+  return redact(output);
 }
 
-function query(sql) {
-  const out = cli(['db', 'query', '--db-url', dbUrl, '--output', 'json', sql]);
+/** Extrae el objeto JSON con `rows` de la salida del CLI, esté donde esté. */
+function parseRows(out, expectRows) {
+  const candidates = [];
   const start = out.indexOf('{');
   const end = out.lastIndexOf('}');
-  // Un bloque DO no devuelve filas: el CLI no imprime JSON alguno.
-  if (start < 0 || end < start) return [];
-  return JSON.parse(out.slice(start, end + 1)).rows ?? [];
+  if (start >= 0 && end > start) candidates.push(out.slice(start, end + 1));
+  for (const line of out.split(NEWLINE)) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) candidates.push(trimmed);
+  }
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && Array.isArray(parsed.rows)) return parsed.rows;
+    } catch {
+      /* siguiente candidato */
+    }
+  }
+  if (!expectRows) return [];
+  throw new Error(
+    `La consulta no devolvió un JSON con "rows". Salida del CLI:${NEWLINE}${out.slice(0, 2000)}`,
+  );
+}
+
+function query(sql, { expectRows = true } = {}) {
+  const out = cli(['db', 'query', '--db-url', dbUrl, '--output', 'json', sql]);
+  return parseRows(out, expectRows);
 }
 
 const ups = readdirSync(MIGRATIONS_DIR)
@@ -117,14 +139,15 @@ console.log(
 for (const name of [...reversible].reverse()) {
   const downPath = join(MIGRATIONS_DIR, 'down', name.replace(/\.sql$/, '.down.sql'));
   const body = readFileSync(downPath, 'utf8')
-    .split('\n')
+    .split(NEWLINE)
     .filter((line) => !line.trim().startsWith('--'))
-    .join('\n')
+    .join(NEWLINE)
     .trim();
   if (body.includes('$roundtrip$')) throw new Error(`${downPath}: etiqueta reservada`);
-  const wrapped = `do $roundtrip$ begin\n${body}\nend $roundtrip$;`;
+  const wrapped = `do $roundtrip$ begin${NEWLINE}${body}${NEWLINE}end $roundtrip$;`;
   process.stdout.write(`  ↓ ${name} … `);
-  query(wrapped);
+  // Un bloque DO no devuelve filas: no se exige JSON.
+  query(wrapped, { expectRows: false });
   console.log('revertida');
 }
 
@@ -160,9 +183,9 @@ if (environment === 'local') {
   const pushed = cli(['db', 'push', '--db-url', dbUrl]);
   console.log(
     pushed
-      .split('\n')
+      .split(NEWLINE)
       .filter((line) => /Applying migration|Finished/.test(line))
-      .join('\n'),
+      .join(NEWLINE),
   );
 }
 

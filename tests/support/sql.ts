@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
  */
 
 const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const NEWLINE = String.fromCharCode(10);
 
 export function dbUrl(): string {
   const url = process.env['SUPABASE_DB_URL'];
@@ -37,10 +38,6 @@ export function dbUrl(): string {
   return url;
 }
 
-export interface QueryResult<Row> {
-  readonly rows: Row[];
-}
-
 const launcher = join(REPO_ROOT, 'node_modules', 'supabase', 'dist', 'supabase.js');
 
 /** Ejecuta una consulta y devuelve sus filas. Nunca imprime la cadena de conexión. */
@@ -49,25 +46,35 @@ export function query<Row = Record<string, unknown>>(sql: string): Row[] {
     throw new Error(`No se encuentra el CLI de Supabase en ${launcher}. Ejecuta \`npm ci\`.`);
   }
   const url = dbUrl();
-  let output: string;
-  try {
-    output = execFileSync(
-      process.execPath,
-      [launcher, 'db', 'query', '--db-url', url, '--output', 'json', sql],
-      { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-    );
-  } catch (error) {
-    const err = error as { stdout?: string; stderr?: string; message?: string };
-    const text = `${err.stdout ?? ''}${err.stderr ?? ''}`.split(url).join('<db-url>');
-    throw new Error(`La consulta de catálogo falló: ${text || err.message}`);
+  const result = spawnSync(
+    process.execPath,
+    [launcher, 'db', 'query', '--db-url', url, '--output', 'json', sql],
+    { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  // El CLI reparte su salida entre stdout y stderr según el modo (TTY, agente, CI).
+  const output = `${result.stdout ?? ''}${result.stderr ?? ''}`.split(url).join('<db-url>');
+  if (result.status !== 0) {
+    throw new Error(`La consulta de catálogo falló: ${output || String(result.error)}`);
   }
+  const candidates: string[] = [];
   const start = output.indexOf('{');
   const end = output.lastIndexOf('}');
-  if (start < 0 || end < 0) {
-    throw new Error(`Salida inesperada del CLI: ${output.slice(0, 200)}`);
+  if (start >= 0 && end > start) candidates.push(output.slice(start, end + 1));
+  for (const line of output.split(NEWLINE)) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) candidates.push(trimmed);
   }
-  const parsed = JSON.parse(output.slice(start, end + 1)) as { rows?: Row[] };
-  return parsed.rows ?? [];
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as { rows?: Row[] };
+      if (parsed && Array.isArray(parsed.rows)) return parsed.rows;
+    } catch {
+      /* siguiente candidato */
+    }
+  }
+  throw new Error(
+    `La consulta no devolvió un JSON con "rows". Salida del CLI:${NEWLINE}${output.slice(0, 2000)}`,
+  );
 }
 
 /** Exactamente una fila. Falla si no la hay: una consulta de catálogo vacía es un hallazgo. */

@@ -40,13 +40,13 @@ Flujo por fase: rama de fase → commits → CI en verde → PR → revisión hu
 /packages/design-system Tokens y primitivas visuales
 /packages/domain       Tipos y contratos de dominio compartidos
 /packages/config       Resolución de configuración por entorno
-/supabase/migrations   Migraciones versionadas (EC-011)
+/supabase/migrations   Migraciones versionadas (EC-011) · con `down/` y `.lock.json`
 /supabase/functions    Edge Functions
 /supabase/seed         Semillas (vacío en Phase 0)
 /tests/unit            Tests unitarios
 /tests/integration     Tests de integración y RLS
 /tests/e2e             Tests end-to-end
-/tools/guards          Guardas de invariante ejecutables
+/tools/guards          Guardas de invariante ejecutables (seis desde Phase 1A)
 /spec                  Outputs de Phase −1 (congelados)
 /architecture          ADR
 /docs                  Estado, plan de fase, diffs de especificación, checkpoints
@@ -62,6 +62,18 @@ npm run verify
 ```
 
 Ejecuta los nueve checks bloqueantes de CI. Ver `docs/PHASE_0_EXECUTION_PLAN.md` §4.
+
+```bash
+npm run db:roundtrip
+```
+
+Reversibilidad real de las migraciones posteriores a Phase 0: revierte con los scripts
+`down/` en orden inverso, comprueba que el catálogo queda limpio y vuelve a aplicar. Es
+destructiva: local sin más, STAGING con autorización explícita, PRODUCTION nunca.
+
+Esquemas (ADR-011): `public` es la única superficie expuesta al Data API; `content`
+(claves de respuesta) e `ingest` (frontera de ingestión) no se exponen y ningún rol de
+cliente los alcanza.
 
 Aparte, y **fuera** de esos nueve:
 
