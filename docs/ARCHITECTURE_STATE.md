@@ -3,9 +3,9 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.14 · copia viva
-**Última actualización:** 2026-09-10 · **aterrizaje de gobernanza de Phase 3**: `Learning Engine Contract v1.0` `ACCEPTED`, ADR-003 aceptada como v1.2, SD-013 aceptada, BD-04 cerrada, anexo de reconciliación de watermark en ADR-008 y SD-024 … SD-029. **Ningún objeto de runtime, ninguna migración**
-**Fase actual:** **First Product Slice · FROZEN · HUMAN ACCEPTED · PASS WITH OBSERVATIONS** · ver `docs/FPS_CHECKPOINT.md` · Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · **Phase 3 · gobernanza aterrizada, BUILD no autorizado** (§13) · Phase 1B, Phase 4, Phase 5, Planner, motor de aprendizaje y PRODUCTION no autorizados
+**Versión:** 11.15 · copia viva
+**Última actualización:** 2026-09-10 · **BUILD de Phase 3 construido**, en rama y **sin fusionar**: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación. **D-21 cerrada.** Candidato en `docs/PHASE_3_CHECKPOINT.md`
+**Fase actual:** **Phase 3 · Learning Engine · CANDIDATO DE ACEPTACIÓN** en `phase/3-learning-engine`, con los diez gates en PASS y **sin merge, sin tag y sin congelación** · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
 **Estado global:** **PASS WITH OBSERVATIONS** · línea base congelada `main` = `6bde0a045532c8ffb2769c0a24d4bbb94958dd57` · tag anotado `fps-v1.0` (Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/FPS_CHECKPOINT.md`
 
 ---
@@ -193,7 +193,7 @@ SD-006, SD-007, BD-02 y BD-05 (aceptados el 2026-09-07, §4), y BD-03 (resuelto 
 | D-20 | `source_versions.storage_path`, `checksum` y `retrieved_at` son legibles por `authenticated` (política `status <> 'DRAFT'`, CDEM §22) | Hoy no hay fuentes oficiales; la ruta de custodia privada de Phase 1B no debe salir por el Data API | Antes de la primera fuente OFFICIAL (Phase 1B): privilegio de columna o tabla privada de custodia |
 | D-22 | El arnés de pruebas reintenta de forma acotada un transitorio de validación de token del borde gestionado, y distingue un fallo de transporte de un rechazo de la base | Los patrones son cerrados: un rechazo de PostgreSQL nunca se reintenta, de modo que un ataque no puede quedar «rechazado» por la red | Revisar en Phase 3 |
 | D-23 | El rollback de la migración 16 restaura funciones enteras de Phase 1A y ronda los 33 KB | El roundtrip ya no depende del límite de línea de comandos de Windows (pasa por fichero); el tamaño solo incomoda la lectura | Al dividir la frontera de ingestión, si se divide |
-| D-21 | Borrador → vigente de una representación, revalidación de un mapeo, retirada y `WITHDRAWN` no tienen función de frontera: son escrituras directas del rol de servicio, acotadas por triggers pero sin promoción auditada | Phase 1A solo necesitaba la creación; 1B necesita el ciclo de vida completo. **Desde el 2026-09-10 también lo necesita Phase 3**: sin frontera auditada, un mapeo puede mutar entre el cálculo incremental y el rebuild y romper el gate duro de EC-006 sin que nada esté roto (SD-025) | Phase 1B · **y prerrequisito de BUILD de Phase 3** |
+| D-21 | Borrador → vigente de una representación, revalidación de un mapeo, retirada y `WITHDRAWN` no tienen función de frontera: son escrituras directas del rol de servicio, acotadas por triggers pero sin promoción auditada | Phase 1A solo necesitaba la creación; 1B necesita el ciclo de vida completo. **Desde el 2026-09-10 también lo necesita Phase 3**: sin frontera auditada, un mapeo puede mutar entre el cálculo incremental y el rebuild y romper el gate duro de EC-006 sin que nada esté roto (SD-025) | **CERRADA el 2026-09-10** por la migración 19: transición por función auditada, con actor, motivo y rastro |
 
 **Deuda documental heredada:** 26 contradicciones registradas (C-01…C-26). SD-019
 añade una vigesimoséptima, detectada al incorporar el Design System. `spec/contradiction-register.md`
@@ -485,3 +485,61 @@ actualización es prerrequisito del BUILD, porque mientras nada exista la prohib
 - Si la plataforma no ofrece un mecanismo de invocación recuperable y fiable de **coste cero**
   dentro de la autoridad vigente: **STOP**. No se disimula la fiabilidad con comportamiento
   «best-effort» en el cliente.
+
+## 14. Phase 3 · Learning Engine · BUILD · 2026-09-10 · candidato sin fusionar
+
+**Registro de decisión:** Phase 3 Build Authorization · Ana Victoria · sobre `main`
+`8a21fc29ca4f43a470b91d2b53ac81626042f66e`. **Alcance: implementación, validación y
+preparación de un candidato de aceptación.** No autoriza merge, tag, congelación, Phase 4,
+Phase 1B ni ninguna mutación de PRODUCTION.
+
+**Rama:** `phase/3-learning-engine`. **Checkpoint:** `docs/PHASE_3_CHECKPOINT.md`.
+
+### 14.1 Qué existe ahora que antes no existía
+
+| Elemento | Nota |
+| --- | --- |
+| `packages/learning-engine` | motor determinista y sin red: pliegue de evidencia, función de estado total, incertidumbre categórica, patrones estructurales y decisión de modo. **Sin ninguna dependencia externa** |
+| Migración 19 · frontera de atribución | cierra **D-21**: el rol de servicio pierde la escritura directa sobre `question_concepts`; toda transición pasa por función auditada; toda mutación semántica avanza la generación |
+| Migración 20 · núcleo del motor | esquema `engine` **no expuesto** con `concept_mastery`, `mastery_history`, `error_patterns`, `projection_watermarks` y `engine_config` |
+| `apps/web/src/server/engine` | lectura por función de servidor, cálculo puro, persistencia atómica, y las dos rutas de invocación |
+| Una llamada en el FPS | `scheduleProjection`, no bloqueante. **Es el único cambio del vertical congelado** |
+
+### 14.2 El modelo, tal como quedó construido
+
+La proyección autoritativa es un **vector de evidencia**; el estado es una función pura y total
+de ese vector, con cinco valores; **no hay puntuación numérica** y por tanto tampoco pesos;
+`engine_config v1` contiene **cero parámetros numéricos de aprendizaje** y sus dos ranuras de
+política quedan sin fijar, con restricciones de tabla que impiden darles valor. La evidencia de
+diagnóstico queda excluida del estado autoritativo y se contabiliza aparte.
+
+### 14.3 Lo que sigue sin existir
+
+`exam_readiness`, `intervention_outcomes`, planner, puntuación, readiness, decaimiento, repaso
+programado, IA, dependencia nueva, recurso de pago y cualquier superficie de aprendiz del
+estado derivado. Comprobado en el árbol y en el catálogo.
+
+### 14.4 Estado de los entornos
+
+**STAGING:** 21 migraciones, esquema `engine` con RLS forzada y cero privilegios de cliente.
+La **evidencia de aceptación de Ana está intacta** (62 eventos, 10 intentos, 2 sesiones) y no
+queda **ningún residuo automatizado** de Phase 3.
+
+**PRODUCTION:** sin migraciones, sin tablas y sin mutación. Ninguna credencial local la
+alcanza.
+
+### 14.5 Deuda nueva
+
+| # | Deuda |
+| --- | --- |
+| **D-24** | ADR-011 anexo v1.1 —alta del esquema `engine`, previsto en su punto 10— está **PROPUESTO y sin firma**. Prerrequisito de aterrizaje, no de construcción |
+| **D-25** | Una credencial de STAGING quedó impresa en la transcripción de trabajo por el camino de error del CLI de Supabase. **Exige rotación.** La herramienta local ya redacta toda su salida |
+
+**D-21 pasa a CERRADA**, con prueba mecánica.
+
+### 14.6 Condición de parada, declarada
+
+La detección de proyección incoherente compara la proyección con su watermark; **no** pretende
+cazar cualquier falsificación. La verificación completa es el rebuild, que es lo que EC-006
+exige y lo que el ciclo ejecuta en cuanto detecta la incoherencia. Se declara aquí para que
+nadie lea de más en la palabra «detectable».

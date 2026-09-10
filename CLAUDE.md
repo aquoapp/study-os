@@ -227,6 +227,32 @@ worker, `spec/` no se ha editado —las disposiciones viven como adenda del SPEC
 registro de alcance negativo sigue vigilando la ausencia sin relajarse. **D-21 pasa a ser
 prerrequisito de BUILD de Phase 3.** Detalle en `docs/ARCHITECTURE_STATE.md` §13.
 
+**Phase 3 · Learning Engine · BUILD construido el 2026-09-10** por la Phase 3 Build
+Authorization, en `phase/3-learning-engine` desde `main` `8a21fc2`. **Candidato de aceptación:
+sin merge, sin tag y sin congelación.** Checkpoint en `docs/PHASE_3_CHECKPOINT.md`, con los
+**diez gates P3-G1 … P3-G10 en PASS**.
+
+Qué existe: `packages/learning-engine` (motor determinista, sin red y sin dependencias);
+migración 19, que **cierra D-21** —el rol de servicio pierde la escritura directa sobre
+`question_concepts` y toda transición pasa por una función auditada que avanza la generación de
+atribución—; y migración 20, que crea el esquema **`engine` no expuesto** con `concept_mastery`,
+`mastery_history`, `error_patterns`, `projection_watermarks` y `engine_config`. El vertical
+congelado del FPS cambia en **una sola línea**: una llamada no bloqueante tras aceptar
+evidencia.
+
+El modelo construido es el del contrato: vector de evidencia, estado categórico derivado por
+una función total, **ninguna puntuación numérica y por tanto ningún peso**, evidencia de
+diagnóstico excluida y contabilizada aparte, y las dos ranuras de política sin fijar con
+restricciones de tabla que impiden darles valor. `rebuild == incremental` se probó
+adversarialmente en los dos planos, y el roundtrip semántico devuelve una firma idéntica.
+
+**Dos cosas exigen decisión humana antes del aterrizaje, ninguna de construcción:** **D-24**,
+el anexo v1.1 de ADR-011 que da de alta el esquema `engine` —previsto en su punto 10— está
+`PROPUESTO y sin firma`; y **D-25**, una credencial de STAGING quedó impresa en la
+transcripción de trabajo por el camino de error del CLI de Supabase y **exige rotación**. La
+herramienta local ya redacta toda su salida. Phase 4, Phase 1B, Release y PRODUCTION siguen sin
+autorizar.
+
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:
 reconstruir la realidad desde el repositorio, el historial de migraciones y el catálogo antes
