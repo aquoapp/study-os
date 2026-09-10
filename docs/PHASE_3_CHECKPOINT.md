@@ -23,7 +23,12 @@
 
 ## C · Candidato
 
-**HEAD:** _(se fija al cierre; ver §AJ.7)_
+**HEAD:** la punta de `phase/3-learning-engine`.
+
+El SHA exacto **no se escribe aquí a propósito**: un documento no puede contener el hash del
+commit que lo contiene. Vive en el manifiesto del paquete de aceptación (§AF), que se genera
+**desde** ese HEAD, y en el informe de cierre. La correspondencia se comprueba con
+`git rev-parse HEAD`.
 
 ## D · Commits de implementación
 
@@ -289,7 +294,14 @@ aprendiz nueva y sin corpus oficial. Comprobado mecánicamente en el árbol y en
 
 ## AF · Paquete de aceptación
 
-_(se fija al cierre)_
+Se genera con `git archive` desde el HEAD del candidato, de modo que **el ZIP es el árbol de
+Git** y nada más: sin `_handoff`, sin `node_modules`, sin `.env`, sin rutas absolutas y sin
+ningún token. Se genera **dos veces** y se comparan las huellas, para que la reproducibilidad
+sea un hecho comprobado y no una intención.
+
+El paquete y su manifiesto —que incluye el SHA del candidato— viven **fuera del repositorio**,
+en la carpeta de evidencia del escritorio, según el protocolo de entrega vigente. La ruta y la
+huella se dan en el informe de cierre.
 
 ## AG · Gates P3-G1 … P3-G10
 
