@@ -102,6 +102,54 @@ describe('un cambio de motor también invalida la continuación', () => {
   });
 });
 
+describe('una proyección incoherente se rehace antes que nada', () => {
+  it('unas filas que no proceden del watermark declarado fuerzan el rebuild', () => {
+    const mode = decideRunMode(
+      baseline({
+        stored: {
+          consumedPosition: 10,
+          engineConfigVersion: 'v1',
+          attributionPackVersionId: PACK,
+          attributionGeneration: 3,
+          projectionCoherent: false,
+        },
+      }),
+    );
+    expect(mode).toEqual({ kind: 'REBUILD', reason: 'INCOHERENT' });
+  });
+
+  it('la incoherencia gana incluso sin evidencia nueva y con la semántica intacta', () => {
+    const mode = decideRunMode(
+      baseline({
+        maxPosition: 10,
+        stored: {
+          consumedPosition: 10,
+          engineConfigVersion: 'v1',
+          attributionPackVersionId: PACK,
+          attributionGeneration: 3,
+          projectionCoherent: false,
+        },
+      }),
+    );
+    expect(mode.kind).toBe('REBUILD');
+  });
+
+  it('una proyección coherente no dispara nada', () => {
+    const mode = decideRunMode(
+      baseline({
+        stored: {
+          consumedPosition: 10,
+          engineConfigVersion: 'v1',
+          attributionPackVersionId: PACK,
+          attributionGeneration: 3,
+          projectionCoherent: true,
+        },
+      }),
+    );
+    expect(mode.kind).toBe('UP_TO_DATE');
+  });
+});
+
 describe('todo modo tiene un motivo persistible', () => {
   it('los cuatro modos mapean a un motivo del enum de historial', () => {
     const reasons = [

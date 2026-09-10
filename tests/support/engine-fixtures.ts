@@ -45,6 +45,7 @@ export interface EvidenceSnapshot {
     readonly engineConfigVersion: string | null;
     readonly attributionPackVersionId: string | null;
     readonly attributionGeneration: number | null;
+    readonly projectionCoherent?: boolean;
   } | null;
   readonly attempts: readonly AttemptRow[];
   readonly exposures: readonly ExposureRow[];
@@ -166,6 +167,7 @@ export function runCycle(userId: string, options: { forceRebuild?: boolean } = {
             engineConfigVersion: snapshot.watermark.engineConfigVersion,
             attributionPackVersionId: snapshot.watermark.attributionPackVersionId,
             attributionGeneration: snapshot.watermark.attributionGeneration,
+            projectionCoherent: snapshot.watermark.projectionCoherent,
           },
     currentConfigVersion: configVersion,
     currentPackVersionId: snapshot.packVersionId,

@@ -44,6 +44,7 @@ interface EvidenceSnapshot {
     readonly engineConfigVersion: string | null;
     readonly attributionPackVersionId: string | null;
     readonly attributionGeneration: number | null;
+    readonly projectionCoherent?: boolean;
   } | null;
   readonly attempts: readonly AttemptRow[];
   readonly exposures: readonly ExposureRow[];
@@ -146,6 +147,7 @@ export async function runEngineForUser(
             engineConfigVersion: watermark.engineConfigVersion,
             attributionPackVersionId: watermark.attributionPackVersionId,
             attributionGeneration: watermark.attributionGeneration,
+            projectionCoherent: watermark.projectionCoherent,
           },
     currentConfigVersion: configVersion,
     currentPackVersionId: snapshot.packVersionId,

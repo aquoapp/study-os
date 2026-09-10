@@ -326,27 +326,48 @@ grant select on engine.projection_watermarks to service_role;
 -- Solo desde evidencia canónica y watermark: sin esto, una invocación perdida sería
 -- indetectable y la recuperación dependería de que alguien se acordara.
 create or replace function engine.stale_users(p_projection text, p_limit integer default 100)
-returns table (user_id uuid, max_position bigint, consumed_position bigint)
+returns table (user_id uuid, max_position bigint, consumed_position bigint, reason text)
 language sql
 security definer
 set search_path = ''
 stable
 as $$
+  -- Atrasada: hay evidencia por delante del progreso del consumidor.
   select e.user_id,
          max(e.stream_position) as max_position,
-         coalesce(w.consumed_position, 0) as consumed_position
+         coalesce(w.consumed_position, 0) as consumed_position,
+         'BEHIND'::text as reason
   from public.learning_events e
   left join engine.projection_watermarks w
     on w.user_id = e.user_id and w.projection_name = p_projection
   group by e.user_id, w.consumed_position
   having max(e.stream_position) > coalesce(w.consumed_position, 0)
-  order by e.user_id
+  union
+  -- Incoherente: hay filas de proyección que no proceden del punto que el watermark declara.
+  -- Sin esta rama, una proyección escrita por algo que no fuera una ejecución fiel del motor
+  -- sería indistinguible de una al día, y «detectable mecánicamente» dejaría de ser cierto.
+  select w.user_id,
+         coalesce((select max(e2.stream_position) from public.learning_events e2
+                   where e2.user_id = w.user_id), 0) as max_position,
+         w.consumed_position,
+         'INCOHERENT'::text as reason
+  from engine.projection_watermarks w
+  where w.projection_name = p_projection
+    and exists (
+      select 1 from engine.concept_mastery m
+      where m.user_id = w.user_id
+        and (m.event_watermark is distinct from w.consumed_position
+             or w.consumed_position = 0)
+    )
+  order by 1
   limit p_limit;
 $$;
 comment on function engine.stale_users(text, integer) is
-  'Contrato §14 · §18 de la autorización de BUILD · detecta proyecciones atrasadas comparando '
-  'el stream del aprendiz con el progreso del consumidor. Es la prueba de que una invocación '
-  'perdida es recuperable sin intervención humana.';
+  'Contrato §14 · §18 de la autorización de BUILD · detecta proyecciones que no están al día: '
+  'las **atrasadas**, con evidencia por delante del consumidor, y las **incoherentes**, cuyas '
+  'filas no proceden del punto que el watermark declara. Es la prueba de que una invocación '
+  'perdida —o una escritura que no fue una ejecución fiel— es recuperable sin intervención '
+  'humana.';
 revoke all on function engine.stale_users(text, integer) from public, anon, authenticated;
 grant execute on function engine.stale_users(text, integer) to service_role;
 
@@ -382,7 +403,15 @@ as $$
         'engineVersion', w.engine_version,
         'engineConfigVersion', w.engine_config_version,
         'attributionPackVersionId', w.attribution_pack_version_id,
-        'attributionGeneration', w.attribution_generation
+        'attributionGeneration', w.attribution_generation,
+        -- Coherencia: toda fila de proyección procede del punto que el watermark declara.
+        -- Si no, la proyección no es una función de la evidencia y hay que rehacerla.
+        'projectionCoherent', not exists (
+          select 1 from engine.concept_mastery m
+          where m.user_id = p_user_id
+            and (m.event_watermark is distinct from w.consumed_position
+                 or w.consumed_position = 0)
+        )
       )
       from engine.projection_watermarks w
       where w.user_id = p_user_id and w.projection_name = 'concept_mastery'

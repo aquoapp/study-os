@@ -333,9 +333,19 @@ describe('versión de pack nueva: copy-forward y revalidación', () => {
     expect(placements.map((p) => p.code)).toEqual(['X.1', 'Y.9']);
   });
 
-  it('la revalidación de un mapeo copiado es hoy una escritura directa del servidor (sin función de frontera)', async () => {
-    // Hallazgo registrado para Phase 1B: no existe `revalidate_question_concept`. El rol
-    // de servicio puede fijar VALIDATED directamente; la restricción exige la fecha.
+  it('la revalidación de un mapeo copiado pasa por la frontera auditada (D-21 cerrada)', async () => {
+    /*
+     * **Actualizado el 2026-09-10 · SD-025 · Phase 3 Build Authorization §5.**
+     *
+     * Hasta esta fecha este caso documentaba **D-21 como deuda abierta**: no existía función
+     * de frontera y el rol de servicio podía fijar `VALIDATED` con un `UPDATE` directo. La
+     * migración 19 cierra la deuda, de modo que la afirmación se invierte: lo que antes era
+     * el camino ordinario ahora está prohibido, y el camino ordinario es la función.
+     *
+     * El motivo no es de higiene: sin frontera auditada, un mapeo puede cambiar entre el
+     * cálculo incremental y el rebuild, y el gate duro de EC-006 se vuelve inestable sin que
+     * nada esté roto.
+     */
     const { data } = await admin
       .from('question_concepts')
       .select('id')
@@ -343,15 +353,28 @@ describe('versión de pack nueva: copy-forward y revalidación', () => {
       .limit(1);
     const id = data?.[0]?.id;
     expect(id).toBeTruthy();
-    const { error: inconsistent } = await admin
-      .from('question_concepts')
-      .update({ mapping_status: 'VALIDATED' })
-      .eq('id', id ?? '');
-    expect(inconsistent).not.toBeNull();
-    const { error } = await admin
+
+    // La escritura directa ya no es posible: el rol de servicio perdió el privilegio.
+    const { error: denied } = await admin
       .from('question_concepts')
       .update({ mapping_status: 'VALIDATED', validated_at: new Date().toISOString() })
       .eq('id', id ?? '');
-    expect(error).toBeNull();
+    expect(denied).not.toBeNull();
+
+    // La frontera sí la ejecuta, atribuyendo actor y motivo, y devuelve la generación.
+    // Se invoca por SQL: `ingest` tampoco está expuesto al Data API, y esa es justamente la
+    // razón por la que la función es el camino de servidor y no una RPC de cliente.
+    const promoted = one<{ generation: number }>(
+      `select ingest.set_question_concept_mapping_status(
+         '${id ?? ''}'::uuid, 'VALIDATED', 'phase1a-lifecycle-spec',
+         'revalidación del mapeo copiado') as generation`,
+    );
+    expect(Number(promoted.generation)).toBeGreaterThanOrEqual(1);
+
+    const audit = one<{ total: number }>(
+      `select count(*)::int as total from ingest.mapping_transitions
+       where mapping_id = '${id ?? ''}'::uuid and to_status = 'VALIDATED'`,
+    );
+    expect(Number(audit.total)).toBe(1);
   });
 });

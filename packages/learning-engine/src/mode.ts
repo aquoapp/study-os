@@ -19,7 +19,19 @@ export interface DeclaredSemantics {
 
 export interface RunModeInput {
   /** Lo que el watermark declara. `null` si la proyección no existe todavía. */
-  readonly stored: (DeclaredSemantics & { readonly consumedPosition: number }) | null;
+  readonly stored:
+    | (DeclaredSemantics & {
+        readonly consumedPosition: number;
+        /**
+         * ¿Toda fila de proyección procede del punto que el watermark declara?
+         *
+         * Si no, la proyección **no es una función de la evidencia** —alguien escribió algo
+         * que no fue una ejecución fiel del motor— y continuar sobre ella sería dar por buena
+         * una mentira. Se reconstruye.
+         */
+        readonly projectionCoherent?: boolean | undefined;
+      })
+    | null;
   readonly currentConfigVersion: string;
   readonly currentPackVersionId: string;
   readonly currentGeneration: number;
@@ -31,12 +43,16 @@ export interface RunModeInput {
 export type RunMode =
   | { readonly kind: 'UP_TO_DATE'; readonly consumedPosition: number }
   | { readonly kind: 'INCREMENTAL'; readonly fromPosition: number }
-  | { readonly kind: 'REBUILD'; readonly reason: 'FIRST_RUN' | 'FORCED' }
+  | { readonly kind: 'REBUILD'; readonly reason: 'FIRST_RUN' | 'FORCED' | 'INCOHERENT' }
   | { readonly kind: 'RECALCULATION'; readonly reason: 'ATTRIBUTION_CHANGED' | 'ENGINE_CHANGED' };
 
 export function decideRunMode(input: RunModeInput): RunMode {
   const stored = input.stored;
   if (stored === null) return { kind: 'REBUILD', reason: 'FIRST_RUN' };
+
+  // Lo incoherente se atiende antes que nada: si la proyección no procede de la evidencia,
+  // ninguna comparación posterior significa nada.
+  if (stored.projectionCoherent === false) return { kind: 'REBUILD', reason: 'INCOHERENT' };
 
   const attributionChanged =
     stored.attributionPackVersionId !== input.currentPackVersionId ||
