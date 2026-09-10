@@ -3,6 +3,8 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   canonicalProjection,
+  decideRunMode,
+  historyReasonOf,
   runEngine,
   type AttemptRow,
   type AttributionSnapshot,
@@ -133,15 +135,26 @@ export async function runEngineForUser(
   const consumed = Number(watermark?.consumedPosition ?? 0);
   const maxPosition = Number(snapshot.maxPosition ?? 0);
 
-  const semanticsChanged =
-    watermark !== null &&
-    (watermark.engineConfigVersion !== configVersion ||
-      watermark.attributionPackVersionId !== snapshot.packVersionId ||
-      Number(watermark.attributionGeneration) !== attribution.generation);
+  // La regla vive en el paquete puro: es la que decide si el gate de EC-006 se aplica sobre
+  // terreno comparable, y por eso se prueba sin base de datos.
+  const mode = decideRunMode({
+    stored:
+      watermark === null
+        ? null
+        : {
+            consumedPosition: consumed,
+            engineConfigVersion: watermark.engineConfigVersion,
+            attributionPackVersionId: watermark.attributionPackVersionId,
+            attributionGeneration: watermark.attributionGeneration,
+          },
+    currentConfigVersion: configVersion,
+    currentPackVersionId: snapshot.packVersionId,
+    currentGeneration: attribution.generation,
+    maxPosition,
+    forceRebuild: options.forceRebuild,
+  });
 
-  if (!options.forceRebuild && !semanticsChanged && maxPosition <= consumed) {
-    return { kind: 'UP_TO_DATE', watermark: consumed };
-  }
+  if (mode.kind === 'UP_TO_DATE') return { kind: 'UP_TO_DATE', watermark: mode.consumedPosition };
 
   const result = runEngine({
     userId,
@@ -153,12 +166,8 @@ export async function runEngineForUser(
     engineConfigVersion: configVersion,
   });
 
-  const rebuild = options.forceRebuild === true || semanticsChanged || watermark === null;
-  const reason = semanticsChanged
-    ? 'RECALCULATION_ATTRIBUTION_CHANGED'
-    : rebuild
-      ? 'REBUILD'
-      : 'INCREMENTAL';
+  const rebuild = mode.kind !== 'INCREMENTAL';
+  const reason = historyReasonOf(mode);
 
   const applied = rebuild
     ? await supabase.schema('engine').rpc('rebuild_projections', {

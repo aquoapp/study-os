@@ -22,6 +22,14 @@ export {
 
 export { canonicalProjection, canonicalResult, runEngine } from './engine';
 
+export {
+  decideRunMode,
+  historyReasonOf,
+  type DeclaredSemantics,
+  type RunMode,
+  type RunModeInput,
+} from './mode';
+
 export { deriveMasteryState, deriveUncertainty } from './state';
 
 export {
