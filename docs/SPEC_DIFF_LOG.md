@@ -1462,3 +1462,23 @@ SD-027, SD-028 y SD-029 `ACCEPTED`; SD-006 y SD-018 `ACCEPTED` con implementaci�
 desde Phase 2; SD-001, SD-002 y SD-007 `ACCEPTED` en implementación parcial desde Phase 1A;
 SD-015 `SUPERSEDED`; SD-016 implementada; SD-019 diferida antes de Phase 5, con la opción A
 aplicada y suficiente para el FPS; el resto `PROPOSED`.
+
+---
+
+## Estado de la adenda · tras la Phase 3 Acceptance Review · 2026-09-11
+
+Complementa al estado anterior sin sustituirlo: ninguna entrada SPEC_DIFF cambia.
+
+**Registro de decisión:** Phase 3 Acceptance Review · 2026-09-11 · decisora Ana Victoria ·
+candidato revisado `96c08de486571faa41a57c5952a4d1232498d3af` · copia en
+`docs/PHASE_3_ACCEPTANCE_REVIEW.md`.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| D-24 | ADR-011 anexo v1.1 · alta del esquema no expuesto `engine` | **`ACCEPTED`** · firmado el 2026-09-11 · ADR-011 pasa a `ACCEPTED · v1.1` |
+
+La firma **no amplía** el anexo: no autoriza ningún otro esquema privado (`audit` sigue
+exigiendo su propia enmienda), ni merge, ni tag, ni congelación, ni ninguna fase posterior, ni
+ninguna mutación de PRODUCTION. `dataApi.exposedSchemas` sigue siendo `["public"]`.
+
+**Total tras esta adenda: sin cambio** · 29 entradas SPEC_DIFF y 1 errata.

@@ -204,8 +204,10 @@ describe('ADR-006 … ADR-010 · aceptados, con aprobación y propietario', () =
 describe('ADR-011 · aceptado el 2026-09-09 por la Phase 1A Build Authorization', () => {
   const text = read('architecture/ADR-011-schema-topology-and-data-api-exposure.md');
 
-  it('es v1.0, ACCEPTED, de Ana Victoria, con el registro de decisión de Phase 1A', () => {
-    expect(text).toMatch(/^STATUS: ACCEPTED · v1\.0$/m);
+  it('es ACCEPTED, de Ana Victoria, con el registro de decisión de Phase 1A', () => {
+    // v1.1 desde el 2026-09-11: el anexo que da de alta `engine` quedó firmado (D-24). El
+    // cuerpo v1.0 y su aprobación del 2026-09-09 siguen intactos.
+    expect(text).toMatch(/^STATUS: ACCEPTED · v1\.1 \(anexo v1\.1 aceptado el 2026-09-11 · D-24/m);
     expect(text).toMatch(/^DATE: 2026-09-09$/m);
     expect(text).toMatch(/^DECISION OWNER: Ana Victoria$/m);
     expect(text).toMatch(/^Approved by: Ana Victoria$/m);
@@ -249,13 +251,29 @@ describe('ADR-011 · aceptado el 2026-09-09 por la Phase 1A Build Authorization'
     expect(registry.dataApi.nonExposedSchemas).toEqual(['content', 'ingest', 'engine']);
   });
 
-  it('el anexo v1.1 existe, sigue sin firmar y no toca la lista expuesta', () => {
-    const annex = read('architecture/ADR-011-schema-topology-and-data-api-exposure.md');
-    expect(annex).toContain('## Anexo v1.1 · **PROPUESTO · sin aprobar**');
-    expect(annex).toContain('requiere firma humana antes del aterrizaje de');
-    // Sin firma: el bloque de aprobación del anexo está vacío a propósito.
-    expect(annex).toMatch(/### Human approval · anexo v1\.1\n\nApproved by:\s*\nDate:\s*\n/);
+  it('el anexo v1.1 está firmado (D-24), acotado a `engine` y no toca la lista expuesta', () => {
+    const annex = text.slice(text.indexOf('## Anexo v1.1'));
+    expect(annex).toMatch(
+      /^## Anexo v1\.1 · alta del esquema `engine` \(Phase 3\) · ACCEPTED 2026-09-11$/m,
+    );
+    // Firmado por Ana el 2026-09-11 en la Phase 3 Acceptance Review, con su registro.
+    const approval = annex.slice(annex.indexOf('### Human approval · anexo v1.1'));
+    expect(approval).toMatch(/^Approved by: Ana Victoria$/m);
+    expect(approval).toMatch(/^Date: 2026-09-11$/m);
+    expect(approval).toContain('docs/PHASE_3_ACCEPTANCE_REVIEW.md');
+    expect(approval).toContain('96c08de486571faa41a57c5952a4d1232498d3af');
+    // La firma no amplía el anexo: ningún otro esquema privado, ni merge ni PRODUCTION.
+    expect(flat(approval)).toContain('**no autoriza crear ningún otro esquema privado**');
+    expect(flat(approval)).toContain('ninguna mutación de PRODUCTION');
+    expect(annex).not.toMatch(/PROPUESTO|sin aprobar|pendiente de firma/);
     expect(annex).toContain('`dataApi.exposedSchemas` **no cambia**');
+  });
+
+  it('el registro de la Acceptance Review existe y dice lo mismo que la firma', () => {
+    const record = flat(read('docs/PHASE_3_ACCEPTANCE_REVIEW.md'));
+    expect(record).toContain('**ADR-011 · anexo v1.1 · APROBADO.**');
+    expect(record).toContain('**no autoriza crear ningún otro esquema privado**');
+    expect(record).toContain('**El merge final no está autorizado.**');
   });
 });
 

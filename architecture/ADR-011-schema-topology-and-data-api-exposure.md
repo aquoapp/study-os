@@ -1,6 +1,6 @@
 # ADR-011 · Topología de esquemas y frontera de exposición del Data API
 
-STATUS: ACCEPTED · v1.0
+STATUS: ACCEPTED · v1.1 (anexo v1.1 aceptado el 2026-09-11 · D-24 · el texto v1.0 se conserva íntegro)
 DATE: 2026-09-09
 DECISION OWNER: Ana Victoria
 DECISION RECORD: `STUDY_OS_Phase_1A_Authorization_Packet_PROPOSED_a263ec1.md` · SHA-256 `806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4` · decisión C-1 aceptada en la **Phase 1A Build Authorization** del 2026-09-09 · línea base congelada `5d8296c1776be778b075d9e239b383a0476a6514` (`phase-0-v1.0`)
@@ -124,10 +124,12 @@ FPS ni ninguna mutación de PRODUCTION
 
 ---
 
-## Anexo v1.1 · **PROPUESTO · sin aprobar** · alta del esquema `engine` (Phase 3)
+## Anexo v1.1 · alta del esquema `engine` (Phase 3) · ACCEPTED 2026-09-11
 
-**Estado:** `PROPUESTO` · 2026-09-10 · **requiere firma humana antes del aterrizaje de
-Phase 3.** El cuerpo v1.0 de este ADR y su aprobación del 2026-09-09 quedan intactos.
+**Estado:** `ACCEPTED` · redactado el 2026-09-10 durante el BUILD de Phase 3 y **aprobado por Ana
+Victoria el 2026-09-11** en la Phase 3 Acceptance Review, que cierra **D-24**
+(`docs/PHASE_3_ACCEPTANCE_REVIEW.md`). El cuerpo v1.0 de este ADR y su aprobación del
+2026-09-09 quedan intactos. El texto del anexo es el revisado: la firma no lo amplía.
 
 **Por qué existe este anexo.** El punto 10 del cuerpo ya previó `engine` —«configuración y
 funciones de motor, Phase 3»— y declaró que **su creación exige enmienda de este ADR**. La
@@ -175,7 +177,12 @@ Phase 4, ni ninguna mutación de PRODUCTION.
 
 ### Human approval · anexo v1.1
 
-Approved by:
-Date:
-Record: Phase 3 Build Authorization · pendiente de firma
-Scope of approval:
+Approved by: Ana Victoria
+Date: 2026-09-11
+Record: Phase 3 Acceptance Review · decisión «ADR-011 v1.1 ANNEX · APPROVED» sobre el
+candidato `96c08de486571faa41a57c5952a4d1232498d3af` · cierra **D-24** · copia en
+`docs/PHASE_3_ACCEPTANCE_REVIEW.md`
+Scope of approval: exclusivamente el esquema no expuesto `engine` que necesita Phase 3, con el
+texto de este anexo tal como se revisó · **no autoriza crear ningún otro esquema privado**
+(`audit` sigue exigiendo su propia enmienda) · no autoriza merge, tag, congelación, Phase 4,
+Phase 1B ni ninguna mutación de PRODUCTION
