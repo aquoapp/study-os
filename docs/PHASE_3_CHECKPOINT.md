@@ -53,7 +53,7 @@ Ninguna migración anterior se ha editado.
 
 ## F · Delta de esquema
 
-**Esquema `engine`** (no expuesto · ADR-011 anexo v1.1, **pendiente de firma**, §AH):
+**Esquema `engine`** (no expuesto · ADR-011 anexo v1.1, **firmado el 2026-09-11**, §AH · §AL):
 
 | Objeto | Nota |
 | --- | --- |
@@ -283,8 +283,8 @@ cinco guardas y `secret-scan`, todos en verde.
 | D-23 | **sin empeorar**: los dos rollback de Phase 3 son cortos y no tocan evidencia |
 | D-20 | sin cambio: el motor no lee metadatos de custodia |
 | WATCH-P2-1 | **sin mitigar**, tal como exige su disposición |
-| **D-24 · nueva** | ADR-011 anexo v1.1 (alta del esquema `engine`) está **PROPUESTO y sin firma**. Es prerrequisito de aterrizaje, no de construcción (§AH) |
-| **D-25 · nueva** | Una credencial de STAGING quedó impresa en la transcripción por el camino de error del CLI de Supabase (§AI). Exige rotación |
+| **D-24** | **CERRADA el 2026-09-11** · ADR-011 anexo v1.1 firmado por Ana en la Phase 3 Acceptance Review (§AL) |
+| **D-25** | Exposición real de una credencial de STAGING por el camino de error del CLI de Supabase (§AI). Vector cerrado en el repositorio; **rotación pendiente de una acción humana** en el panel (§AL) |
 
 ## AE · Alcance negativo
 
@@ -326,9 +326,10 @@ superficie de aprendiz, y por tanto no hay nada que recorrer.
 **Ninguna decisión de producto ni de ciencia del aprendizaje quedó pendiente durante la
 construcción.** Las diez de la autorización se implementaron tal como se decidieron.
 
-Queda **una firma** pendiente, y es de aterrizaje, no de construcción:
+Quedaba **una firma**, de aterrizaje y no de construcción. **Ana la dio el 2026-09-11**
+(§AL.1); lo que sigue es el razonamiento con el que se presentó:
 
-> **D-24 · ADR-011 anexo v1.1 · `PROPUESTO · sin aprobar`.**
+> **D-24 · ADR-011 anexo v1.1 · firmado el 2026-09-11.**
 >
 > El motor necesita un esquema no expuesto. ADR-011 punto 10 ya preveía `engine`
 > —«configuración y funciones de motor, Phase 3»— y declaraba que **su creación exige enmienda
@@ -342,8 +343,8 @@ Queda **una firma** pendiente, y es de aterrizaje, no de construcción:
 > dejara de mirar. Ninguna de las dos es aceptable. `ingest` tampoco: una proyección derivada
 > no es ingestión.
 >
-> El anexo está escrito, con su bloque de aprobación **vacío a propósito** y una prueba que
-> vigila que siga vacío. **Firmarlo es prerrequisito de aterrizaje.**
+> El anexo se escribió con su bloque de aprobación vacío a propósito y una prueba que vigilaba
+> que siguiera vacío. Desde la firma, la prueba vigila la firma y sus límites.
 
 **Condiciones de parada que no se activaron:** el mecanismo de atribución no debilitó ningún
 invariante congelado de Phase 1A ni introdujo autoridad de cliente; la plataforma sí ofrece un
@@ -456,11 +457,46 @@ extracción limpia se hizo con `git archive HEAD`.
 **Candidato completo y listo para revisión independiente.** Los diez gates en PASS, la
 evidencia de aceptación de Ana intacta, PRODUCTION sin tocar y el alcance negativo limpio.
 
-Dos cosas exigen decisión humana **antes del aterrizaje**, y ninguna es de construcción:
-
-1. **firmar el anexo v1.1 de ADR-011** (D-24), que da de alta el esquema `engine` que su propio
-   punto 10 ya preveía;
-2. **rotar la credencial de STAGING** (D-25).
+De las dos cosas que exigían decisión humana antes del aterrizaje, **D-24 quedó cerrada** el
+2026-09-11 (§AL). **D-25 sigue abierta**: la rotación de la credencial de STAGING es una acción
+humana en el panel de Supabase.
 
 No se ha fusionado nada, no hay tag, no hay congelación y no se ha empezado ninguna fase
 posterior.
+
+## AL · Phase 3 Acceptance Review · 2026-09-11
+
+**Disposición:** la revisión independiente del candidato `96c08de` lo deja **técnicamente
+aceptado, sujeto al cierre de D-24 y D-25**. El merge final no está autorizado. Registro en
+`docs/PHASE_3_ACCEPTANCE_REVIEW.md`.
+
+### AL.1 · D-24 · cerrada
+
+Ana aprobó el anexo v1.1 de ADR-011. La firma vive en el bloque de aprobación del anexo, la
+cabecera pasa a `ACCEPTED · v1.1`, la adenda del SPEC_DIFF_LOG la registra y
+`adr.acceptedDecisions.spec` —que antes vigilaba que el bloque siguiera **vacío**— vigila ahora
+la firma, su registro y sus límites: ningún otro esquema privado, la lista expuesta intacta.
+
+### AL.2 · D-25 · qué se hizo y qué falta
+
+| Paso | Estado | Evidencia |
+| --- | --- | --- |
+| Credencial vieja en el historial de Git (todas las ramas y el reflog), el árbol, los 25 paquetes ZIP, la carpeta de evidencia y el espacio de trabajo local | **ninguna aparición** | búsqueda por valor antes de intentar la rotación; solo se guardó longitud y SHA-256 para búsquedas posteriores |
+| Vector en el repositorio | **cerrado** | `runSupabase` no propaga el error original; `secret.redaction.spec` provoca un fallo real del CLI con centinela |
+| Rotación programática | **rechazada por la plataforma** | `permission denied to alter role`: `postgres` no puede cambiar su propia contraseña; el conector de Supabase ejecuta como `postgres`; la Management API exige un token que D-14 revocó. **Ninguna mutación** |
+| Rotación en el panel de Supabase | **acción humana pendiente** | — |
+| `STAGING_DB_URL` y `.env.staging.local` | a la espera de la rotación | la herramienta de aplicación comprueba la nueva, el rechazo de la vieja y reemplaza ambos sin imprimir nada |
+
+Por qué no se intentó enviar el verificador por el conector: ejecuta como el mismo rol, y la
+petición habría dejado en la transcripción un derivado de la credencial nueva sin ninguna
+posibilidad de éxito.
+
+### AL.3 · Cobertura que faltaba
+
+La revisión de las herramientas encontró que `schema-drift` comparaba STAGING solo en
+`public`, `content` e `ingest`, y que la firma semántica del roundtrip tampoco incluía
+`engine`. **Ambas cubren ya el esquema del motor.** No cambia el runtime ni ninguna migración.
+
+### AL.4 · Gates
+
+P3-G1 … P3-G10 siguen en **PASS**. Ninguno depende de D-25; el aterrizaje sí.

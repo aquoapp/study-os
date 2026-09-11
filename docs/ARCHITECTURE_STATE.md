@@ -3,8 +3,8 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.15 · copia viva
-**Última actualización:** 2026-09-10 · **BUILD de Phase 3 construido**, en rama y **sin fusionar**: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación. **D-21 cerrada.** Candidato en `docs/PHASE_3_CHECKPOINT.md`
+**Versión:** 11.16 · copia viva
+**Última actualización:** 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). **D-25** con el endurecimiento aplicado y la rotación de la credencial de STAGING a la espera de una acción humana en el panel de Supabase (§14.7). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
 **Fase actual:** **Phase 3 · Learning Engine · CANDIDATO DE ACEPTACIÓN** en `phase/3-learning-engine`, con los diez gates en PASS y **sin merge, sin tag y sin congelación** · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
 **Estado global:** **PASS WITH OBSERVATIONS** · línea base congelada `main` = `6bde0a045532c8ffb2769c0a24d4bbb94958dd57` · tag anotado `fps-v1.0` (Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/FPS_CHECKPOINT.md`
 
@@ -532,10 +532,32 @@ alcanza.
 
 | # | Deuda |
 | --- | --- |
-| **D-24** | ADR-011 anexo v1.1 —alta del esquema `engine`, previsto en su punto 10— está **PROPUESTO y sin firma**. Prerrequisito de aterrizaje, no de construcción |
-| **D-25** | Una credencial de STAGING quedó impresa en la transcripción de trabajo por el camino de error del CLI de Supabase. **Exige rotación.** La herramienta local ya redacta toda su salida |
+| **D-24** | **CERRADA el 2026-09-11.** ADR-011 anexo v1.1 —alta del esquema `engine`, previsto en su punto 10— firmado por Ana en la Phase 3 Acceptance Review, sin ampliarlo |
+| **D-25** | Una credencial de STAGING quedó impresa en la transcripción de trabajo por el camino de error del CLI de Supabase. **Exposición real; la credencial se trata como comprometida.** Vector cerrado en el repositorio (§14.7); **la rotación espera una acción humana** en el panel de Supabase |
 
 **D-21 pasa a CERRADA**, con prueba mecánica.
+
+### 14.7 Phase 3 Acceptance Review · 2026-09-11
+
+Registro: `docs/PHASE_3_ACCEPTANCE_REVIEW.md`. El candidato revisado queda **técnicamente
+aceptado, sujeto al cierre de D-24 y D-25**; el merge final no está autorizado.
+
+**Vector de D-25, cerrado en el repositorio.** `runSupabase` (`tools/supabase-cli.mjs`) ya no
+propaga el error de `execFileSync`, cuyo mensaje contiene la línea de comandos con `--db-url`:
+construye uno nuevo con el código y la salida del CLI, redactados, y redacta también la salida
+correcta. `db-roundtrip` y el arnés SQL redactan cualquier cadena de conexión y no solo la
+conocida. `secret-scan` detecta cadenas de conexión con contraseña embebida.
+`secret.redaction.spec` provoca un fallo real del CLI con una contraseña centinela y comprueba
+que no aparece, y fija la lista revisada de herramientas que hablan con una base remota.
+
+**Cobertura que faltaba.** `schema-drift` comparaba solo `public`, `content` e `ingest`, y la
+firma semántica del roundtrip tampoco miraba `engine`. Ambos cubren ya el esquema del motor.
+
+**Rotación.** Se intentó por la vía programática autorizada, generando la contraseña dentro
+del proceso y enviando solo su verificador SCRAM: la plataforma respondió `permission denied
+to alter role`, porque el rol `postgres` no puede cambiar su propia contraseña. El conector de
+Supabase ejecuta como ese mismo rol, y el token de la Management API está revocado por decisión
+humana (D-14). No se mutó nada. La rotación es, por tanto, **una acción humana en el panel**.
 
 ### 14.6 Condición de parada, declarada
 

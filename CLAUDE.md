@@ -246,12 +246,16 @@ diagnóstico excluida y contabilizada aparte, y las dos ranuras de política sin
 restricciones de tabla que impiden darles valor. `rebuild == incremental` se probó
 adversarialmente en los dos planos, y el roundtrip semántico devuelve una firma idéntica.
 
-**Dos cosas exigen decisión humana antes del aterrizaje, ninguna de construcción:** **D-24**,
-el anexo v1.1 de ADR-011 que da de alta el esquema `engine` —previsto en su punto 10— está
-`PROPUESTO y sin firma`; y **D-25**, una credencial de STAGING quedó impresa en la
-transcripción de trabajo por el camino de error del CLI de Supabase y **exige rotación**. La
-herramienta local ya redacta toda su salida. Phase 4, Phase 1B, Release y PRODUCTION siguen sin
-autorizar.
+**Phase 3 Acceptance Review · 2026-09-11** (`docs/PHASE_3_ACCEPTANCE_REVIEW.md`): el candidato
+queda **técnicamente aceptado, sujeto al cierre de D-24 y D-25**, y el merge final **no** está
+autorizado. **D-24 cerrada:** Ana firmó el anexo v1.1 de ADR-011, que da de alta el esquema
+`engine` y ningún otro. **D-25** —una credencial de STAGING impresa en la transcripción de
+trabajo por el camino de error del CLI de Supabase— es una exposición real y la credencial se
+trata como comprometida. El vector está cerrado en el repositorio: `runSupabase` ya no deja
+escapar la línea de comandos en ningún error, y una prueba lo verifica provocando un fallo real
+del CLI. **La rotación no se puede hacer por SQL** —la plataforma impide que `postgres` cambie
+su propia contraseña— y exige una acción humana en el panel de Supabase. Hasta entonces D-25
+sigue sin cerrar. Phase 4, Phase 1B, Release y PRODUCTION siguen sin autorizar.
 
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:
