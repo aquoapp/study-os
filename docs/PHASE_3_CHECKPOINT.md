@@ -481,7 +481,8 @@ la firma, su registro y sus límites: ningún otro esquema privado, la lista exp
 
 | Paso | Estado | Evidencia |
 | --- | --- | --- |
-| Credencial vieja en el historial de Git (todas las ramas y el reflog), el árbol, los 25 paquetes ZIP, la carpeta de evidencia y el espacio de trabajo local | **ninguna aparición** | búsqueda por valor antes de intentar la rotación; solo se guardó longitud y SHA-256 para búsquedas posteriores |
+| Credencial vieja en el historial de Git (todas las ramas y el reflog), el árbol, los paquetes de aceptación (`git archive`) y el espacio de trabajo local | **ninguna aparición** | búsqueda por valor, con control positivo; solo se guardó longitud y SHA-256 para búsquedas posteriores |
+| Credencial vieja en la carpeta de evidencia del escritorio | **una aparición, fuera del repositorio** | `study-os.zip`, copia completa del directorio de trabajo creada fuera de estas sesiones el 2026-09-10 (no es un paquete de aceptación), contiene `.env.staging.local`. La primera búsqueda no la vio: el `tar` de Git Bash no lee ZIP y devolvía vacío. Se corrigió el lector y se añadió un recuento de bytes para que una extracción vacía no pueda pasar por limpia |
 | Vector en el repositorio | **cerrado** | `runSupabase` no propaga el error original; `secret.redaction.spec` provoca un fallo real del CLI con centinela |
 | Rotación programática | **rechazada por la plataforma** | `permission denied to alter role`: `postgres` no puede cambiar su propia contraseña; el conector de Supabase ejecuta como `postgres`; la Management API exige un token que D-14 revocó. **Ninguna mutación** |
 | Rotación en el panel de Supabase | **acción humana pendiente** | — |
