@@ -153,7 +153,9 @@ if (!dbUrl) {
       '--db-url',
       dbUrl,
       '--schema',
-      'public,content,ingest',
+      // `engine` desde Phase 3 (ADR-011 anexo v1.1): un esquema no expuesto también es
+      // esquema gobernado por migraciones, y su deriva se vigila igual.
+      'public,content,ingest,engine',
     ]);
 
     const meaningful = output

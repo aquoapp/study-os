@@ -58,7 +58,11 @@ export function query<Row = Record<string, unknown>>(sql: string): Row[] {
       { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
     // El CLI reparte su salida entre stdout y stderr según el modo (TTY, agente, CI).
-    output = `${result.stdout ?? ''}${result.stderr ?? ''}`.split(url).join('<db-url>');
+    // D-25 · se redacta la cadena conocida y, además, cualquier otra cadena de conexión.
+    output = `${result.stdout ?? ''}${result.stderr ?? ''}`
+      .split(url)
+      .join('<db-url>')
+      .replace(/postgres(?:ql)?:\/\/[^\s"'`]+/g, '<db-url>');
     status = result.status;
     // Un problema de **transporte** no es un rechazo de la base. Con varias suites de
     // integración en paralelo, cada consulta abre su propia sesión por el pooler y una
