@@ -533,10 +533,13 @@ describe('aterrizaje de gobernanza · nada de Phase 3 ha llegado al runtime', ()
    * alcance**: existe lo autorizado, y solo lo autorizado.
    */
   it('las migraciones de Phase 3 son exactamente las dos autorizadas', () => {
-    expect(migrations).toHaveLength(21);
-    expect(migrations.sort().slice(-2)).toEqual([
+    // Phase 3.1 (corrección D-26) añade una única migración, la 21, que solo crea envoltorios
+    // de invocación en `public`. Las de Phase 3 siguen siendo exactamente la 19 y la 20.
+    expect(migrations).toHaveLength(22);
+    expect(migrations.sort().slice(-3)).toEqual([
       '00000000000019_attribution_boundary.sql',
       '00000000000020_engine_core.sql',
+      '00000000000021_engine_invocation_boundary.sql',
     ]);
   });
 

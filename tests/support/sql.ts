@@ -1,7 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 /**
  * Consultas SQL de solo lectura para las pruebas de catálogo.
@@ -23,7 +22,11 @@ import { fileURLToPath } from 'node:url';
  * ---------------------------------------------------------------------------
  */
 
-const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
+// Raíz del repositorio = directorio de trabajo: vitest y Playwright se lanzan siempre desde ella
+// (scripts de npm). No se usa `import.meta.url` porque Playwright compila este módulo como
+// CommonJS, y Phase 3.1 lo necesita desde un E2E para observar la proyección que escribe la
+// aplicación real. Si el directorio fuera otro, `query()` falla diciendo que no encuentra el CLI.
+const REPO_ROOT = process.cwd();
 const NEWLINE = String.fromCharCode(10);
 
 export function dbUrl(): string {
