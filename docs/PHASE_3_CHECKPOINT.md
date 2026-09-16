@@ -284,7 +284,7 @@ cinco guardas y `secret-scan`, todos en verde.
 | D-20 | sin cambio: el motor no lee metadatos de custodia |
 | WATCH-P2-1 | **sin mitigar**, tal como exige su disposición |
 | **D-24** | **CERRADA el 2026-09-11** · ADR-011 anexo v1.1 firmado por Ana en la Phase 3 Acceptance Review (§AL) |
-| **D-25** | Exposición real de una credencial de STAGING por el camino de error del CLI de Supabase (§AI). Vector cerrado en el repositorio; **rotación pendiente de una acción humana** en el panel (§AL) |
+| **D-25** | **CERRADA el 2026-09-16** · exposición real de una credencial de STAGING (§AI); vector cerrado en el repositorio, contraseña rotada, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§AL.2) |
 
 ## AE · Alcance negativo
 
@@ -458,8 +458,7 @@ extracción limpia se hizo con `git archive HEAD`.
 evidencia de aceptación de Ana intacta, PRODUCTION sin tocar y el alcance negativo limpio.
 
 De las dos cosas que exigían decisión humana antes del aterrizaje, **D-24 quedó cerrada** el
-2026-09-11 (§AL). **D-25 sigue abierta**: la rotación de la credencial de STAGING es una acción
-humana en el panel de Supabase.
+2026-09-11 y **D-25** el 2026-09-16 (§AL).
 
 No se ha fusionado nada, no hay tag, no hay congelación y no se ha empezado ninguna fase
 posterior.
@@ -477,7 +476,7 @@ cabecera pasa a `ACCEPTED · v1.1`, la adenda del SPEC_DIFF_LOG la registra y
 `adr.acceptedDecisions.spec` —que antes vigilaba que el bloque siguiera **vacío**— vigila ahora
 la firma, su registro y sus límites: ningún otro esquema privado, la lista expuesta intacta.
 
-### AL.2 · D-25 · qué se hizo y qué falta
+### AL.2 · D-25 · cerrada
 
 | Paso | Estado | Evidencia |
 | --- | --- | --- |
@@ -485,8 +484,17 @@ la firma, su registro y sus límites: ningún otro esquema privado, la lista exp
 | Credencial vieja en la carpeta de evidencia del escritorio | **una aparición, fuera del repositorio** | `study-os.zip`, copia completa del directorio de trabajo creada fuera de estas sesiones el 2026-09-10 (no es un paquete de aceptación), contiene `.env.staging.local`. La primera búsqueda no la vio: el `tar` de Git Bash no lee ZIP y devolvía vacío. Se corrigió el lector y se añadió un recuento de bytes para que una extracción vacía no pueda pasar por limpia |
 | Vector en el repositorio | **cerrado** | `runSupabase` no propaga el error original; `secret.redaction.spec` provoca un fallo real del CLI con centinela |
 | Rotación programática | **rechazada por la plataforma** | `permission denied to alter role`: `postgres` no puede cambiar su propia contraseña; el conector de Supabase ejecuta como `postgres`; la Management API exige un token que D-14 revocó. **Ninguna mutación** |
-| Rotación en el panel de Supabase | **acción humana pendiente** | — |
-| `STAGING_DB_URL` y `.env.staging.local` | a la espera de la rotación | la herramienta de aplicación comprueba la nueva, el rechazo de la vieja y reemplaza ambos sin imprimir nada |
+| Rotación en el panel de Supabase | **hecha por Ana el 2026-09-16** | contraseña restablecida en `STUDY_OS_STAGING`; ningún valor pasó por la conversación |
+| Credencial nueva | **autentica** | pooler 5432 y 6543 `OK` al primer intento (herramienta de aplicación); reverificada después con el fichero local |
+| Credencial vieja | **rechazada** | pooler 5432 y 6543 `AUTH_REJECTED` (`28P01`) al primer intento |
+| `.env.staging.local` | **actualizado** | por la herramienta de aplicación, sin imprimir nada |
+| `STAGING_DB_URL` en GitHub | **reemplazado el 2026-09-16** | la herramienta de aplicación no pudo invocar `gh` desde la terminal de Ana (no dejó código de error; `gh secret list` tampoco respondió en esa sesión). Se reemplazó después desde el fichero local, por entrada estándar: `updatedAt` pasó de `2026-09-08T15:28:32Z` a `2026-09-16T10:32:13Z` |
+| CI con el secreto nuevo | **verde** | el job de deriva contra STAGING autentica con el secreto reemplazado; la ejecución exacta sobre el HEAD final se cita en el informe de cierre |
+
+**D-25 · CERRADA el 2026-09-16.** Queda una observación fuera del repositorio y no es deuda de
+Phase 3: `Desktop/STUDY_OS/study-os.zip` sigue conteniendo el `.env.staging.local` anterior. Su
+contraseña de base ya no autentica; la decisión sobre el fichero y sobre la clave de servicio
+que también contiene es de Ana.
 
 Por qué no se intentó enviar el verificador por el conector: ejecuta como el mismo rol, y la
 petición habría dejado en la transcripción un derivado de la credencial nueva sin ninguna
@@ -500,4 +508,11 @@ La revisión de las herramientas encontró que `schema-drift` comparaba STAGING 
 
 ### AL.4 · Gates
 
-P3-G1 … P3-G10 siguen en **PASS**. Ninguno depende de D-25; el aterrizaje sí.
+P3-G1 … P3-G10 siguen en **PASS**. D-24 y D-25 cerradas: nada de la revisión bloquea ya el
+aterrizaje, que sigue exigiendo autorización humana explícita.
+
+### AL.5 · PRODUCTION
+
+`STUDY_OS_PRODUCTION` está **pausado** (`INACTIVE`) por ser un proyecto Free sin uso. No se ha
+reactivado ni mutado. La comprobación de solo lectura del 2026-09-11 (cero migraciones, cero
+tablas) sigue siendo la evidencia vigente, y el estado de pausa no es un defecto de Phase 3.

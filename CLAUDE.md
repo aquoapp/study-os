@@ -254,8 +254,10 @@ trabajo por el camino de error del CLI de Supabase— es una exposición real y 
 trata como comprometida. El vector está cerrado en el repositorio: `runSupabase` ya no deja
 escapar la línea de comandos en ningún error, y una prueba lo verifica provocando un fallo real
 del CLI. **La rotación no se puede hacer por SQL** —la plataforma impide que `postgres` cambie
-su propia contraseña— y exige una acción humana en el panel de Supabase. Hasta entonces D-25
-sigue sin cerrar. Phase 4, Phase 1B, Release y PRODUCTION siguen sin autorizar.
+su propia contraseña—: la hizo Ana en el panel de Supabase, y **D-25 quedó cerrada el
+2026-09-16** con la credencial vieja rechazada y `STAGING_DB_URL` reemplazado. PRODUCTION está
+pausado por ser un proyecto Free sin uso y no se reactiva. Merge, tag, congelación, Phase 4,
+Phase 1B y Release siguen sin autorizar.
 
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:

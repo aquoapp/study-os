@@ -3,8 +3,8 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.16 · copia viva
-**Última actualización:** 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). **D-25** con el endurecimiento aplicado y la rotación de la credencial de STAGING a la espera de una acción humana en el panel de Supabase (§14.7). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
+**Versión:** 11.17 · copia viva
+**Última actualización:** 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
 **Fase actual:** **Phase 3 · Learning Engine · CANDIDATO DE ACEPTACIÓN** en `phase/3-learning-engine`, con los diez gates en PASS y **sin merge, sin tag y sin congelación** · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
 **Estado global:** **PASS WITH OBSERVATIONS** · línea base congelada `main` = `6bde0a045532c8ffb2769c0a24d4bbb94958dd57` · tag anotado `fps-v1.0` (Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/FPS_CHECKPOINT.md`
 
@@ -533,7 +533,7 @@ alcanza.
 | # | Deuda |
 | --- | --- |
 | **D-24** | **CERRADA el 2026-09-11.** ADR-011 anexo v1.1 —alta del esquema `engine`, previsto en su punto 10— firmado por Ana en la Phase 3 Acceptance Review, sin ampliarlo |
-| **D-25** | Una credencial de STAGING quedó impresa en la transcripción de trabajo por el camino de error del CLI de Supabase. **Exposición real; la credencial se trata como comprometida.** Vector cerrado en el repositorio (§14.7); **la rotación espera una acción humana** en el panel de Supabase |
+| **D-25** | Una credencial de STAGING quedó impresa en la transcripción de trabajo por el camino de error del CLI de Supabase. **CERRADA el 2026-09-16.** Vector cerrado en el repositorio, contraseña rotada en el panel por Ana, credencial vieja rechazada en los dos puertos del pooler y `STAGING_DB_URL` reemplazado (§14.7) |
 
 **D-21 pasa a CERRADA**, con prueba mecánica.
 
@@ -557,7 +557,15 @@ firma semántica del roundtrip tampoco miraba `engine`. Ambos cubren ya el esque
 del proceso y enviando solo su verificador SCRAM: la plataforma respondió `permission denied
 to alter role`, porque el rol `postgres` no puede cambiar su propia contraseña. El conector de
 Supabase ejecuta como ese mismo rol, y el token de la Management API está revocado por decisión
-humana (D-14). No se mutó nada. La rotación es, por tanto, **una acción humana en el panel**.
+humana (D-14). No se mutó nada. La rotación fue, por tanto, **una acción humana en el panel**.
+
+**Cierre de D-25 · 2026-09-16.** Ana restableció la contraseña de `STUDY_OS_STAGING` en el
+panel y ejecutó la herramienta de aplicación: credencial nueva `OK` y vieja `AUTH_REJECTED` en
+los puertos 5432 y 6543, fichero local actualizado. El reemplazo del secreto de GitHub falló en
+su terminal y se completó después desde el fichero local por entrada estándar (`updatedAt`
+2026-09-08 → 2026-09-16). CI autentica con el secreto nuevo. STAGING conserva 21 migraciones y
+la evidencia de Ana (62 eventos, 10 intentos, 2 sesiones), sin residuo. **PRODUCTION está
+pausado** por ser un proyecto Free sin uso; no se reactivó ni se mutó.
 
 ### 14.6 Condición de parada, declarada
 
