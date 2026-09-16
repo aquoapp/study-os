@@ -11,6 +11,7 @@ import {
 } from '../_components/fps/fps-shell';
 import { startOrResumeSessionAction } from '../actions/fps';
 import { getVerifiedIdentity } from '../../server/auth/identity';
+import { recoverProjectionOnReturn } from '../../server/engine/schedule';
 import { createSupabaseServerClient } from '../../server/supabase/server-client';
 import { deriveStep, findOpenSession, loadSessionState } from '../../server/fps/session';
 
@@ -34,6 +35,11 @@ export const metadata = { title: 'Hoy · Study OS' };
 export default async function HoyPage() {
   const identity = await getVerifiedIdentity();
   if (!identity) redirect('/entrar?siguiente=/hoy');
+
+  // Ruta B del Learning Engine (Phase 3.1 · D-26): el aprendiz verificado vuelve y el servidor
+  // recupera **su** proyección si quedó atrasada, después de enviar la respuesta. No cambia
+  // nada de lo que HOY muestra ni decide: ni plan, ni selección, ni copy.
+  recoverProjectionOnReturn(identity.userId);
 
   const supabase = await createSupabaseServerClient();
 

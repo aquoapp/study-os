@@ -52,7 +52,13 @@
       "validate_staged_item",
       "publish_staged_item",
       "copy_forward_question_concepts",
-      "purge_generated_pack"
+      "purge_generated_pack",
+      "engine_active_config_version",
+      "engine_evidence_snapshot",
+      "engine_attribution_snapshot",
+      "engine_recalculate_mastery",
+      "engine_rebuild_projections",
+      "engine_stale_users"
     ],
     "anchors": {
       "grade_attempt": "INV-101 · la corrección ocurre en servidor y no devuelve la clave",
@@ -68,7 +74,13 @@
       "validate_staged_item": "INV-110 · cuarentena si OFFICIAL carece de fuente primaria",
       "publish_staged_item": "ADR-011 · Master §31 · única vía de publicación a tablas canónicas",
       "copy_forward_question_concepts": "ADR-009 v1.1 · copy-forward con PENDING_REVALIDATION",
-      "purge_generated_pack": "PI-1A-5 · higiene de fixtures: solo packs íntegramente GENERATED; nunca contenido real"
+      "purge_generated_pack": "PI-1A-5 · higiene de fixtures: solo packs íntegramente GENERATED; nunca contenido real",
+      "engine_active_config_version": "D-26 · Phase 3.1 · versión ACTIVE de engine_config; envoltorio de solo servidor, sin exponer engine",
+      "engine_evidence_snapshot": "D-26 · Phase 3.1 · delega en engine.evidence_snapshot; la identidad la verifica el servidor",
+      "engine_attribution_snapshot": "D-26 · Phase 3.1 · delega en ingest.attribution_snapshot (SD-025)",
+      "engine_recalculate_mastery": "D-26 · Phase 3.1 · delega en engine.recalculate_mastery (EC-002, watermark atómico)",
+      "engine_rebuild_projections": "D-26 · Phase 3.1 · delega en engine.rebuild_projections (EC-006)",
+      "engine_stale_users": "D-26 · Phase 3.1 · delega en engine.stale_users (ruta B de recuperación)"
     }
   },
   "readOnlyRpcs": {
