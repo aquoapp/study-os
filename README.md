@@ -10,9 +10,9 @@ Sistema de estudio adaptativo. **Study OS es el producto; TAI es el primer pack 
 > congelado** (`fps-v1.0`, checkpoint **PASS WITH OBSERVATIONS** en
 > `docs/FPS_CHECKPOINT.md`): el vertical HOY → APRENDER → COMPROBAR → FEEDBACK → FIN, con
 > contenido sintético y **sin migración de esquema**, cabe entero dentro de la frontera
-> congelada. **Phase 3 · Learning Engine · construido el 2026-09-10** y en revisión:
-> `phase/3-learning-engine` es un **candidato de aceptación sin fusionar**, con los diez gates
-> en PASS (`docs/PHASE_3_CHECKPOINT.md`). El motor es determinista y sin red, su proyección es
+> congelada. **Phase 3 · Learning Engine · aceptada y
+> congelada** (`phase-3-v1.0`, checkpoint **PASS WITH DEBT** en `docs/PHASE_3_CHECKPOINT.md`),
+> con los diez gates en PASS. El motor es determinista y sin red, su proyección es
 > un **vector de evidencia sin ninguna puntuación**, y vive en el esquema `engine`, **no
 > expuesto**: ninguna superficie de aprendiz lo alcanza. Phase 1B, Phase 4 y Phase 5 no
 > autorizados.

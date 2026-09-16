@@ -228,9 +228,10 @@ registro de alcance negativo sigue vigilando la ausencia sin relajarse. **D-21 p
 prerrequisito de BUILD de Phase 3.** Detalle en `docs/ARCHITECTURE_STATE.md` §13.
 
 **Phase 3 · Learning Engine · BUILD construido el 2026-09-10** por la Phase 3 Build
-Authorization, en `phase/3-learning-engine` desde `main` `8a21fc2`. **Candidato de aceptación:
-sin merge, sin tag y sin congelación.** Checkpoint en `docs/PHASE_3_CHECKPOINT.md`, con los
-**diez gates P3-G1 … P3-G10 en PASS**.
+Authorization, en `phase/3-learning-engine` desde `main` `8a21fc2`, y **aceptado y congelado
+el 2026-09-16**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado
+`2ea5038`), tag anotado `phase-3-v1.0`. Checkpoint **PASS WITH DEBT** en
+`docs/PHASE_3_CHECKPOINT.md`, con los **diez gates P3-G1 … P3-G10 en PASS**.
 
 Qué existe: `packages/learning-engine` (motor determinista, sin red y sin dependencias);
 migración 19, que **cierra D-21** —el rol de servicio pierde la escritura directa sobre
@@ -256,8 +257,9 @@ escapar la línea de comandos en ningún error, y una prueba lo verifica provoca
 del CLI. **La rotación no se puede hacer por SQL** —la plataforma impide que `postgres` cambie
 su propia contraseña—: la hizo Ana en el panel de Supabase, y **D-25 quedó cerrada el
 2026-09-16** con la credencial vieja rechazada y `STAGING_DB_URL` reemplazado. PRODUCTION está
-pausado por ser un proyecto Free sin uso y no se reactiva. Merge, tag, congelación, Phase 4,
-Phase 1B y Release siguen sin autorizar.
+pausado por ser un proyecto Free sin uso y no se reactiva. **Phase 3 · FROZEN · PASS WITH
+DEBT**: D-21, D-24 y D-25 cerradas; D-13, D-18, D-20, D-22 y D-23 aceptadas; WATCH-P2-1
+heredado. Phase 4, Phase 1B, Planner, corpus oficial, Release y PRODUCTION siguen sin autorizar.
 
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:

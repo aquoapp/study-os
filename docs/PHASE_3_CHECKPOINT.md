@@ -1,8 +1,15 @@
 # STUDY OS · Phase 3 · Learning Engine · BUILD CHECKPOINT
 
 **Formato:** `Checkpoint Contract v1.0`.
-**Alcance:** candidato de aceptación. **No fusionado, sin tag, sin congelación.**
-**Fecha:** 2026-09-10.
+**Alcance:** construido el 2026-09-10 como candidato de aceptación; **aceptado, integrado y
+congelado el 2026-09-16** (§AM).
+**Fecha:** 2026-09-10 · congelación 2026-09-16.
+
+**PHASE 3 · FROZEN · PASS WITH DEBT.** La implementación quedó integrada en `main` por el PR #13
+(commit de merge `f5d0b101b58bae4d1003ea91f15ff0ecfe924f97`, padres `8a21fc2` y `2ea5038`,
+árbol idéntico al HEAD aceptado) y etiquetada con el tag anotado `phase-3-v1.0`. Las tres
+comprobaciones exigidas pasaron en verde sobre el PR (CI `35088822749`). Phase 0, Phase 1A,
+Phase 2 y el FPS siguen congelados y sus tags no se han movido.
 
 > Este checkpoint incluye una sección **SERVER INTERRUPTION RECOVERY** (§AJ). La
 > interrupción no se oculta: es procedencia.
@@ -510,6 +517,35 @@ La revisión de las herramientas encontró que `schema-drift` comparaba STAGING 
 
 P3-G1 … P3-G10 siguen en **PASS**. D-24 y D-25 cerradas: nada de la revisión bloquea ya el
 aterrizaje, que sigue exigiendo autorización humana explícita.
+
+## AM · Aceptación final y congelación · 2026-09-16
+
+**Decisión:** Phase 3 Final Acceptance + Landing / Freeze Authorization · Ana Victoria, tras la
+revisión independiente del candidato final. **PHASE 3 · LEARNING ENGINE · ACCEPTED · PASS WITH
+DEBT.**
+
+Cada SHA tiene un papel distinto y no se confunden:
+
+| Papel | Valor |
+| --- | --- |
+| Candidato aceptado | `2ea50383067c833cd0cd790120c16ad04705b99d` · árbol `6779e6517faadb9273f62aa1cc4b97d77fcf7685` · CI del candidato `35085861826` |
+| PR de implementación | #13 · CI exigida sobre el PR `35088822749`, tres jobs en verde |
+| Merge de implementación | `f5d0b101b58bae4d1003ea91f15ff0ecfe924f97` · 2026-09-16T11:22:09Z · padres `8a21fc29ca4f43a470b91d2b53ac81626042f66e` (`main`) y `2ea50383067c833cd0cd790120c16ad04705b99d` (candidato) |
+| Identidad de árbol | árbol del merge `6779e6517faadb9273f62aa1cc4b97d77fcf7685` **==** árbol del candidato; `git diff` vacío |
+| Tag canónico | anotado `phase-3-v1.0`, objeto `fbd9530ec548db6f16958955f05337a2b3d87e2c`, pela a `f5d0b10` (el merge de implementación, no este registro documental) |
+| Congelación documental | PR aparte, exclusivamente documental; no mueve la línea base ni el tag |
+
+**Deuda al congelar.** Cerradas: **D-21**, **D-24**, **D-25**. Aceptadas y sin cambio: **D-13,
+D-18, D-20, D-22, D-23**. **WATCH-P2-1** heredado y sin mitigar. La congelación no añade deuda.
+
+**Entornos.** STAGING no se reconstruye ni se resiembra por el aterrizaje: el estado validado se
+comprueba en solo lectura. PRODUCTION sigue **pausado** y sin tocar; el despliegue de
+Production que Vercel inicia con la actividad de `main` quedó **cancelado** por el control de
+release vigente.
+
+**Frontera.** No autoriza Phase 4, Phase 1B, Planner, superficie de aprendiz de mastery,
+activación o migraciones de PRODUCTION, corpus oficial, IA con autoridad ni infraestructura de
+pago.
 
 ### AL.5 · PRODUCTION
 
