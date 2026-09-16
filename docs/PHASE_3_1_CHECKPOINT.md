@@ -67,7 +67,7 @@ posterior a la respuesta, sin bloquearla.
 | Runtime | `apps/web/src/server/engine/run.ts` · `schedule.ts` · `apps/web/src/app/hoy/page.tsx` (una llamada, ningún cambio visible) |
 | Registro | `packages/domain/src/authority-registry.json` · seis RPC reservadas de servidor ancladas en D-26 |
 | Pruebas nuevas | `tests/integration/engine.runtime.spec.ts` (módulo real contra PostgREST) · `tests/e2e/auth/engine.runtime.e2e.ts` (aplicación construida) · `tests/unit/engine.invocationBoundary.spec.ts` |
-| Pruebas ajustadas | `phase3.build.spec` y `phase3.governance.spec` (§L) · `phase1a.redteam` y `phase2.redteam` (`engine.` entra en las palabras privadas del OpenAPI) · `tests/support/sql.ts` (raíz sin `import.meta`, para poder usarse desde un E2E) |
+| Pruebas ajustadas | `secret.redaction.spec` (extracción limpia, OBS-3.1-03) · `phase3.build.spec` y `phase3.governance.spec` (§L) · `phase1a.redteam` y `phase2.redteam` (`engine.` entra en las palabras privadas del OpenAPI) · `tests/support/sql.ts` (raíz sin `import.meta`, para poder usarse desde un E2E) |
 | Gobernanza | `docs/PHASE_3_1_CORRECTIVE_AUTHORIZATION.md` · este checkpoint · `docs/ARCHITECTURE_STATE.md` §15 · `CLAUDE.md` §9 |
 
 ## E · Prueba antes/después del módulo real, en STAGING
@@ -166,6 +166,7 @@ Ninguna vigilancia se debilitó: las dos siguen fallando ante cualquier cambio d
 | WATCH-P2-1 | sin cambio; la corrección no toca la calificación ni `ANSWER_SUBMITTED` |
 | **OBS-3.1-01** | Vercel no tiene configurada la clave de servicio del servidor. En el Preview desplegado el motor devuelve `SKIPPED` por diseño hasta que exista esa configuración, que es una decisión humana y no está autorizada aquí |
 | **OBS-3.1-02** | `recoverStaleProjections` (barrido de todos los atrasados) queda como utilidad operativa sin llamador; la ruta B de la aplicación es la recuperación al volver |
+| **OBS-3.1-03** | La extracción limpia de este candidato (`git archive`, `npm ci`, pruebas unitarias sin `.git`) destapó un defecto de reproducibilidad heredado de `phase-3-v1.0`: una prueba de D-25 (`secret.redaction.spec`) llamaba a `git ls-files` y fallaba fuera de un checkout. Se corrige de forma acotada —en una extracción recorre el árbol real, que es lo que el paquete contiene— y se comprueba con control negativo: un `.env.*` sembrado en la extracción la hace fallar. No cambia runtime ni migraciones |
 
 ## N · Recomendación
 

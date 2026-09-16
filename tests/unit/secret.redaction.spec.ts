@@ -24,6 +24,27 @@ import { redactSecrets, runSupabase } from '../../tools/supabase-cli.mjs';
 const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const read = (path: string) => readFileSync(join(REPO_ROOT, path), 'utf8');
 
+function statSafe(path: string): boolean {
+  try {
+    statSync(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Ficheros del árbol real, sin dependencias instaladas ni artefactos de build. */
+function walkTree(dir: string): string[] {
+  const out: string[] = [];
+  for (const name of readdirSync(join(REPO_ROOT, dir))) {
+    if (name === 'node_modules' || name === '.next' || name === 'test-results') continue;
+    const path = dir === '' ? name : `${dir}/${name}`;
+    if (statSync(join(REPO_ROOT, path)).isDirectory()) out.push(...walkTree(path));
+    else out.push(path);
+  }
+  return out;
+}
+
 function sentinel() {
   const password = `d25sentinel${randomBytes(12).toString('hex')}`;
   const url = ['postgresql://postgres', ':', password, '@127.0.0.1:1/postgres'].join('');
@@ -119,10 +140,19 @@ describe('D-25 · los secretos viajan por el entorno y nunca se imprimen', () =>
   it('ningún fichero de entorno está versionado: el paquete de aceptación no puede llevarlo', () => {
     const gitignore = read('.gitignore');
     expect(gitignore).toMatch(/^\.env\.\*$/m);
-    const tracked = execFileSync('git', ['ls-files'], { cwd: REPO_ROOT, encoding: 'utf8' })
-      .split('\n')
-      .filter((file) => /(^|\/)\.env(\.|$)/.test(file));
-    expect(tracked.every((file) => file.endsWith('.example'))).toBe(true);
+    const isEnvFile = (file: string) => /(^|\/)\.env(\.|$)/.test(file);
+    // Phase 3.1: en un checkout se miran los ficheros versionados; en una extracción de
+    // `git archive` —sin `.git`, que es exactamente el paquete de aceptación— se recorre el
+    // árbol real. `phase-3-v1.0` solo sabía hacer lo primero y fallaba en la extracción limpia.
+    const insideCheckout = statSafe(join(REPO_ROOT, '.git'));
+    const candidates = insideCheckout
+      ? execFileSync('git', ['ls-files'], { cwd: REPO_ROOT, encoding: 'utf8' }).split('\n')
+      : walkTree('');
+    const envFiles = candidates.filter(isEnvFile);
+    expect(
+      envFiles.every((file) => file.endsWith('.example')),
+      envFiles.join(', '),
+    ).toBe(true);
   });
 
   it('secret-scan vigila las cadenas de conexión con contraseña embebida', () => {
