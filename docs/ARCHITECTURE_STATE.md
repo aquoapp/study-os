@@ -3,10 +3,10 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.17 · copia viva
-**Última actualización:** 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
-**Fase actual:** **Phase 3 · Learning Engine · CANDIDATO DE ACEPTACIÓN** en `phase/3-learning-engine`, con los diez gates en PASS y **sin merge, sin tag y sin congelación** · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
-**Estado global:** **PASS WITH OBSERVATIONS** · línea base congelada `main` = `6bde0a045532c8ffb2769c0a24d4bbb94958dd57` · tag anotado `fps-v1.0` (Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/FPS_CHECKPOINT.md`
+**Versión:** 11.18 · copia viva
+**Última actualización:** 2026-09-16 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
+**Fase actual:** **Phase 3 · Learning Engine · FROZEN · PASS WITH DEBT** (`phase-3-v1.0` → `f5d0b10`), los diez gates en PASS · ninguna fase posterior autorizada · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
+**Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `f5d0b101b58bae4d1003ea91f15ff0ecfe924f97` · tag anotado `phase-3-v1.0` (FPS: `6bde0a0…`, `fps-v1.0`; Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_3_CHECKPOINT.md`
 
 ---
 
@@ -486,7 +486,7 @@ actualización es prerrequisito del BUILD, porque mientras nada exista la prohib
   dentro de la autoridad vigente: **STOP**. No se disimula la fiabilidad con comportamiento
   «best-effort» en el cliente.
 
-## 14. Phase 3 · Learning Engine · BUILD · 2026-09-10 · candidato sin fusionar
+## 14. Phase 3 · Learning Engine · BUILD · 2026-09-10 · FROZEN · PASS WITH DEBT el 2026-09-16
 
 **Registro de decisión:** Phase 3 Build Authorization · Ana Victoria · sobre `main`
 `8a21fc29ca4f43a470b91d2b53ac81626042f66e`. **Alcance: implementación, validación y
@@ -573,3 +573,22 @@ La detección de proyección incoherente compara la proyección con su watermark
 cazar cualquier falsificación. La verificación completa es el rebuild, que es lo que EC-006
 exige y lo que el ciclo ejecuta en cuanto detecta la incoherencia. Se declara aquí para que
 nadie lea de más en la palabra «detectable».
+
+### 14.8 Aceptación final y congelación · 2026-09-16
+
+**PHASE 3 · FROZEN · PASS WITH DEBT.** Phase 3 Final Acceptance + Landing / Freeze
+Authorization, Ana Victoria.
+
+| Papel | SHA |
+| --- | --- |
+| Candidato aceptado | `2ea50383067c833cd0cd790120c16ad04705b99d` · árbol `6779e6517faadb9273f62aa1cc4b97d77fcf7685` |
+| Merge de implementación (PR #13) | `f5d0b101b58bae4d1003ea91f15ff0ecfe924f97` · padres `8a21fc2` y `2ea5038` · árbol idéntico al candidato |
+| Tag canónico | `phase-3-v1.0` · objeto `fbd9530ec548db6f16958955f05337a2b3d87e2c` · pela al merge de implementación |
+| Congelación documental | PR aparte y exclusivamente documental; no mueve la línea base |
+
+CI exigida sobre el PR #13: `35088822749`, tres jobs en verde. Deuda cerrada: D-21, D-24,
+D-25. Deuda aceptada y sin cambio: D-13, D-18, D-20, D-22, D-23; WATCH-P2-1 heredado. STAGING
+comprobado en solo lectura, sin reconstruir ni resembrar. PRODUCTION **pausado** y sin tocar; el
+despliegue de Production que inició la actividad de `main` quedó **cancelado** por el control
+de release. Phase 4, Phase 1B, Planner, superficie de aprendiz de mastery, corpus oficial y
+PRODUCTION **siguen sin autorizar**.

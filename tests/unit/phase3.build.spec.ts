@@ -165,3 +165,35 @@ describe('el motor no necesita red ni IA', () => {
     expect(Object.keys(engine.dependencies ?? {})).toEqual([]);
   });
 });
+
+describe('Phase 3 · FROZEN · PASS WITH DEBT · el registro de congelación no confunde los SHA', () => {
+  const checkpoint = flat(read('docs/PHASE_3_CHECKPOINT.md'));
+  const state = flat(read('docs/ARCHITECTURE_STATE.md'));
+  const CANDIDATE = '2ea50383067c833cd0cd790120c16ad04705b99d';
+  const CANDIDATE_TREE = '6779e6517faadb9273f62aa1cc4b97d77fcf7685';
+  const MERGE = 'f5d0b101b58bae4d1003ea91f15ff0ecfe924f97';
+  const TAG_OBJECT = 'fbd9530ec548db6f16958955f05337a2b3d87e2c';
+
+  it('registra la congelación con su candidato, su merge, sus padres y su tag', () => {
+    expect(checkpoint).toContain('PHASE 3 · FROZEN · PASS WITH DEBT');
+    for (const sha of [CANDIDATE, CANDIDATE_TREE, MERGE, TAG_OBJECT]) {
+      expect(checkpoint).toContain(sha);
+    }
+    expect(checkpoint).toContain('`phase-3-v1.0`');
+    // El tag pela al merge de implementación, no a un commit documental posterior.
+    expect(checkpoint).toContain('pela a `f5d0b10` (el merge de implementación');
+    expect(checkpoint).toContain('**==** árbol del candidato');
+    expect(state).toContain('**PHASE 3 · FROZEN · PASS WITH DEBT.**');
+  });
+
+  it('la deuda al congelar es la aceptada: tres cerradas y cinco sin cambio', () => {
+    expect(checkpoint).toContain('Cerradas: **D-21**, **D-24**, **D-25**');
+    expect(checkpoint).toContain('Aceptadas y sin cambio: **D-13, D-18, D-20, D-22, D-23**');
+    expect(checkpoint).toContain('**WATCH-P2-1** heredado y sin mitigar');
+  });
+
+  it('la congelación no autoriza ninguna fase posterior ni PRODUCTION', () => {
+    expect(checkpoint).toContain('No autoriza Phase 4, Phase 1B, Planner');
+    expect(checkpoint).toContain('PRODUCTION sigue **pausado** y sin tocar');
+  });
+});
