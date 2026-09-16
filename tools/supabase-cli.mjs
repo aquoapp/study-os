@@ -103,13 +103,68 @@ export function assertPinnedCli() {
   return { pinned, installed };
 }
 
-/** Ejecuta el CLI fijado y devuelve su salida. */
+/** Cualquier cadena de conexión PostgreSQL, con o sin contraseña. */
+const CONNECTION_STRING = /postgres(?:ql)?:\/\/[^\s"'`]+/g;
+
+/**
+ * Redacta de un texto los secretos conocidos y **cualquier** cadena de conexión.
+ *
+ * D-25 · el camino de error de `execFileSync` compone su mensaje con la línea de comandos
+ * completa, y con ella el valor de `--db-url`: así llegó una contraseña de STAGING a una
+ * transcripción de trabajo. Ningún texto que salga de este módulo puede llevarla.
+ */
+export function redactSecrets(text, secrets = []) {
+  let out = String(text ?? '');
+  for (const secret of secrets) if (secret) out = out.split(secret).join('<redactado>');
+  return out.replace(CONNECTION_STRING, '<db-url>');
+}
+
+/** Valores de argumento que son secretos: lo que sigue a `--db-url`, o `--db-url=…`. */
+function secretArguments(args) {
+  const secrets = [];
+  args.forEach((arg, index) => {
+    if (arg === '--db-url' && typeof args[index + 1] === 'string') secrets.push(args[index + 1]);
+    else if (typeof arg === 'string' && arg.startsWith('--db-url=')) {
+      secrets.push(arg.slice('--db-url='.length));
+    }
+  });
+  return secrets;
+}
+
+/**
+ * Ejecuta el CLI fijado y devuelve su salida, redactada.
+ *
+ * Si el CLI falla, el error original **no se propaga**: su `message` y su `cmd` contienen la
+ * línea de comandos. Se construye uno nuevo con el código de salida y la salida del CLI, ambos
+ * redactados.
+ */
 export function runSupabase(args, options = {}) {
   assertPinnedCli();
-  return execFileSync(process.execPath, launchArgs(args), {
-    encoding: 'utf8',
-    cwd: REPO_ROOT,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    ...options,
-  });
+  const secrets = secretArguments(args);
+  let output;
+  try {
+    output = execFileSync(process.execPath, launchArgs(args), {
+      encoding: 'utf8',
+      cwd: REPO_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      ...options,
+    });
+  } catch (error) {
+    const failure = /** @type {{ status?: number | null, stdout?: unknown, stderr?: unknown }} */ (
+      error ?? {}
+    );
+    const detail = [failure.stderr, failure.stdout]
+      .filter((part) => part !== undefined && part !== null && String(part).trim() !== '')
+      .map(String)
+      .join('\n')
+      .trim();
+    throw new Error(
+      redactSecrets(
+        `el CLI de Supabase terminó con código ${failure.status ?? 'desconocido'} ` +
+          `(supabase ${args.slice(0, 2).join(' ')})${detail ? `: ${detail}` : ''}`,
+        secrets,
+      ),
+    );
+  }
+  return redactSecrets(output, secrets);
 }

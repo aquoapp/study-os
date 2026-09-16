@@ -61,7 +61,10 @@ describe('la lista de exposición tiene una sola definición', () => {
       .filter(Boolean);
     expect(configured).toEqual(registry.dataApi.exposedSchemas);
     expect(registry.dataApi.exposedSchemas).toEqual(['public']);
-    expect(registry.dataApi.nonExposedSchemas).toEqual(['content', 'ingest']);
+    // ADR-011 anexo v1.1 (2026-09-10) · alta de `engine`, previsto en el punto 10 del cuerpo.
+    // La superficie **expuesta** no cambia: el anexo la reduce, al dejar el estado derivado
+    // del Learning Engine fuera del Data API.
+    expect(registry.dataApi.nonExposedSchemas).toEqual(['content', 'ingest', 'engine']);
   });
 });
 

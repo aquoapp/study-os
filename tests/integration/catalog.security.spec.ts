@@ -97,6 +97,17 @@ function expectedPrivileges(schema: string, table: string, role: string): string
     // overreach»). Un INSERT del rol de servicio sobre `learning_events` aquí significaría
     // que existe una vía de fabricación de evidencia.
     if (schema !== 'public') return ['SELECT'];
+    /*
+     * **Actualizado el 2026-09-10 · SD-025 · D-21 cerrada.**
+     *
+     * `question_concepts` sale del contenido escribible directamente. Sigue siendo contenido
+     * canónico —lo publica la frontera de ingestión, que es SECURITY DEFINER y no depende de
+     * este grant—, pero la **transición de estado de un mapeo** pasa desde ahora por
+     * `ingest.set_question_concept_mapping_status`, que valida, atribuye actor y avanza la
+     * generación de atribución. Sin esa frontera, un mapeo podría mutar entre el cálculo
+     * incremental y el rebuild y el gate duro de EC-006 se volvería inestable.
+     */
+    if (table === 'question_concepts') return ['SELECT'];
     return CANONICAL_CONTENT_TABLES.has(table) || table === 'profiles'
       ? ['DELETE', 'INSERT', 'SELECT', 'UPDATE']
       : ['SELECT'];
@@ -160,11 +171,16 @@ describe('toda tabla de public, content e ingest tiene RLS habilitado y forzado'
       'content.answer_key_versions',
       'ingest.promotions',
       'ingest.staged_items',
+      // Phase 3 · SD-025 · frontera de atribución. `engine` no aparece aquí porque este
+      // recuento cubre `public`, `content` e `ingest`: el esquema del motor tiene su propia
+      // batería en `engine.security.spec`.
+      'ingest.attribution_generations',
+      'ingest.mapping_transitions',
     ]) {
       expect(names, `falta ${expected}`).toContain(expected);
     }
-    // 23 de Phase 1A + 12 de Phase 2 en `public` + 2 contadores en `ingest`.
-    expect(names).toHaveLength(37);
+    // 23 de Phase 1A + 12 de Phase 2 en `public` + 2 contadores + 2 tablas de atribución.
+    expect(names).toHaveLength(39);
   });
 
   for (const row of tables) {

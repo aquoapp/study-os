@@ -209,9 +209,13 @@
       "exposedSchemas debe coincidir con [api].schemas de supabase/config.toml y con la",
       "configuración de cada proyecto. nonExposedSchemas nunca son alcanzables por anon ni",
       "authenticated. Cambiar cualquiera de las dos listas es un cambio de frontera de",
-      "seguridad (EC-019) y exige enmienda de ADR-011."
+      "seguridad (EC-019) y exige enmienda de ADR-011.",
+      "",
+      "2026-09-10 · Phase 3 · alta de `engine`, previsto en ADR-011 punto 10 y creado por su",
+      "anexo v1.1. Contiene la configuración, las proyecciones derivadas y las funciones del",
+      "Learning Engine. NO expuesto: ninguna superficie de aprendiz alcanza el estado derivado."
     ],
     "exposedSchemas": ["public"],
-    "nonExposedSchemas": ["content", "ingest"]
+    "nonExposedSchemas": ["content", "ingest", "engine"]
   }
 }

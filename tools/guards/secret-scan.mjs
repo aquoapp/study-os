@@ -66,6 +66,13 @@ const SOURCE_PATTERNS = [
     name: 'asignación literal de service role',
     re: /SUPABASE_SERVICE_ROLE_KEY\s*[:=]\s*['"][^'"\s]{8,}['"]/g,
   },
+  {
+    // D-25 · una cadena de conexión con contraseña real embebida. El umbral de 12 caracteres
+    // deja pasar el valor por defecto documentado del stack local (`postgres`) y los
+    // marcadores de las pruebas, y atrapa cualquier contraseña generada.
+    name: 'cadena de conexión con contraseña',
+    re: /postgres(?:ql)?:\/\/[^:@\s'"`/]+:[^@\s'"`]{12,}@/g,
+  },
 ];
 
 /** Rutas cuya salida renderizada se inspecciona. */

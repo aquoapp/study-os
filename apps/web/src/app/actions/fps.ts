@@ -28,6 +28,7 @@ import {
   type ItemRow,
 } from '../../server/fps/session';
 import { loadQuestionContent, loadUnitContent } from '../../server/fps/content';
+import { scheduleProjection } from '../../server/engine/schedule';
 
 /**
  * Acciones del First Product Slice.
@@ -367,7 +368,7 @@ export async function submitAnswerAction(
 ): Promise<FpsActionState> {
   let destination = '/hoy';
   try {
-    const { supabase } = await context();
+    const { identity, supabase } = await context();
     const session = await findOpenSession(supabase);
     if (!session) redirect('/hoy');
 
@@ -403,6 +404,12 @@ export async function submitAnswerAction(
         if (stored) await appendEvent(supabase, envelopeFromStored(stored));
       }
     }
+    // Ruta A · la evidencia ya está aceptada y es duradera; el motor corre **después** y sin
+    // bloquear. Si falla, o si ni siquiera arranca, el atraso queda registrado en el propio
+    // watermark y la ruta B lo recupera (`server/engine/schedule.ts`). Ninguna respuesta al
+    // aprendiz depende de la proyección: en Phase 3 no se le muestra nada de ella.
+    scheduleProjection(identity.userId);
+
     const ordinal = state.items.find((item) => item.id === itemId)?.sort_order;
     destination = ordinal ? `/comprobar/${ordinal}` : await advance(supabase);
   } catch (error) {

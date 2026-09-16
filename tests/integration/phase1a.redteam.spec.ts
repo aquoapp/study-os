@@ -537,8 +537,14 @@ describe('claves de respuesta (EC-007 · INV-101)', () => {
     );
     // Phase 2 añade los dos contadores de la frontera, con el mismo contrato: el rol de
     // servicio los lee y no los escribe. Quien asigna posición e intento es la función.
+    //
+    // Phase 3 (SD-025) añade las dos tablas de la frontera de atribución con el mismo
+    // contrato: la generación y su rastro los escriben el trigger y la función de frontera,
+    // nunca una sentencia suelta del rol de servicio.
     expect(grants.map((g) => `${g.table}:${g.privilege}`)).toEqual([
       'content.answer_key_versions:SELECT',
+      'ingest.attribution_generations:SELECT',
+      'ingest.mapping_transitions:SELECT',
       'ingest.promotions:SELECT',
       'ingest.staged_items:SELECT',
       'ingest.user_event_counters:SELECT',

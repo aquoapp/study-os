@@ -526,36 +526,44 @@ describe('aterrizaje de gobernanza · nada de Phase 3 ha llegado al runtime', ()
   const migrationsDir = join(REPO_ROOT, 'supabase', 'migrations');
   const migrations = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql'));
 
-  it('no hay ninguna migración nueva', () => {
-    expect(migrations).toHaveLength(19);
-    expect(migrations.sort().at(-1)).toBe('00000000000018_evidence_core.sql');
+  /**
+   * Estas tres comprobaciones nacieron el 2026-09-10 afirmando que el aterrizaje de
+   * gobernanza no había creado nada. La **Phase 3 Build Authorization** autoriza después la
+   * implementación, de modo que dejan de afirmar ausencia y pasan a afirmar **exactitud de
+   * alcance**: existe lo autorizado, y solo lo autorizado.
+   */
+  it('las migraciones de Phase 3 son exactamente las dos autorizadas', () => {
+    expect(migrations).toHaveLength(21);
+    expect(migrations.sort().slice(-2)).toEqual([
+      '00000000000019_attribution_boundary.sql',
+      '00000000000020_engine_core.sql',
+    ]);
   });
 
-  it('ninguna migración menciona un objeto de Phase 3', () => {
+  it('ninguna migración crea sustrato que Phase 3 no autoriza', () => {
     const sql = migrations
       .map((name) => readFileSync(join(migrationsDir, name), 'utf8').toLowerCase())
       .join('\n');
     for (const table of [
-      'concept_mastery',
-      'mastery_history',
-      'error_patterns',
       'intervention_outcomes',
       'exam_readiness',
-      'projection_watermarks',
-      'engine_config',
-      'attribution_generation',
-      'attribution_pack_version_id',
+      'planner_runs',
+      'planner_items',
+      'review_schedule',
     ]) {
-      expect(sql, `alguna migración menciona ${table}`).not.toContain(table);
+      expect(sql, `alguna migración crea ${table}`).not.toMatch(
+        new RegExp(`create\\s+table\\s+(if\\s+not\\s+exists\\s+)?([a-z_]+\\.)?${table}\\b`),
+      );
     }
   });
 
-  it('no existe el paquete del motor', () => {
-    expect(existsSync(join(REPO_ROOT, 'packages', 'learning-engine'))).toBe(false);
+  it('existe el paquete del motor y ningún otro', () => {
+    expect(existsSync(join(REPO_ROOT, 'packages', 'learning-engine'))).toBe(true);
     expect(readdirSync(join(REPO_ROOT, 'packages')).sort()).toEqual([
       'config',
       'design-system',
       'domain',
+      'learning-engine',
     ]);
   });
 

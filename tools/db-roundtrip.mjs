@@ -71,10 +71,12 @@ if (environment !== 'local' && isLoopbackUrl(dbUrl)) {
 }
 
 const NEWLINE = String.fromCharCode(10);
+// D-25 · se redacta la cadena conocida y, además, cualquier otra cadena de conexión.
 const redact = (text) =>
   String(text ?? '')
     .split(dbUrl)
-    .join('<db-url>');
+    .join('<db-url>')
+    .replace(/postgres(?:ql)?:\/\/[^\s"'`]+/g, '<db-url>');
 
 function cli(args) {
   assertPinnedCli();
@@ -171,41 +173,41 @@ function query(sql, { expectRows = true } = {}) {
 const SIGNATURE_SQL = `
 select kind, identity, definition from (
   select 'schema' as kind, n.nspname as identity, coalesce(n.nspacl::text, '') as definition
-    from pg_namespace n where n.nspname in ('public','content','ingest')
+    from pg_namespace n where n.nspname in ('public','content','ingest','engine')
   union all
   select 'table', n.nspname || '.' || c.relname,
          coalesce(c.relacl::text, '') || '|rls=' || c.relrowsecurity || '|forced=' || c.relforcerowsecurity || '|' || coalesce(obj_description(c.oid, 'pg_class'), '')
     from pg_class c join pg_namespace n on n.oid = c.relnamespace
-   where c.relkind in ('r','v','m','S') and n.nspname in ('public','content','ingest')
+   where c.relkind in ('r','v','m','S') and n.nspname in ('public','content','ingest','engine')
   union all
   select 'column', table_schema || '.' || table_name || '.' || column_name,
          udt_name || '|' || is_nullable || '|' || coalesce(column_default, '') || '|' || ordinal_position
-    from information_schema.columns where table_schema in ('public','content','ingest')
+    from information_schema.columns where table_schema in ('public','content','ingest','engine')
   union all
   select 'constraint', c.conrelid::regclass::text || '.' || c.conname, pg_get_constraintdef(c.oid)
     from pg_constraint c join pg_namespace n on n.oid = c.connamespace
-   where n.nspname in ('public','content','ingest')
+   where n.nspname in ('public','content','ingest','engine')
   union all
   select 'index', schemaname || '.' || indexname, indexdef
-    from pg_indexes where schemaname in ('public','content','ingest')
+    from pg_indexes where schemaname in ('public','content','ingest','engine')
   union all
   select 'trigger', n.nspname || '.' || c.relname || '.' || t.tgname, pg_get_triggerdef(t.oid) || '|' || t.tgenabled::text
     from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_namespace n on n.oid = c.relnamespace
-   where not t.tgisinternal and n.nspname in ('public','content','ingest')
+   where not t.tgisinternal and n.nspname in ('public','content','ingest','engine')
   union all
   select 'function', n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')',
          pg_get_function_result(p.oid) || '|secdef=' || p.prosecdef || '|' || coalesce(p.proconfig::text, '') || '|' || coalesce(p.proacl::text, '') || '|' || p.provolatile::text || '|' || md5(p.prosrc) || '|' || coalesce(obj_description(p.oid, 'pg_proc'), '')
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname in ('public','content','ingest')
+   where n.nspname in ('public','content','ingest','engine')
   union all
   select 'policy', schemaname || '.' || tablename || '.' || policyname,
          cmd || '|' || permissive || '|' || roles::text || '|' || coalesce(qual, '') || '|' || coalesce(with_check, '')
-    from pg_policies where schemaname in ('public','content','ingest')
+    from pg_policies where schemaname in ('public','content','ingest','engine')
   union all
   select 'type', n.nspname || '.' || t.typname,
          t.typtype::text || '|' || coalesce((select string_agg(e.enumlabel, ',' order by e.enumsortorder) from pg_enum e where e.enumtypid = t.oid), '')
     from pg_type t join pg_namespace n on n.oid = t.typnamespace
-   where n.nspname in ('public','content','ingest') and t.typtype in ('e','d')
+   where n.nspname in ('public','content','ingest','engine') and t.typtype in ('e','d')
 ) s order by kind, identity`;
 
 function catalogSignature() {
@@ -273,7 +275,7 @@ for (const name of [...reversible].reverse()) {
 
 // ---------------------------------------------------------------- 2 · catálogo
 const [state] = query(
-  "select (select count(*)::int from pg_namespace where nspname in ('content','ingest')) as private_schemas, " +
+  "select (select count(*)::int from pg_namespace where nspname in ('content','ingest','engine')) as private_schemas, " +
     "(select string_agg(tablename, ',' order by tablename) from pg_tables where schemaname = 'public') as public_tables, " +
     "(select count(*)::int from pg_type t join pg_namespace n on n.oid = t.typnamespace where n.nspname = 'public' and t.typtype = 'e' and t.typname <> 'provenance_class') as phase1a_enums",
 );
@@ -321,8 +323,8 @@ if (environment === 'local') {
 }
 
 const [after] = query(
-  "select (select count(*)::int from pg_namespace where nspname in ('content','ingest')) as private_schemas, " +
-    "(select count(*)::int from pg_tables where schemaname in ('public','content','ingest')) as tables",
+  "select (select count(*)::int from pg_namespace where nspname in ('content','ingest','engine')) as private_schemas, " +
+    "(select count(*)::int from pg_tables where schemaname in ('public','content','ingest','engine')) as tables",
 );
 console.log(`  ✔ reaplicadas: esquemas privados=${after.private_schemas} · tablas=${after.tables}`);
 
