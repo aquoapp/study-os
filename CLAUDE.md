@@ -283,12 +283,27 @@ categórica equilibrada, ni «reparación primero» ni «cobertura primero»— 
 una decisión previa a Phase 4B, de modo que el contrato recibe la duración de cada candidato
 **como entrada** y en 4A no se inventa ningún minuto ni se cierra FPS-OBS-04.
 
-Aterrizan `docs/PLANNER_CONTRACT.md` v1.0 y **ADR-012**, ambos `ACCEPTED`, más SD-030 y SD-031 por
-adenda. La selección es **categórica y determinista**: sin puntuación de dominio, sin
-`priority_score`, sin pesos y sin proxy de readiness. La composición se deriva entera de las
-invariantes aceptadas —una garantía **existencial** de reparación en la cabeza del plan,
-continuidad de cobertura en el resto— y **no introduce ningún parámetro de equilibrio**: la única
-cantidad que aparece es la aridad de un existencial, no una proporción elegida.
+Aterrizan `docs/PLANNER_CONTRACT.md` y **ADR-012**, más SD-030 y SD-031 por adenda. La selección
+es **categórica y determinista**: sin puntuación de dominio, sin `priority_score`, sin pesos y sin
+proxy de readiness. La composición pone una garantía **existencial** de reparación en la cabeza
+del plan y continuidad de cobertura en el resto, y **no introduce ningún parámetro de
+equilibrio**: la única cantidad que aparece es la aridad de un existencial, no una proporción
+elegida.
+
+**Validación adversarial el mismo día, y corrigió el candidato.** La revisión independiente
+encontró dos defectos reales. **IR-P4A-01:** el contrato daba una necesidad de reparación por
+«respondida» cuando el Planner había **emitido** la acción, de modo que cerrar la aplicación sin
+hacer nada retiraba evidencia negativa de su presión. Corregido: **un plan es un registro de
+decisión, no evidencia de ejecución**, solo la evidencia nueva registrada satisface la garantía, y
+el historial de ejecuciones pasa a ser auditoría y nunca señal. **IR-P4A-02:** la atomicidad de
+`APRENDER + COMPROBAR` estaba sobreafirmada. La cadena pura queda falsada mecánicamente, pero
+quedan dos modelos admisibles y no equivalentes. Conclusión honesta: **las siete cláusulas de
+P4-D1 no determinan un algoritmo único**, así que el contrato pasa a
+**`PROPOSED · BLOQUEADO POR DECISIÓN HUMANA`** y vuelven a Ana **P4-D3** (granularidad de la
+acción) y **P4-D4** (orden entre `EXPOSED` y `NEW`). ADR-012 sigue `ACCEPTED` con anexo v1.1: la
+arquitectura no estaba en disputa. La validación vive en `tests/governance/` —modelo de
+referencia, 147 420 estados enumerados, 1 080 trayectorias sembradas y controles negativos— y
+**no es código de producción ni afirma nada sobre eficacia pedagógica**.
 `EVIDENCE_POSITIVE` no es elegible en v1 y no se recicla; el agotamiento honesto es
 `NOTHING_ELIGIBLE`, que nunca significa preparación ni dominio permanente; y el Planner no
 fabrica actividad para evitar un plan vacío. Un plan es **una decisión que el cliente no puede

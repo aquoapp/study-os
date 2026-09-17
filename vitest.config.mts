@@ -42,7 +42,13 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit',
-          include: ['tests/unit/**/*.spec.ts'],
+          /**
+           * `tests/governance/` es el modelo de referencia del Planner y sus simulaciones
+           * adversariales: no tocan red ni base de datos, no son código de producción y nada
+           * de `apps/` ni `packages/` los importa. Corren aquí para que la comprobación
+           * exhaustiva sea un check bloqueante y no una promesa.
+           */
+          include: ['tests/unit/**/*.spec.ts', 'tests/governance/**/*.spec.ts'],
           /**
            * Sin paralelismo entre ficheros.
            *

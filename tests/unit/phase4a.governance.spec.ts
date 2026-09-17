@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -11,9 +12,15 @@ import { REPO_ROOT } from './lib/run-guard';
  * `phase4a.governance.spec` · Phase 4A · Planner Domain / Decision Engine · aterrizaje de
  * gobernanza del 2026-09-17.
  *
+ * Actualizado el mismo día tras la **validación adversarial**: la revisión independiente encontró
+ * que una recomendación emitida contaba como respuesta a la reparación (IR-P4A-01) y que la
+ * atomicidad estaba sobreafirmada (IR-P4A-02). El contrato deja de estar aceptado, y este
+ * vigilante deja de afirmar que lo está.
+ *
  * Vigila lo que la decisión humana dejó fijado y, sobre todo, **lo que prohibió**:
  *
- *   - el contrato del Planner y ADR-012 existen, están aceptados y **no** están implementados;
+ *   - el contrato consta `PROPOSED · BLOQUEADO` mientras P4-D3 y P4-D4 sigan abiertas, y ADR-012
+ *     sigue aceptado y **sin implementar**;
  *   - P4-D1 consta con sus siete cláusulas, y P4-D2 consta **diferida**;
  *   - la composición no introduce ningún parámetro de equilibrio: ni ratio, ni cuota, ni ciclo,
  *     ni alternancia, ni azar;
@@ -37,13 +44,18 @@ const contract = read(CONTRACT);
 const adr = read(ADR);
 const authorization = read(AUTHORIZATION);
 
-describe('Phase 4A · el contrato del Planner está aceptado y acotado', () => {
-  it('es v1.0, ACCEPTED, y deja claro que el BUILD no lo está', () => {
-    expect(contract).toContain('# STUDY OS · Planner Contract · v1.0');
+describe('Phase 4A · el contrato del Planner no se declara aceptado con una decisión abierta', () => {
+  it('es v1.1 y consta PROPOSED · BLOQUEADO, con sus dos bloqueantes nombrados', () => {
+    expect(contract).toContain('# STUDY OS · Planner Contract · v1.1');
     expect(flat(contract)).toContain(
-      '**ESTADO:** `ACCEPTED` como contrato de Phase 4A · **BUILD no autorizado**',
+      '**ESTADO:** `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA` · **no aceptado como v1.1**',
     );
+    expect(flat(contract)).toContain('**BLOQUEANTES:** **P4-D3**');
+    expect(flat(contract)).toContain('**P4-D4**');
     expect(flat(contract)).toContain('**PROPIETARIO NORMATIVO:** ADR-012');
+    // La historia del defecto no se borra: v1.0 se aterrizó como ACCEPTED y se corrigió.
+    expect(flat(contract)).toContain('**IR-P4A-01**');
+    expect(flat(contract)).toContain('**IR-P4A-02**');
   });
 
   it('define las veintiséis secciones que la autorización exige', () => {
@@ -90,10 +102,43 @@ describe('Phase 4A · P4-D1 · composición categórica equilibrada', () => {
     expect(flattened).toContain('ninguna invariante protege a la reparación de la cobertura');
   });
 
-  it('el red team de la derivación cubre los quince escenarios exigidos', () => {
+  it('los contraejemplos semánticos son al menos veinte y llevan veredicto', () => {
     const rows = authorization.split('\n').filter((line) => /^\| \d+ \| /.test(line));
-    expect(rows).toHaveLength(15);
-    for (const row of rows) expect(row, row).toContain('PASA');
+    expect(rows.length).toBeGreaterThanOrEqual(20);
+    for (const row of rows) {
+      expect(row, row).toMatch(/ACEPTABLE|NO ACEPTABLE|DECISIÓN HUMANA/);
+    }
+  });
+
+  it('la derivación reconoce que no determina un algoritmo único', () => {
+    const flattened = flat(authorization);
+    expect(flattened).toContain(
+      '**Las siete cláusulas de P4-D1 no determinan un algoritmo único.**',
+    );
+    expect(flattened).toContain('**P4-D3 · granularidad de la acción**');
+    expect(flattened).toContain('**P4-D4 · orden entre `EXPOSED` y `NEW`**');
+  });
+
+  it('IR-P4A-01 consta corregido: una recomendación no es ejecución', () => {
+    const flattened = flat(contract);
+    expect(flattened).toContain(
+      '**Un plan es un registro de decisión, no evidencia de ejecución.**',
+    );
+    expect(flattened).toContain(
+      'este contrato elimina por completo el concepto de «necesidad respondida»',
+    );
+    // El historial de ejecuciones deja de ser señal de selección.
+    expect(flattened).toContain('**auditoría, no señal**');
+  });
+
+  it('las dos decisiones vuelven como fichas y ninguna está marcada aceptada', () => {
+    const flattened = flat(authorization);
+    for (const id of ['### P4-D3', '### P4-D4']) {
+      expect(authorization, `falta la ficha ${id}`).toContain(id);
+    }
+    expect(flattened).toContain('Ninguna está tomada. Ninguna lleva `ACCEPTED`.');
+    expect(flattened).not.toMatch(/P4-D3[^.]{0,40}`ACCEPTED`/);
+    expect(flattened).not.toMatch(/P4-D4[^.]{0,40}`ACCEPTED`/);
   });
 
   it('ningún parámetro de equilibrio entra por la configuración', () => {
@@ -241,9 +286,32 @@ describe('Phase 4A · disposiciones registradas', () => {
       .filter((line) => /^\| \*\*P4-G\d+\*\*/.test(line))
       .map((line) => /\*\*(P4-G\d+)\*\*/.exec(line)?.[1]);
     expect(gateRows).not.toContain('P4-G18');
-    expect(gateRows).toContain('P4-G16');
-    expect(gateRows).toContain('P4-G19');
-    expect(gateRows).toContain('P4-G20');
+    for (const gate of ['P4-G16', 'P4-G19', 'P4-G20', 'P4-G21', 'P4-G22']) {
+      expect(gateRows, `falta ${gate}`).toContain(gate);
+    }
+  });
+
+  it('el modelo de referencia existe y ningún código de producción lo importa', () => {
+    const files = readdirSync(join(REPO_ROOT, 'tests/governance'));
+    expect(files).toContain('modelCheck.spec.ts');
+    expect(files).toContain('simulation.spec.ts');
+    expect(files).toContain('negativeControls.spec.ts');
+    for (const root of ['apps/web/src', 'packages']) {
+      const hits = execFileSync(
+        'node',
+        [
+          '-e',
+          `const {readdirSync,readFileSync,statSync}=require('fs');const {join}=require('path');` +
+            `let out=[];const walk=(d)=>{for(const e of readdirSync(d)){const p=join(d,e);` +
+            `if(statSync(p).isDirectory()){if(e!=='node_modules')walk(p);}` +
+            `else if(/\\.(ts|tsx)$/.test(e)&&readFileSync(p,'utf8').includes('tests/governance'))out.push(p);}};` +
+            `walk(process.argv[1]);console.log(out.join('\\n'));`,
+          join(REPO_ROOT, root),
+        ],
+        { encoding: 'utf8' },
+      ).trim();
+      expect(hits, `${root} importa el modelo de gobernanza`).toBe('');
+    }
   });
 });
 

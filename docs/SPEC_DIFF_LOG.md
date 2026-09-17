@@ -1569,3 +1569,64 @@ copia en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md`.
 | — | ADR-012 · autoridad de decisión del Planner | **`ACCEPTED · v1.0`** · `NOT IMPLEMENTED` |
 
 **Total tras esta adenda: 31 entradas SPEC_DIFF y 1 errata.**
+
+---
+
+## SD-031 · **corrección** · 2026-09-17 · validación adversarial de Phase 4A
+
+**Corrige el estado de:** la propia entrada SD-031 de esta adenda, que registró
+`docs/PLANNER_CONTRACT.md` v1.0 como `ACCEPTED`. El texto original **no se reescribe**: queda
+arriba como cronología, y esta entrada lo corrige.
+
+**Origen:** revisión independiente del candidato de gobernanza de Phase 4A · hallazgos
+**IR-P4A-01** e **IR-P4A-02** · validación adversarial en `tests/governance/`.
+**Estado:** `docs/PLANNER_CONTRACT.md` pasa a **v1.1 · `PROPOSED · BLOQUEADO POR DECISIÓN
+HUMANA`**. **No** está aceptado.
+
+**Qué se corrige, y por qué el estado anterior era falso:**
+
+1. **IR-P4A-01.** El contrato definía una necesidad de reparación como «respondida» cuando una
+   ejecución anterior **emitió** la acción. Con eso, planificar sin ejecutar retiraba evidencia
+   negativa de la presión del Planner. `PLANIFICADO` no equivale a `PRESENTADO`, `INICIADO`,
+   `COMPLETADO`, `COMPROBADO` ni `EVIDENCIA REGISTRADA`. El concepto de «necesidad respondida»
+   **se elimina**: solo la evidencia nueva registrada satisface P4-D1.1, y el historial de
+   ejecuciones pasa a ser auditoría, nunca señal.
+2. **IR-P4A-02.** La atomicidad de `APRENDER + COMPROBAR` estaba **sobreafirmada**. La cadena pura
+   queda falsada mecánicamente, pero quedan dos modelos admisibles y no equivalentes, y ninguna
+   autoridad elige entre ellos.
+
+**Consecuencia sobre la afirmación central de SD-031.** Donde decía que la composición se deriva
+entera de las invariantes aceptadas, la afirmación correcta es más modesta y más honesta:
+
+> Las siete cláusulas de P4-D1 determinan una **familia** de algoritmos deterministas, no uno
+> único. Quedan derivados la posición y la aridad de la garantía de reparación, la asimetría
+> frente a la cobertura, el orden dentro de la reparación —evidencia más antigua primero, con las
+> dos alternativas falsadas—, el empaquetado y el rechazo de toda optimización. Quedan **sin
+> determinar** la granularidad de la acción (**P4-D3**) y el orden entre `EXPOSED` y `NEW`
+> (**P4-D4**).
+
+**Lo que no cambia:** ADR-012 sigue `ACCEPTED` —la arquitectura no estaba en disputa—, y siguen
+en pie la ausencia de puntuación y de pesos, la exclusión de `EVIDENCE_POSITIVE`, el agotamiento
+honesto, la prohibición de actividad sintética y la prohibición de todo parámetro de equilibrio.
+SD-030 no se toca.
+
+**Impacto:** Phase 4A. **Ninguna Build Authorization puede emitirse** mientras P4-D3 y P4-D4
+sigan abiertas.
+
+---
+
+## Estado de la adenda · tras la validación adversarial de Phase 4A · 2026-09-17
+
+Complementa al estado anterior sin sustituirlo.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| P4-D1 | composición categórica equilibrada | `ACCEPTED` con modificación · sin cambio |
+| P4-D2 | origen de los minutos planificados | `DEFERRED` · sin cambio |
+| **P4-D3** | granularidad de la acción | **ABIERTA · bloquea la aceptación del contrato** |
+| **P4-D4** | orden entre `EXPOSED` y `NEW` | **ABIERTA · bloquea la aceptación del contrato** |
+| SD-030 | disposición de REQ-E03/E04/E10/E11 e INV-108 | `ACCEPTED` · sin cambio |
+| SD-031 | Planner Contract | **corregido** · el contrato pasa a `PROPOSED · BLOQUEADO` |
+| ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexo v1.1 registrado |
+
+**Total tras esta adenda: sin cambio** · 31 entradas SPEC_DIFF y 1 errata.

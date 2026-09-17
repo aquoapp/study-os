@@ -11,13 +11,20 @@ ella. **Solo gobernanza: el BUILD de Phase 4A no está autorizado.**
 | Fase congelada anterior | **Phase 3.1 · FROZEN · PASS WITH DEBT** · `phase-3-v1.1` → `577cc711e017f1fb48ba881ea34288d865317429` |
 | Entrada aceptada | **Phase 4 · Planner Engine · Post-Phase-3.1 Pre-Authorization Decision Packet** |
 | Modo | gobernanza · sin BUILD · sin runtime · sin esquema |
-| Propietario normativo | **ADR-012** · contrato en `docs/PLANNER_CONTRACT.md` v1.0 |
+| Propietario normativo | **ADR-012** · contrato en `docs/PLANNER_CONTRACT.md` |
+| Validación adversarial | 2026-09-17 · **IR-P4A-01** e **IR-P4A-02** aceptados · el contrato pasa a `PROPOSED · BLOQUEADO` (§6) |
 
 ---
 
 ## 1 · Qué aterriza
 
-- **`docs/PLANNER_CONTRACT.md` v1.0** · `ACCEPTED` como contrato de Phase 4A.
+> **Corrección del 2026-09-17.** La revisión independiente encontró dos defectos reales en el
+> candidato v1 y los dos se aceptan sin defensa (§6.1, §6.2). El contrato **deja de estar
+> aceptado**: la validación demuestra que las siete cláusulas de P4-D1 **no determinan un
+> algoritmo único**, y quedan dos decisiones humanas —**P4-D3** y **P4-D4**— que esta ronda no
+> toma. Todo lo demás de este aterrizaje se mantiene.
+
+- **`docs/PLANNER_CONTRACT.md` v1.1** · `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA` (P4-D3, P4-D4).
 - **ADR-012 · Autoridad de decisión del Planner** · `ACCEPTED · v1.0`, `NOT IMPLEMENTED`.
 - **Disposiciones SPEC_DIFF** de H-P4-1a, por adenda.
 - **P4-D1** registrada como autoridad de producto.
@@ -84,80 +91,156 @@ producto separadas.
 | **H-P4-6** | Mecanismos de mínimo privilegio ya existentes: `public` con RLS forzado, superficies legibles por la persona y una tabla de servicio sin concesión a `anon` ni `authenticated`. **Ningún esquema privado nuevo**; ADR-011 no se amplía en silencio |
 | **H-P4-7** | Creación de plan y arranque de sesión planificada **autoritativos de servidor**. La superficie de RPC invocable por el cliente **no se amplía**: servidor calcula la decisión autoritativa → frontera de persistencia gobernada |
 
-## 6 · Derivación de la composición equilibrada
+## 6 · Derivación de la composición · **reconstruida tras la validación adversarial**
 
-§6 de la autorización exige demostrar que la composición equilibrada se deriva **sin introducir
-un parámetro oculto de producto o de ciencia**, y detenerse si no se puede.
+La revisión independiente rechazó la prueba anterior. Tenía razón dos veces, y las dos
+correcciones están abajo. La prueba se reconstruye desde cero; no se conserva ninguna conclusión
+solo porque apareciera en el candidato v1.
 
-**Se puede.** La derivación completa es §G del contrato. Resumen del argumento:
+### 6.1 · IR-P4A-01 · una recomendación no es una respuesta
 
-1. **Las necesidades se agrupan en tres conjuntos** con propiedades de agotamiento distintas:
-   **R** (reparación sin responder), **V** (`EXPOSED`), **N** (`NEW`), con **C = V ∪ N**.
-2. **V y N drenan monótonamente**: actuar sobre ellos produce evidencia y el concepto abandona el
-   conjunto. **R puede reaparecer** indefinidamente, porque la persona puede volver a fallar. Esa
-   asimetría, y no una preferencia pedagógica, es la que crea el riesgo de monopolio que P4-D1.2
-   prohíbe.
-3. **Una acción es atómica** (contrato §F.2). No se deriva de comodidad: no existe estado
-   categórico para «reaprendido pero sin comprobar», de modo que media acción abriría un bucle
-   que las propias entradas del Planner no pueden ver, y la reproducción histórica dejaría de ser
-   fiel.
-4. **Una necesidad de reparación está respondida** cuando una ejecución anterior ya emitió su
-   acción con evidencia consumida igual o posterior a la evidencia que la creó. Es la definición
-   de «responder» que P4-D1.1 usa, no una política nueva. Gracias a ella, R también drena salvo
-   que llegue evidencia negativa nueva.
-5. **La cabeza es de reparación.** P4-D1.1 es una obligación incondicional y P4-D1.2 una
-   prohibición de monopolio. Con la cabeza en cobertura, un presupuesto pequeño dejaría el plan
-   sin reparación e incumpliría P4-D1.1. El orden queda determinado.
-6. **La cantidad es uno, y no es una cuota.** P4-D1.1 es una garantía **existencial**: exige que
-   exista una respuesta, no una cantidad. La aridad de un existencial es uno. Cero incumple
-   P4-D1.1; cualquier valor mayor sería una cantidad **elegida**, exactamente el parámetro que
-   P4-D1.7 prohíbe. El tope tampoco se fija: es el complemento de la garantía, porque ninguna
-   otra regla coloca reparación mientras quede cobertura por colocar.
-7. **La asimetría es derivada.** Ninguna invariante protege a la reparación de la cobertura, de
-   modo que un tope simétrico sería política inventada.
-8. **El orden de sílabo por sí solo no sirve.** Un concepto solo tiene evidencia si ya se
-   estudió, y el estudio avanza en orden de sílabo: todo concepto con evidencia está
-   estructuralmente **antes** que el siguiente concepto nuevo. Una composición puramente ordinal
-   degenera en «reparar todo lo tocado antes de avanzar», el monopolio prohibido. Por eso las
-   garantías son **posicionales**.
+**Afirmación anterior:** una necesidad de reparación queda «respondida» cuando una ejecución
+anterior del Planner **emitió** la acción correspondiente.
 
-**Ningún parámetro nuevo.** La única cantidad que aparece es el uno del paso 6, que es la aridad
-de una garantía existencial y no una proporción elegida. No hay ratio, porcentaje, peso, cuota,
-longitud de ciclo, constante de alternancia, máximo de consecutivos ni azar. La mezcla real de un
-plan es **consecuencia** de la elegibilidad y del presupuesto.
+**Contraejemplo, aceptado sin defensa:** la persona falla el concepto A · el Planner emite
+`REAPRENDER + COMPROBAR` · la persona cierra la aplicación sin ejecutar nada · vuelve más tarde ·
+no hay evidencia nueva. Bajo aquella redacción A quedaba «respondida» y salía de la presión del
+Planner **sin que la persona hubiera hecho nada**.
 
-### 6.1 · Red team de la derivación
+`PLANIFICADO` no equivale a `PRESENTADO`, `INICIADO`, `COMPLETADO`, `COMPROBADO`,
+`EVIDENCIA REGISTRADA` ni `REPARACIÓN LOGRADA`.
 
-| # | Escenario | Comportamiento | Veredicto |
-| --- | --- | --- | --- |
-| 1 | Todo reparación | C = ∅ · se llena con R en orden de sílabo; P4-D1.2 es vacua | PASA |
-| 2 | Todo `NEW` | R = ∅ · cobertura en orden de sílabo | PASA |
-| 3 | Todo `EXPOSED` | R = ∅ · verificaciones en orden de sílabo | PASA |
-| 4 | Reparación + `NEW` | una reparación (la de menor sílabo sin responder) + cobertura | PASA · progreso y reparación en el mismo plan |
-| 5 | Reparación + `EXPOSED` | una reparación + verificaciones | PASA |
-| 6 | Los tres | una reparación, luego V y N por posición de sílabo, sin regla de categoría | PASA |
-| 7 | Presupuesto de una acción | solo caben acciones de un ítem: la verificación. Si no hay ninguna, `NOTHING_FITS` | PASA · determinista, sin elección arbitraria |
-| 8 | Presupuesto de dos ítems | cabe una acción de reparación: la toma **G-R**; la cobertura no entra porque no cabe, no porque se la excluya | PASA |
-| 9 | Presupuesto muy grande | una reparación + toda la cobertura; agotada la cobertura, el resto en reparación | PASA |
-| 10 | Sesiones repetidas con conjunto elegible sin cambios | hash de entrada idéntico → reutilización, sin ejecución nueva | PASA |
-| 11 | Un concepto que falla una y otra vez | cada sesión vuelve a estar sin responder y toma **la única** ranura de reparación; la cobertura sigue avanzando | PASA · es el caso que P4-D1.2 protege |
-| 12 | Sílabo grande, persona que progresa | la cobertura avanza monótonamente; la reparación drena por respuesta | PASA |
-| 13 | Reproducción determinista | todo lo dependiente del historial —incluido respondida/sin responder— se registra en la instantánea | PASA · requisito de contrato §S |
-| 14 | Orden de filas alterado | solo claves de sílabo y comparación por punto de código | PASA |
-| 15 | Ratio accidental emergente | la única cantidad es la aridad uno; la mezcla es consecuencia, no proporción | PASA |
+**Corrección:** el concepto de «necesidad respondida» **se elimina del contrato**. Lo único que
+satisface P4-D1.1 es **evidencia nueva registrada**, que es el único hecho duradero que el motor
+representa, que la persona produce de verdad y que cambia el estado categórico. El historial de
+ejecuciones del Planner pasa a ser **auditoría, nunca señal**.
 
-### 6.2 · Consecuencia registrada, no resuelta
+**Consecuencia sobre la prueba:** la prueba anterior usaba ese «drenaje» como premisa material.
+Cae entera y hay que rehacerla.
 
-**OBS-4A-01.** Con acciones atómicas y un presupuesto que solo admite una acción de un ítem, una
-persona cuya disponibilidad declarada sea permanentemente mínima avanzará solo por
-verificaciones. Es consecuencia veraz de las invariantes aceptadas más la atomicidad, y **no se
-resuelve inventando nada**: queda registrada para el milestone de UX y para la decisión P4-D2,
-que es la que determina cuántas acciones caben en un presupuesto.
+### 6.2 · IR-P4A-02 · la atomicidad estaba sobreafirmada
+
+**Afirmación anterior:** `APRENDER + COMPROBAR` es indivisible porque el motor no tiene estado
+para «reaprendido pero sin comprobar».
+
+**Por qué no basta:** esa ausencia prueba que aprender no crea evidencia de acierto. No prueba
+que aprender y comprobar deban ser el mismo ítem de presupuesto.
+
+**Lo que el análisis sí establece:**
+
+- para `NEW`, el motor **sí** representa el bucle abierto: ejecutar `APRENDER` deja el concepto en
+  `EXPOSED`, que significa exactamente «visto y sin comprobar»;
+- para la reparación **no lo representa**: `REAPRENDER` no produce evidencia y el concepto sigue
+  en `EVIDENCE_NEGATIVE`;
+- por tanto la **cadena pura queda falsada**: en reparación genera un bucle estructural del que
+  la persona no puede salir, porque la acción ofrecida no puede cambiar el estado que la motiva.
+  Contraejemplo mínimo y prueba mecánica en `tests/governance/modelCheck.spec.ts`.
+
+Quedan **dos modelos admisibles y no equivalentes** —atómico e híbrido— y ninguna autoridad elige
+entre ellos. Es la decisión humana **P4-D3**.
+
+### 6.3 · La prueba reconstruida
+
+Con «respondida» eliminada, la vivacidad tiene que venir de otro sitio. Viene de la evidencia.
+
+1. **Tres conjuntos** con comportamiento distinto: **R** (reparación), **V** (`EXPOSED`), **N**
+   (`NEW`), con **C = V ∪ N**.
+2. **V y N drenan** al actuar sobre ellos. **R puede reaparecer**: la persona puede volver a
+   fallar. Esa asimetría —y no una preferencia pedagógica— es la que crea el riesgo de monopolio
+   que P4-D1.2 prohíbe.
+3. **La cabeza es de reparación.** P4-D1.1 es una obligación incondicional y P4-D1.2 una
+   prohibición de monopolio; con la cabeza en cobertura, un presupuesto pequeño dejaría el plan
+   sin ninguna reparación.
+4. **La cantidad es uno, y no es una cuota.** P4-D1.1 es una garantía **existencial**: exige que
+   exista una respuesta, no cuántas. Cero la incumple; cualquier valor mayor sería una cantidad
+   **elegida**, exactamente el parámetro que P4-D1.7 prohíbe.
+5. **La asimetría es derivada:** ninguna invariante protege a la reparación de la cobertura, así
+   que un tope simétrico sería política inventada.
+6. **El orden de sílabo por sí solo no sirve:** todo concepto con evidencia está estructuralmente
+   antes en el sílabo que el siguiente concepto nuevo, así que una composición puramente ordinal
+   degenera en «reparar todo lo ya tocado antes de avanzar». Por eso las garantías son
+   **posicionales**.
+7. **Dentro de la reparación, la evidencia más antigua primero.** Es lo único que da vivacidad:
+   actuar produce evidencia nueva, que empuja ese concepto al final y deja pasar al siguiente. Las
+   dos alternativas naturales están **falsadas mecánicamente**: con orden de sílabo, y con
+   «evidencia más reciente primero», un concepto que falla repetidamente se queda la ranura para
+   siempre y los demás no se atienden nunca.
+8. **Se salta lo que no cabe, no se optimiza.** Detenerse acoplaría la duración de un candidato a
+   la planificación de otro; reordenar para llenar minutos introduciría un objetivo de
+   optimización que nadie ha autorizado.
+
+**Ningún parámetro nuevo.** La única cantidad sigue siendo el uno del paso 4, que es la aridad de
+una garantía existencial. No hay ratio, porcentaje, peso, cuota, longitud de ciclo, constante de
+alternancia, máximo de consecutivos ni azar.
+
+### 6.4 · Lo que la prueba **no** consigue
+
+Y esto es lo que cambia el veredicto de la ronda:
+
+> **Las siete cláusulas de P4-D1 no determinan un algoritmo único.**
+
+Determinan una familia. Dentro de ella quedan derivados la posición y la aridad de la garantía,
+la asimetría, el orden dentro de la reparación, el empaquetado y el rechazo de la optimización. Y
+quedan **sin determinar** dos cosas que una persona nota:
+
+- **P4-D3 · granularidad de la acción** (atómica o híbrida);
+- **P4-D4 · orden entre `EXPOSED` y `NEW`** dentro de la continuidad.
+
+Dos algoritmos deterministas no equivalentes satisfacen las siete invariantes. Por tanto el
+algoritmo **no está derivado**, y esta ronda **no lo elige**: las dos preguntas se devuelven como
+decisiones humanas (§6.7).
+
+### 6.5 · Comprobación exhaustiva de estados pequeños
+
+`tests/governance/modelCheck.spec.ts` enumera espacios abstractos completos —1 a 4 conceptos, los
+cinco estados categóricos, tres vectores de duración, siete presupuestos, tres granularidades y
+tres órdenes de continuidad— y ejecuta sobre cada caso las propiedades formales.
+
+| Medida | Valor |
+| --- | --- |
+| Estados explorados | **147 420** |
+| Transiciones evaluadas | **884 520** |
+| Contraejemplos de las propiedades | **0** |
+| Variantes de política falsadas | **3** (cadena pura; sílabo y evidencia-más-reciente dentro de la reparación) |
+
+### 6.6 · Simulación longitudinal
+
+`tests/governance/simulation.spec.ts` ejecuta **1 080 trayectorias deterministas sembradas** de
+40 sesiones cada una —**43 200 sesiones**— sobre sílabos de 3, 8, 20 y 60 conceptos, con nueve
+comportamientos de aprendiz, presupuestos fijos y variables, e interrupciones.
+
+Mide **solo propiedades estructurales**. No hay puntuación de aprendizaje, de dominio, de
+preparación ni de retención, y de esta simulación **no se deriva ninguna afirmación pedagógica**.
+
+| Medida | Resultado |
+| --- | --- |
+| Violaciones de presupuesto | 0 |
+| Actividad fabricada | 0 |
+| Decisiones no deterministas | 0 |
+| Bucles estructurales | 0 |
+| Cobertura alcanzada con una debilidad persistente | > 15 de 20 conceptos |
+| Planes repetidos sin ejecución | los esperados: la recomendación sigue pendiente |
+
+### 6.7 · Las dos decisiones que esta ronda devuelve
+
+Están en §15 como fichas completas. En una línea cada una:
+
+- **P4-D3** · ¿una acción de aprendizaje es un único ítem de presupuesto, o el paso de aprender
+  puede planificarse solo cuando el motor sabe representar el bucle abierto?
+- **P4-D4** · ¿cerrar un bucle ya abierto va antes que abrir uno nuevo?
+
+### 6.8 · Consecuencias registradas, no resueltas
+
+**OBS-4A-01.** Con un presupuesto que solo admite una acción muy corta, una disponibilidad
+declarada permanentemente mínima avanza poco o nada. Es consecuencia veraz de las invariantes
+aceptadas y su severidad depende de **P4-D3** y de **P4-D2**. Registrada, no mitigada.
 
 **OBS-4A-02.** Con `EVIDENCE_POSITIVE` excluida y sin política de repaso, una persona con
-evidencia positiva en todo su pack alcanza `NOTHING_ELIGIBLE` de forma permanente. Es
-consecuencia directa y aceptada de P4-D1.4 y de DEF-28. Registrada, no mitigada.
+evidencia positiva en todo su pack alcanza `NOTHING_ELIGIBLE` de forma permanente. Consecuencia
+directa de P4-D1.4 y DEF-28.
 
+**OBS-4A-03 · nueva.** El Planner deja minutos sin usar cuando la acción más prioritaria no cabe
+y las siguientes tampoco. Es el precio de no optimizar, y es deliberado.
 ## 7 · Disposición de los cuatro tipos de evento sin contrato
 
 `TODAY_OVERRIDE_SET`, `RESCUE_MODE_ENTERED`, `REPLAN_CONFIRMED` y `RECOVERY_STARTED` existen en
@@ -276,6 +359,8 @@ Ninguno se declara PASS en gobernanza.
 | **P4-G16** | **frontera real de runtime** · toda capacidad crítica de servidor del Planner probada ejecutando el módulo real contra la frontera real donde correrá. Un arnés SQL o de dominio equivalente es complementario y **no suficiente** |
 | **P4-G17** | **honestidad de la frontera de eventos** · todo evento del Planner que se emita tiene contrato de campos aceptado |
 | **P4-G19** | **sin actividad sintética** · sin necesidad elegible autorizada, el Planner devuelve `NOTHING_ELIGIBLE` y no fabrica actividad desde `EVIDENCE_POSITIVE` ni desde ninguna otra señal no autorizada |
+| **P4-G21** | **sin falsa reparación completada** (IR-P4A-01) · emitir una recomendación no reduce la presión de la reparación. Planificar dos veces sin ejecución produce el mismo plan, y una necesidad solo desaparece cuando la evidencia la disuelve. Ningún hecho de auditoría —incluidas las ejecuciones anteriores del Planner— entra en la selección |
+| **P4-G22** | **empaquetado sin optimización** · se preserva el orden de prioridad, se salta lo que no cabe, y no se maximizan minutos ni ítems. Dejar presupuesto sin usar no es un fallo |
 
 **P4-G18 pertenece a Phase 4B** (recorrido en Preview desplegado) y **no** es un gate de 4A.
 
@@ -293,3 +378,284 @@ readiness · PRODUCTION · AQUO.
 
 No mueve `main`, no crea ningún tag y no reescribe ninguna congelación anterior. `phase-3-v1.0` y
 `phase-3-v1.1` permanecen intactos.
+
+---
+
+## 15 · Decisiones humanas que esta ronda devuelve
+
+Ninguna está tomada. Ninguna lleva `ACCEPTED`. Mientras sigan abiertas, el contrato del Planner
+no puede aceptarse.
+
+### P4-D3
+
+**DECISIÓN EN UNA FRASE**
+¿Una acción de aprendizaje es un único ítem de presupuesto indivisible, o el paso de aprender
+puede planificarse por separado cuando el motor sabe representar el bucle abierto que deja?
+
+**POR QUÉ DEBE SER HUMANA**
+Ninguna autoridad aceptada lo decide. La cadena pura está falsada mecánicamente, pero quedan dos
+modelos que satisfacen las siete cláusulas de P4-D1 y **no son equivalentes**: cambian lo que una
+persona con poco tiempo recibe. La derivación anterior afirmaba tener la respuesta y la revisión
+independiente demostró que no la tenía.
+
+**QUÉ EXPERIMENTA LA PERSONA**
+Con 6 minutos declarados y una unidad que se lee en 5 y se comprueba en 3: con el modelo atómico
+la persona no recibe nada; con el híbrido recibe la lectura, y la comprobación llega en la
+siguiente sesión.
+
+**OPCIÓN A · atómica**
+`APRENDER + COMPROBAR` y `REAPRENDER + COMPROBAR` son un único ítem indivisible.
+- *Beneficios:* nunca se abre un bucle de verificación que quede colgando; lo planificado, si se
+  ejecuta entero, siempre produce evidencia; el plan es más fácil de explicar.
+- *Costes:* con presupuestos pequeños, `NOTHING_FITS` es frecuente y la persona puede no recibir
+  nada durante mucho tiempo; agrava OBS-4A-01.
+- *Casos límite:* una unidad larga con una comprobación corta puede no caber nunca en una
+  disponibilidad modesta.
+- *Consecuencias futuras:* si más adelante se declara una duración por ítem más fina (P4-D2), el
+  problema se suaviza sin cambiar la semántica.
+
+**OPCIÓN D · híbrida**
+Encadenada donde el motor representa el bucle (`NEW` → `EXPOSED` al aprender); atómica donde no
+lo representa (reparación).
+- *Beneficios:* usa exactamente lo que el motor ya sabe decir, sin inventar estado; un
+  presupuesto pequeño sigue produciendo trabajo honesto; reduce OBS-4A-01.
+- *Costes:* una persona puede acumular material visto y sin comprobar, y ahí la decisión P4-D4
+  pasa a importar mucho más; el plan tiene dos granularidades y es algo más difícil de explicar.
+- *Casos límite:* si se abandona tras aprender, el concepto queda `EXPOSED` — que es exactamente
+  lo que pasó, dicho con honestidad.
+- *Consecuencias futuras:* deja el camino abierto a que la comprobación se planifique con criterio
+  propio cuando exista política de repaso.
+
+**RECOMENDACIÓN ARQUITECTÓNICA**
+Opción D.
+
+**POR QUÉ**
+Porque no inventa nada: `EXPOSED` ya significa «visto y sin comprobar», y el modelo híbrido se
+limita a usar el vocabulario existente donde existe y a exigir atomicidad solo donde el motor se
+quedaría ciego. Además evita que una persona con 10 minutos al día reciba `NOTHING_FITS` de forma
+sistemática, que es el peor efecto práctico de la opción A. No la marco aceptada: la diferencia
+es visible para la persona y es tuya.
+
+**QUÉ NO DECIDE ESTA DECISIÓN**
+No decide el origen de los minutos (P4-D2), ni el orden entre `EXPOSED` y `NEW` (P4-D4), ni nada
+sobre repaso, retención o readiness.
+
+**QUÉ BLOQUEA**
+La aceptación del contrato del Planner y los gates P4-G8 y P4-G20.
+
+**REVERSIBILIDAD**
+**MODERADA** — cambia la forma de los ítems planificados, de modo que las ejecuciones históricas
+quedarían con una granularidad distinta a la nueva. La historia sigue siendo reproducible porque
+cada ejecución guarda su versión de algoritmo, pero el cambio se nota en el producto.
+
+---
+
+### P4-D4
+
+**DECISIÓN EN UNA FRASE**
+Dentro de la continuidad, ¿cerrar un bucle de aprendizaje ya abierto (`EXPOSED`) va antes que
+abrir uno nuevo (`NEW`)?
+
+**POR QUÉ DEBE SER HUMANA**
+P4-D1.3 declara `EXPOSED` accionable pero no le da precedencia, y ninguna otra autoridad ordena
+las dos categorías. Ordenar la continuidad «por sílabo» parecería resolverlo sin decidir, y por
+eso se dice en voz alta: sería colar la decisión por la puerta de atrás.
+
+**QUÉ EXPERIMENTA LA PERSONA**
+Si dejó a medias la comprobación de algo que ya leyó, ¿el producto vuelve a eso primero, o sigue
+avanzando por el temario?
+
+**OPCIÓN A · `EXPOSED` primero**
+- *Beneficios:* no se acumula material visto sin verificar; cada cosa empezada se cierra; la
+  evidencia del motor es más completa antes.
+- *Costes:* el avance por el temario es más lento y puede resultar frustrante para quien quiere
+  ver el alcance del examen.
+- *Casos límite:* con la opción D de P4-D3, la persona alterna aprender y comprobar de forma casi
+  continua.
+
+**OPCIÓN B · `NEW` primero**
+- *Beneficios:* el temario avanza visiblemente; la persona alcanza antes la vista completa.
+- *Costes:* con un sílabo grande, lo visto puede quedar sin comprobar durante mucho tiempo, que
+  es justo el bucle abierto que P4-D1.3 reconoce como necesidad legítima.
+- *Casos límite:* combinado con la opción D de P4-D3, la persona puede acumular decenas de
+  conceptos leídos y sin comprobar.
+
+**OPCIÓN C · orden de sílabo, sin distinguir categoría**
+- *Beneficios:* una sola regla; coincide con la opción A siempre que lo visto sea anterior en el
+  temario, que es el caso normal.
+- *Costes:* cuando algo posterior del temario quedó expuesto —hoy el vertical congelado del FPS
+  puede provocarlo— se comporta como la opción B sin haberlo decidido.
+
+**RECOMENDACIÓN ARQUITECTÓNICA**
+Opción A.
+
+**POR QUÉ**
+El bucle abierto lo abrió el producto, no la persona: presentó material y no lo verificó. Cerrar
+primero lo que uno mismo dejó abierto es coherente con P4-D1.3, y mantiene la evidencia del
+motor lo más completa posible, que es de lo que depende todo lo demás. La opción C es
+indistinguible de la A en el caso normal, pero decide sola en el caso raro, y prefiero que el
+caso raro esté decidido a propósito.
+
+**QUÉ NO DECIDE ESTA DECISIÓN**
+No decide la garantía de reparación ni su aridad, ni el empaquetado, ni la granularidad (P4-D3).
+
+**QUÉ BLOQUEA**
+La aceptación del contrato del Planner y el gate P4-G20.
+
+**REVERSIBILIDAD**
+**FÁCIL** — es orden dentro de una categoría y vive en la configuración versionada del Planner.
+Las ejecuciones pasadas conservan la versión con la que se tomaron.
+
+---
+
+## 16 · Inanición · análisis con cotas
+
+No basta simular. Cada pregunta se responde con una cota y de dónde sale.
+
+| # | ¿Puede ocurrir? | Veredicto | Cota y origen |
+| --- | --- | --- | --- |
+| A | ¿La reparación mata de hambre a la cobertura? | **IMPOSIBLE POR INVARIANTE** | la garantía coloca **una** acción de reparación y ninguna otra regla coloca más mientras quede continuidad (§6.3 pasos 4 y 5) |
+| B | ¿La cobertura mata de hambre a la reparación? | **IMPOSIBLE POR INVARIANTE** | la reparación va en la cabeza, antes que toda la continuidad (§6.3 paso 3) |
+| C | ¿`EXPOSED` mata de hambre a `NEW`? | **ACOTADO** | `EXPOSED` drena: comprobar produce evidencia y el concepto sale del conjunto. La cota es el número de conceptos expuestos, que no crece sin que la persona aprenda. **Depende de P4-D4** |
+| D | ¿`NEW` mata de hambre a `EXPOSED`? | **POSIBLE** bajo la opción B de P4-D4 | con un sílabo grande, `NEW` no se agota y lo expuesto espera indefinidamente. Es el coste declarado de esa opción, no un defecto oculto |
+| E | ¿Un concepto que falla siempre mata de hambre a otros que fallan? | **IMPOSIBLE POR INVARIANTE**, con §F.5 | actuar produce evidencia nueva que lo manda al final de la cola. Con orden de sílabo o «más reciente primero» **sí ocurre**, y por eso están falsados |
+| F | ¿El propio orden de sílabo crea inanición? | **SÍ, si se usa como política completa** | todo concepto con evidencia precede al siguiente `NEW`; por eso las garantías son posicionales (§6.3 paso 6) |
+| G | ¿La heterogeneidad de duraciones crea inanición? | **POSIBLE** | una acción sistemáticamente más larga que el presupuesto no entra nunca. No es política: es aritmética. Su severidad depende de **P4-D2** y de **P4-D3** · OBS-4A-01 |
+| H | ¿Un presupuesto permanentemente diminuto crea inanición? | **POSIBLE** | idéntico a G. El Planner no puede resolverlo sin fabricar trabajo, y P4-D1.6 lo prohíbe |
+
+Ninguna cota introduce un número de política. Las cotas C y E salen de que el conjunto drena; D,
+G y H son consecuencias declaradas, no reglas.
+
+## 17 · Dependencia del camino
+
+Cada hecho histórico que el Planner podría consumir, clasificado:
+
+| Hecho | Clase | ¿Entra en la selección? |
+| --- | --- | --- |
+| Estado categórico por concepto | **SEMÁNTICO** | sí |
+| Posición de flujo de la última evidencia negativa | **SEMÁNTICO** | sí (§F.5) |
+| Patrones de error activos | **SEMÁNTICO** | sí |
+| Ítems completados en el día de plan | **SEMÁNTICO** | sí, como exclusión |
+| Sesión abierta | **SEMÁNTICO** | sí, como puerta |
+| Presupuesto y su procedencia | **SEMÁNTICO** | sí |
+| Versión de pack y generación de atribución | **SEMÁNTICO** | sí |
+| **Ejecuciones anteriores del Planner** | **SOLO AUDITORÍA** | **no** — corregido por IR-P4A-01 |
+| Cuántas veces se pidió un plan | **IRRELEVANTE** | no |
+| Si un plan se abrió o no | **SOLO AUDITORÍA** | no |
+| Agrupación transaccional de los intentos | **IRRELEVANTE** | no |
+| Si el estado llegó por recuperación o ya estaba al día | **IRRELEVANTE** | no |
+
+Historias con la misma evidencia final producen el mismo plan, con independencia de cuántas veces
+se pidió, de si un plan anterior se abrió, o de cómo se agruparon las escrituras. Esto era **falso
+en el candidato v1**, y es la consecuencia más importante de la corrección.
+
+## 18 · Contraejemplos semánticos
+
+Presión de explicabilidad, no diseño de interfaz. La columna «decisión» se lee bajo la
+recomendación arquitectónica (P4-D3 = híbrida, P4-D4 = `EXPOSED` primero); donde la decisión
+humana cambia el resultado, se dice.
+
+| # | Estado · tiempo · historia | Decisión | Por qué | Propiedad | Consecuencia sorprendente | Veredicto |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Todo `NEW`, 30 min, sin historia | aprender el primero del temario | sin reparación, manda la continuidad | P7 | ninguna | ACEPTABLE |
+| 2 | Un concepto fallado, resto `NEW`, 30 min | reparar ese, luego avanzar | garantía de reparación en la cabeza | P6 | el fallo aparece **antes** que el temario | ACEPTABLE |
+| 3 | Cinco fallados, resto `NEW`, 60 min | **una** reparación y el resto cobertura | aridad existencial | P7 | «he fallado cinco y solo repaso uno» | ACEPTABLE · es P4-D1.2 |
+| 4 | Como 3 pero sin `NEW` ni `EXPOSED` | las cinco reparaciones | no hay continuidad que proteger | P6 | ninguna | ACEPTABLE |
+| 5 | Un fallado, se planifica, se cierra la app, se vuelve | **el mismo plan** | una recomendación no es ejecución | P8 · P10 | ninguna · es la corrección de IR-P4A-01 | ACEPTABLE |
+| 6 | Como 5, pero sí lo hizo y volvió a fallar | ese concepto pasa al final de la cola de reparación | evidencia nueva | P6 | «lo acabo de fallar y ahora me ofrece otro» | ACEPTABLE · es la vivacidad |
+| 7 | Dos fallados; solo falla el primero una y otra vez | se alternan | evidencia más antigua primero | P6 | ninguna | ACEPTABLE |
+| 8 | Todo `EVIDENCE_POSITIVE` | `NOTHING_ELIGIBLE` | sin política de repaso no hay autoridad | P5 · P20 | «no tengo nada que hacer», sin decir que esté preparada | ACEPTABLE · OBS-4A-02 |
+| 9 | Todo positivo salvo uno retirado | `NOTHING_ELIGIBLE` con exclusión registrada | INV-109 | P20 | ninguna | ACEPTABLE |
+| 10 | 5 min; toda acción cuesta más | `NOTHING_FITS` con `OVER_BUDGET` | Master §49 | P9 · P20 | «tengo 5 minutos y no me da nada» | **DECISIÓN HUMANA** · la oferta fuera de presupuesto es de 4B |
+| 11 | 0 min declarados | `ZERO_TIME`, cero ítems | REQ-E08 | P20 | ninguna deuda, ningún contador | ACEPTABLE |
+| 12 | Presupuesto 12; acciones de 10, 6 y 6 | solo la de 10; 2 min sin usar | no se optimiza | P9 | «sobraban 2 minutos y cabían dos cosas» | ACEPTABLE · §I.5 |
+| 13 | Presupuesto 15; acciones de 10, 35 y 4 | la de 10 y la de 4 | se salta lo que no cabe | P9 | ninguna | ACEPTABLE |
+| 14 | Sesión abierta y plan nuevo disponible | `RESUME_REQUIRED` | la sesión abierta gana | P12 | ninguna | ACEPTABLE |
+| 15 | Motor atrasado y la puesta al día falla | `PLAN_UNAVAILABLE_ENGINE`, sin escribir nada | frontera de consistencia | P14 | «no puedo planificarte ahora» en vez de un plan malo | ACEPTABLE |
+| 16 | Evidencia nueva desde otro dispositivo | replanifica en la siguiente petición; la sesión abierta no se toca | desajuste de tupla | P13 | ninguna | ACEPTABLE |
+| 17 | Cambia la generación de atribución | replanifica | versión | P13 | un concepto puede desaparecer de los candidatos | ACEPTABLE |
+| 18 | Un objetivo del plan se retira antes de arrancar | exclusión `TARGET_UNAVAILABLE` y replan | INV-109 | P13 | ninguna | ACEPTABLE |
+| 19 | Un objetivo se retira **dentro** de una sesión abierta | **hoy falla en silencio** | fuera de 4A | — | la persona ve un ítem que no se puede mostrar | **NO ACEPTABLE** · WATCH-4A-1, corresponde a 4B |
+| 20 | Leyó una unidad y no la comprobó; hay material nuevo | comprobar lo leído primero | P4-D1.3 | P18 | «¿por qué no avanzo?» | **DECISIÓN HUMANA** · P4-D4 |
+| 21 | 6 min; unidad de 5 más comprobación de 3 | aprender ahora, comprobar después | el motor representa `EXPOSED` | P18 | queda algo a medias, dicho con honestidad | **DECISIÓN HUMANA** · P4-D3 |
+| 22 | Dos pestañas piden plan a la vez | una sola ejecución; la segunda reutiliza | idempotencia por hash | P11 | ninguna | ACEPTABLE |
+| 23 | Responde mientras se calcula el plan | la escritura se rechaza y se recalcula | revalidación en transacción | P11 · P14 | una espera mínima | ACEPTABLE |
+| 24 | Baja la disponibilidad de 60 a 20 a mitad de sesión | la sesión abierta no se reescribe; la próxima ejecución usa 20 | INV-106 | P12 | ninguna | ACEPTABLE |
+
+## 19 · Red team de explicabilidad
+
+Para cada razón, la explicación interna veraz que la auditoría debe poder reconstruir:
+
+| Razón | Explicación interna |
+| --- | --- |
+| `REMEDIATION_GUARANTEE` | «se eligió porque hay evidencia de que esta persona falló este concepto, y es la evidencia negativa **más antigua** sin atender; el plan debe responder a la reparación» |
+| `COVERAGE` | «se eligió porque no hay evidencia sobre este concepto, o hay exposición sin comprobar, y es el siguiente según el orden del temario» |
+| `REMEDIATION_OVERFLOW` | «se eligió porque ya no quedaba continuidad elegible que colocar» |
+| `POSITIVE_NO_REVIEW_POLICY` | «no se eligió porque hay evidencia positiva y este sistema **no tiene autoridad** para decidir cuándo repasarlo. No significa que esté dominado» |
+| `OVER_BUDGET` | «no se eligió porque su duración declarada no cabía en los minutos de hoy» |
+| `COMPLETED_TODAY` | «no se eligió porque ya se trabajó hoy» |
+| `TARGET_RETIRED` · `NO_ATTRIBUTED_QUESTION` | «no se eligió porque el contenido ya no está publicado, o no tiene pregunta atribuida válida» |
+| `NOTHING_ELIGIBLE` | «no hay ninguna acción **justificada por el modelo autorizado**. No es preparación, ni dominio, ni fin del aprendizaje» |
+
+«Por qué esta duración» se responde con el valor declarado y su procedencia, nunca con una
+estimación sobre la persona. «Por qué esto no es readiness» se responde solo: no hay agregación
+entre conceptos, ni porcentaje, ni recuento.
+
+**Suficiencia de la auditoría.** Las ocho explicaciones se reconstruyen desde la instantánea
+(§R, §S del contrato) sin consultar estado actual, **con una condición nueva**: la instantánea
+debe guardar la posición de flujo que ordenó la reparación. Sin ella, «la más antigua sin
+atender» no sería verificable después. Queda como requisito de contrato.
+
+## 20 · Ataque a la configuración
+
+| Valor propuesto | Veredicto |
+| --- | --- |
+| `repair_slots = 1` | **RECHAZADO** · convierte una aridad derivada en cuota configurable; mañana valdría 3 |
+| `coverage_ratio` | **RECHAZADO** · P4-D1.7 |
+| `max_consecutive_repairs` | **RECHAZADO** · constante de alternancia |
+| `new_vs_exposed_weight` | **RECHAZADO** · P4-D4 es categórica, no un peso |
+| `review_after_days` | **RECHAZADO** · inventa política de repaso; DEF-28 |
+| `default_question_minutes` | **RECHAZADO en 4A** · P4-D2 sigue diferida |
+| `weakness_threshold` | **RECHAZADO** · umbral sobre recuentos de evidencia |
+| `rescue_threshold` | **RECHAZADO** · H-P4-5 no define «materialmente por debajo» |
+| `planner_version` | **LEGÍTIMO** · identidad de algoritmo |
+| `planner_config_version` | **LEGÍTIMO** · identidad de configuración |
+| enum cerrado de códigos de razón | **LEGÍTIMO** · vocabulario, no política numérica |
+| orden categórico de P4-D4, una vez decidido | **LEGÍTIMO** · categórico y humano |
+
+**Razonamiento de la lista.** Es legítimo lo que expresa **identidad** o una **elección categórica
+ya tomada por una persona**. Es ilegítimo todo lo que introduzca una **cantidad** que module el
+aprendizaje, aunque esté versionada y auditada. Una configuración no se vuelve legítima por ser
+auditable: se vuelve auditable, que es otra cosa.
+
+## 21 · Matriz de aceptación en runtime real · para el futuro BUILD
+
+La lección de D-26, convertida en exigencia por capacidad. **Ninguna se ejecuta ahora.**
+
+| Capacidad | Modelo puro | Integración BD | RLS | Módulo real de servidor | Frontera PostgREST/RPC real | E2E STAGING |
+| --- | --- | --- | --- | --- | --- | --- |
+| Decisión y composición | **obligatorio** | — | — | obligatorio | — | — |
+| Persistencia de la ejecución | — | **obligatorio** | obligatorio | **obligatorio** | **obligatorio** | — |
+| Puesta al día bloqueante del motor | — | obligatorio | — | **obligatorio** | **obligatorio** | **obligatorio** |
+| Arranque de sesión planificada | — | obligatorio | obligatorio | **obligatorio** | **obligatorio** | **obligatorio** |
+| Reproducción desde instantánea | **obligatorio** | obligatorio | — | obligatorio | — | — |
+| Una sola sesión abierta | — | **obligatorio** | — | — | obligatorio | **obligatorio** |
+| Aislamiento entre personas | — | obligatorio | **obligatorio** | — | **obligatorio** | — |
+| Honestidad de la frontera de eventos | — | obligatorio | — | obligatorio | **obligatorio** | — |
+
+**Ningún gate pasa porque un arnés SQL equivalente funcione, si el camino de producción usa otra
+frontera.** Es exactamente lo que ocurrió con P3-G7.
+
+## 22 · Corpus sintético adversarial · diseño, no ingestión
+
+`GENERATED` únicamente. **No se ingiere en STAGING en esta ronda.**
+
+Forma propuesta: 3 bloques · 8 temas · 40 conceptos · de 1 a 3 preguntas por concepto donde
+aporte · duraciones de fixture deterministas y heterogéneas, incluida alguna acción más larga que
+los presupuestos pequeños · conceptos retirados · conceptos sin atribución válida · conceptos
+excluidos por estado de fuente · mapeos PRIMARY completos e incompletos · casos con patrón de
+error activo · y estados de motor mezclados, incluidos `EXPOSED` posteriores en el temario para
+ejercitar el caso raro de P4-D4.
+
+Sirve para validación **estructural** del Planner. No simula el corpus oficial ni pretende
+parecerse a él.

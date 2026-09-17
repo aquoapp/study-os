@@ -3,8 +3,8 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.21 · copia viva
-**Última actualización:** 2026-09-17 · **Phase 4A · Planner Domain / Decision Engine · aterrizaje de gobernanza**: `docs/PLANNER_CONTRACT.md` v1.0 y **ADR-012** `ACCEPTED`, P4-D1 aceptada con modificación, P4-D2 diferida, SD-030 y SD-031 por adenda (§16). **El BUILD de Phase 4A no está autorizado.** La tabla viva de §1 queda reconciliada con la línea base congelada · 2026-09-17 · **Phase 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integrado en `main` (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`; **D-26 cerrada** (§15.3) · 2026-09-16 · Phase 3.1 · corrección D-26 construida como candidato: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
+**Versión:** 11.22 · copia viva
+**Última actualización:** 2026-09-17 · **Phase 4A · validación adversarial**: IR-P4A-01 e IR-P4A-02 aceptados; el contrato del Planner pasa a **`PROPOSED · BLOQUEADO`** por **P4-D3** y **P4-D4**; ADR-012 gana el anexo v1.1 y sigue `ACCEPTED`; SD-031 corregida; gates P4-G21 y P4-G22 (§16) · 2026-09-17 · **Phase 4A · Planner Domain / Decision Engine · aterrizaje de gobernanza**: contrato del Planner y **ADR-012**, P4-D1 aceptada con modificación, P4-D2 diferida, SD-030 y SD-031 por adenda (§16). **El BUILD de Phase 4A no está autorizado.** La tabla viva de §1 queda reconciliada con la línea base congelada · 2026-09-17 · **Phase 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integrado en `main` (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`; **D-26 cerrada** (§15.3) · 2026-09-16 · Phase 3.1 · corrección D-26 construida como candidato: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
 **Fase actual:** **Phase 4A · Planner Domain / Decision Engine · gobernanza aterrizada, BUILD no autorizado** (§16), sobre **Phase 3.1 · Learning Engine Runtime Corrective · FROZEN · PASS WITH DEBT** (`phase-3-v1.1` → `577cc71`), P3.1-G1 … P3.1-G12 en PASS, sobre **Phase 3 · FROZEN · PASS WITH DEBT** (`phase-3-v1.0` → `f5d0b10`, que contiene D-26 como historia) · ninguna fase posterior autorizada · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
 **Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `577cc711e017f1fb48ba881ea34288d865317429` · tag anotado `phase-3-v1.1` (Phase 3: `f5d0b10…`, `phase-3-v1.0`; FPS: `6bde0a0…`, `fps-v1.0`; Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_3_1_CHECKPOINT.md` y `docs/PHASE_3_CHECKPOINT.md`
 
@@ -54,7 +54,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | `packages/learning-engine` | **EXISTE** | Phase 3 · motor determinista, sin red y sin dependencias; calcula, y la persistencia la hace una función de rol de servicio |
 | `packages/planner-engine` | NO EXISTE | Phase 4A · el contrato está aceptado (`docs/PLANNER_CONTRACT.md`, ADR-012) y el BUILD **no** está autorizado |
 | Capa de IA | NO EXISTE | Phase 8. MI-05b no se ha solicitado |
-| Tests unitarios | **1042 · todos ejecutados y en verde** | 47 ficheros, incluido el vigilante de gobernanza `phase4a.governance.spec`. Recuento verificable con `vitest --reporter=json`. Incluye las guardas de Phase 1A, la vigilancia documental de cada checkpoint, la frontera de invocación de Phase 3.1 y el vigilante de congelación `phase3_1.freeze.spec` |
+| Tests unitarios | **1086 · todos ejecutados y en verde** | 50 ficheros, incluidos el vigilante `phase4a.governance.spec` y los tres ficheros de validación adversarial de `tests/governance/`. Recuento verificable con `vitest --reporter=json`. Incluye las guardas de Phase 1A, la vigilancia documental de cada checkpoint, la frontera de invocación de Phase 3.1 y el vigilante de congelación `phase3_1.freeze.spec` |
 | E2E estáticos | **ejecutados y en verde** | arranque, PWA, accesibilidad renderizada y su fixture negativo. No tocan Supabase |
 | E2E de auth | **ejecutados y en verde** | alta y login reales por formulario, cookie forjada rechazada, onboarding mínimo, vertical del FPS y **runtime del motor** (`engine.runtime.e2e`, Phase 3.1: la aplicación construida con `next build`, sin ningún módulo simulado). Contra STAGING y en CI. Limpieza por ejecución verificada, residuo cero |
 | Tests de integración y RLS | **797 ejecutados y en verde** (serie completa) | `profiles` 1:1; exposición del Data API; catálogo con matriz rol × privilegio; fundación de Phase 1A con packs sintéticos; **red team** sin residuo; ciclo de vida de una pregunta; núcleo de evidencia de Phase 2; contrato del motor y su frontera de invocación. Desglose por suite en `docs/PHASE_3_1_CHECKPOINT.md`. Contra STAGING y en CI |
@@ -653,9 +653,19 @@ Línea base: `main` = `7cf9190726f9f4edd8f41998acc6fee8792a2d3a`, sobre `phase-3
 
 ### 16.1 · Qué queda aceptado
 
+> **Corrección del 2026-09-17 · validación adversarial.** La revisión independiente encontró dos
+> defectos reales en el candidato v1: **IR-P4A-01** —una recomendación emitida contaba como
+> respuesta a la reparación, de modo que cerrar la aplicación sin hacer nada retiraba evidencia
+> negativa de la presión del Planner— e **IR-P4A-02** —la atomicidad de la acción estaba
+> sobreafirmada—. Los dos se aceptan. La validación demuestra además que **las siete cláusulas de
+> P4-D1 no determinan un algoritmo único**: quedan abiertas **P4-D3** (granularidad de la acción) y
+> **P4-D4** (orden entre `EXPOSED` y `NEW`). El contrato pasa a
+> **`PROPOSED · BLOQUEADO POR DECISIÓN HUMANA`** y **ninguna Build Authorization de Phase 4A puede
+> emitirse** hasta resolverlas.
+
 | Artefacto | Estado |
 | --- | --- |
-| `docs/PLANNER_CONTRACT.md` v1.0 | **`ACCEPTED`** como contrato de Phase 4A |
+| `docs/PLANNER_CONTRACT.md` v1.1 | **`PROPOSED · BLOQUEADO`** por P4-D3 y P4-D4 |
 | ADR-012 · autoridad de decisión del Planner | **`ACCEPTED · v1.0`** · **`NOT IMPLEMENTED`** |
 | `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` | copia aceptada de la autorización |
 | SD-030 y SD-031 | adenda del `SPEC_DIFF_LOG` |
@@ -701,7 +711,8 @@ plan vacío: un plan no vacío no es un invariante de producto.
 
 | ID | Contenido |
 | --- | --- |
-| **OBS-4A-01** | Con acciones atómicas y un presupuesto que solo admite una acción de un ítem, una disponibilidad declarada permanentemente mínima avanza solo por verificaciones. Consecuencia veraz de las invariantes aceptadas; se registra, no se resuelve inventando |
+| **OBS-4A-01** | Con un presupuesto que solo admite una acción muy corta, una disponibilidad declarada permanentemente mínima avanza poco o nada. Consecuencia veraz de las invariantes aceptadas; su severidad depende de **P4-D3** y de **P4-D2**. Se registra, no se resuelve inventando |
+| **OBS-4A-03** | El Planner deja minutos sin usar cuando la acción más prioritaria no cabe y las siguientes tampoco. Es el precio de no optimizar, y es deliberado (gate P4-G22) |
 | **OBS-4A-02** | Con `EVIDENCE_POSITIVE` excluida y sin política de repaso, una persona con evidencia positiva en todo su pack alcanza `NOTHING_ELIGIBLE` de forma permanente. Consecuencia aceptada de P4-D1.4 y DEF-28 |
 | **WATCH-4A-1** | Contenido retirado dentro de una sesión ya abierta falla hoy en silencio. **No es asunto de Phase 4A**: es consumo de sesión, y corresponde a Phase 4B. Phase 4A no toca la semántica de sesión de Phase 2 |
 

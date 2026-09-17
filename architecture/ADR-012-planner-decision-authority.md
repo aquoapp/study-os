@@ -1,6 +1,6 @@
 # ADR-012 · Autoridad de decisión del Planner
 
-STATUS: ACCEPTED · v1.0
+STATUS: ACCEPTED · v1.0 (anexo v1.1 del 2026-09-17 · validación adversarial · el texto v1.0 se conserva íntegro)
 DATE: 2026-09-17
 DECISION OWNER: Ana Victoria
 DECISION RECORD: **Phase 4A · Planner Domain / Decision Engine · Governance Landing** del 2026-09-17 · copia aceptada en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` · línea base congelada `7cf9190726f9f4edd8f41998acc6fee8792a2d3a`, sobre `phase-3-v1.1` → `577cc711e017f1fb48ba881ea34288d865317429`
@@ -163,3 +163,79 @@ Date: 2026-09-17
 Alcance de la firma: autoridad de decisión del Planner y contrato v1.0. **No autoriza** el BUILD
 de Phase 4A, ni esquema, ni migraciones, ni cambio en Vercel, ni Phase 4B, ni la decisión P4-D2,
 ni ninguna mutación de PRODUCTION.
+
+---
+
+## Anexo v1.1 · 2026-09-17 · validación adversarial
+
+El texto v1.0 **no se reescribe**. Este anexo registra lo que la revisión independiente corrigió y
+lo que, en consecuencia, **no** puede darse por decidido.
+
+### A1.1 · Qué no cambia
+
+Las once decisiones de v1.0 siguen en pie sin excepción: Planner determinista y autoritativo de
+servidor, selección categórica, ausencia de `priority_score`, ausencia de proxy de readiness,
+frontera cálculo/persistencia, instantánea inmutable, replicabilidad, versionado de
+configuración, plan no redactable por el cliente, ningún esquema privado nuevo, frontera de
+frescura del motor y prueba en la frontera real de runtime.
+
+La validación adversarial no encontró ningún defecto en la **arquitectura**. Los dos defectos
+están en la **semántica de selección**, que vive en el contrato.
+
+### A1.2 · IR-P4A-01 · una recomendación no es evidencia de ejecución
+
+El contrato definía una necesidad de reparación como «respondida» cuando una ejecución anterior
+del Planner **emitió** la acción correspondiente. Con eso, cerrar la aplicación sin hacer nada
+retiraba la necesidad de la presión del Planner.
+
+**Se eleva a decisión arquitectónica**, porque afecta a qué puede consumir la selección:
+
+> **12. Un plan es un registro de decisión, no evidencia de ejecución.** El historial de
+> ejecuciones del Planner es **auditoría**, nunca señal de selección. Lo único que satisface la
+> garantía de reparación es **evidencia nueva registrada**. Ningún hecho de auditoría —cuántas
+> veces se pidió un plan, si se abrió, qué se recomendó— puede influir en una decisión futura.
+
+Gate mecánico asociado: **P4-G21**.
+
+**Corrección puntual sobre v1.0.** La decisión 7 ponía como ejemplo de dato dependiente del
+historial «si una necesidad de reparación estaba respondida». Ese ejemplo **queda sin efecto**:
+ese dato ya no existe. La decisión 7 sigue vigente en lo que dice de verdad —lo que dependa del
+historial se registra en la instantánea— y su ejemplo correcto es ahora la **posición de flujo de
+la evidencia** que ordenó la reparación, que sí debe guardarse para que la decisión sea
+verificable después.
+
+### A1.3 · IR-P4A-02 · la atomicidad no estaba derivada
+
+El contrato sostenía que aprender y comprobar son un único ítem indivisible porque el motor no
+representa «reaprendido pero sin comprobar». La ausencia de ese estado prueba menos de lo que se
+le hizo decir.
+
+Lo que el análisis formal establece, y queda como autoridad:
+
+- para `NEW`, el motor **sí** representa el bucle abierto mediante `EXPOSED`;
+- para la reparación **no lo representa**;
+- la cadena pura queda **falsada**: genera un bucle estructural del que la persona no puede salir.
+
+Quedan dos modelos admisibles y no equivalentes, y **ninguna autoridad aceptada elige entre
+ellos**. Es la decisión humana **P4-D3**, y con ella queda abierta también **P4-D4** (orden entre
+`EXPOSED` y `NEW`).
+
+### A1.4 · Consecuencia sobre el estado del contrato
+
+`docs/PLANNER_CONTRACT.md` pasa a **`PROPOSED · BLOQUEADO POR DECISIÓN HUMANA`**. Este ADR sigue
+`ACCEPTED`, porque su objeto es la frontera arquitectónica y esa no está en disputa; pero
+**ninguna Build Authorization de Phase 4A puede emitirse** mientras P4-D3 y P4-D4 sigan abiertas:
+el algoritmo no está determinado.
+
+### A1.5 · Gates añadidos por este anexo
+
+| Gate | Pasa cuando |
+| --- | --- |
+| **P4-G21** | emitir una recomendación no reduce la presión de la reparación; planificar dos veces sin ejecución produce el mismo plan; ningún hecho de auditoría entra en la selección |
+| **P4-G22** | el empaquetado preserva la prioridad, salta lo que no cabe y no maximiza minutos ni ítems |
+
+### A1.6 · Aprobación de este anexo
+
+Pendiente. El anexo **registra** el resultado de la validación adversarial y **no** resuelve
+P4-D3 ni P4-D4: las dos vuelven a Ana como fichas de decisión en
+`docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` §15.
