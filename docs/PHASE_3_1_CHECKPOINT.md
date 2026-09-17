@@ -1,9 +1,15 @@
 # STUDY OS · Phase 3.1 · Learning Engine Runtime Invocation Corrective · CHECKPOINT
 
 **Formato:** `Checkpoint Contract v1.0`.
-**Alcance:** **candidato correctivo**. Sin merge, sin tag, sin congelación, sin `phase-3-v1.1`.
-**Fecha:** 2026-09-16.
+**Alcance:** construido el 2026-09-16 como candidato correctivo; **aceptado por Ana, integrado y
+congelado el 2026-09-17** (§O).
+**Fecha:** 2026-09-16 · congelación 2026-09-17.
 **Autorización:** `docs/PHASE_3_1_CORRECTIVE_AUTHORIZATION.md`.
+
+**PHASE 3.1 · FROZEN · PASS WITH DEBT.** La corrección quedó integrada en `main` por el PR #15
+(commit de merge `577cc711e017f1fb48ba881ea34288d865317429`, padres `64158b5` y `04d4669`, árbol
+idéntico al candidato aceptado) y etiquetada con el tag anotado `phase-3-v1.1`. **D-26 cerrada.**
+`phase-3-v1.0` no se ha movido y sigue conteniendo el defecto como historia.
 
 `phase-3-v1.0` (`f5d0b101b58bae4d1003ea91f15ff0ecfe924f97`) es **inmutable** y conserva D-26 como
 historia. Este checkpoint no la reescribe: registra el defecto, dónde se descubrió y el candidato
@@ -143,8 +149,8 @@ vez que vuelva a HOY con la aplicación corregida desplegada.
 | G7 frontera de seguridad | **PASS** | §H |
 | G8 sin fugas | **PASS** | §H |
 | G9 STAGING extremo a extremo | **PASS** | §F · §G · §I · §J |
-| G10 up/down/up | **PASS** en STAGING (§I); en CI lo cierra `db:roundtrip` sobre el candidato | |
-| G11 regresión y CI | se cierra con la CI del candidato exacto, citada en el informe de cierre | |
+| G10 up/down/up | **PASS** | STAGING (§I) y `db:roundtrip` en CI sobre el candidato exacto: firma idéntica, 1 098 entradas, 22 migraciones |
+| G11 regresión y CI | **PASS** | candidato `04d4669`: run `35114695237`; PR #15: run `35213354273`; tres jobs en verde en ambos |
 | G12 alcance negativo | **PASS** | sin tablas, tipos, esquemas ni Planner; sin Phase 1B, readiness ni semántica nueva; PRODUCTION pausado; sin pago; sin AQUO |
 
 ## L · Vigilancias ajustadas, y por qué
@@ -161,7 +167,7 @@ Ninguna vigilancia se debilitó: las dos siguen fallando ante cualquier cambio d
 
 | # | Disposición |
 | --- | --- |
-| **D-26** | **ABIERTA** hasta la aceptación humana del candidato |
+| **D-26** | **CERRADA el 2026-09-17** · aceptación humana del candidato exacto e integración (§O) |
 | D-13 · D-18 · D-20 · D-22 · D-23 | sin cambio. D-22: `sql.ts` solo cambia cómo resuelve la raíz; D-23: el rollback nuevo es de seis `drop function` |
 | WATCH-P2-1 | sin cambio; la corrección no toca la calificación ni `ANSWER_SUBMITTED` |
 | **OBS-3.1-01** | Vercel no tiene configurada la clave de servicio del servidor. En el Preview desplegado el motor devuelve `SKIPPED` por diseño hasta que exista esa configuración, que es una decisión humana y no está autorizada aquí |
@@ -170,5 +176,43 @@ Ninguna vigilancia se debilitó: las dos siguen fallando ante cualquier cambio d
 
 ## N · Recomendación
 
-Candidato correctivo completo y listo para revisión independiente. Nada fusionado, sin tag, sin
-`phase-3-v1.1`, ninguna decisión H-P4 aceptada salvo H-P4-0, y ninguna fase posterior iniciada.
+Recomendación del candidato, 2026-09-16: completo y listo para revisión independiente, sin merge ni
+tag. Se cumplió con la aceptación y la congelación del 2026-09-17 (§O).
+
+## O · Aceptación humana y congelación · 2026-09-17
+
+**Decisión:** Phase 3.1 Human Acceptance + Landing / Freeze Authorization · Ana Victoria, tras
+revisión independiente del paquete de evidencia y del candidato. **PHASE 3.1 · FINAL CANDIDATE ·
+HUMAN ACCEPTANCE: APPROVED.**
+
+Cada SHA tiene un papel distinto y no se confunden:
+
+| Papel | Valor |
+| --- | --- |
+| Candidato aceptado | `04d4669719e75ab172e80da712ea7e155b3352bd` · árbol `bd1c9c5c3e6a553f52f312de8de81cf21b5d5f30` · CI `35114695237` |
+| PR de implementación | #15 · CI exigida sobre el PR `35213354273`, tres jobs en verde |
+| Merge de implementación | `577cc711e017f1fb48ba881ea34288d865317429` · 2026-09-17T11:13:45Z · padres `64158b5ad19e1edcc76c21f3dd50e86e884db058` (`main`) y `04d4669719e75ab172e80da712ea7e155b3352bd` (candidato) |
+| Identidad de árbol | árbol del merge `bd1c9c5c3e6a553f52f312de8de81cf21b5d5f30` **==** árbol del candidato; `git diff` vacío |
+| Tag canónico | anotado `phase-3-v1.1`, objeto `284ba3e01d3f025b56223f29e0bccfaa459ef040`, pela a `577cc71` (el merge de implementación, no este registro documental) |
+| Tag previo | `phase-3-v1.0`, objeto `fbd9530ec548db6f16958955f05337a2b3d87e2c` → `f5d0b10`, **sin mover**; contiene D-26 como historia |
+| Congelación documental | PR aparte y exclusivamente documental. Su número, su CI, su merge y el `main` final se citan en el informe de cierre: un documento no puede contener el hash del merge que lo integra |
+
+**D-26 · CERRADA.** Base del cierre: el acceso directo a esquemas privados sigue denegado; la
+invocación gobernada funciona; la ruta A es real; la ruta B tiene un llamador real de la
+aplicación; el E2E de runtime prueba la frontera real de la aplicación; EC-006 sigue siendo
+cierto; la frontera de seguridad sigue intacta; y la aceptación humana aprobó el candidato exacto.
+
+**Gates:** P3.1-G1 … P3.1-G12 en **PASS** (§K).
+
+**Deuda al congelar.** Cerrada: **D-26**. Sin cambio: **D-13, D-18, D-20, D-22, D-23**.
+**WATCH-P2-1** heredado. Observaciones que viajan: **OBS-3.1-01**, **OBS-3.1-02** y **OBS-3.1-03**
+(§M). OBS-3.1-01 sigue siendo una observación: no autoriza ningún cambio en Vercel.
+
+**Entornos.** STAGING comprobado en solo lectura, sin reconstruir, resembrar ni repetir fixtures.
+PRODUCTION sigue **pausado** y sin tocar. El despliegue de Production que Vercel inició con el
+merge quedó **cancelado** por el control de release vigente.
+
+**Frontera.** No autoriza Phase 4, ninguna de H-P4-1 … H-P4-7, contrato ni tablas de Planner,
+override de hoy, zona horaria, cambios de disponibilidad, Rescue ni Recovery, rediseño de HOY,
+hito de UX, Phase 1B, corpus oficial, PRODUCTION, infraestructura de pago ni AQUO.
+
