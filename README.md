@@ -12,7 +12,9 @@ Sistema de estudio adaptativo. **Study OS es el producto; TAI es el primer pack 
 > contenido sintético y **sin migración de esquema**, cabe entero dentro de la frontera
 > congelada. **Phase 3 · Learning Engine · aceptada y
 > congelada** (`phase-3-v1.0`, checkpoint **PASS WITH DEBT** en `docs/PHASE_3_CHECKPOINT.md`),
-> con los diez gates en PASS. El motor es determinista y sin red, su proyección es
+> con los diez gates en PASS, y **corregida por Phase 3.1** (`phase-3-v1.1`, checkpoint
+> **PASS WITH DEBT** en `docs/PHASE_3_1_CHECKPOINT.md`): el motor se invoca desde la aplicación
+> real por una frontera gobernada, sin exponer ningún esquema privado. El motor es determinista y sin red, su proyección es
 > un **vector de evidencia sin ninguna puntuación**, y vive en el esquema `engine`, **no
 > expuesto**: ninguna superficie de aprendiz lo alcanza. Phase 1B, Phase 4 y Phase 5 no
 > autorizados.

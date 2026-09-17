@@ -3,10 +3,10 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.19 · copia viva
-**Última actualización:** 2026-09-16 · **Phase 3.1 · corrección D-26 · candidato sin aceptar** en `phase/3.1-engine-runtime-corrective`: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4; D-26 ABIERTA (§15) · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
-**Fase actual:** **Phase 3 · Learning Engine · FROZEN · PASS WITH DEBT** (`phase-3-v1.0` → `f5d0b10`), los diez gates en PASS · ninguna fase posterior autorizada · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
-**Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `f5d0b101b58bae4d1003ea91f15ff0ecfe924f97` · tag anotado `phase-3-v1.0` (FPS: `6bde0a0…`, `fps-v1.0`; Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_3_CHECKPOINT.md`
+**Versión:** 11.20 · copia viva
+**Última actualización:** 2026-09-17 · **Phase 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integrado en `main` (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`; **D-26 cerrada** (§15.3) · 2026-09-16 · Phase 3.1 · corrección D-26 construida como candidato: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
+**Fase actual:** **Phase 3.1 · Learning Engine Runtime Corrective · FROZEN · PASS WITH DEBT** (`phase-3-v1.1` → `577cc71`), P3.1-G1 … P3.1-G12 en PASS, sobre **Phase 3 · FROZEN · PASS WITH DEBT** (`phase-3-v1.0` → `f5d0b10`, que contiene D-26 como historia) · ninguna fase posterior autorizada · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
+**Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `577cc711e017f1fb48ba881ea34288d865317429` · tag anotado `phase-3-v1.1` (Phase 3: `f5d0b10…`, `phase-3-v1.0`; FPS: `6bde0a0…`, `fps-v1.0`; Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_3_1_CHECKPOINT.md` y `docs/PHASE_3_CHECKPOINT.md`
 
 ---
 
@@ -618,6 +618,23 @@ runtime. Se descubrió en la reconciliación de pre-autorización de Phase 4, no
 | Ruta B | `recoverProjectionOnReturn` en HOY, solo para el aprendiz verificado, sin cambiar lo que HOY muestra |
 | Pruebas | `engine.runtime.spec` (módulo real contra PostgREST), `engine.runtime.e2e` (aplicación construida), `engine.invocationBoundary.spec` |
 
-**D-26 permanece ABIERTA** hasta la aceptación humana del candidato. Checkpoint en
-`docs/PHASE_3_1_CHECKPOINT.md`.
+Checkpoint en `docs/PHASE_3_1_CHECKPOINT.md`. Mientras fue candidato, D-26 permaneció abierta.
+
+### 15.3 Aceptación humana y congelación · 2026-09-17
+
+**PHASE 3.1 · FROZEN · PASS WITH DEBT.** Ana aprobó el candidato exacto tras revisión independiente
+del paquete de evidencia.
+
+| Papel | SHA |
+| --- | --- |
+| Candidato aceptado | `04d4669719e75ab172e80da712ea7e155b3352bd` · árbol `bd1c9c5c3e6a553f52f312de8de81cf21b5d5f30` |
+| Merge de implementación (PR #15) | `577cc711e017f1fb48ba881ea34288d865317429` · padres `64158b5` y `04d4669` · árbol idéntico al candidato |
+| Tag canónico | `phase-3-v1.1` · objeto `284ba3e01d3f025b56223f29e0bccfaa459ef040` · pela al merge de implementación |
+| Tag previo | `phase-3-v1.0` → `f5d0b10`, sin mover; contiene D-26 como historia |
+
+**D-26 cerrada.** CI exigida sobre el PR #15: `35213354273`, tres jobs en verde. Deuda sin cambio:
+D-13, D-18, D-20, D-22, D-23; WATCH-P2-1 heredado. Observaciones OBS-3.1-01 (Vercel sin clave de
+servidor), OBS-3.1-02 y OBS-3.1-03. PRODUCTION **pausado** y sin tocar; el despliegue de
+Production que inició el merge quedó **cancelado**. Phase 4 y las decisiones H-P4-1 … H-P4-7
+**siguen sin autorizar**.
 
