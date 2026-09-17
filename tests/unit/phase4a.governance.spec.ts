@@ -40,16 +40,16 @@ const authorization = read(AUTHORIZATION);
 describe('Phase 4A · el contrato del Planner está aceptado y acotado', () => {
   it('es v1.0, ACCEPTED, y deja claro que el BUILD no lo está', () => {
     expect(contract).toContain('# STUDY OS · Planner Contract · v1.0');
-    expect(flat(contract)).toContain('**ESTADO:** `ACCEPTED` como contrato de Phase 4A · **BUILD no autorizado**');
+    expect(flat(contract)).toContain(
+      '**ESTADO:** `ACCEPTED` como contrato de Phase 4A · **BUILD no autorizado**',
+    );
     expect(flat(contract)).toContain('**PROPIETARIO NORMATIVO:** ADR-012');
   });
 
   it('define las veintiséis secciones que la autorización exige', () => {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
     for (const letter of letters) {
-      expect(contract, `falta la sección ${letter}`).toMatch(
-        new RegExp(`^## ${letter} · `, 'm'),
-      );
+      expect(contract, `falta la sección ${letter}`).toMatch(new RegExp(`^## ${letter} · `, 'm'));
     }
   });
 
@@ -77,7 +77,9 @@ describe('Phase 4A · P4-D1 · composición categórica equilibrada', () => {
     ]) {
       expect(flattened, `falta ${id}`).toContain(id);
     }
-    expect(flattened).toContain('**PROGRESO + REPARACIÓN · sin castigo · sin ignorar la evidencia.**');
+    expect(flattened).toContain(
+      '**PROGRESO + REPARACIÓN · sin castigo · sin ignorar la evidencia.**',
+    );
   });
 
   it('la composición se deriva y la cantidad uno es la aridad de un existencial', () => {
@@ -96,7 +98,9 @@ describe('Phase 4A · P4-D1 · composición categórica equilibrada', () => {
 
   it('ningún parámetro de equilibrio entra por la configuración', () => {
     const flattened = flat(contract);
-    expect(flattened).toContain('Una configuración versionada **no es legítima por ser auditable**');
+    expect(flattened).toContain(
+      'Una configuración versionada **no es legítima por ser auditable**',
+    );
     for (const forbidden of [
       'pesos, ratios, porcentajes, cuotas, puntuaciones',
       'longitudes de ciclo, constantes de alternancia, máximos de categorías consecutivas',
@@ -112,8 +116,14 @@ describe('Phase 4A · P4-D1 · composición categórica equilibrada', () => {
     expect(flattened).toContain(
       'carece de autoridad para afirmar que un concepto con evidencia positiva deba revisarse',
     );
-    expect(flattened).toContain('el modelo actualmente autorizado no tiene ninguna acción de estudio justificada');
-    for (const forbidden of ['preparado para el examen', 'dominado para siempre', '100 % aprendido']) {
+    expect(flattened).toContain(
+      'el modelo actualmente autorizado no tiene ninguna acción de estudio justificada',
+    );
+    for (const forbidden of [
+      'preparado para el examen',
+      'dominado para siempre',
+      '100 % aprendido',
+    ]) {
       expect(flattened, `falta la negación: ${forbidden}`).toContain(forbidden);
     }
   });
@@ -127,7 +137,9 @@ describe('Phase 4A · P4-D1 · composición categórica equilibrada', () => {
 describe('Phase 4A · P4-D2 sigue diferida y no deja constantes detrás', () => {
   it('el contrato recibe la duración como entrada y no fija su origen', () => {
     const flattened = flat(contract);
-    expect(flattened).toContain('El Planner recibe la duración autoritativa de cada candidato **como entrada del contrato**');
+    expect(flattened).toContain(
+      'El Planner recibe la duración autoritativa de cada candidato **como entrada del contrato**',
+    );
     expect(flattened).toContain('P4-D2 está deliberadamente diferida');
     expect(flattened).toContain('FPS-OBS-04 **no** queda cerrada');
   });
