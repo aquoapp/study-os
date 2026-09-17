@@ -53,7 +53,7 @@ puede explicarse no cumple este contrato.
 | Contenido publicado, estados y orden de sílabo | `content` vía frontera de servidor | `sort_order` de bloque, tema y concepto |
 | Mapeo PRIMARY VALIDATED y generación de atribución | `ingest.attribution_snapshot` | INV-109 |
 | Estado categórico por concepto, incertidumbre y patrones de error activos | Learning Engine (§W) | **solo categorías**; nunca el vector |
-| Tupla de frescura del motor | `engine_version`, `engine_config_version`, `attribution_pack_version_id`, `attribution_generation`, `consumed_position` | §Q |
+| Tupla de frescura del motor | `engine_version`, `engine_config_version`, `attribution_pack_version_id`, `attribution_generation`, `consumed_position` | §M |
 | Sesión abierta y su cursor | `study_sessions`, `session_items` | §N |
 | Historial de sesiones e ítems completados | `session_items` | exclusión `COMPLETED_TODAY` |
 | Ejecuciones anteriores del Planner | `planner_runs`, `planner_items` | necesarias para §F.4 |
@@ -180,7 +180,7 @@ Mientras queden acciones de **C** elegibles y quepan, la reparación no consume 
 2. Llenar el presupuesto restante con acciones de **C**, en orden de sílabo, mientras quepan.
 3. Cuando no quede ninguna acción de **C** por colocar, seguir llenando con **R** en orden de
    sílabo.
-4. Parar en el presupuesto. Nunca rellenar (§L, P4-D1.6).
+4. Parar en el presupuesto. Nunca rellenar (§K.1, P4-D1.6).
 
 ### G.3 · Por qué la reparación va en la cabeza y la cobertura en el resto
 
@@ -285,11 +285,6 @@ presupuesto. El Planner selecciona una **secuencia acotada en tiempo**, no un n�
 El tiempo transcurrido real se registra como evidencia y **no** alimenta ninguna estimación
 (DEF-11).
 
-### I.5 · `ZERO_TIME`
-
-Presupuesto cero: una ejecución con **cero ítems** y razón `ZERO_TIME`. Sin backlog, sin
-contador, sin marca de deuda y sin lenguaje de fallo (REQ-E08, EC-014).
-
 ## J · `NOTHING_FITS`
 
 Si existen candidatos elegibles pero **ninguna acción completa cabe** en el presupuesto:
@@ -323,10 +318,9 @@ listo · aprendizaje terminado · 100 % aprendido · sin repaso futuro necesario
 
 Esta distinción es normativa y es materia de prueba mecánica (§Z, P4-G12).
 
-## L · Sin actividad sintética
+### K.1 · Sin actividad sintética
 
-El Planner **nunca** genera actividad con el único fin de no devolver un plan vacío
-(P4-D1.6).
+El Planner **nunca** genera actividad con el único fin de no devolver un plan vacío (P4-D1.6).
 
 Un plan no vacío **no es un invariante de producto**. La ausencia veraz de recomendación
 autorizada es preferible a trabajo fabricado. En particular, no se recurre a
@@ -334,16 +328,38 @@ autorizada es preferible a trabajo fabricado. En particular, no se recurre a
 
 Gate P4-G19.
 
-## M · Ejecución inmutable
+## L · `ZERO_TIME`
 
-Una ejecución del Planner es un **registro histórico de decisión**, no un estado editable:
+Presupuesto cero: una ejecución con **cero ítems** y razón `ZERO_TIME`. Sin backlog, sin
+contador, sin marca de deuda y sin lenguaje de fallo (REQ-E08, EC-014).
 
-- `planner_runs` es **append-only**;
-- `planner_items` es **inmutable** y no lleva estado de ejecución mutable: el progreso vive en
-  `session_items`;
-- una replanificación **añade** una ejecución nueva con `supersedes_run_id`; no edita la anterior
-  (REQ-E13);
-- «el plan actual» es la última ejecución no superseded del objetivo, no una fila mutable.
+El cero puede venir de un override del día o de una entrada explícita `0` en la disponibilidad
+semanal (§I.2): en los dos casos es una declaración de la persona, y el Planner la respeta sin
+convertirla en deuda.
+
+## M · Frescura del motor y puesta al día bloqueante
+
+Regla congelada tras Phase 3.1:
+
+> Una petición de plan que requiera estado autoritativo de la persona **no puede planificar en
+> silencio desde una proyección del Learning Engine que se sabe atrasada.**
+
+1. En la petición, con identidad verificada en servidor, se calcula la tupla de frescura.
+2. Si está atrasada, incoherente, o han cambiado la configuración o la generación: se intenta una
+   **puesta al día bloqueante** a través de la frontera de invocación gobernada y aceptada
+   (envoltorios `public.engine_*`, migración 21).
+3. Si tiene éxito: se planifica contra la tupla autoritativa resultante, y la ejecución **registra
+   la tupla que consumió**.
+4. Si falla: **no se escribe ninguna ejecución autoritativa** y se devuelve
+   `PLAN_UNAVAILABLE_ENGINE`. La sesión abierta sigue ganando.
+
+No hay degradación silenciosa: ni a `fps-fixed-v1`, ni a planificación sin personalizar, ni a
+planificación con datos atrasados, salvo autorización futura y explícita.
+
+La recuperación asíncrona existente (`recoverProjectionOnReturn`, ruta B de Phase 3.1) sigue
+siendo útil y **no es sustituto** de esta frontera: entrega su trabajo a `after()`, es decir
+después de enviar la respuesta, de modo que una petición de plan de esa misma respuesta leería
+estado previo a la recuperación.
 
 ## N · La sesión abierta gana
 
@@ -374,7 +390,7 @@ Casos, todos derivados y ninguno nuevo:
 | Cambia la versión de contenido | desajuste de tupla → replanificación en la siguiente petición |
 | Cambia la generación de atribución | igual |
 | Llega evidencia nueva (también desde otro dispositivo) | avanza la posición de flujo → desajuste → replanificación futura; la sesión abierta gana |
-| La proyección estaba atrasada | §Q |
+| La proyección estaba atrasada | §M |
 | Contenido recomendado retirado | el ítem no iniciado se excluye al arrancar con `TARGET_UNAVAILABLE` y se replanifica |
 
 **Phase 4A no define umbrales de Rescue ni de ausencia.** «Materialmente por debajo» (Master §8)
@@ -384,29 +400,17 @@ difiere del derivado del valor por defecto, y cuántos días de calendario han p
 última evidencia— y nada más. Las experiencias nombradas **Rescue** y **Recovery** pertenecen a
 4B/UX.
 
-## Q · Frescura del motor y puesta al día bloqueante
+## Q · Ejecución inmutable y su historia
 
-Regla congelada tras Phase 3.1:
+Una ejecución del Planner es un **registro histórico de decisión**, no un estado editable:
 
-> Una petición de plan que requiera estado autoritativo de la persona **no puede planificar en
-> silencio desde una proyección del Learning Engine que se sabe atrasada.**
-
-1. En la petición, con identidad verificada en servidor, se calcula la tupla de frescura.
-2. Si está atrasada, incoherente, o han cambiado la configuración o la generación: se intenta una
-   **puesta al día bloqueante** a través de la frontera de invocación gobernada y aceptada
-   (envoltorios `public.engine_*`, migración 21).
-3. Si tiene éxito: se planifica contra la tupla autoritativa resultante, y la ejecución **registra
-   la tupla que consumió**.
-4. Si falla: **no se escribe ninguna ejecución autoritativa** y se devuelve
-   `PLAN_UNAVAILABLE_ENGINE`. La sesión abierta sigue ganando.
-
-No hay degradación silenciosa: ni a `fps-fixed-v1`, ni a planificación sin personalizar, ni a
-planificación con datos atrasados, salvo autorización futura y explícita.
-
-La recuperación asíncrona existente (`recoverProjectionOnReturn`, ruta B de Phase 3.1) sigue
-siendo útil y **no es sustituto** de esta frontera: entrega su trabajo a `after()`, es decir
-después de enviar la respuesta, de modo que una petición de plan de esa misma respuesta leería
-estado previo a la recuperación.
+- `planner_runs` es **append-only**;
+- `planner_items` es **inmutable** y no lleva estado de ejecución mutable: el progreso vive en
+  `session_items`;
+- una replanificación **añade** una ejecución nueva con `supersedes_run_id`; no edita la anterior
+  (REQ-E13);
+- «el plan actual» es la última ejecución no superseded del objetivo, no una fila mutable;
+- la historia no se poda: una ejecución antigua sigue siendo la respuesta a «por qué entonces».
 
 ## R · Explicabilidad
 
