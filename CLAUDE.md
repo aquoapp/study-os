@@ -261,6 +261,19 @@ pausado por ser un proyecto Free sin uso y no se reactiva. **Phase 3 · FROZEN �
 DEBT**: D-21, D-24 y D-25 cerradas; D-13, D-18, D-20, D-22 y D-23 aceptadas; WATCH-P2-1
 heredado. Phase 4, Phase 1B, Planner, corpus oficial, Release y PRODUCTION siguen sin autorizar.
 
+**Phase 3.1 · corrección D-26 · candidato, sin aceptar (2026-09-16).** La reconciliación de
+pre-autorización de Phase 4 descubrió que `phase-3-v1.0` **contiene un defecto**: el runtime de
+la aplicación invocaba el motor pidiendo los esquemas privados `engine` e `ingest` al Data API,
+que responde `PGRST106` incluso al rol de servicio, y la ruta de recuperación no tenía llamador.
+Las pruebas de Phase 3 probaban el contrato por SQL directo y nunca ejecutaron el módulo real.
+La autorización correctiva (`docs/PHASE_3_1_CORRECTIVE_AUTHORIZATION.md`) permite solo reparar
+esa frontera: migración 21 con envoltorios `public.engine_*` ejecutables solo por el rol de
+servicio, ruta A con `after()` y ruta B al volver a HOY, **sin exponer ningún esquema privado**
+y sin semántica nueva. **D-26 sigue ABIERTA** hasta la aceptación humana. `phase-3-v1.0` es
+inmutable y conserva el defecto como historia; sin merge, sin tag y sin `phase-3-v1.1`. Phase 4
+no está autorizado y ninguna decisión H-P4 está aceptada salvo H-P4-0. Lección: **una ruta de
+runtime solo está probada cuando una prueba ejecuta el módulo real contra la frontera real**.
+
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:
 reconstruir la realidad desde el repositorio, el historial de migraciones y el catálogo antes

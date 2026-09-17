@@ -91,7 +91,9 @@ describe('descubrimiento por el Data API: nada de content ni ingest es visible',
   // intento conserve con qué versión de clave se evaluó. El patrón nombra por eso la TABLA
   // de claves y el material de corrección, no el prefijo `answer_key`.
   const PRIVATE_WORDS =
-    /answer_key_versions|correct_option|explanation|staged_items|promotions|content\.|ingest\./i;
+    // `engine\.` desde Phase 3.1 (D-26): los envoltorios del motor viven en `public` y su
+    // descripción en el OpenAPI no puede nombrar objetos del esquema privado.
+    /answer_key_versions|correct_option|explanation|staged_items|promotions|content\.|ingest\.|engine\./i;
 
   it('el OpenAPI de la raíz se niega a los roles de cliente y, para el servidor, no describe nada privado', async () => {
     // El proyecto gestionado exige una clave secreta para el descubrimiento (401 para anon

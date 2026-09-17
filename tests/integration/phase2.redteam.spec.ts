@@ -64,8 +64,10 @@ let attemptId = '';
  * Por eso el patrón nombra la tabla y no el prefijo: un patrón que confundiera las dos cosas
  * obligaría a relajar la prueba en la primera columna legítima, y ahí es donde se pierden.
  */
+// `engine\.` desde Phase 3.1 (D-26): los envoltorios del motor viven en `public` y su
+// descripción en el OpenAPI no puede nombrar objetos del esquema privado.
 const PRIVATE_WORDS =
-  /answer_key_versions|correct_option|explanation|staged_items|promotions|content\.|ingest\./i;
+  /answer_key_versions|correct_option|explanation|staged_items|promotions|content\.|ingest\.|engine\./i;
 
 async function rest(path: string, headers: Record<string, string>, method = 'GET') {
   const response = await fetch(`${env.url}/rest/v1${path}`, {

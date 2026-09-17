@@ -27,7 +27,39 @@ import { tryCreateEngineClient } from './admin';
  *     watermark en la misma transacción.
  *
  * Ninguna de las tres puede corromper la evidencia: es inmutable y ya está aceptada.
+ *
+ * **Frontera de invocación · Phase 3.1 · D-26.** Todo pasa por los envoltorios `public.engine_*`
+ * de la migración 21, ejecutables solo con rol de servicio. `phase-3-v1.0` seleccionaba los
+ * esquemas `engine` e `ingest` en el cliente de PostgREST: esos esquemas no están expuestos al
+ * Data API (ADR-011 anexo v1.1) y PostgREST respondía `PGRST106` también al rol de servicio, así
+ * que esta ruta nunca llegaba a ejecutarse. La exposición de los esquemas privados no cambia.
  */
+
+/** Los únicos puntos de entrada del motor en el Data API: `public`, solo rol de servicio. */
+export const ENGINE_RPC = {
+  activeConfigVersion: 'engine_active_config_version',
+  evidenceSnapshot: 'engine_evidence_snapshot',
+  attributionSnapshot: 'engine_attribution_snapshot',
+  recalculateMastery: 'engine_recalculate_mastery',
+  rebuildProjections: 'engine_rebuild_projections',
+  staleUsers: 'engine_stale_users',
+} as const;
+
+/** La versión ACTIVE de `engine_config`, o `null` si no hay ninguna. */
+async function readActiveConfigVersion(supabase: SupabaseClient): Promise<string | null> {
+  const call = await supabase.rpc(ENGINE_RPC.activeConfigVersion);
+  if (call.error) throw new Error(`engine_config: ${call.error.message}`);
+  return typeof call.data === 'string' && call.data !== '' ? call.data : null;
+}
+
+async function readEvidenceSnapshot(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<EvidenceSnapshot> {
+  const call = await supabase.rpc(ENGINE_RPC.evidenceSnapshot, { p_user_id: userId });
+  if (call.error) throw new Error(`evidencia: ${call.error.message}`);
+  return call.data as EvidenceSnapshot;
+}
 
 export type EngineOutcome =
   | { readonly kind: 'APPLIED'; readonly watermark: number; readonly rebuilt: boolean }
@@ -55,9 +87,9 @@ async function readAttribution(
   supabase: SupabaseClient,
   packVersionId: string,
 ): Promise<AttributionSnapshot> {
-  const snapshot = await supabase
-    .schema('ingest')
-    .rpc('attribution_snapshot', { p_exam_pack_version_id: packVersionId });
+  const snapshot = await supabase.rpc(ENGINE_RPC.attributionSnapshot, {
+    p_exam_pack_version_id: packVersionId,
+  });
   if (snapshot.error) throw new Error(`semántica de atribución: ${snapshot.error.message}`);
   const rows = (snapshot.data ?? []) as Array<{
     generation: number;
@@ -112,21 +144,10 @@ export async function runEngineForUser(
   const supabase = options.client ?? tryCreateEngineClient();
   if (!supabase) return { kind: 'SKIPPED', reason: 'SIN_CONFIGURACION_DE_SERVIDOR' };
 
-  const activeConfig = await supabase
-    .schema('engine')
-    .from('engine_config')
-    .select('version')
-    .eq('status', 'ACTIVE')
-    .limit(1);
-  if (activeConfig.error) throw new Error(`engine_config: ${activeConfig.error.message}`);
-  const configVersion = (activeConfig.data?.[0] as { version: string } | undefined)?.version;
+  const configVersion = await readActiveConfigVersion(supabase);
   if (!configVersion) return { kind: 'SKIPPED', reason: 'SIN_CONFIGURACION_ACTIVA' };
 
-  const snapshotCall = await supabase
-    .schema('engine')
-    .rpc('evidence_snapshot', { p_user_id: userId });
-  if (snapshotCall.error) throw new Error(`evidencia: ${snapshotCall.error.message}`);
-  const snapshot = snapshotCall.data as EvidenceSnapshot;
+  const snapshot = await readEvidenceSnapshot(supabase, userId);
 
   if (!snapshot.packVersionId) return { kind: 'SKIPPED', reason: 'SIN_OBJETIVO_ACTIVO' };
   if (!snapshot.accountCreatedAt) return { kind: 'SKIPPED', reason: 'SIN_PERFIL' };
@@ -172,12 +193,12 @@ export async function runEngineForUser(
   const reason = historyReasonOf(mode);
 
   const applied = rebuild
-    ? await supabase.schema('engine').rpc('rebuild_projections', {
+    ? await supabase.rpc(ENGINE_RPC.rebuildProjections, {
         p_user_id: userId,
         p_payload: payloadOf(result),
         p_reason: reason,
       })
-    : await supabase.schema('engine').rpc('recalculate_mastery', {
+    : await supabase.rpc(ENGINE_RPC.recalculateMastery, {
         p_user_id: userId,
         p_from_position: consumed,
         p_payload: payloadOf(result),
@@ -199,21 +220,10 @@ export async function computeProjection(
   client: SupabaseClient,
   watermarkOverride?: number,
 ): Promise<EngineResult | null> {
-  const activeConfig = await client
-    .schema('engine')
-    .from('engine_config')
-    .select('version')
-    .eq('status', 'ACTIVE')
-    .limit(1);
-  if (activeConfig.error) throw new Error(`engine_config: ${activeConfig.error.message}`);
-  const configVersion = (activeConfig.data?.[0] as { version: string } | undefined)?.version;
+  const configVersion = await readActiveConfigVersion(client);
   if (!configVersion) return null;
 
-  const snapshotCall = await client
-    .schema('engine')
-    .rpc('evidence_snapshot', { p_user_id: userId });
-  if (snapshotCall.error) throw new Error(`evidencia: ${snapshotCall.error.message}`);
-  const snapshot = snapshotCall.data as EvidenceSnapshot;
+  const snapshot = await readEvidenceSnapshot(client, userId);
   if (!snapshot.packVersionId || !snapshot.accountCreatedAt) return null;
 
   const attribution = await readAttribution(client, snapshot.packVersionId);

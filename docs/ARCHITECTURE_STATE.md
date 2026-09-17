@@ -3,8 +3,8 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.18 · copia viva
-**Última actualización:** 2026-09-16 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
+**Versión:** 11.19 · copia viva
+**Última actualización:** 2026-09-16 · **Phase 3.1 · corrección D-26 · candidato sin aceptar** en `phase/3.1-engine-runtime-corrective`: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4; D-26 ABIERTA (§15) · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
 **Fase actual:** **Phase 3 · Learning Engine · FROZEN · PASS WITH DEBT** (`phase-3-v1.0` → `f5d0b10`), los diez gates en PASS · ninguna fase posterior autorizada · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
 **Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `f5d0b101b58bae4d1003ea91f15ff0ecfe924f97` · tag anotado `phase-3-v1.0` (FPS: `6bde0a0…`, `fps-v1.0`; Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_3_CHECKPOINT.md`
 
@@ -592,3 +592,32 @@ comprobado en solo lectura, sin reconstruir ni resembrar. PRODUCTION **pausado**
 despliegue de Production que inició la actividad de `main` quedó **cancelado** por el control
 de release. Phase 4, Phase 1B, Planner, superficie de aprendiz de mastery, corpus oficial y
 PRODUCTION **siguen sin autorizar**.
+
+## 15. Phase 3.1 · corrección de la invocación del motor en runtime · D-26 · 2026-09-16
+
+**Registro de decisión:** `docs/PHASE_3_1_CORRECTIVE_AUTHORIZATION.md`. **Alcance:** gobernanza y
+candidato correctivo únicamente. Sin merge, sin tag, sin congelación y sin `phase-3-v1.1`.
+
+### 15.1 El defecto
+
+`phase-3-v1.0` —congelado e **inmutable**— contiene D-26. El módulo de servidor
+`apps/web/src/server/engine/run.ts` pedía los esquemas `engine` e `ingest` al Data API; esos
+esquemas no están expuestos (ADR-011 anexo v1.1) y PostgREST respondía `PGRST106` también al rol
+de servicio. La ruta A fallaba siempre, capturada y registrada como aviso, y la ruta B no tenía
+ningún llamador. Las suites de Phase 3 probaban el contrato durable por SQL directo y ninguna
+ejecutó el módulo real, así que P3-G7 quedó en PASS en el plano de la base de datos y no en el del
+runtime. Se descubrió en la reconciliación de pre-autorización de Phase 4, no en producción.
+
+### 15.2 La corrección (candidato)
+
+| Elemento | Nota |
+| --- | --- |
+| Migración 21 | seis envoltorios `public.engine_*`, `SECURITY INVOKER`, `search_path` vacío, EXECUTE solo para el rol de servicio; ningún esquema privado expuesto; rollback en `down/` |
+| `run.ts` | todo pasa por `ENGINE_RPC`; ninguna llamada a esquemas privados |
+| Ruta A | `scheduleProjection` entrega el cálculo a `after()` tras aceptar la evidencia |
+| Ruta B | `recoverProjectionOnReturn` en HOY, solo para el aprendiz verificado, sin cambiar lo que HOY muestra |
+| Pruebas | `engine.runtime.spec` (módulo real contra PostgREST), `engine.runtime.e2e` (aplicación construida), `engine.invocationBoundary.spec` |
+
+**D-26 permanece ABIERTA** hasta la aceptación humana del candidato. Checkpoint en
+`docs/PHASE_3_1_CHECKPOINT.md`.
+

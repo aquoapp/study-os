@@ -82,14 +82,22 @@ describe('§21 · el FPS congelado no se rediseña', () => {
 describe('§18 · la invocación tiene dos rutas, y la segunda no es opcional', () => {
   const schedule = read('apps/web/src/server/engine/schedule.ts');
 
+  // Phase 3.1 · D-26: en `phase-3-v1.0` estas dos pruebas vigilaban el **texto** de las rutas
+  // (`void runEngineForUser(...)`, `rpc('stale_users'`) y pasaban mientras ninguna ruta podía
+  // ejecutarse. Siguen vigilando la forma, ahora sobre la frontera corregida; la ejecución real
+  // la prueban `engine.runtime.spec` y `engine.runtime.e2e`.
   it('la ruta normal no bloquea y no propaga su fallo', () => {
     expect(schedule).toContain('export function scheduleProjection');
-    expect(flat(schedule)).toContain('void runEngineForUser(userId).catch(');
+    // `after()` entrega el trabajo a la plataforma una vez enviada la respuesta.
+    expect(flat(schedule)).toMatch(
+      /export function scheduleProjection\(userId: string\): void \{ after\(async \(\) => \{ try \{ await runEngineForUser\(userId\); \} catch/,
+    );
   });
 
   it('la ruta de recuperación existe y se apoya solo en evidencia y watermark', () => {
     expect(schedule).toContain('export async function recoverStaleProjections');
-    expect(schedule).toContain("rpc('stale_users'");
+    expect(schedule).toContain('export function recoverProjectionOnReturn');
+    expect(schedule).toContain('ENGINE_RPC.staleUsers');
     expect(flat(schedule)).toContain('la durabilidad de la evidencia no depende del éxito');
   });
 
