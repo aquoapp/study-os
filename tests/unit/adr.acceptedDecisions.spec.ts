@@ -126,11 +126,14 @@ const TEMPLATE_SECTIONS = [
 ];
 
 describe('ADR-006 … ADR-010 · aceptados, con aprobación y propietario', () => {
-  it('existen exactamente doce ficheros en architecture/: plantilla + once ADR', () => {
+  it('existen exactamente trece ficheros en architecture/: plantilla + doce ADR', () => {
     const files = readdirSync(join(REPO_ROOT, 'architecture')).sort();
-    expect(files).toHaveLength(12);
+    expect(files).toHaveLength(13);
     for (const { file } of ACCEPTED) expect(files).toContain(file.replace('architecture/', ''));
     expect(files).toContain('ADR-011-schema-topology-and-data-api-exposure.md');
+    // Phase 4A · aterrizaje de gobernanza del 2026-09-17: ADR-012 es el propietario normativo
+    // de la autoridad de decisión del Planner. Aceptado y **sin implementar**.
+    expect(files).toContain('ADR-012-planner-decision-authority.md');
   });
 
   for (const { file, owns, decision } of ACCEPTED) {

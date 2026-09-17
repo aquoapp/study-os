@@ -1482,3 +1482,90 @@ exigiendo su propia enmienda), ni merge, ni tag, ni congelación, ni ninguna fas
 ninguna mutación de PRODUCTION. `dataApi.exposedSchemas` sigue siendo `["public"]`.
 
 **Total tras esta adenda: sin cambio** · 29 entradas SPEC_DIFF y 1 errata.
+
+---
+
+## SD-030 · disposición de los requisitos con fuente retirada · REQ-E03, REQ-E04, REQ-E10, REQ-E11 e INV-108
+
+**Documentos afectados:** `spec/requirements.md` REQ-E03, REQ-E04, REQ-E10, REQ-E11;
+`spec/invariant-register.md` INV-108; `Canonical Data & Event Model v1.0` §26 (`priority_score`).
+**Origen:** Phase 4A · Planner Domain / Decision Engine · Governance Landing · disposición
+H-P4-1a. Los cuatro requisitos y la invariante tenían como única fuente `Learning System v0.4`,
+declarado **NO DISPONIBLE** en el aterrizaje de gobernanza de Phase 3 y sin valor normativo desde
+entonces.
+**Estado:** **`ACCEPTED`** · 2026-09-17 · Ana Victoria · copia aceptada en
+`docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md`.
+**Fichero canónico:** `docs/PLANNER_CONTRACT.md` v1.0 · propietario normativo **ADR-012**.
+
+| Requisito | Disposición |
+| --- | --- |
+| **REQ-E03** · prioridad numérica de siete factores | **`SUPERSEDED`** por ADR-003 v1.2 anexo §C. Planner v1 no tiene puntuación de prioridad, y ninguna columna, cálculo intermedio ni código de razón puede reintroducirla con otro nombre |
+| **REQ-E04** · asignador de sesión | **reinterpretado**, no derogado: se cumple como acumulación honesta de presupuesto. La semántica de desplazamiento de repasos **no aplica** mientras no exista programación de repasos (DEF-28) |
+| **REQ-E10** · prerrequisitos flexibles | **`DEFERRED`**. `strength` (WEAK/MEDIUM/STRONG) no tiene significado aceptado, los ciclos no están impedidos en el esquema y ninguna aplicación lee prerrequisitos. Usarlos exigiría inventar la regla, que CLAUDE.md §2 prohíbe |
+| **REQ-E11** · ningún repaso se descarta en silencio | **vacuo en v1** · no existe calendario de repaso autoritativo que descartar |
+| **INV-108** | **vacua en v1**, por el mismo motivo. Vuelve a ser exigible en cuanto exista una política de repaso aceptada |
+
+**`priority_score` de CDEM §26:** queda dispuesto como **no implementado**, en favor de ADR-003
+v1.2 anexo §C. No se crea la columna.
+
+Ninguna de estas disposiciones debilita un requisito canónico vigente: retiran autoridad a
+requisitos cuya fuente ya no gobierna, y lo hacen por registro explícito en vez de por omisión
+silenciosa. Vuelven a estar sobre la mesa el día que exista una especificación de sistema de
+aprendizaje aceptada.
+
+**Impacto:** Phase 4A. **No autoriza ninguna migración.**
+
+---
+
+## SD-031 · Planner Contract v1.0 · selección categórica, composición equilibrada y ausencia de parámetro de equilibrio
+
+**Documentos afectados:** `Master Product Specification v1.0` §24 y §49 por vinculación;
+`Technical Architecture v1.0` §2.3 y §6.1; `Canonical Data & Event Model v1.0` §17, §22, §23 y
+§26; `spec/domain-model.md` §10 (lista de entradas del Planner heredada de la fuente retirada).
+**Origen:** Phase 4A Governance Landing · decisión humana **P4-D1 · aprobada con modificación**.
+**Estado:** **`ACCEPTED`** · 2026-09-17 · Ana Victoria.
+**Fichero canónico:** `docs/PLANNER_CONTRACT.md` v1.0 · propietario normativo **ADR-012**.
+
+Planner v1 selecciona por **composición categórica equilibrada**: una garantía existencial de
+reparación en la cabeza del plan, continuidad de cobertura en el resto, desbordamiento de
+reparación solo una vez agotada la cobertura, y desempate lexicográfico sobre datos estables de
+contenido. La política **no** es «reparación primero» ni «cobertura primero».
+
+**Cero parámetros de equilibrio.** Ni ratios, ni porcentajes, ni pesos, ni cuotas, ni turnos
+rotatorios, ni longitudes de ciclo, ni constantes de alternancia, ni máximos de categorías
+consecutivas, ni azar. La única cantidad que aparece —una acción de reparación— es la **aridad de
+una garantía existencial**, no una proporción elegida; la derivación completa y su red team están
+en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` §6.
+
+`EVIDENCE_POSITIVE` no es elegible de forma independiente en v1 y no se recicla: Planner v1 no
+tiene modelo de retención, decaimiento, espaciado ni estabilidad, y por tanto carece de autoridad
+para programar su revisión. El agotamiento honesto se expresa como `NOTHING_ELIGIBLE`, que
+**nunca** significa preparación, dominio permanente ni fin del aprendizaje.
+
+**El origen de los minutos planificados NO se decide aquí:** P4-D2 queda **diferida** a una
+decisión de producto previa a Phase 4B, y el contrato recibe la duración autoritativa **como
+entrada**. En Phase 4A no se crean metadatos de duración, ni valores por defecto, ni constantes de
+runtime, y FPS-OBS-04 **no** queda cerrada.
+
+**Impacto:** Phase 4A. **No autoriza ninguna migración ni el BUILD.**
+
+---
+
+## Estado de la adenda · tras la Phase 4A Governance Landing · 2026-09-17
+
+Complementa a los estados anteriores sin sustituirlos.
+
+**Registro de decisión:** Phase 4A · Planner Domain / Decision Engine · Governance Landing ·
+2026-09-17 · decisora Ana Victoria · línea base `7cf9190726f9f4edd8f41998acc6fee8792a2d3a` ·
+copia en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md`.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| P4-D1 | `docs/PLANNER_CONTRACT.md` v1.0 · composición categórica equilibrada | **`ACCEPTED` con modificación** |
+| P4-D2 | origen de los minutos planificados | **`DEFERRED`** a decisión previa a Phase 4B |
+| H-P4-0 | invocación del motor en runtime | **RESUELTA POR PHASE 3.1** |
+| H-P4-1a | REQ-E03/E04/E10/E11 e INV-108 | **SD-030** |
+| H-P4-3, H-P4-4, H-P4-5, H-P4-6, H-P4-7 | disposiciones derivadas de autoridad existente | registradas en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` §5 |
+| — | ADR-012 · autoridad de decisión del Planner | **`ACCEPTED · v1.0`** · `NOT IMPLEMENTED` |
+
+**Total tras esta adenda: 31 entradas SPEC_DIFF y 1 errata.**

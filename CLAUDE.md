@@ -273,8 +273,29 @@ y sin semántica nueva. **PHASE 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integr
 (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`, **D-26
 cerrada**. `phase-3-v1.0` es inmutable y conserva el defecto como historia. Observaciones
 OBS-3.1-01 (Vercel sin clave de servidor: el motor devuelve `SKIPPED` en Preview), OBS-3.1-02 y
-OBS-3.1-03. Phase 4 no está autorizado y ninguna decisión H-P4 está aceptada salvo H-P4-0. Lección: **una ruta de
+OBS-3.1-03. Lección: **una ruta de
 runtime solo está probada cuando una prueba ejecuta el módulo real contra la frontera real**.
+
+**Phase 4A · Planner Domain / Decision Engine · gobernanza aterrizada el 2026-09-17. El BUILD no
+está autorizado.** La pre-autorización posterior a Phase 3.1 redujo las siete decisiones humanas
+escaladas a dos, y Ana resolvió ambas: **P4-D1 aceptada con modificación** —composición
+categórica equilibrada, ni «reparación primero» ni «cobertura primero»— y **P4-D2 diferida** a
+una decisión previa a Phase 4B, de modo que el contrato recibe la duración de cada candidato
+**como entrada** y en 4A no se inventa ningún minuto ni se cierra FPS-OBS-04.
+
+Aterrizan `docs/PLANNER_CONTRACT.md` v1.0 y **ADR-012**, ambos `ACCEPTED`, más SD-030 y SD-031 por
+adenda. La selección es **categórica y determinista**: sin puntuación de dominio, sin
+`priority_score`, sin pesos y sin proxy de readiness. La composición se deriva entera de las
+invariantes aceptadas —una garantía **existencial** de reparación en la cabeza del plan,
+continuidad de cobertura en el resto— y **no introduce ningún parámetro de equilibrio**: la única
+cantidad que aparece es la aridad de un existencial, no una proporción elegida.
+`EVIDENCE_POSITIVE` no es elegible en v1 y no se recicla; el agotamiento honesto es
+`NOTHING_ELIGIBLE`, que nunca significa preparación ni dominio permanente; y el Planner no
+fabrica actividad para evitar un plan vacío. Un plan es **una decisión que el cliente no puede
+redactar**: por eso la superficie de RPC invocable por cliente sigue en dos y no se crea ningún
+esquema privado nuevo. Observaciones OBS-4A-01 y OBS-4A-02, vigilancia WATCH-4A-1, y **OBS-3.1-01
+pasa a prerrequisito con milestone nombrado** para el recorrido desplegado de Phase 4B. Detalle
+en `docs/ARCHITECTURE_STATE.md` §16.
 
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:

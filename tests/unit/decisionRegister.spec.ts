@@ -66,6 +66,11 @@ const LIVING = [
   'architecture/ADR-009-stable-concept-identity.md',
   'architecture/ADR-010-official-exam-occurrences.md',
   'architecture/ADR-011-schema-topology-and-data-api-exposure.md',
+  // Aterrizaje de gobernanza de Phase 4A (2026-09-17): el contrato del Planner y ADR-012 son
+  // autoridad viva desde hoy, y entran en la vigilancia de estados caducados.
+  'architecture/ADR-012-planner-decision-authority.md',
+  'docs/PLANNER_CONTRACT.md',
+  'docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md',
 ];
 
 const PHASE_1A_PACKET_SHA256 = '806c6f5908a05f12c94d9931bf05bcd1df03f0d13b71abf117a70708b38552b4';
@@ -194,14 +199,29 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
     expect(read('docs/PHASE_2_AUTHORIZATION_PACKET.md')).toContain('ACEPTADO · 2026-09-09');
   });
 
-  it('ARCHITECTURE_STATE · ADR-006 … ADR-011 ACCEPTED, ADR-001 … ADR-005 PROPOSED', () => {
+  it('ARCHITECTURE_STATE · ADR-003 y ADR-006 … ADR-012 ACCEPTED; ADR-001, 002, 004 y 005 PROPOSED', () => {
     const state = read('docs/ARCHITECTURE_STATE.md');
-    for (const adr of ['ADR-006', 'ADR-007', 'ADR-008', 'ADR-009', 'ADR-010', 'ADR-011']) {
+    // ADR-003 pasó a ACCEPTED v1.2 el 2026-09-10 (aterrizaje de gobernanza de Phase 3) y
+    // ADR-012 el 2026-09-17 (Phase 4A). La tabla viva de §2 los daba por PROPOSED y por v1.0:
+    // el registro describía un estado caducado, y esta prueba lo sostenía. Corregido en el
+    // aterrizaje de gobernanza de Phase 4A.
+    for (const adr of [
+      'ADR-003',
+      'ADR-006',
+      'ADR-007',
+      'ADR-008',
+      'ADR-009',
+      'ADR-010',
+      'ADR-011',
+      'ADR-012',
+    ]) {
       expect(state).toMatch(new RegExp(`^\\| ${adr} \\|[^\\n]*ACCEPTED`, 'm'));
     }
-    for (const adr of ['ADR-001', 'ADR-002', 'ADR-003', 'ADR-004', 'ADR-005']) {
+    for (const adr of ['ADR-001', 'ADR-002', 'ADR-004', 'ADR-005']) {
       expect(state).toMatch(new RegExp(`^\\| ${adr} \\|[^\\n]*PROPOSED`, 'm'));
     }
+    // ADR-012 se acepta sin implementar: el BUILD de Phase 4A no está autorizado.
+    expect(state).toMatch(/^\| ADR-012 \|[^\n]*`NOT IMPLEMENTED`/m);
     expect(state).toContain('ACCEPTED · NOT IMPLEMENTED');
     expect(state).not.toContain('Ninguna decisión está ACCEPTED');
     for (const [decision, adr] of MATRIX) {

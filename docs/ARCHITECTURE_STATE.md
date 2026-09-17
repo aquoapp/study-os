@@ -3,9 +3,9 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.20 · copia viva
-**Última actualización:** 2026-09-17 · **Phase 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integrado en `main` (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`; **D-26 cerrada** (§15.3) · 2026-09-16 · Phase 3.1 · corrección D-26 construida como candidato: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
-**Fase actual:** **Phase 3.1 · Learning Engine Runtime Corrective · FROZEN · PASS WITH DEBT** (`phase-3-v1.1` → `577cc71`), P3.1-G1 … P3.1-G12 en PASS, sobre **Phase 3 · FROZEN · PASS WITH DEBT** (`phase-3-v1.0` → `f5d0b10`, que contiene D-26 como historia) · ninguna fase posterior autorizada · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
+**Versión:** 11.21 · copia viva
+**Última actualización:** 2026-09-17 · **Phase 4A · Planner Domain / Decision Engine · aterrizaje de gobernanza**: `docs/PLANNER_CONTRACT.md` v1.0 y **ADR-012** `ACCEPTED`, P4-D1 aceptada con modificación, P4-D2 diferida, SD-030 y SD-031 por adenda (§16). **El BUILD de Phase 4A no está autorizado.** La tabla viva de §1 queda reconciliada con la línea base congelada · 2026-09-17 · **Phase 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integrado en `main` (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`; **D-26 cerrada** (§15.3) · 2026-09-16 · Phase 3.1 · corrección D-26 construida como candidato: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
+**Fase actual:** **Phase 4A · Planner Domain / Decision Engine · gobernanza aterrizada, BUILD no autorizado** (§16), sobre **Phase 3.1 · Learning Engine Runtime Corrective · FROZEN · PASS WITH DEBT** (`phase-3-v1.1` → `577cc71`), P3.1-G1 … P3.1-G12 en PASS, sobre **Phase 3 · FROZEN · PASS WITH DEBT** (`phase-3-v1.0` → `f5d0b10`, que contiene D-26 como historia) · ninguna fase posterior autorizada · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
 **Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `577cc711e017f1fb48ba881ea34288d865317429` · tag anotado `phase-3-v1.1` (Phase 3: `f5d0b10…`, `phase-3-v1.0`; FPS: `6bde0a0…`, `fps-v1.0`; Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_3_1_CHECKPOINT.md` y `docs/PHASE_3_CHECKPOINT.md`
 
 ---
@@ -43,29 +43,29 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 
 | Elemento | Estado | Nota |
 | --- | --- | --- |
-| Repositorio de aplicación | **EXISTE · remoto · público** | `aquoapp/study-os`, **PUBLIC** desde el 2026-09-08, `origin`, `main` por defecto. `main` **protegida por ruleset** (PR obligatorio, tres checks de estado estrictos, sin force-push, sin borrado, sin bypass) y demostrada con cuatro rechazos. Historia canónica: 47 commits; `main` = `6086537`. El repositorio privado anterior es `aquoapp/study-os-archive-private` (archivo, nunca público) |
-| Aplicación Next.js | **EXISTE** | Next 16.3.2 · App Router · TypeScript `strict` · PWA instalable · 9 rutas (Phase 2 añade `/onboarding`, mínimo y protegido) |
+| Repositorio de aplicación | **EXISTE · remoto · público** | `aquoapp/study-os`, **PUBLIC** desde el 2026-09-08, `origin`, `main` por defecto. `main` **protegida por ruleset** (PR obligatorio, tres checks de estado estrictos, sin force-push, sin borrado, sin bypass) y demostrada con cuatro rechazos. Historia canónica: **122 commits**; `main` = **`7cf9190`** (Phase 4A · aterrizaje de gobernanza · corregido el 2026-09-17; antes decía `6086537`, valor de la ronda de Phase 0). El repositorio privado anterior es `aquoapp/study-os-archive-private` (archivo, nunca público) |
+| Aplicación Next.js | **EXISTE** | Next 16.3.2 · App Router · TypeScript `strict` · PWA instalable · **10 rutas**: `/`, `/entrar`, `/registro`, `/cuenta`, `/offline`, `/onboarding`, `/hoy`, `/aprender/[ordinal]`, `/comprobar/[ordinal]`, `/fin` |
 | Proyecto Supabase | **EXISTE · organización dedicada `STUDY_OS`** | `STUDY_OS_STAGING` (`xzcrqsolxarutlvvkzfp`, eu-west-1) es el **único entorno mutable**; `STUDY_OS_PRODUCTION` (`nzcgufeycvehczroryoe`, eu-central-1) existe como frontera real y **no se ha mutado**. Plan Free. Data API con exposición automática desactivada: los grants los dan las migraciones |
-| Migraciones | **19 escritas · 19 aplicadas en STAGING · 0 en PRODUCTION** | Phase 0: `0000_init`, `0001_profiles`, `0002_profiles_service_role`, intactas. Phase 1A (rama, sin merge): `0003_schema_topology` … `0013_ingest_boundary` y `0014_phase1a_hardening` (auditoría adversarial), todas con rollback en `down/`, registradas en `.lock.json` y **revertidas y reaplicadas de verdad** por `db:roundtrip`, que compara la firma semántica del catálogo antes y después (en CI sobre el stack local y contra STAGING). Ninguna edita una migración aplicada |
+| Migraciones | **22 escritas · 22 aplicadas en STAGING · 0 en PRODUCTION** | Phase 0: `0000_init`, `0001_profiles`, `0002_profiles_service_role`, intactas. Phase 1A: `0003_schema_topology` … `0014_phase1a_hardening`. Phase 2: `0015_learner_core` … `0018_evidence_core`. Phase 3: `0019_attribution_boundary` y `0020_engine_core`. Phase 3.1: `0021_engine_invocation_boundary`. Todas con rollback en `down/`, registradas en `.lock.json` y **revertidas y reaplicadas de verdad** por `db:roundtrip`, que compara la firma semántica del catálogo antes y después (en CI sobre el stack local y contra STAGING). Ninguna edita una migración aplicada |
 | Políticas RLS | **Verificadas en ejecución** | `profiles` con `enable` + `force`, solo-propio. `test:rls` 11/11 contra STAGING y en CI: User A no lee ni muta a User B; `anon` sin acceso |
 | `packages/design-system` | **EXISTE · satisfecho bajo SD-019 opción A** | Valores literales de `STUDY_OS_Design_System_v1.0` y defaults de implementación, separados en `TOKEN_PROVENANCE`. REQ-A06 se cumple bajo las restricciones de la opción A, verificadas en el navegador |
 | `packages/config` | **EXISTE** | Tres entornos, políticas, allowlist pública, frontera `server-only`, guardas destructivas |
 | `packages/domain` | **EXISTE** | `Projection<T>` (INV-113), `VerifiedIdentity` (INV-116), registro de autoridad |
-| `packages/learning-engine` | NO EXISTE | Phase 3 |
-| `packages/planner-engine` | NO EXISTE | Phase 4 |
+| `packages/learning-engine` | **EXISTE** | Phase 3 · motor determinista, sin red y sin dependencias; calcula, y la persistencia la hace una función de rol de servicio |
+| `packages/planner-engine` | NO EXISTE | Phase 4A · el contrato está aceptado (`docs/PLANNER_CONTRACT.md`, ADR-012) y el BUILD **no** está autorizado |
 | Capa de IA | NO EXISTE | Phase 8. MI-05b no se ha solicitado |
-| Tests unitarios | **726 · todos ejecutados y en verde** | 31 ficheros. Recuento verificable con `vitest --reporter=json`. Phase 1A añade `privateSchemaGrant.guard.spec` (incluida la regla «toda tabla nace cerrada») y la vigilancia documental del checkpoint de Phase 1A |
-| E2E estáticos | **70 · ejecutados y en verde** | arranque, PWA, accesibilidad renderizada y su fixture negativo · 35 casos × 2 proyectos. No tocan Supabase |
-| E2E de auth | **22 ejecutados y en verde** | 8 casos × 2 proyectos, alta y login reales por formulario, cookie forjada rechazada. Contra STAGING y en CI (stack local). Limpieza por ejecución verificada: 6 usuarios creados, 6 borrados, 0 restantes |
-| Tests de integración | **475 ejecutados y en verde** | `profiles` 1:1; exposición del Data API; catálogo con matriz rol × privilegio; fundación de Phase 1A con packs sintéticos; **red team** (42 ataques sin residuo) y **ciclo de vida** de una pregunta. Contra STAGING y en CI |
-| Tests de RLS | **192 ejecutados y en verde** | Aislamiento de perfiles (11) y contenido canónico dirigido por el catálogo (5 casos × 19 tablas + 1). Contra STAGING y en CI |
-| CI | **EXISTE · ejecutado · en verde** | `.github/workflows/ci.yml`, tres jobs: estático, base de datos (stack local migrado desde cero) y **deriva de esquema contra STAGING real** con guarda fail-closed. Run `34234262313` sobre `253e9c1`: los nueve checks en verde. Seis runs anteriores con fallos reales, corregidos y registrados |
+| Tests unitarios | **1042 · todos ejecutados y en verde** | 47 ficheros, incluido el vigilante de gobernanza `phase4a.governance.spec`. Recuento verificable con `vitest --reporter=json`. Incluye las guardas de Phase 1A, la vigilancia documental de cada checkpoint, la frontera de invocación de Phase 3.1 y el vigilante de congelación `phase3_1.freeze.spec` |
+| E2E estáticos | **ejecutados y en verde** | arranque, PWA, accesibilidad renderizada y su fixture negativo. No tocan Supabase |
+| E2E de auth | **ejecutados y en verde** | alta y login reales por formulario, cookie forjada rechazada, onboarding mínimo, vertical del FPS y **runtime del motor** (`engine.runtime.e2e`, Phase 3.1: la aplicación construida con `next build`, sin ningún módulo simulado). Contra STAGING y en CI. Limpieza por ejecución verificada, residuo cero |
+| Tests de integración y RLS | **797 ejecutados y en verde** (serie completa) | `profiles` 1:1; exposición del Data API; catálogo con matriz rol × privilegio; fundación de Phase 1A con packs sintéticos; **red team** sin residuo; ciclo de vida de una pregunta; núcleo de evidencia de Phase 2; contrato del motor y su frontera de invocación. Desglose por suite en `docs/PHASE_3_1_CHECKPOINT.md`. Contra STAGING y en CI |
+| CI | **EXISTE · ejecutado · en verde** | `.github/workflows/ci.yml`, tres jobs: estático, base de datos (stack local migrado desde cero) y **deriva de esquema contra STAGING real** con guarda fail-closed. Último run registrado sobre `main`: `35215058227` (congelación documental de Phase 3.1), tres jobs en verde; el PR de implementación de Phase 3.1 fue el run `35213354273`. `main` está protegida por el ruleset 22557790: activo, sin actores de bypass, tres checks exigidos, estricto |
 | Proyecto Vercel | **EXISTE · vinculado al repositorio público** | Equipo `STUDY_OS`, proyecto `study-os` revinculado el 2026-09-08 al nuevo `aquoapp/study-os` (protección de forks activa), `apps/web`, Next.js, Node 24. Variables públicas separadas: Preview → STAGING, Production → PRODUCTION; ningún secreto de servidor. **Preview real desde `phase/0-foundation`: READY** (`study-os-git-phase-0-foundation-study-os6.vercel.app`, protegido por Vercel Authentication). Un alta real por formulario a través del Preview aterrizó en STAGING con perfil 1:1 y PRODUCTION siguió en 0 usuarios; el fixture se borró. Los dos intentos anteriores fallaron por el correo del autor de los commits (asociado por Ana) y por instalar solo las dependencias de `apps/web` (corregido con `installCommand: cd ../.. && npm ci`). Production de Vercel: el merge del PR #1 en `main` (`5d8296c`) provocó un **despliegue automático de Production** por la integración Git de Vercel, sin acción manual; Ana lo aceptó el 2026-09-08 como desviación no destructiva de Phase 0 (solo la aplicación de Phase 0, solo variables públicas de PRODUCTION, protegido por Vercel Authentication, sin dominio propio, sin migraciones, Supabase PRODUCTION sin mutar) y se conserva como evidencia. Desde entonces el proyecto lleva un *Ignored Build Step* (`commandForIgnoringBuildStep`, ajuste del proyecto, no del repositorio) que cancela toda construcción con `VERCEL_ENV=production` o rama `main`: **ningún push o merge a `main` despliega Production automáticamente**; los Preview siguen construyéndose. Un despliegue de Production exige una decisión humana explícita (por ejemplo `vercel deploy --prod --force` o «Redeploy» en el panel). Asignaciones de entorno, Vercel Authentication y raíz `apps/web` sin cambios |
 | Guardas de invariante | **6 activas** (5 de Phase 0 por propagación de punto fijo + `private-schema-grant-guard` de Phase 1A, estática sobre las migraciones y `config.toml`) | import · tai-literal · secret-scan · client-authority (capacidades) · auth-authority (procedencia). **169 casos de guardas** que ejecutan las guardas reales —10 de sumidero computado extraído, 13 de procedencia PostgREST, 19 de cierre transitivo, 21 de propagación, 30 de símbolo y ámbito, 27 de blanqueo, 28 de evasión, 21 adversariales— **más 26 bypasses operacionales**. Sin cambios en esta ronda |
-| Contenido ingerido | NINGUNO | Ni siquiera de prueba. Execution Plan §9 |
+| Contenido ingerido | **NINGUNO OFICIAL** | En STAGING vive un solo pack de demostración **`GENERATED`** y visiblemente sintético, `demo-estudio-eficaz`, sembrado de forma idempotente por la frontera de ingestión para el FPS. Corpus oficial: Phase 1B, no autorizada. D-20 y H-1 intactas |
 | Contenido canónico (Phase 1A) | **19 tablas en `public`, 1 en `content`, 2 en `ingest`** · sin contenido oficial | `public`: `exam_packs`, `exam_pack_versions`, `syllabus_blocks`, `topics`, `concepts`, `concept_versions`, `concept_prerequisites`, `sources`, `source_versions`, `canonical_questions`, `question_representations`, `question_options`, `question_concepts`, `exam_sections`, `exam_sittings`, `exam_sitting_models`, `exam_occurrences`, `practicals`, `practical_questions`. `content`: `answer_key_versions` (no expuesto). `ingest`: `promotions`, `staged_items` (no expuesto) más las funciones `stage_item`, `validate_staged_item`, `publish_staged_item`, `copy_forward_question_concepts`, `purge_generated_pack` y `concept_key`. Todas con RLS habilitado y **forzado**; lectura de lo publicado para `authenticated`; ninguna escritura de cliente; `anon` sin acceso. Solo fixtures GENERATED sintéticos, purgados al terminar cada ejecución |
 | Núcleo de aprendiz y evidencia (Phase 2) | **12 tablas en `public`, 2 en `ingest`** · construidas y probadas | `public`: `learner_settings`, `learner_exam_goals`, `devices`, `sync_state`, `diagnostic_runs`, `learning_units`, `learning_unit_versions`, `study_sessions`, `session_items`, `learning_events`, `question_attempts`, `confidence_scales`. `ingest`: `user_event_counters`, `user_question_counters` (no expuestos). RLS habilitado y **forzado** en todas; la evidencia y las sesiones solo se escriben por función. Dos RPC invocables por cliente: `append_learning_event` y `create_study_session` |
-| Tablas de Phase 3 en adelante | **NINGUNA** | Verificado por test: ninguna migración crea `concept_mastery`, `exam_readiness`, `planner_*`, `projection_watermarks`, `engine_config`, `attempt_recalculations`, `notes` ni `ai_interactions` |
+| Learning Engine (Phase 3 y 3.1) | **5 tablas en el esquema no expuesto `engine`** · construidas, probadas y en runtime | `engine`: `concept_mastery`, `mastery_history`, `error_patterns`, `projection_watermarks`, `engine_config`. No se sirven por el Data API **ni siquiera al rol de servicio** (`PGRST106`). La aplicación las alcanza solo por los seis envoltorios `public.engine_*` de la migración 21, ejecutables únicamente con rol de servicio (ADR-011 anexo v1.1; D-26 cerrada) |
+| Tablas de Phase 4 en adelante | **NINGUNA** | Verificado por test: ninguna migración crea `exam_readiness`, `planner_*`, `attempt_recalculations`, `notes` ni `ai_interactions`. El contrato del Planner está aceptado; su BUILD **no** |
 | Artefactos de Phase −1 | **IMPORTADOS** | 19 ficheros, byte a byte, con SHA-256 en `docs/PROVENANCE.md` · tres ADR anotados el 2026-09-07 (§2.1) |
 | Documentos gobernantes | **8 de 8 disponibles y verificados** | Ver `docs/GOVERNING_DOCUMENTS.md`. AMB-01 resuelto |
 | Registro de decisión humana | **Recibido y verificado por hash** | `STUDY_OS_Phase_0_Human_Decision_Packet_v1.0.md` · `6772d7021a2c1e3513d1bb7900cb1e1f1131e7f71e9386cd1e6533c695ecad7d` · no versionado, citado en cada ADR aceptado |
@@ -76,7 +76,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | --- | --- | --- |
 | ADR-001 | Stack y fronteras de autoridad | PROPOSED · v1.1 · punto 3 subordinado a ADR-006 |
 | ADR-002 | Eventos de evidencia canónica | PROPOSED · v1.2 · punto 6 superseded por ADR-007; puntos 4 y 10 superseded por ADR-008; SD-015 superseded |
-| ADR-003 | Mastery, Readiness y configuración de motor | PROPOSED · v1.1 · intacto |
+| ADR-003 | Mastery, Readiness y configuración de motor | **ACCEPTED** · v1.2 · 2026-09-10 · Ana Victoria · punto 1 superseded y punto 6 no operativo en v1; el anexo §C prohíbe toda pseudopuntuación y el §E mantiene readiness en Phase 6 |
 | ADR-004 | Reconciliación offline y continuidad | PROPOSED · v1.1 · intacto |
 | ADR-005 | Procedencia y versionado oficial | PROPOSED · punto 4 subordinado a ADR-006; punto 5 superseded por ADR-010 · **disposición punto por punto para Phase 1A aprobada el 2026-09-09** (puntos 1, 2, 3, 6-frontera, 8 y 9 subsumidos por fuentes superiores; 6-lista de campos y 7-`mapping_confidence` siguen PROPOSED hacia Phase 1B) |
 | ADR-006 | Frontera del Data API para las claves de respuesta · **SD-007** | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **implementación de la frontera autorizada en Phase 1A** (la corrección en servidor es de fases posteriores) |
@@ -84,7 +84,8 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | ADR-008 | Orden de eventos por usuario e idempotencia · **SD-018** · supersede a SD-015 | **ACCEPTED** · v1.0 · 2026-09-07 · Ana Victoria · **implementación autorizada en Phase 2** (2026-09-09) con SD-022 (canonicalización v1) y SD-023 (autoridad de representación y de tiempo) aceptadas; watermarks por proyección en Phase 3 |
 | ADR-009 | Identidad estable de concepto · **BD-02** / SD-002 | **ACCEPTED** · v1.1 · 2026-09-07 (v1.0) y 2026-09-09 (anexo) · Ana Victoria · **implementación autorizada en Phase 1A** |
 | ADR-010 | Convocatorias y ocurrencias oficiales · **BD-05** / SD-001 | **ACCEPTED** · v1.1 · 2026-09-07 (v1.0) y 2026-09-09 (anexo) · Ana Victoria · **implementación de la estructura autorizada en Phase 1A** (carga oficial en Phase 1B) |
-| ADR-011 | Topología de esquemas y frontera de exposición del Data API | **ACCEPTED** · v1.0 · 2026-09-09 · Ana Victoria · **implementación autorizada en Phase 1A** |
+| ADR-011 | Topología de esquemas y frontera de exposición del Data API | **ACCEPTED** · v1.1 · 2026-09-09 (v1.0) y 2026-09-11 (anexo v1.1 · D-24 · alta del esquema no expuesto `engine`, **y ningún otro**) · Ana Victoria · **implementación autorizada en Phase 1A**; el esquema `engine`, en Phase 3 |
+| ADR-012 | Autoridad de decisión del Planner | **ACCEPTED** · v1.0 · 2026-09-17 · Ana Victoria · **`NOT IMPLEMENTED`**: el BUILD de Phase 4A **no** está autorizado. Propietario normativo de `docs/PLANNER_CONTRACT.md` v1.0 |
 
 **Las cinco decisiones del 2026-09-07 están ACCEPTED.** Cada una nació en
 `ACCEPTED · NOT IMPLEMENTED`, con un único propietario normativo, aprobada mediante el
@@ -638,3 +639,92 @@ servidor), OBS-3.1-02 y OBS-3.1-03. PRODUCTION **pausado** y sin tocar; el despl
 Production que inició el merge quedó **cancelado**. Phase 4 y las decisiones H-P4-1 … H-P4-7
 **siguen sin autorizar**.
 
+
+---
+
+## 16. Phase 4A · Planner Domain / Decision Engine · aterrizaje de gobernanza · 2026-09-17
+
+**Solo gobernanza. El BUILD de Phase 4A no está autorizado.** Ninguna tabla, ninguna migración,
+ninguna función, ningún grant, ningún paquete y ninguna ruta cambian con este aterrizaje. La
+selección visible para la persona sigue siendo `fps-fixed-v1`.
+
+Línea base: `main` = `7cf9190726f9f4edd8f41998acc6fee8792a2d3a`, sobre `phase-3-v1.1` →
+`577cc711e017f1fb48ba881ea34288d865317429`.
+
+### 16.1 · Qué queda aceptado
+
+| Artefacto | Estado |
+| --- | --- |
+| `docs/PLANNER_CONTRACT.md` v1.0 | **`ACCEPTED`** como contrato de Phase 4A |
+| ADR-012 · autoridad de decisión del Planner | **`ACCEPTED · v1.0`** · **`NOT IMPLEMENTED`** |
+| `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` | copia aceptada de la autorización |
+| SD-030 y SD-031 | adenda del `SPEC_DIFF_LOG` |
+| P4-D1 | **aprobada con modificación** · composición categórica equilibrada |
+| P4-D2 · origen de los minutos planificados | **diferida** a una decisión previa a Phase 4B |
+| H-P4-0 | **resuelta por Phase 3.1** |
+
+### 16.2 · El modelo aceptado
+
+La selección es **categórica y determinista**, nunca numérica: no hay puntuación de dominio, ni
+`priority_score`, ni pesos, ni proxy de readiness. Las necesidades se derivan del vocabulario del
+Learning Engine y se componen con **una garantía existencial de reparación** en la cabeza del
+plan y **continuidad de cobertura** en el resto; la reparación solo desborda una vez agotada la
+cobertura. El desempate es lexicográfico sobre datos estables de contenido, comparados por punto
+de código.
+
+La única cantidad que aparece —una acción de reparación— es la **aridad de una garantía
+existencial**, no una proporción elegida: no hay ratio, porcentaje, cuota, longitud de ciclo,
+constante de alternancia ni azar, y `planner_config` tiene prohibido contenerlos. La derivación
+completa, con su red team de quince escenarios, está en
+`docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` §6.
+
+`EVIDENCE_POSITIVE` **no es elegible** en v1 y no se recicla: sin modelo de retención,
+decaimiento, espaciado o estabilidad, el Planner carece de autoridad para programar su revisión.
+El agotamiento honesto se expresa como `NOTHING_ELIGIBLE`, que **nunca** significa preparación,
+dominio permanente ni fin del aprendizaje. Y el Planner **no fabrica actividad** para evitar un
+plan vacío: un plan no vacío no es un invariante de producto.
+
+### 16.3 · Fronteras que este aterrizaje fija
+
+- **Frescura del motor:** una petición de plan no planifica desde una proyección que se sabe
+  atrasada. Puesta al día **bloqueante** por la frontera gobernada de Phase 3.1 y, si falla,
+  `PLAN_UNAVAILABLE_ENGINE` sin escribir ejecución. Sin degradación silenciosa a `fps-fixed-v1`.
+- **Seguridad:** el cálculo vive en un paquete puro de servidor y la persistencia en una función
+  de rol de servicio. **Un plan es una decisión que el cliente no puede redactar**, así que la
+  superficie de RPC invocable por el cliente **permanece en dos**. Tablas en `public` con RLS
+  forzado más una tabla de auditoría sin concesión a roles de cliente: **ningún esquema privado
+  nuevo**, y ADR-011 no se amplía.
+- **Prueba en la frontera real de runtime (P4-G16):** consecuencia directa de D-26. Un arnés SQL
+  equivalente es complementario y no suficiente.
+
+### 16.4 · Observaciones y vigilancia nuevas
+
+| ID | Contenido |
+| --- | --- |
+| **OBS-4A-01** | Con acciones atómicas y un presupuesto que solo admite una acción de un ítem, una disponibilidad declarada permanentemente mínima avanza solo por verificaciones. Consecuencia veraz de las invariantes aceptadas; se registra, no se resuelve inventando |
+| **OBS-4A-02** | Con `EVIDENCE_POSITIVE` excluida y sin política de repaso, una persona con evidencia positiva en todo su pack alcanza `NOTHING_ELIGIBLE` de forma permanente. Consecuencia aceptada de P4-D1.4 y DEF-28 |
+| **WATCH-4A-1** | Contenido retirado dentro de una sesión ya abierta falla hoy en silencio. **No es asunto de Phase 4A**: es consumo de sesión, y corresponde a Phase 4B. Phase 4A no toca la semántica de sesión de Phase 2 |
+
+Los cuatro tipos de evento del enum sin contrato de campos quedan dispuestos:
+`TODAY_OVERRIDE_SET` **diferido a 4B**; `RESCUE_MODE_ENTERED`, `REPLAN_CONFIRMED` y
+`RECOVERY_STARTED` **no se emiten**, porque su criterio no existe en Phase 4A. No se inventa
+ningún contrato por el mero hecho de que el enum exista (gate P4-G17).
+
+**OBS-3.1-01** pasa de observación a **prerrequisito con milestone nombrado**: el BUILD de
+Phase 4A en local, CI y STAGING no necesita ningún cambio en Vercel, pero un recorrido humano
+sobre un Preview desplegado de Phase 4B sí exigirá autorización humana explícita para la
+credencial de servidor. Este aterrizaje **no** la concede, no cambia Vercel y no pide ni imprime
+ninguna credencial.
+
+### 16.5 · Estructura de entrega
+
+`PHASE 4A` → congelación → **milestone de Producto · UX / Diseño visual** → autorización
+explícita de credencial en Preview cuando haga falta → `PHASE 4B`. La congelación de 4A produce
+**cero cambio visible de selección**, y el milestone de UX diseña contra estados congelados y
+reales del Planner en vez de inventar semántica.
+
+### 16.6 · Lo que sigue sin autorizar
+
+BUILD de Phase 4A · esquema · migraciones · dependencias · mutación de STAGING · cambios en
+Vercel · credenciales · Phase 4B · ejecución del milestone de UX · la decisión P4-D2 · Phase 1B ·
+corpus oficial · readiness · PRODUCTION · AQUO.
