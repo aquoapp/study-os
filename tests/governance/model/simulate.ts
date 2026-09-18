@@ -37,7 +37,12 @@ export type Behaviour =
   | 'LATE_WEAK'
   | 'SEEDED_RANDOM'
   | 'NEVER_EXECUTES'
-  | 'ABANDONS_AFTER_FIRST';
+  | 'ABANDONS_AFTER_FIRST'
+  /** Abre la acción, la lee y se va sin comprobar: contacto real sin evidencia nueva. */
+  | 'ABANDONS_AFTER_LEARN'
+  | 'MULTI_WEAK'
+  | 'CLUSTERED_WEAK'
+  | 'MOVING_WEAKNESS';
 
 export interface TrajectoryConfig {
   readonly concepts: number;
@@ -66,6 +71,8 @@ export interface TrajectoryResult {
   /** Bucle estructural: el mismo plan se repite pese a haberse ejecutado trabajo. */
   readonly structuralLoops: number;
   readonly nondeterministic: number;
+  /** Mayor número de conceptos EXPOSED pendientes de comprobar en cualquier momento. */
+  readonly maxExposedBacklog: number;
 }
 
 function budgetAt(cfg: TrajectoryConfig, session: number): number {
@@ -94,6 +101,13 @@ function answersCorrectly(
       return c.syllabus <= Math.floor((cfg.concepts * 2) / 3);
     case 'SEEDED_RANDOM':
       return r() < 0.5;
+    case 'MULTI_WEAK':
+      return c.syllabus % 5 !== 1;
+    case 'CLUSTERED_WEAK':
+      return !(c.syllabus >= 3 && c.syllabus <= Math.max(4, Math.floor(cfg.concepts / 4)));
+    case 'MOVING_WEAKNESS':
+      // La debilidad se desplaza por el temario a medida que avanzan las sesiones.
+      return c.syllabus !== (session % cfg.concepts) + 1;
     default:
       return true;
   }
@@ -131,6 +145,7 @@ export function runTrajectory(cfg: TrajectoryConfig): TrajectoryResult {
   let repeatedIdenticalPlans = 0;
   let structuralLoops = 0;
   let nondeterministic = 0;
+  let maxExposedBacklog = 0;
 
   /** Sesiones consecutivas que cada concepto lleva siendo necesidad legítima sin ser servido. */
   const unserved = new Map<string, number>();
@@ -172,6 +187,9 @@ export function runTrajectory(cfg: TrajectoryConfig): TrajectoryResult {
       if (age > maxUnservedAge) maxUnservedAge = age;
     }
 
+    const exposedNow = concepts.filter((c) => c.state === 'EXPOSED').length;
+    if (exposedNow > maxExposedBacklog) maxExposedBacklog = exposedNow;
+
     const key = JSON.stringify(result.actions);
 
     // Ejecución. `NEVER_EXECUTES` no toca nada: el plan se emite y la persona cierra.
@@ -186,7 +204,12 @@ export function runTrajectory(cfg: TrajectoryConfig): TrajectoryResult {
         const before = concepts[index]!;
         stream += 1;
         const correct = answersCorrectly(cfg, before, session, r);
-        const after = execute(before, action, correct, stream);
+        // Abandonar tras leer: hay contacto, no hay comprobación y por tanto no hay evidencia.
+        const performed =
+          cfg.behaviour === 'ABANDONS_AFTER_LEARN' && action.kind !== 'CHECK'
+            ? { ...action, kind: 'RELEARN' as const }
+            : action;
+        const after = execute(before, performed, correct, stream);
         concepts = concepts.map((c, i) => (i === index ? after : c));
         actionsExecuted += 1;
         executedSomething = true;
@@ -225,5 +248,6 @@ export function runTrajectory(cfg: TrajectoryConfig): TrajectoryResult {
     repeatedIdenticalPlans,
     structuralLoops,
     nondeterministic,
+    maxExposedBacklog,
   };
 }

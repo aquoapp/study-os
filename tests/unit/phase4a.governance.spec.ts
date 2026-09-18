@@ -46,12 +46,13 @@ const authorization = read(AUTHORIZATION);
 
 describe('Phase 4A · el contrato del Planner no se declara aceptado con una decisión abierta', () => {
   it('es v1.1 y consta PROPOSED · BLOQUEADO, con sus dos bloqueantes nombrados', () => {
-    expect(contract).toContain('# STUDY OS · Planner Contract · v1.1');
+    expect(contract).toContain('# STUDY OS · Planner Contract · v1.2');
     expect(flat(contract)).toContain(
-      '**ESTADO:** `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA` · **no aceptado como v1.1**',
+      '**ESTADO:** `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA` · **no aceptado**',
     );
-    expect(flat(contract)).toContain('**BLOQUEANTES:** **P4-D3**');
-    expect(flat(contract)).toContain('**P4-D4**');
+    // P4-D3 y P4-D4 quedaron cerradas en Gate A; el bloqueante vivo es P4-D5.
+    expect(flat(contract)).toContain('**BLOQUEANTE:** **P4-D5**');
+    expect(flat(contract)).toContain('**CERRADAS:** **P4-D3**');
     expect(flat(contract)).toContain('**PROPIETARIO NORMATIVO:** ADR-012');
     // La historia del defecto no se borra: v1.0 se aterrizó como ACCEPTED y se corrigió.
     expect(flat(contract)).toContain('**IR-P4A-01**');
@@ -117,6 +118,8 @@ describe('Phase 4A · P4-D1 · composición categórica equilibrada', () => {
     );
     expect(flattened).toContain('**P4-D3 · granularidad de la acción**');
     expect(flattened).toContain('**P4-D4 · orden entre `EXPOSED` y `NEW`**');
+    // Y Gate A registra que la familia ampliada deja dos supervivientes, no una.
+    expect(flattened).toContain('**Sobreviven dos, no equivalentes:**');
   });
 
   it('IR-P4A-01 consta corregido: una recomendación no es ejecución', () => {
@@ -133,12 +136,16 @@ describe('Phase 4A · P4-D1 · composición categórica equilibrada', () => {
 
   it('las dos decisiones vuelven como fichas y ninguna está marcada aceptada', () => {
     const flattened = flat(authorization);
-    for (const id of ['### P4-D3', '### P4-D4']) {
+    for (const id of ['### P4-D3', '### P4-D4', '## 24 · P4-D5 · decisión humana']) {
       expect(authorization, `falta la ficha ${id}`).toContain(id);
     }
-    expect(flattened).toContain('Ninguna está tomada. Ninguna lleva `ACCEPTED`.');
-    expect(flattened).not.toMatch(/P4-D3[^.]{0,40}`ACCEPTED`/);
-    expect(flattened).not.toMatch(/P4-D4[^.]{0,40}`ACCEPTED`/);
+    // Gate A · P4-D3 y P4-D4 quedaron cerradas por decisión humana el 2026-09-18 …
+    expect(flattened).toContain('P4-D3 · `ACCEPTED` · granularidad híbrida');
+    expect(flattened).toContain('P4-D4 · `ACCEPTED` · `EXPOSED` primero');
+    // … y P4-D5 es el bloqueante vivo, que esta ronda **no** resuelve.
+    expect(flattened).toContain('Gate A · veredicto');
+    expect(flattened).toContain('**FAIL**, por la prueba residual A');
+    expect(flattened).not.toMatch(/P4-D5[^.]{0,60}`ACCEPTED`/);
   });
 
   it('ningún parámetro de equilibrio entra por la configuración', () => {

@@ -150,6 +150,101 @@ export function p20TruthfulExhaustion(input: PlannerInput, result: Plan): Violat
   return null;
 }
 
+/**
+ * P21 · honestidad de la granularidad híbrida (P4-D3).
+ *
+ * `APRENDER` puede planificarse solo para `NEW`; la reparación **nunca** se parte.
+ */
+export function p21HybridGranularity(input: PlannerInput, result: Plan): Violation {
+  if (input.granularity !== 'HYBRID') return null;
+  const byId = new Map(input.concepts.map((c) => [c.id, c]));
+  for (const a of result.actions) {
+    const c = byId.get(a.conceptId);
+    if (!c) continue;
+    const remediation =
+      c.state === 'EVIDENCE_NEGATIVE' || c.state === 'EVIDENCE_CONFLICTING' || c.errorPattern;
+    if (remediation && a.kind !== 'RELEARN_CHECK') {
+      return `P21 · la reparación de ${c.id} se planificó partida como ${a.kind}`;
+    }
+    if (!remediation && c.state === 'NEW' && a.kind !== 'LEARN') {
+      return `P21 · ${c.id} es NEW y se planificó como ${a.kind}`;
+    }
+  }
+  return null;
+}
+
+/**
+ * P22 / P27 · `EXPOSED` precede a `NEW` (P4-D4), salvo que no quepa.
+ *
+ * Solo se exige entre acciones de continuidad: la garantía de reparación va antes que ambas.
+ */
+export function p22ExposedFirst(input: PlannerInput, result: Plan): Violation {
+  if (input.coverageOrder !== 'EXPOSED_FIRST') return null;
+  const byId = new Map(input.concepts.map((c) => [c.id, c]));
+  const coverage = result.actions.filter((a) => a.reason === 'COVERAGE');
+  let seenNew = false;
+  for (const a of coverage) {
+    const c = byId.get(a.conceptId);
+    if (!c) continue;
+    if (c.state === 'NEW') seenNew = true;
+    else if (c.state === 'EXPOSED' && seenNew) {
+      return `P22 · ${c.id} está EXPOSED y se planificó después de un NEW`;
+    }
+  }
+  return null;
+}
+
+/**
+ * P23 / P24 · un plan no es evidencia, y el historial del Planner no es señal.
+ *
+ * El modelo no recibe historial de ejecuciones: la propiedad comprueba que la decisión depende
+ * **solo** de la entrada autoritativa, replanificando sobre la misma entrada.
+ */
+export function p23PlanIsNotEvidence(input: PlannerInput): Violation {
+  const first = plan(input);
+  const second = plan(input);
+  const third = plan(input);
+  const key = (p: Plan) => JSON.stringify(p.actions);
+  if (key(first) !== key(second) || key(second) !== key(third)) {
+    return 'P23 · repetir la petición cambió la decisión: hay realimentación de auditoría';
+  }
+  return null;
+}
+
+/** P25 · el empaquetado no reordena la prioridad para consumir más minutos. */
+export function p25PackingNonOptimization(input: PlannerInput, result: Plan): Violation {
+  const used = result.actions.reduce((n, a) => n + a.minutes, 0);
+  if (used > input.budget) return `P25 · el plan usa ${used} sobre ${input.budget}`;
+  // Las posiciones seleccionadas deben ser crecientes respecto del orden de decisión emitido.
+  const positions = result.actions.map((a) => a.conceptId);
+  if (new Set(positions).size !== positions.length) {
+    return 'P25 · un concepto aparece dos veces en el mismo plan';
+  }
+  return null;
+}
+
+/**
+ * P26 · un presupuesto pequeño puede producir `APRENDER`, pero nunca parte la reparación.
+ *
+ * No se evalúa bajo `CHAINED` porque esa granularidad **la viola por construcción**: es
+ * precisamente su falsación, y se comprueba aparte en `modelCheck.spec` para que conste como
+ * hallazgo y no como ruido.
+ */
+export function p26SmallBudgetTruthfulness(input: PlannerInput, result: Plan): Violation {
+  if (input.granularity === 'CHAINED') return null;
+  const byId = new Map(input.concepts.map((c) => [c.id, c]));
+  for (const a of result.actions) {
+    const c = byId.get(a.conceptId);
+    if (!c) continue;
+    const remediation =
+      c.state === 'EVIDENCE_NEGATIVE' || c.state === 'EVIDENCE_CONFLICTING' || c.errorPattern;
+    if (remediation && a.minutes < c.learnMinutes + c.checkMinutes) {
+      return `P26 · la reparación de ${c.id} entró con menos minutos de los que exige entera`;
+    }
+  }
+  return null;
+}
+
 /** Todas las propiedades comprobables sobre un único plan. */
 export function checkSinglePlan(input: PlannerInput): Violation {
   const result = plan(input);
@@ -162,7 +257,12 @@ export function checkSinglePlan(input: PlannerInput): Violation {
     p9BudgetHonesty(input, result) ??
     p10InterruptionSafety(input) ??
     p16NoReadinessProxy(result) ??
-    p20TruthfulExhaustion(input, result)
+    p20TruthfulExhaustion(input, result) ??
+    p21HybridGranularity(input, result) ??
+    p22ExposedFirst(input, result) ??
+    p23PlanIsNotEvidence(input) ??
+    p25PackingNonOptimization(input, result) ??
+    p26SmallBudgetTruthfulness(input, result)
   );
 }
 

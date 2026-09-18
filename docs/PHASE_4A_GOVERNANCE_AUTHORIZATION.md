@@ -13,6 +13,7 @@ ella. **Solo gobernanza: el BUILD de Phase 4A no está autorizado.**
 | Modo | gobernanza · sin BUILD · sin runtime · sin esquema |
 | Propietario normativo | **ADR-012** · contrato en `docs/PLANNER_CONTRACT.md` |
 | Validación adversarial | 2026-09-17 · **IR-P4A-01** e **IR-P4A-02** aceptados · el contrato pasa a `PROPOSED · BLOQUEADO` (§6) |
+| Gate A · cierre | 2026-09-18 · **P4-D3** y **P4-D4** `ACCEPTED`; prueba residual B cerrada; **prueba residual A NO cierra** → **P4-D5** (§23, §24). **Gate A = FAIL · no se construye** |
 
 ---
 
@@ -198,16 +199,16 @@ tres órdenes de continuidad— y ejecuta sobre cada caso las propiedades formal
 
 | Medida | Valor |
 | --- | --- |
-| Estados explorados | **147 420** |
-| Transiciones evaluadas | **884 520** |
+| Estados explorados | **557 550** · barrido de variantes 1..4 conceptos más configuración aceptada 1..6 |
+| Transiciones evaluadas | **3 345 300** |
 | Contraejemplos de las propiedades | **0** |
-| Variantes de política falsadas | **3** (cadena pura; sílabo y evidencia-más-reciente dentro de la reparación) |
+| Variantes de política falsadas | **6** · cadena pura, y cinco órdenes de reparación (§23.4) |
 
 ### 6.6 · Simulación longitudinal
 
-`tests/governance/simulation.spec.ts` ejecuta **1 080 trayectorias deterministas sembradas** de
-40 sesiones cada una —**43 200 sesiones**— sobre sílabos de 3, 8, 20 y 60 conceptos, con nueve
-comportamientos de aprendiz, presupuestos fijos y variables, e interrupciones.
+`tests/governance/simulation.spec.ts` ejecuta **1 560 trayectorias deterministas sembradas** de
+100 sesiones cada una —**156 000 sesiones**— sobre sílabos de 3, 8, 20 y **100** conceptos, con
+trece comportamientos de aprendiz, presupuestos fijos y variables, e interrupciones.
 
 Mide **solo propiedades estructurales**. No hay puntuación de aprendizaje, de dominio, de
 preparación ni de retención, y de esta simulación **no se deriva ninguna afirmación pedagógica**.
@@ -659,3 +660,143 @@ ejercitar el caso raro de P4-D4.
 
 Sirve para validación **estructural** del Planner. No simula el corpus oficial ni pretende
 parecerse a él.
+
+---
+
+## 23 · Gate A · cierre de gobernanza · 2026-09-18
+
+### 23.1 · P4-D3 · `ACCEPTED` · granularidad híbrida
+
+`NEW` → `APRENDER` puede planificarse de forma independiente; tras su ejecución veraz el concepto
+pasa a `EXPOSED`, que es la representación autoritativa ya existente de «material visto y sin
+verificar». `EXPOSED` → `COMPROBAR`.
+
+La reparación —`EVIDENCE_NEGATIVE`, `EVIDENCE_CONFLICTING`, patrón de error estructural activo—
+mantiene `REAPRENDER + COMPROBAR` como **acción atómica**, porque `REAPRENDER` solo no produce
+evidencia autoritativa y no hay estado aceptado que distinga «se reaprendió y falta verificar» de
+«no ha pasado nada». **Ese estado no se inventa en Phase 4A.**
+
+No autoriza retención, programación de repasos, dominio, readiness ni semántica nueva de estado.
+
+### 23.2 · P4-D4 · `ACCEPTED` · `EXPOSED` primero
+
+Dentro de la continuidad, `EXPOSED` precede a `NEW`. Precedencia **categórica**, sin puntuación,
+peso, ratio, cuota, porcentaje ni máximo. Agotados los `EXPOSED` —o cuando no quepan— se
+seleccionan `NEW` con las reglas ya aceptadas.
+
+Medido, no supuesto: el atraso de verificación queda acotado por lo que cabe en **un** presupuesto
+y **no crece con el temario ni con el número de sesiones** (100 conceptos, 300 sesiones).
+
+### 23.3 · Prueba residual B · **CERRADA**
+
+`skip-non-fitting` es **única** bajo cuatro criterios con autoridad: preservar la prioridad
+semántica, no exceder el presupuesto, no inventar objetivo de optimización, y no permitir que un
+candidato sobredimensionado suprima a otros posteriores que sí caben.
+
+| Política | Veredicto |
+| --- | --- |
+| `prefix-stop` | rechazada · deja que la duración de un candidato decida sobre otro |
+| **`skip-non-fitting` / `first-fit` sobre la prioridad** | **única superviviente** |
+| `best-fit` | rechazada · objetivo de optimización |
+| maximizar minutos · maximizar acciones · mochila | rechazadas · objetivo de optimización |
+| reordenar por duración · más corta primero · más larga primero | rechazadas · destruyen la prioridad |
+
+Comprobada contra una definición independiente en todo el rango de presupuestos 0–60.
+
+### 23.4 · Prueba residual A · **NO CIERRA**
+
+La ronda anterior falsó dos rivales y llamó «derivado» al superviviente. Ampliada la familia a
+todo lo formulable sin inventar ciencia del aprendizaje y sin usar el historial del Planner como
+señal, el resultado cambia: la vivacidad **elimina cinco** políticas y deja **dos**.
+
+Falsadas por inanición —con ejecución real, una de dos necesidades no se atiende nunca—: clave de
+sílabo, sílabo inverso, identidad estable, evidencia más reciente primero, y **primera negativa
+sin resolver** (un fallo nuevo no mueve su clave, así que el mismo concepto se queda la ranura).
+
+Excluidas por autoridad, no por rendimiento: menos-recientemente-servido y turno rotatorio
+(usarían el historial del Planner como señal, prohibido); por número de intentos y por número de
+errores (recuento derivado del vector de evidencia, contrato del motor §10, y dominio numérico por
+proxy); aleatoria sembrada (P4-D1.7, y la semilla es un parámetro oculto).
+
+**Sobreviven dos, no equivalentes:**
+
+| Política | Qué hace cuando alguien abre una reparación, la lee y se va sin comprobar |
+| --- | --- |
+| **última negativa · más antigua primero** | la evidencia no se ha movido: **insiste** con el mismo concepto |
+| **último contacto real · más antiguo primero** | el contacto es reciente: **cede el turno** al siguiente |
+
+Las dos son deterministas, independientes del camino, sin cantidad oculta, reproducibles,
+explicables, y ninguna viola P4-D1. La divergencia es **alcanzable**: abandonar tras leer la
+produce, y con granularidad híbrida más reparación atómica ese estado existe de verdad.
+
+Por tanto **Gate A no pasa** y la decisión vuelve como **P4-D5**.
+
+### 23.5 · Gate A · veredicto
+
+**FAIL**, por la prueba residual A. Todo lo demás está en su sitio: P4-D3 y P4-D4 registradas,
+prueba residual B cerrada, modelo formal en verde, simulación en verde, pruebas de gobernanza en
+verde, candidato coherente. **Gate B no se abre y no se construye nada.**
+
+---
+
+## 24 · P4-D5 · decisión humana
+
+**DECISIÓN EN UNA FRASE**
+Cuando varias reparaciones compiten, ¿las ordena la **última evidencia negativa** de cada
+concepto, o el **último contacto real** de la persona con él?
+
+**POR QUÉ DEBE SER HUMANA**
+Cinco políticas mueren por inanición y tres están excluidas por autoridad. Las dos que quedan
+pasan todos los filtros mecánicos y describen dos conductas de producto distintas. Elegir una por
+mi cuenta sería repetir exactamente el error que la revisión independiente ya detectó una vez.
+
+**QUÉ EXPERIMENTA LA PERSONA**
+Ha fallado dos conceptos. Abre el primero, lo lee, y se va sin llegar a la comprobación. Mañana:
+¿el sistema le vuelve a poner ese mismo concepto, o le ofrece el otro?
+
+**OPCIÓN A · última evidencia negativa**
+La clave es la posición de la última negativa. Leer sin comprobar no la mueve.
+- *Beneficios:* insiste en lo empezado hasta que haya verificación real; ninguna acción de la
+  persona que no produzca evidencia altera la prioridad; es la lectura más estricta de «solo la
+  evidencia cuenta».
+- *Costes:* quien abandona repetidamente ve el mismo concepto una y otra vez, y puede vivirlo como
+  insistencia; las demás reparaciones esperan mientras tanto.
+- *Casos límite:* abandonar siempre tras leer congela la cola de reparación en un solo concepto.
+- *Consecuencias futuras:* encaja con cualquier política de repaso futura, que también se definirá
+  sobre evidencia.
+
+**OPCIÓN B · último contacto real**
+La clave es la posición del último contacto —exposición o intento— con el concepto.
+- *Beneficios:* no repite de inmediato lo que acaba de mostrar; reparte la atención entre las
+  reparaciones pendientes aunque la persona abandone; se siente menos machacón.
+- *Costes:* una lectura sin comprobación **desplaza** una necesidad que sigue viva, y eso se
+  parece incómodamente a dejar que la presentación cuente como progreso — el mismo error que
+  IR-P4A-01 corrigió, aunque aquí solo afecte al orden y no a la existencia de la necesidad.
+- *Casos límite:* quien abandona siempre rota por todas sus reparaciones sin cerrar ninguna.
+- *Consecuencias futuras:* introduce la exposición como señal de ordenación, lo que habrá que
+  reconciliar cuando exista política de repaso.
+
+**RECOMENDACIÓN ARQUITECTÓNICA**
+Opción A.
+
+**POR QUÉ**
+Porque la necesidad la crea la evidencia y debería ordenarla la misma clase de hecho. Bajo la
+opción B, mostrar algo sin verificarlo baja su prioridad, y eso es una versión atenuada de tratar
+la presentación como progreso — que es justo lo que esta fase acaba de corregir. La insistencia de
+la opción A es incómoda, pero es honesta: la necesidad sigue abierta porque nadie la ha cerrado.
+Si esa insistencia resulta ser un problema de producto, el sitio para resolverlo es la experiencia
+en 4B, no la clave de orden del motor de decisión.
+
+**QUÉ NO DECIDE ESTA DECISIÓN**
+No decide la garantía de reparación ni su aridad, ni la granularidad (ya cerrada por P4-D3), ni el
+orden de la continuidad (ya cerrado por P4-D4), ni el empaquetado, ni nada sobre repaso, retención
+o readiness.
+
+**QUÉ BLOQUEA**
+La aceptación del contrato del Planner y, con ella, la Build Authorization de Phase 4A.
+
+**REVERSIBILIDAD**
+**FÁCIL** — es una clave de orden dentro de una categoría y vive en la configuración versionada.
+Las ejecuciones pasadas conservan la versión con la que se tomaron. El único coste de cambiarla
+después es que la instantánea debe guardar **las dos** posiciones para que la historia siga siendo
+verificable; el contrato ya exige guardar la que ordena.

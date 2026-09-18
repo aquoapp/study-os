@@ -1630,3 +1630,58 @@ Complementa al estado anterior sin sustituirlo.
 | ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexo v1.1 registrado |
 
 **Total tras esta adenda: sin cambio** · 31 entradas SPEC_DIFF y 1 errata.
+
+---
+
+## SD-031 · **segunda corrección** · 2026-09-18 · Gate A de Phase 4A
+
+**Corrige el estado de:** la corrección del 2026-09-17 de esta misma entrada, que declaró el orden
+de reparación «derivado por vivacidad». Los textos anteriores **no se reescriben**: quedan arriba
+como cronología.
+
+**Origen:** Gate A · pruebas residuales A y B ·
+`tests/governance/residualProofs.spec.ts`.
+**Estado:** `docs/PLANNER_CONTRACT.md` pasa a **v1.2**, y sigue **`PROPOSED · BLOQUEADO POR
+DECISIÓN HUMANA`**, ahora solo por **P4-D5**.
+
+**Qué cierra:**
+
+| Decisión | Estado |
+| --- | --- |
+| **P4-D3** · granularidad de la acción | **`ACCEPTED` · híbrida** · 2026-09-18 · Ana Victoria |
+| **P4-D4** · orden dentro de la continuidad | **`ACCEPTED` · `EXPOSED` primero** · 2026-09-18 · Ana Victoria |
+| Empaquetado del presupuesto | **derivado y único** · prueba residual B cerrada |
+
+**Qué abre:** **P4-D5** · qué posición de evidencia ordena la reparación. La afirmación anterior
+—«la última evidencia negativa es la única política con vivacidad»— es **falsa**. Ampliada la
+familia, la vivacidad elimina cinco políticas y deja dos no equivalentes: **última evidencia
+negativa** y **último contacto real**, que divergen ante contacto sin verificación.
+
+Quedan excluidas por autoridad, no por rendimiento: menos-recientemente-servido y turno rotatorio
+(historial del Planner como señal), por número de intentos o de errores (recuento derivado del
+vector, contrato del motor §10) y aleatoria sembrada (P4-D1.7).
+
+**Lección registrada, y es la misma dos veces:** derrotar rivales no demuestra unicidad. Una clave
+de ordenación solo es derivada cuando se enumera la familia completa bajo la autoridad vigente y
+sobrevive exactamente una.
+
+**Impacto:** Phase 4A. **Ninguna Build Authorization puede emitirse** mientras P4-D5 siga abierta.
+
+---
+
+## Estado de la adenda · tras Gate A de Phase 4A · 2026-09-18
+
+Complementa a los estados anteriores sin sustituirlos.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| P4-D1 | composición categórica equilibrada | `ACCEPTED` con modificación · sin cambio |
+| P4-D2 | origen de los minutos planificados | `DEFERRED` · sin cambio |
+| **P4-D3** | granularidad de la acción | **`ACCEPTED` · híbrida** |
+| **P4-D4** | orden dentro de la continuidad | **`ACCEPTED` · `EXPOSED` primero** |
+| **P4-D5** | clave de orden de la reparación | **ABIERTA · bloquea la aceptación del contrato** |
+| SD-030 | disposición de REQ-E03/E04/E10/E11 e INV-108 | `ACCEPTED` · sin cambio |
+| SD-031 | Planner Contract | **corregida por segunda vez** · contrato v1.2, sigue `PROPOSED` |
+| ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexos v1.1 y v1.2 registrados |
+
+**Total tras esta adenda: sin cambio** · 31 entradas SPEC_DIFF y 1 errata.

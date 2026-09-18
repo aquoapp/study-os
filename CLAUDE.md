@@ -298,12 +298,29 @@ decisión, no evidencia de ejecución**, solo la evidencia nueva registrada sati
 el historial de ejecuciones pasa a ser auditoría y nunca señal. **IR-P4A-02:** la atomicidad de
 `APRENDER + COMPROBAR` estaba sobreafirmada. La cadena pura queda falsada mecánicamente, pero
 quedan dos modelos admisibles y no equivalentes. Conclusión honesta: **las siete cláusulas de
-P4-D1 no determinan un algoritmo único**, así que el contrato pasa a
-**`PROPOSED · BLOQUEADO POR DECISIÓN HUMANA`** y vuelven a Ana **P4-D3** (granularidad de la
-acción) y **P4-D4** (orden entre `EXPOSED` y `NEW`). ADR-012 sigue `ACCEPTED` con anexo v1.1: la
-arquitectura no estaba en disputa. La validación vive en `tests/governance/` —modelo de
-referencia, 147 420 estados enumerados, 1 080 trayectorias sembradas y controles negativos— y
-**no es código de producción ni afirma nada sobre eficacia pedagógica**.
+P4-D1 no determinan un algoritmo único**, así que el contrato pasó a
+**`PROPOSED · BLOQUEADO POR DECISIÓN HUMANA`** y volvieron a Ana **P4-D3** (granularidad de la
+acción) y **P4-D4** (orden entre `EXPOSED` y `NEW`). ADR-012 sigue `ACCEPTED` con anexos: la
+arquitectura no estaba en disputa.
+
+**Gate A · 2026-09-18.** Ana cerró las dos: **P4-D3 · granularidad híbrida** —`APRENDER` puede
+planificarse solo para `NEW`, porque `EXPOSED` ya es la representación autoritativa del bucle
+abierto, y la reparación sigue siendo atómica sin inventar ningún estado intermedio— y
+**P4-D4 · `EXPOSED` primero**, precedencia categórica sin pesos ni cuotas. La prueba residual B
+**cierra**: `skip-non-fitting` es la única política que preserva la prioridad sin inventar un
+objetivo de optimización. La prueba residual A **no cierra**: al ampliar la familia de políticas,
+la vivacidad elimina cinco y deja **dos** no equivalentes —ordenar por la última evidencia
+negativa o por el último contacto real—, que divergen cuando alguien abre una reparación, la lee y
+se va sin comprobar. Se abre **P4-D5**, el contrato pasa a **v1.2** y sigue bloqueado.
+**Gate A = FAIL y no se ha construido nada.**
+
+La lección, que ya es la segunda vez: **derrotar rivales no demuestra unicidad**. Una clave de
+ordenación solo es derivada cuando se enumera la familia completa bajo la autoridad vigente y
+sobrevive exactamente una.
+
+La validación vive en `tests/governance/` —modelo de referencia parametrizado para poder falsar
+cada variante, 557 550 estados enumerados, 1 560 trayectorias sembradas de 100 sesiones y
+controles negativos— y **no es código de producción ni afirma nada sobre eficacia pedagógica**.
 `EVIDENCE_POSITIVE` no es elegible en v1 y no se recicla; el agotamiento honesto es
 `NOTHING_ELIGIBLE`, que nunca significa preparación ni dominio permanente; y el Planner no
 fabrica actividad para evitar un plan vacío. Un plan es **una decisión que el cliente no puede

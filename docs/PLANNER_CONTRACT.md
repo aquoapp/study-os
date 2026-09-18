@@ -1,15 +1,17 @@
-# STUDY OS · Planner Contract · v1.1
+# STUDY OS · Planner Contract · v1.2
 
-**ESTADO:** `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA` · **no aceptado como v1.1**
-**BLOQUEANTES:** **P4-D3** (granularidad de la acción, §F.2) y **P4-D4** (orden dentro de la
-continuidad, §F.6). El resto del contrato se mantiene tal como se aterrizó, con las correcciones
-de la validación adversarial del 2026-09-17.
-**HISTORIA:** v1.0 se aterrizó el 2026-09-17 como `ACCEPTED`. La revisión independiente encontró
-**IR-P4A-01** (una recomendación emitida contaba como respuesta a la reparación) e **IR-P4A-02**
-(la atomicidad estaba sobreafirmada). Las dos se corrigen aquí, y la segunda **abre una decisión
-humana**, así que el contrato deja de estar aceptado hasta que se resuelva.
+**ESTADO:** `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA` · **no aceptado**
+**CERRADAS:** **P4-D3** · granularidad híbrida (§F.2) y **P4-D4** · `EXPOSED` primero (§F.6), las
+dos `ACCEPTED` el 2026-09-18.
+**BLOQUEANTE:** **P4-D5** · qué posición de evidencia ordena la reparación (§F.5). Es un hallazgo
+**nuevo** de la prueba residual A: derrotar a cinco políticas rivales no demuestra unicidad, y
+sobreviven **dos** no equivalentes.
+**HISTORIA:** v1.0 aterrizó como `ACCEPTED`; la revisión independiente encontró **IR-P4A-01** (una
+recomendación emitida contaba como respuesta a la reparación) e **IR-P4A-02** (la atomicidad
+estaba sobreafirmada) y el contrato pasó a v1.1 `PROPOSED`. v1.2 cierra P4-D3 y P4-D4 y abre
+P4-D5.
 **BUILD:** no autorizado.
-**FECHA:** 2026-09-17
+**FECHA:** 2026-09-18
 **DECISORA:** Ana Victoria · Phase 4A · Planner Domain / Decision Engine · Governance Landing
 **PROPIETARIO NORMATIVO:** ADR-012
 **AUTORIDAD DE ORIGEN:** Master §1.1, §3, §7, §8, §9, §24, §49, §52 · Engineering Constitution
@@ -127,7 +129,27 @@ diferencia entre «no lo planifiqué» y «no lo vi».
 nunca verificó, y ese bucle lo abrió el producto (P4-D1.3). Tratarlo como necesidad **no** lo
 convierte en una cifra.
 
-### F.2 · Granularidad de la acción · `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA P4-D3`
+### F.2 · Granularidad de la acción · **P4-D3 · `ACCEPTED` · híbrida**
+
+**Decisión humana del 2026-09-18.** Planner v1 usa **granularidad híbrida**:
+
+- **`NEW`** → `APRENDER` puede planificarse de forma independiente. Tras su ejecución veraz el
+  concepto pasa a **`EXPOSED`**, que es la representación autoritativa ya existente de «material
+  visto y todavía sin verificar». No se inventa ningún estado intermedio.
+- **`EXPOSED`** → `COMPROBAR`.
+- **Reparación** (`EVIDENCE_NEGATIVE`, `EVIDENCE_CONFLICTING`, patrón de error estructural activo)
+  → **`REAPRENDER + COMPROBAR` sigue siendo una acción atómica**, porque `REAPRENDER` por sí solo
+  no produce evidencia autoritativa y **no existe estado aceptado** que distinga «se reaprendió y
+  falta verificar» de «no ha pasado nada». Ese estado **no se inventa en Phase 4A**.
+
+La decisión **no** autoriza retención, programación de repasos, dominio, readiness ni semántica
+nueva de estado de aprendizaje.
+
+El análisis que la precedió se conserva porque explica por qué la pregunta era real:
+
+---
+
+#### F.2.1 · Por qué esto era una decisión y no una derivación
 
 **La versión anterior de este contrato sobreafirmaba.** Sostenía que `APRENDER + COMPROBAR` es
 indivisible porque el motor no tiene estado para «reaprendido pero sin comprobar». La revisión
@@ -156,11 +178,8 @@ Quedan **dos modelos que satisfacen todas las invariantes aceptadas y que no son
 | **D · híbrido** | encadenado donde el motor representa el bucle (`NEW` → `EXPOSED`); atómico donde no lo representa (reparación) |
 
 Difieren de forma observable: con un presupuesto que solo admite el paso de aprender, **A**
-devuelve `NOTHING_FITS` y **D** planifica `APRENDER`. Ninguna autoridad aceptada elige entre
-ellos. **Es una decisión de producto (P4-D3) y este contrato no la toma.**
-
-Hasta que se resuelva, todo lo que sigue se lee como: la composición es la misma, y lo único sin
-fijar es de qué tamaño es cada acción.
+devuelve `NOTHING_FITS` y **D** planifica `APRENDER`. Ninguna autoridad aceptada elegía entre
+ellos, y por eso volvió como decisión humana. **Ana eligió D el 2026-09-18.**
 
 ### F.3 · Los conjuntos
 
@@ -198,33 +217,64 @@ categórico del motor diga que existe, y desaparece solo cuando la evidencia la 
 Ninguna ejecución anterior del Planner entra en la selección. El historial de ejecuciones es
 **auditoría** (§S), no señal (§R).
 
-### F.5 · Orden dentro de la reparación · la evidencia más antigua primero
+### F.5 · Orden dentro de la reparación · `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA P4-D5`
 
-Si varias necesidades de reparación compiten, se ordenan por la **posición de flujo de la última
-evidencia negativa o conflictiva del concepto, de más antigua a más reciente**; a igualdad, por
-la clave de sílabo de §H.
+Si varias necesidades de reparación compiten, hace falta una clave de orden. La ronda anterior
+propuso «la posición de la última evidencia negativa, de más antigua a más reciente» y la llamó
+**derivada**. La prueba residual A demuestra que **no lo está**.
 
-Esto no es una preferencia estética: es lo único que da **vivacidad**. Actuar sobre una necesidad
-produce evidencia nueva, que empuja ese concepto al final de la cola y deja pasar al siguiente.
-Las dos alternativas naturales están **falsadas** con contraejemplo mecánico en
-`tests/governance/modelCheck.spec.ts`:
+Siete políticas formulables sin inventar ciencia del aprendizaje y sin usar el historial del
+Planner como señal, evaluadas mecánicamente en `tests/governance/residualProofs.spec.ts`:
 
-| Orden | Resultado con dos conceptos que fallan |
-| --- | --- |
-| clave de sílabo | el primero se lleva la ranura **siempre**; el segundo no se atiende nunca |
-| evidencia más reciente primero | el que acaba de fallar se lleva la ranura **siempre** |
-| **evidencia más antigua primero** | los dos se atienden · rota solo cuando hay ejecución real |
+| Política | Señal autorizada | Determinista | Sin historial del Planner | Sin cantidad oculta | Vivacidad | Veredicto |
+| --- | --- | --- | --- | --- | --- | --- |
+| clave de sílabo | sí | sí | sí | sí | **no** | falsada |
+| sílabo inverso | sí | sí | sí | sí | **no** | falsada |
+| identidad estable del concepto | sí | sí | sí | sí | **no** | falsada |
+| evidencia más reciente primero | sí | sí | sí | sí | **no** | falsada |
+| **primera negativa sin resolver** | sí | sí | sí | sí | **no** | **falsada** · un fallo nuevo no mueve su clave, así que el mismo concepto se queda la ranura |
+| **última negativa · más antigua primero** | sí | sí | sí | sí | **sí** | **sobrevive** |
+| **último contacto real · más antiguo primero** | sí | sí | sí | sí | **sí** | **sobrevive** |
+| menos recientemente servido · turno rotatorio | **no** · usaría el historial del Planner | — | — | — | — | excluida por autoridad |
+| por número de intentos · por número de errores | **no** · recuento derivado del vector | — | — | — | — | excluida por el contrato del motor §10 |
+| aleatoria sembrada | **no** · P4-D1.7 | — | — | — | — | excluida por autoridad |
 
-Y si la persona no ejecuta nada, no hay evidencia nueva, el orden no se mueve y la misma
-recomendación se mantiene. Eso es lo correcto: la recomendación sigue pendiente.
+**Sobreviven dos, y no son equivalentes.** Se separan exactamente cuando hay **contacto sin
+verificación**: la persona abre la reparación, la lee y se marcha sin comprobar.
 
-### F.6 · Orden dentro de la continuidad · `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA P4-D4`
+- Con **última negativa**, la evidencia no se ha movido: el concepto sigue el primero y se le
+  vuelve a ofrecer. El sistema **insiste** en la reparación empezada.
+- Con **último contacto**, el contacto es reciente: el concepto cede el turno al siguiente. El
+  sistema **no repite** lo que acaba de mostrar.
 
-Dentro de **C** compiten dos cosas distintas: **cerrar un bucle de aprendizaje ya abierto**
-(`EXPOSED`, material visto que el producto nunca verificó) y **abrir uno nuevo** (`NEW`).
+Las dos son defendibles y las dos cumplen todos los criterios mecánicos. La diferencia es
+alcanzable de verdad, no artificial: abandonar tras leer la produce. **Este contrato no elige.**
 
-Ninguna autoridad aceptada las ordena entre sí. P4-D1.3 declara `EXPOSED` accionable, pero no le
-da precedencia. Tres órdenes son deterministas y admisibles:
+### F.6 · Orden dentro de la continuidad · **P4-D4 · `ACCEPTED` · `EXPOSED` primero**
+
+**Decisión humana del 2026-09-18.** Dentro del conjunto de continuidad, **`EXPOSED` precede a
+`NEW`**. Es una **precedencia categórica**, no una puntuación ni un peso.
+
+Razón de producto registrada: STUDY OS debe cerrar un bucle de verificación que **ya abrió** antes
+de abrir otro innecesariamente. Preserva `APRENDER → COMPROBAR → EVIDENCIA` sin afirmar dominio ni
+preparación.
+
+Agotados los candidatos `EXPOSED` —o cuando no quepan legítimamente— se seleccionan candidatos
+`NEW` según las reglas de orden y presupuesto ya aceptadas. **No se introducen** pesos de
+`EXPOSED`, ratios, cuotas, porcentajes ni máximos.
+
+Consecuencia medida, no supuesta: el atraso de verificación queda acotado por lo que cabe en **un**
+presupuesto y **no crece con el temario ni con el número de sesiones** — comprobado con 100
+conceptos y 300 sesiones.
+
+El análisis previo se conserva porque explica por qué la pregunta era real:
+
+---
+
+#### F.6.1 · Por qué esto era una decisión y no una derivación
+
+Ninguna autoridad aceptada las ordenaba entre sí. P4-D1.3 declara `EXPOSED` accionable, pero no le
+daba precedencia. Tres órdenes eran deterministas y admisibles:
 
 | Opción | Consecuencia |
 | --- | --- |
@@ -236,8 +286,9 @@ Las dos últimas **no son equivalentes**, pero solo difieren en estados que el p
 puede crear: haría falta que algo externo expusiera un concepto posterior del sílabo, y hoy el
 vertical congelado del FPS puede hacerlo. Está verificado mecánicamente.
 
-**Este contrato no elige.** Ordenar la continuidad por sílabo *parecería* resolverlo sin decidir,
-y por eso se dice explícitamente: sería colar la decisión por la puerta de atrás.
+Ordenar la continuidad por sílabo *habría parecido* resolverlo sin decidir, y por eso se dijo en
+voz alta: habría sido colar la decisión por la puerta de atrás. **Ana eligió `EXPOSED` primero el
+2026-09-18.**
 
 ## G · Composición categórica equilibrada
 
@@ -315,16 +366,17 @@ algoritmos deterministas. Lo que sí queda derivado dentro de esa familia:
 | ¿La reparación va en la cabeza? | **derivado** (§G.3) |
 | ¿Cuántas reparaciones garantizadas? | **derivado**: una, aridad de un existencial (§G.4) |
 | ¿Tope simétrico para la cobertura? | **derivado**: no (§G.5) |
-| ¿Orden dentro de la reparación? | **derivado** por vivacidad, con las alternativas falsadas (§F.5) |
+| ¿Orden dentro de la reparación? | **parcialmente derivado**: la vivacidad falsa cinco políticas y deja **dos** (§F.5) |
 | ¿Se salta o se detiene ante lo que no cabe? | **derivado** (§G.2) |
 | ¿Se optimizan minutos? | **derivado**: no (§I.5) |
 | ¿Cadena pura como granularidad? | **falsada** (§F.2) |
-| **¿Tamaño de la acción: atómica o híbrida?** | **NO DERIVADO · P4-D3** |
-| **¿Orden entre `EXPOSED` y `NEW`?** | **NO DERIVADO · P4-D4** |
+| ¿Tamaño de la acción: atómica o híbrida? | **decidido por P4-D3 · híbrida** |
+| ¿Orden entre `EXPOSED` y `NEW`? | **decidido por P4-D4 · `EXPOSED` primero** |
+| **¿Qué posición de evidencia ordena la reparación?** | **NO DERIVADO · P4-D5** (§F.5) |
 
-Dos algoritmos deterministas no equivalentes satisfacen las siete invariantes, y difieren en lo
-que una persona ve. Por tanto **el algoritmo no está derivado del todo**, y este contrato no
-elige por nadie: las dos preguntas abiertas son decisiones de producto.
+Corregido el 2026-09-18: donde §F.5 decía «derivado por vivacidad», la prueba residual A demuestra
+que la vivacidad **elimina cinco** políticas y deja **dos**. El algoritmo queda determinado salvo
+esa clave.
 
 ### G.8 · Lo que esta composición no introduce
 
@@ -417,6 +469,19 @@ prioridad por un objetivo numérico que nadie ha aceptado. Master §8 dice «la 
 valor **que quepa**», no «la combinación que más minutos consuma».
 
 Dejar minutos sin usar no es un fallo. Es la consecuencia de que la prioridad manda.
+
+**Unicidad · prueba residual B, cerrada.** Cuatro criterios, todos con autoridad: preservar la
+prioridad semántica; no exceder nunca el presupuesto; no inventar un objetivo de optimización; y
+no dejar que un candidato sobredimensionado suprima a otros posteriores que sí caben. El cuarto
+es el que descarta `prefix-stop`, y su autoridad es la misma que prohíbe que el orden de filas
+decida: la duración de un candidato no es una propiedad del siguiente y no puede gobernar su
+selección.
+
+Cualquier política que recorra la prioridad tomando lo que cabe **es** saltar-lo-que-no-cabe.
+Saltarse algo que cabe exigiría una razón, y toda razón disponible es un objetivo de optimización,
+que el tercer criterio prohíbe. Detenerse antes viola el cuarto. Por tanto la política es
+**única**, y se comprueba mecánicamente contra una definición independiente en todo el rango de
+presupuestos 0–60 (`tests/governance/residualProofs.spec.ts`).
 
 ## J · `NOTHING_FITS`
 
@@ -748,8 +813,7 @@ Este contrato **no** define, y Phase 4A **no** implementa:
 
 | Diferido | Motivo |
 | --- | --- |
-| **Granularidad de la acción (P4-D3)** | **bloquea la aceptación del contrato** · §F.2 |
-| **Orden entre `EXPOSED` y `NEW` (P4-D4)** | **bloquea la aceptación del contrato** · §F.6 |
+| **Clave de orden de la reparación (P4-D5)** | **bloquea la aceptación del contrato** · §F.5 |
 | Origen de la duración (P4-D2) | decisión de producto previa a 4B |
 | Umbrales de Rescue y de ausencia | Master §8/§9 no los definen; H-P4-5 |
 | Oferta a la persona de un ítem fuera de presupuesto | 4B/UX (§J) |

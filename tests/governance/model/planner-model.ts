@@ -30,10 +30,26 @@ export type Granularity =
 export type CoverageOrder = 'EXPOSED_FIRST' | 'NEW_FIRST' | 'SYLLABUS';
 
 /**
- * Orden dentro de la reparación. Las tres variantes existen **para poder falsarlas**: dos de
- * ellas permiten que un concepto que falla repetidamente monopolice la ranura de reparación.
+ * Orden dentro de la reparación. Las variantes existen **para poder falsarlas**, y la familia se
+ * amplía en la prueba residual A: no basta con derrotar a dos rivales para declarar unicidad.
+ *
+ *   - `EVIDENCE_OLDEST`   · posición de la **última** evidencia negativa, de más antigua a más
+ *                           reciente. Cada fallo nuevo refresca la posición.
+ *   - `FIRST_UNRESOLVED`  · posición de la **primera** evidencia negativa aún sin resolver. Un
+ *                           fallo nuevo **no** la mueve.
+ *   - `LAST_CONTACT`      · posición del último contacto real de la persona con el concepto
+ *                           (exposición o intento). Es acción de la persona, no historial del
+ *                           Planner.
+ *   - `EVIDENCE_NEWEST`, `SYLLABUS`, `REVERSE_SYLLABUS`, `IDENTITY` · rivales de control.
  */
-export type RemediationOrder = 'EVIDENCE_OLDEST' | 'EVIDENCE_NEWEST' | 'SYLLABUS';
+export type RemediationOrder =
+  | 'EVIDENCE_OLDEST'
+  | 'FIRST_UNRESOLVED'
+  | 'LAST_CONTACT'
+  | 'EVIDENCE_NEWEST'
+  | 'SYLLABUS'
+  | 'REVERSE_SYLLABUS'
+  | 'IDENTITY';
 
 /**
  * Mutaciones de control negativo. Ninguna puede sobrevivir al candidato.
@@ -75,6 +91,16 @@ export interface Concept {
    * `null` cuando no la hay. Es un hecho semántico del motor, nunca un dato de auditoría.
    */
   readonly lastNegativeAt: number | null;
+  /**
+   * Posición de la **primera** evidencia negativa aún sin resolver. Un fallo posterior no la
+   * mueve. Solo la usa la variante `FIRST_UNRESOLVED`, que existe para ser falsada.
+   */
+  readonly firstNegativeAt?: number | null;
+  /**
+   * Posición del **último contacto real** de la persona con el concepto: exposición o intento.
+   * Es una acción de la persona registrada en el flujo de eventos, no historial del Planner.
+   */
+  readonly lastContactAt?: number | null;
   /** Minutos declarados. Son **entrada** del contrato: P4-D2 sigue diferida. */
   readonly learnMinutes: number;
   readonly checkMinutes: number;
@@ -260,10 +286,29 @@ export function plan(input: PlannerInput): Plan {
   const sign = m.reverseTieBreak ? -1 : 1;
 
   const order = input.remediationOrder ?? 'EVIDENCE_OLDEST';
+  const positional = (a: Concept, b: Concept, pick: (c: Concept) => number | null | undefined) => {
+    const av = pick(a) ?? Number.MAX_SAFE_INTEGER;
+    const bv = pick(b) ?? Number.MAX_SAFE_INTEGER;
+    if (av !== bv) return av - bv;
+    return bySyllabus(a, b);
+  };
   const remediationComparator = (a: Concept, b: Concept) => {
-    if (order === 'SYLLABUS') return bySyllabus(a, b);
-    if (order === 'EVIDENCE_NEWEST') return -byEvidenceAge(a, b);
-    return byEvidenceAge(a, b);
+    switch (order) {
+      case 'SYLLABUS':
+        return bySyllabus(a, b);
+      case 'REVERSE_SYLLABUS':
+        return -bySyllabus(a, b);
+      case 'IDENTITY':
+        return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+      case 'EVIDENCE_NEWEST':
+        return -byEvidenceAge(a, b);
+      case 'FIRST_UNRESOLVED':
+        return positional(a, b, (c) => c.firstNegativeAt ?? c.lastNegativeAt);
+      case 'LAST_CONTACT':
+        return positional(a, b, (c) => c.lastContactAt ?? c.lastNegativeAt);
+      default:
+        return byEvidenceAge(a, b);
+    }
   };
   const remediation = sort(
     eligible.filter(isRemediation),
@@ -345,8 +390,10 @@ export function execute(
   const learned = action.kind === 'LEARN' || action.kind === 'RELEARN';
   if (learned) {
     // Exponer material no produce evidencia de acierto ni de error. Solo `NEW` cambia de estado,
-    // porque `EXPOSED` es justamente «visto y sin comprobar».
-    return concept.state === 'NEW' ? { ...concept, state: 'EXPOSED' } : concept;
+    // porque `EXPOSED` es justamente «visto y sin comprobar». Sí es **contacto real** de la
+    // persona con el concepto, y eso es lo que distingue a la variante `LAST_CONTACT`.
+    const contacted = { ...concept, lastContactAt: streamPosition };
+    return contacted.state === 'NEW' ? { ...contacted, state: 'EXPOSED' } : contacted;
   }
   // Toda acción con COMPROBAR produce evidencia nueva.
   const next: EngineState = correct
@@ -361,5 +408,11 @@ export function execute(
     ...concept,
     state: next,
     lastNegativeAt: negative ? streamPosition : concept.lastNegativeAt,
+    // La **primera** negativa sin resolver no se mueve con cada fallo nuevo; se limpia cuando la
+    // necesidad desaparece.
+    firstNegativeAt: negative
+      ? (concept.firstNegativeAt ?? concept.lastNegativeAt ?? streamPosition)
+      : null,
+    lastContactAt: streamPosition,
   };
 }

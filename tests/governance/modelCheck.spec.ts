@@ -77,15 +77,19 @@ function buildConcepts(states: EngineState[], durations: [number, number]): Conc
   );
 }
 
-function exhaustive(maxConcepts: number): Explored {
+function exhaustive(
+  maxConcepts: number,
+  granularities: Granularity[] = GRANULARITIES,
+  coverageOrders: CoverageOrder[] = COVERAGE_ORDERS,
+): Explored {
   const result: Explored = { states: 0, transitions: 0, violations: [] };
   for (let n = 1; n <= maxConcepts; n += 1) {
     for (const states of stateVectors(n)) {
       for (const durations of DURATIONS) {
         const concepts = buildConcepts(states, durations);
         for (const budget of BUDGETS) {
-          for (const granularity of GRANULARITIES) {
-            for (const coverageOrder of COVERAGE_ORDERS) {
+          for (const granularity of granularities) {
+            for (const coverageOrder of coverageOrders) {
               const input: PlannerInput = {
                 concepts,
                 budget,
@@ -114,16 +118,32 @@ function exhaustive(maxConcepts: number): Explored {
 }
 
 describe('Phase 4A · comprobación exhaustiva de estados pequeños', () => {
-  const explored = exhaustive(4);
+  /** Barrido de variantes: 1..4 conceptos por las tres granularidades y los tres órdenes. */
+  const variants = exhaustive(4);
+  /**
+   * Barrido de la configuración **aceptada** (P4-D3 híbrida, P4-D4 `EXPOSED` primero), más
+   * profundo porque ya no hay que cruzar variantes: 1..6 conceptos.
+   *
+   * Seis es el límite exhaustivo tratable: 5^7 × 21 configuraciones por concepto adicional
+   * multiplicaría el espacio por cinco cada vez. Más allá, la cobertura la dan las pruebas
+   * metamórficas y la simulación longitudinal, que sí alcanzan sílabos de 100 conceptos.
+   */
+  const accepted = exhaustive(6, ['HYBRID'], ['EXPOSED_FIRST']);
+  const explored = {
+    states: variants.states + accepted.states,
+    transitions: variants.transitions + accepted.transitions,
+    violations: [...variants.violations, ...accepted.violations],
+  };
 
   it('no encuentra ningún contraejemplo de las propiedades formales', () => {
     expect(explored.violations, explored.violations.join('\n')).toEqual([]);
   });
 
-  it('exploró un espacio no trivial', () => {
-    // 1..4 conceptos × 5 estados × 3 duraciones × 7 presupuestos × 3 granularidades × 3 órdenes.
-    expect(explored.states).toBeGreaterThan(50_000);
-    expect(explored.transitions).toBeGreaterThan(300_000);
+  it('exploró un espacio no trivial, y la configuración aceptada hasta seis conceptos', () => {
+    expect(variants.states).toBeGreaterThan(100_000);
+    expect(accepted.states).toBeGreaterThan(80_000);
+    expect(explored.states).toBeGreaterThan(200_000);
+    expect(explored.transitions).toBeGreaterThan(1_000_000);
   });
 
   it('`NOTHING_ELIGIBLE` solo aparece cuando de verdad no queda nada elegible', () => {
@@ -268,6 +288,24 @@ describe('Phase 4A · falsación de las variantes de política', () => {
     // El concepto arranca en NEW; con CHAINED aprende, comprueba —falla— y a partir de ahí
     // solo puede REAPRENDER, para siempre.
     expect(result.structuralLoops).toBeGreaterThan(0);
+  });
+
+  it('`CHAINED` viola además P26: parte una reparación que no puede partirse', () => {
+    const concepts = buildConcepts(['EVIDENCE_NEGATIVE'], [5, 3]);
+    const input: PlannerInput = {
+      concepts,
+      budget: 40,
+      completedToday: [],
+      granularity: 'CHAINED',
+      coverageOrder: 'SYLLABUS',
+    };
+    const result = plan(input);
+    expect(result.actions[0]?.kind).toBe('RELEARN');
+    // La acción entera exige 8 minutos; entró con 5 y sin comprobación posible después.
+    expect(result.actions[0]?.minutes).toBe(5);
+    const hybrid = plan({ ...input, granularity: 'HYBRID' });
+    expect(hybrid.actions[0]?.kind).toBe('RELEARN_CHECK');
+    expect(hybrid.actions[0]?.minutes).toBe(8);
   });
 
   it('`ATOMIC` e `HYBRID` no crean bucle estructural', () => {

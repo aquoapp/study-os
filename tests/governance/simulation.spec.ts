@@ -24,11 +24,16 @@ const BEHAVIOURS: Behaviour[] = [
   'SEEDED_RANDOM',
   'NEVER_EXECUTES',
   'ABANDONS_AFTER_FIRST',
+  'ABANDONS_AFTER_LEARN',
+  'MULTI_WEAK',
+  'CLUSTERED_WEAK',
+  'MOVING_WEAKNESS',
 ];
 
-const SYLLABUS_SIZES = [3, 8, 20, 60];
+const SYLLABUS_SIZES = [3, 8, 20, 100];
 const BUDGETS: Array<number | number[]> = [4, 12, 45, 240, [0, 12, 30], [6, 6, 0, 60]];
 const SEEDS = [1, 7, 13, 29, 101];
+const SESSIONS = 100;
 
 function trajectories(): TrajectoryConfig[] {
   const out: TrajectoryConfig[] = [];
@@ -38,7 +43,7 @@ function trajectories(): TrajectoryConfig[] {
         for (const seed of SEEDS) {
           out.push({
             concepts,
-            sessions: 40,
+            sessions: SESSIONS,
             budget,
             behaviour,
             granularity: 'HYBRID',
@@ -61,7 +66,7 @@ describe('Phase 4A · simulación longitudinal', () => {
       BEHAVIOURS.length * SYLLABUS_SIZES.length * BUDGETS.length * SEEDS.length,
     );
     expect(configs.length).toBeGreaterThanOrEqual(1000);
-    expect(configs.reduce((n, c) => n + c.sessions, 0)).toBeGreaterThanOrEqual(40_000);
+    expect(configs.reduce((n, c) => n + c.sessions, 0)).toBeGreaterThanOrEqual(100_000);
   });
 
   it('ninguna trayectoria viola el presupuesto', () => {
@@ -121,6 +126,51 @@ describe('Phase 4A · simulación longitudinal', () => {
     }
   });
 
+  it('con EXPOSED primero, el atraso de verificación no crece con el temario', () => {
+    /**
+     * P4-D4 · cerrar el bucle abierto antes de abrir otro acota el atraso de `EXPOSED` a lo que
+     * quepa en **un** presupuesto, y no al tamaño del temario. La comprobación es comparativa a
+     * propósito: lo estructural no es el valor, es que multiplicar el temario por cinco no
+     * multiplique el atraso.
+     */
+    const backlog = (sessions: number) =>
+      runTrajectory({
+        concepts: 100,
+        sessions,
+        budget: 240,
+        behaviour: 'ALWAYS_CORRECT',
+        granularity: 'HYBRID',
+        coverageOrder: 'EXPOSED_FIRST',
+        seed: 1,
+      }).maxExposedBacklog;
+
+    // Triplicar las sesiones no aumenta el atraso: no hay acumulación, hay oscilación acotada.
+    expect(backlog(300)).toBe(backlog(100));
+
+    // Lo que sí lo acota es el presupuesto, no el temario: con menos minutos por sesión se
+    // aprenden menos cosas de golpe y el atraso es menor.
+    const tighter = runTrajectory({
+      concepts: 100,
+      sessions: 100,
+      budget: 12,
+      behaviour: 'ALWAYS_CORRECT',
+      granularity: 'HYBRID',
+      coverageOrder: 'EXPOSED_FIRST',
+      seed: 1,
+    }).maxExposedBacklog;
+    expect(tighter).toBeLessThan(backlog(100));
+  });
+
+  it('abandonar tras leer no inventa progreso ni rompe ninguna propiedad', () => {
+    const abandoning = results.filter(({ cfg }) => cfg.behaviour === 'ABANDONS_AFTER_LEARN');
+    expect(abandoning.length).toBeGreaterThan(0);
+    for (const { result } of abandoning) {
+      expect(result.syntheticActivity).toBe(0);
+      expect(result.budgetViolations).toBe(0);
+      expect(result.structuralLoops).toBe(0);
+    }
+  });
+
   it('presupuesto cero repetido no genera deuda ni actividad', () => {
     const zero = runTrajectory({
       concepts: 10,
@@ -139,7 +189,7 @@ describe('Phase 4A · simulación longitudinal', () => {
   it('un presupuesto permanentemente diminuto no fabrica nada · OBS-4A-01', () => {
     const tiny = runTrajectory({
       concepts: 12,
-      sessions: 40,
+      sessions: 100,
       budget: 2,
       behaviour: 'ALWAYS_WRONG',
       granularity: 'HYBRID',

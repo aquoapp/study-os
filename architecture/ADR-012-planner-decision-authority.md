@@ -1,6 +1,6 @@
 # ADR-012 · Autoridad de decisión del Planner
 
-STATUS: ACCEPTED · v1.0 (anexo v1.1 del 2026-09-17 · validación adversarial · el texto v1.0 se conserva íntegro)
+STATUS: ACCEPTED · v1.0 (anexos v1.1 del 2026-09-17 y v1.2 del 2026-09-18 · el texto v1.0 se conserva íntegro)
 DATE: 2026-09-17
 DECISION OWNER: Ana Victoria
 DECISION RECORD: **Phase 4A · Planner Domain / Decision Engine · Governance Landing** del 2026-09-17 · copia aceptada en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` · línea base congelada `7cf9190726f9f4edd8f41998acc6fee8792a2d3a`, sobre `phase-3-v1.1` → `577cc711e017f1fb48ba881ea34288d865317429`
@@ -239,3 +239,64 @@ el algoritmo no está determinado.
 Pendiente. El anexo **registra** el resultado de la validación adversarial y **no** resuelve
 P4-D3 ni P4-D4: las dos vuelven a Ana como fichas de decisión en
 `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` §15.
+
+---
+
+## Anexo v1.2 · 2026-09-18 · Gate A · cierre parcial
+
+El texto v1.0 y el anexo v1.1 **no se reescriben**.
+
+### A2.1 · Decisiones humanas cerradas
+
+**P4-D3 · `ACCEPTED` · granularidad híbrida.** `APRENDER` puede planificarse solo para `NEW`,
+porque `EXPOSED` es la representación autoritativa ya existente del bucle abierto. La reparación
+sigue siendo **atómica**: no existe estado aceptado que distinga «se reaprendió y falta verificar»
+de «no ha pasado nada», y **ese estado no se inventa en Phase 4A**.
+
+**P4-D4 · `ACCEPTED` · `EXPOSED` primero.** Precedencia categórica dentro de la continuidad, sin
+pesos, ratios, cuotas ni máximos.
+
+Ninguna de las dos autoriza retención, decaimiento, espaciado, programación de repasos, dominio
+numérico ni readiness.
+
+### A2.2 · Hallazgo nuevo · la clave de orden de la reparación no está derivada
+
+El anexo v1.1 dio por buena «la última evidencia negativa, de más antigua a más reciente» apoyada
+en la falsación de dos rivales. Ampliada la familia de políticas —todas las formulables sin
+inventar ciencia del aprendizaje y sin usar el historial del Planner como señal— la vivacidad
+elimina **cinco** y deja **dos** que no son equivalentes:
+
+- **última evidencia negativa** · insiste con la reparación empezada;
+- **último contacto real** · cede el turno cuando acaba de mostrarla.
+
+Se separan ante **contacto sin verificación**, un estado alcanzable de verdad con la granularidad
+híbrida ya aceptada. Es la decisión humana **P4-D5**, y este ADR **no la toma**.
+
+Se añade como decisión arquitectónica derivada del hallazgo:
+
+> **13. Derrotar rivales no demuestra unicidad.** Una clave de ordenación solo puede declararse
+> derivada cuando se ha enumerado la familia completa de políticas formulables bajo la autoridad
+> vigente y sobrevive exactamente una. En caso contrario es una decisión de producto.
+
+### A2.3 · Lo que sí queda cerrado
+
+`skip-non-fitting` es **única** bajo cuatro criterios con autoridad, y se comprueba contra una
+definición independiente en todo el rango de presupuestos. Gate P4-G22 se mantiene.
+
+### A2.4 · Consecuencia sobre el estado
+
+`docs/PLANNER_CONTRACT.md` pasa a **v1.2**, y sigue **`PROPOSED · BLOQUEADO POR DECISIÓN
+HUMANA`** — ahora por **P4-D5** únicamente. Este ADR sigue `ACCEPTED`. **Ninguna Build
+Authorization de Phase 4A puede emitirse** mientras P4-D5 siga abierta: el algoritmo no está
+determinado.
+
+### A2.5 · Gates añadidos por este anexo
+
+| Gate | Pasa cuando |
+| --- | --- |
+| **P4-G23** | la instantánea de la ejecución guarda la posición de evidencia que ordenó la reparación, de modo que «la más antigua sin atender» sea verificable después |
+
+### A2.6 · Aprobación de este anexo
+
+Pendiente. Registra el resultado de Gate A y **no** resuelve P4-D5, que vuelve a Ana como ficha de
+decisión en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` §24.
