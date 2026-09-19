@@ -557,7 +557,10 @@ describe('aterrizaje de gobernanza · nada de Phase 3 ha llegado al runtime', ()
   });
 
   it('ninguna migración crea sustrato que Phase 3 no autoriza', () => {
+    // Actualizado el 2026-09-19 por la Phase 4A Build Authorization: `planner_runs` y
+    // `planner_items` existen, pero **solo** en la migración autorizada de Phase 4A.
     const sql = migrations
+      .filter((name) => name !== '00000000000023_planner_domain.sql')
       .map((name) => readFileSync(join(migrationsDir, name), 'utf8').toLowerCase())
       .join('\n');
     for (const table of [
@@ -573,13 +576,14 @@ describe('aterrizaje de gobernanza · nada de Phase 3 ha llegado al runtime', ()
     }
   });
 
-  it('existe el paquete del motor y ningún otro', () => {
+  it('existe el paquete del motor y, desde Phase 4A, el del Planner; ningún otro', () => {
     expect(existsSync(join(REPO_ROOT, 'packages', 'learning-engine'))).toBe(true);
     expect(readdirSync(join(REPO_ROOT, 'packages')).sort()).toEqual([
       'config',
       'design-system',
       'domain',
       'learning-engine',
+      'planner-engine',
     ]);
   });
 

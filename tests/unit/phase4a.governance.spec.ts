@@ -220,7 +220,15 @@ describe('Phase 4A · P4-D2 sigue diferida y no deja constantes detrás', () => 
         /estimated_minutes|duration_minutes|default_item_minutes/i,
       );
     }
-    expect(readdirSync(join(REPO_ROOT, 'packages'))).not.toContain('planner-engine');
+    // Desde el BUILD el paquete existe; lo que no puede contener es una duración de runtime.
+    const source = readdirSync(join(REPO_ROOT, 'packages/planner-engine/src'))
+      .map((file) => read(`packages/planner-engine/src/${file}`))
+      .join('\n');
+    // `default_daily_minutes` es una declaración de la persona (§I.2), no una duración.
+    expect(source).not.toMatch(/const\s+DEFAULT_[A-Z_]*MINUTES/);
+    expect(source).not.toMatch(/estimated_minutes|duration_minutes|minutesPerItem|MINUTES_PER/i);
+    // La única procedencia de duración que admite el tipo es la de fixture.
+    expect(source).toContain("export const DURATION_PROVENANCES = ['FIXTURE'] as const;");
   });
 });
 
@@ -378,7 +386,7 @@ describe('Phase 4A · el BUILD construye solo lo autorizado', () => {
       // El enum de eventos contiene `TODAY_OVERRIDE_SET` desde la migración 18: es una etiqueta, no
       // almacenamiento. Lo prohibido es una tabla o columna que guarde el override.
       expect(sql, `${file} crea almacenamiento de override`).not.toMatch(
-        /learner_today_overrides|creates+tables+(ifs+nots+existss+)?[a-z_.]*override|adds+columns+(ifs+nots+existss+)?[a-z_]*override/,
+        /learner_today_overrides|create\s+table\s+(if\s+not\s+exists\s+)?[a-z_.]*override|add\s+column\s+(if\s+not\s+exists\s+)?[a-z_]*override/,
       );
     }
   });
