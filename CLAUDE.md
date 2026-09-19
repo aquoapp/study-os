@@ -314,6 +314,14 @@ negativa o por el último contacto real—, que divergen cuando alguien abre una
 se va sin comprobar. Se abre **P4-D5**, el contrato pasa a **v1.2** y sigue bloqueado.
 **Gate A = FAIL y no se ha construido nada.**
 
+**P4-D5 · 2026-09-19.** Ana eligió la **última evidencia negativa**: solo la evidencia mueve la
+clave de orden de la reparación, y leer una reparación sin comprobarla no la rebaja (la presentación
+no cuenta como progreso, ni para eliminar una necesidad ni para rebajarla). Con P4-D3, P4-D4 y
+P4-D5 tomadas, el contrato del Planner pasa a **v1.3 `ACCEPTED`** dentro del candidato de
+gobernanza (PR #17) y **Gate A pasa**. **Gate B no se abre**: el repositorio exige que la gobernanza
+se integre en `main` antes de que la rama de BUILD parta de `main` (§3), como en Phase 2, FPS y
+Phase 3. No existe ningún código, esquema ni migración de Planner.
+
 La lección, que ya es la segunda vez: **derrotar rivales no demuestra unicidad**. Una clave de
 ordenación solo es derivada cuando se enumera la familia completa bajo la autoridad vigente y
 sobrevive exactamente una.

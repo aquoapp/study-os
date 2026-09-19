@@ -204,6 +204,63 @@ describe('Gate A · prueba residual A · orden dentro de la reparación', () => 
   });
 });
 
+describe('P4-D5 · ACCEPTED · la última evidencia negativa ordena la reparación', () => {
+  /**
+   * Decisión humana del 2026-09-19. La divergencia de arriba sigue documentada porque explica por
+   * qué hubo que decidir; aquí se fija lo decidido y se demuestra que desviarse de ello se ve.
+   */
+  const abandoned: Concept[] = [
+    concept({
+      id: 'c1',
+      syllabus: 1,
+      state: 'EVIDENCE_NEGATIVE',
+      lastNegativeAt: 10,
+      firstNegativeAt: 10,
+      // Se abrió la reparación, se leyó y se abandonó sin comprobar.
+      lastContactAt: 90,
+    }),
+    concept({
+      id: 'c2',
+      syllabus: 2,
+      state: 'EVIDENCE_NEGATIVE',
+      lastNegativeAt: 20,
+      firstNegativeAt: 20,
+      lastContactAt: 20,
+    }),
+  ];
+  const base: PlannerInput = {
+    concepts: abandoned,
+    budget: 8,
+    completedToday: [],
+    granularity: 'HYBRID',
+    coverageOrder: 'EXPOSED_FIRST',
+  };
+
+  it('el orden por defecto del modelo es el aceptado', () => {
+    // Sin `remediationOrder` explícito, la decisión es la de P4-D5.
+    expect(plan(base).actions[0]?.conceptId).toBe('c1');
+    expect(plan(base).actions).toEqual(
+      plan({ ...base, remediationOrder: 'EVIDENCE_OLDEST' }).actions,
+    );
+  });
+
+  it('el contacto sin verificación no rebaja una reparación abierta', () => {
+    // c1 se leyó hace poco y no se comprobó: su evidencia negativa sigue siendo la más antigua,
+    // y se le vuelve a ofrecer. La presentación no cuenta como progreso.
+    expect(plan(base).actions[0]?.conceptId).toBe('c1');
+  });
+
+  it('control negativo · usar el último contacto cambia la decisión y se detecta', () => {
+    const rejected = plan({ ...base, remediationOrder: 'LAST_CONTACT' });
+    expect(rejected.actions[0]?.conceptId).toBe('c2');
+    expect(rejected.actions).not.toEqual(plan(base).actions);
+  });
+
+  it('la clave aceptada conserva la vivacidad con ejecución real', () => {
+    expect(liveness('EVIDENCE_OLDEST').served).toBe(2);
+  });
+});
+
 describe('Gate A · prueba residual B · empaquetado del presupuesto', () => {
   const candidates = (durations: Array<[string, number, number]>): Concept[] =>
     durations.map(([id, learn, check], i) =>

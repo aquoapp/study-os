@@ -3,8 +3,8 @@
 **Propósito:** describir la **realidad** del repositorio, no la intención. Si este
 documento describe algo que no existe en el código, el documento está mal.
 
-**Versión:** 11.23 · copia viva
-**Última actualización:** 2026-09-18 · **Phase 4A · Gate A**: **P4-D3** (granularidad híbrida) y **P4-D4** (`EXPOSED` primero) `ACCEPTED`; prueba residual B cerrada; **la prueba residual A no cierra** y abre **P4-D5**; contrato v1.2 sigue `PROPOSED · BLOQUEADO`; **Gate A = FAIL, no se construye** (§16) · 2026-09-17 · **Phase 4A · validación adversarial**: IR-P4A-01 e IR-P4A-02 aceptados; el contrato del Planner pasa a **`PROPOSED · BLOQUEADO`** por **P4-D3** y **P4-D4**; ADR-012 gana el anexo v1.1 y sigue `ACCEPTED`; SD-031 corregida; gates P4-G21 y P4-G22 (§16) · 2026-09-17 · **Phase 4A · Planner Domain / Decision Engine · aterrizaje de gobernanza**: contrato del Planner y **ADR-012**, P4-D1 aceptada con modificación, P4-D2 diferida, SD-030 y SD-031 por adenda (§16). **El BUILD de Phase 4A no está autorizado.** La tabla viva de §1 queda reconciliada con la línea base congelada · 2026-09-17 · **Phase 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integrado en `main` (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`; **D-26 cerrada** (§15.3) · 2026-09-16 · Phase 3.1 · corrección D-26 construida como candidato: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
+**Versión:** 11.24 · copia viva
+**Última actualización:** 2026-09-19 · **Phase 4A · P4-D5 `ACCEPTED`** (última evidencia negativa): contrato del Planner **v1.3 `ACCEPTED` en candidato**, **Gate A = PASS**; **Gate B no se abre** hasta integrar la gobernanza en `main` (CLAUDE.md §3); nada construido (§16) · 2026-09-18 · **Phase 4A · Gate A**: **P4-D3** (granularidad híbrida) y **P4-D4** (`EXPOSED` primero) `ACCEPTED`; prueba residual B cerrada; **la prueba residual A no cierra** y abre **P4-D5**; contrato v1.2 sigue `PROPOSED · BLOQUEADO`; **Gate A = FAIL, no se construye** (§16) · 2026-09-17 · **Phase 4A · validación adversarial**: IR-P4A-01 e IR-P4A-02 aceptados; el contrato del Planner pasa a **`PROPOSED · BLOQUEADO`** por **P4-D3** y **P4-D4**; ADR-012 gana el anexo v1.1 y sigue `ACCEPTED`; SD-031 corregida; gates P4-G21 y P4-G22 (§16) · 2026-09-17 · **Phase 4A · Planner Domain / Decision Engine · aterrizaje de gobernanza**: contrato del Planner y **ADR-012**, P4-D1 aceptada con modificación, P4-D2 diferida, SD-030 y SD-031 por adenda (§16). **El BUILD de Phase 4A no está autorizado.** La tabla viva de §1 queda reconciliada con la línea base congelada · 2026-09-17 · **Phase 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integrado en `main` (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`; **D-26 cerrada** (§15.3) · 2026-09-16 · Phase 3.1 · corrección D-26 construida como candidato: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
 **Fase actual:** **Phase 4A · Planner Domain / Decision Engine · gobernanza aterrizada, BUILD no autorizado** (§16), sobre **Phase 3.1 · Learning Engine Runtime Corrective · FROZEN · PASS WITH DEBT** (`phase-3-v1.1` → `577cc71`), P3.1-G1 … P3.1-G12 en PASS, sobre **Phase 3 · FROZEN · PASS WITH DEBT** (`phase-3-v1.0` → `f5d0b10`, que contiene D-26 como historia) · ninguna fase posterior autorizada · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4, Phase 5, Planner y PRODUCTION no autorizados
 **Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `577cc711e017f1fb48ba881ea34288d865317429` · tag anotado `phase-3-v1.1` (Phase 3: `f5d0b10…`, `phase-3-v1.0`; FPS: `6bde0a0…`, `fps-v1.0`; Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_3_1_CHECKPOINT.md` y `docs/PHASE_3_CHECKPOINT.md`
 
@@ -653,6 +653,15 @@ Línea base: `main` = `7cf9190726f9f4edd8f41998acc6fee8792a2d3a`, sobre `phase-3
 
 ### 16.1 · Qué queda aceptado
 
+> **P4-D5 · 2026-09-19.** Ana eligió la **última evidencia negativa** como clave de orden de la
+> reparación: solo la evidencia mueve la clave, y leer una reparación sin comprobarla no la rebaja.
+> Con P4-D3, P4-D4 y P4-D5 tomadas, el algoritmo queda completamente determinado y el contrato pasa
+> a **v1.3 `ACCEPTED`** dentro del candidato. **Gate A = PASS.** **Gate B no se abre**: el
+> repositorio exige que la gobernanza se integre en `main` antes de que la rama de BUILD parta de
+> `main`, como en Phase 2 (PR #6), FPS (PR #9) y Phase 3 (PR #12). Nueva observación **OBS-4A-05**:
+> quien abandona repetidamente una reparación la verá otra vez; si eso es un problema, se resuelve
+> en la experiencia de 4B, no en la clave.
+
 > **Gate A · 2026-09-18.** **P4-D3** queda `ACCEPTED` como **granularidad híbrida** —`APRENDER`
 > puede planificarse solo para `NEW`, porque `EXPOSED` ya representa el bucle abierto; la
 > reparación sigue siendo atómica y **no se inventa** ningún estado intermedio— y **P4-D4** queda
@@ -675,7 +684,7 @@ Línea base: `main` = `7cf9190726f9f4edd8f41998acc6fee8792a2d3a`, sobre `phase-3
 
 | Artefacto | Estado |
 | --- | --- |
-| `docs/PLANNER_CONTRACT.md` v1.2 | **`PROPOSED · BLOQUEADO`** por **P4-D5** · P4-D3 y P4-D4 cerradas |
+| `docs/PLANNER_CONTRACT.md` v1.3 | **`ACCEPTED`** en candidato · P4-D3, P4-D4 y P4-D5 cerradas · pendiente de aceptación independiente e integración en `main` |
 | ADR-012 · autoridad de decisión del Planner | **`ACCEPTED · v1.0`** · **`NOT IMPLEMENTED`** |
 | `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` | copia aceptada de la autorización |
 | SD-030 y SD-031 | adenda del `SPEC_DIFF_LOG` |
@@ -723,6 +732,7 @@ plan vacío: un plan no vacío no es un invariante de producto.
 | --- | --- |
 | **OBS-4A-01** | Con un presupuesto que solo admite una acción muy corta, una disponibilidad declarada permanentemente mínima avanza poco o nada. Consecuencia veraz de las invariantes aceptadas; su severidad depende de **P4-D3** y de **P4-D2**. Se registra, no se resuelve inventando |
 | **OBS-4A-03** | El Planner deja minutos sin usar cuando la acción más prioritaria no cabe y las siguientes tampoco. Es el precio de no optimizar, y es deliberado (gate P4-G22) |
+| **OBS-4A-05** | Con P4-D5, quien abre una reparación, la lee y la abandona sin comprobar la verá ofrecida otra vez, porque leer no mueve la evidencia. Es la consecuencia deliberada de que la presentación no cuente como progreso. Si resulta un problema de producto, se resuelve en la experiencia de 4B, **no** cambiando la clave de orden |
 | **OBS-4A-02** | Con `EVIDENCE_POSITIVE` excluida y sin política de repaso, una persona con evidencia positiva en todo su pack alcanza `NOTHING_ELIGIBLE` de forma permanente. Consecuencia aceptada de P4-D1.4 y DEF-28 |
 | **WATCH-4A-1** | Contenido retirado dentro de una sesión ya abierta falla hoy en silencio. **No es asunto de Phase 4A**: es consumo de sesión, y corresponde a Phase 4B. Phase 4A no toca la semántica de sesión de Phase 2 |
 

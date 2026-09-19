@@ -19,8 +19,8 @@ import { REPO_ROOT } from './lib/run-guard';
  *
  * Vigila lo que la decisión humana dejó fijado y, sobre todo, **lo que prohibió**:
  *
- *   - el contrato consta `PROPOSED · BLOQUEADO` mientras P4-D3 y P4-D4 sigan abiertas, y ADR-012
- *     sigue aceptado y **sin implementar**;
+ *   - el contrato solo consta `ACCEPTED` con P4-D3, P4-D4 y P4-D5 cerradas (2026-09-18/19), y ADR-012
+ *     sigue aceptado y **sin implementar**: Gate A pasa, pero el BUILD espera al aterrizaje;
  *   - P4-D1 consta con sus siete cláusulas, y P4-D2 consta **diferida**;
  *   - la composición no introduce ningún parámetro de equilibrio: ni ratio, ni cuota, ni ciclo,
  *     ni alternancia, ni azar;
@@ -44,19 +44,28 @@ const contract = read(CONTRACT);
 const adr = read(ADR);
 const authorization = read(AUTHORIZATION);
 
-describe('Phase 4A · el contrato del Planner no se declara aceptado con una decisión abierta', () => {
-  it('es v1.1 y consta PROPOSED · BLOQUEADO, con sus dos bloqueantes nombrados', () => {
-    expect(contract).toContain('# STUDY OS · Planner Contract · v1.2');
-    expect(flat(contract)).toContain(
-      '**ESTADO:** `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA` · **no aceptado**',
-    );
-    // P4-D3 y P4-D4 quedaron cerradas en Gate A; el bloqueante vivo es P4-D5.
-    expect(flat(contract)).toContain('**BLOQUEANTE:** **P4-D5**');
-    expect(flat(contract)).toContain('**CERRADAS:** **P4-D3**');
+describe('Phase 4A · el contrato del Planner solo se acepta con todas sus decisiones tomadas', () => {
+  it('es v1.3, ACCEPTED en candidato, y dice que el BUILD espera al aterrizaje', () => {
+    expect(contract).toContain('# STUDY OS · Planner Contract · v1.3');
+    expect(flat(contract)).toContain('**ESTADO:** `ACCEPTED` como contrato de Phase 4A');
+    expect(flat(contract)).toContain('**No queda ninguna decisión semántica abierta.**');
+    expect(flat(contract)).toContain('**BUILD:** no autorizado todavía.');
     expect(flat(contract)).toContain('**PROPIETARIO NORMATIVO:** ADR-012');
-    // La historia del defecto no se borra: v1.0 se aterrizó como ACCEPTED y se corrigió.
+    // La historia no se borra: v1.1 y v1.2 constan como PROPOSED y los dos defectos, nombrados.
     expect(flat(contract)).toContain('**IR-P4A-01**');
     expect(flat(contract)).toContain('**IR-P4A-02**');
+    expect(flat(contract)).toContain('v1.3 cierra P4-D5');
+  });
+
+  it('las tres decisiones humanas constan cerradas en el cuerpo del contrato', () => {
+    const flattened = flat(contract);
+    expect(flattened).toContain('**P4-D3 · `ACCEPTED` · híbrida**');
+    expect(flattened).toContain('**P4-D4 · `ACCEPTED` · `EXPOSED` primero**');
+    expect(flattened).toContain('**P4-D5 · `ACCEPTED` · última evidencia negativa**');
+    // Y la tabla de necesidades ya no contradice la granularidad híbrida.
+    expect(flattened).toContain('| `NEW` | cobertura | **APRENDER** ·');
+    expect(flattened).not.toContain('| `NEW` | cobertura | **APRENDER + COMPROBAR** |');
+    expect(flattened).not.toContain('PROPOSED · BLOQUEADO POR DECISIÓN HUMANA P4-D5');
   });
 
   it('define las veintiséis secciones que la autorización exige', () => {
@@ -134,7 +143,7 @@ describe('Phase 4A · P4-D1 · composición categórica equilibrada', () => {
     expect(flattened).toContain('**auditoría, no señal**');
   });
 
-  it('las dos decisiones vuelven como fichas y ninguna está marcada aceptada', () => {
+  it('las decisiones humanas constan con su ficha, su cierre y su historia', () => {
     const flattened = flat(authorization);
     for (const id of ['### P4-D3', '### P4-D4', '## 24 · P4-D5 · decisión humana']) {
       expect(authorization, `falta la ficha ${id}`).toContain(id);
@@ -142,10 +151,12 @@ describe('Phase 4A · P4-D1 · composición categórica equilibrada', () => {
     // Gate A · P4-D3 y P4-D4 quedaron cerradas por decisión humana el 2026-09-18 …
     expect(flattened).toContain('P4-D3 · `ACCEPTED` · granularidad híbrida');
     expect(flattened).toContain('P4-D4 · `ACCEPTED` · `EXPOSED` primero');
-    // … y P4-D5 es el bloqueante vivo, que esta ronda **no** resuelve.
-    expect(flattened).toContain('Gate A · veredicto');
+    // Gate A falló el 2026-09-18 por la prueba residual A, y ese registro se conserva …
     expect(flattened).toContain('**FAIL**, por la prueba residual A');
-    expect(flattened).not.toMatch(/P4-D5[^.]{0,60}`ACCEPTED`/);
+    // … P4-D5 la cerró el 2026-09-19 y Gate A pasa, pero Gate B no se abre sin aterrizaje.
+    expect(flattened).toContain('**P4-D5 · APPROVED · LAST NEGATIVE EVIDENCE.**');
+    expect(flattened).toContain('**Gate A = PASS.**');
+    expect(flattened).toContain('**Por tanto Gate B no se abre.**');
   });
 
   it('ningún parámetro de equilibrio entra por la configuración', () => {

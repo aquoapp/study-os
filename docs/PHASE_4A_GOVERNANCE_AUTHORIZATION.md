@@ -14,6 +14,7 @@ ella. **Solo gobernanza: el BUILD de Phase 4A no está autorizado.**
 | Propietario normativo | **ADR-012** · contrato en `docs/PLANNER_CONTRACT.md` |
 | Validación adversarial | 2026-09-17 · **IR-P4A-01** e **IR-P4A-02** aceptados · el contrato pasa a `PROPOSED · BLOQUEADO` (§6) |
 | Gate A · cierre | 2026-09-18 · **P4-D3** y **P4-D4** `ACCEPTED`; prueba residual B cerrada; **prueba residual A NO cierra** → **P4-D5** (§23, §24). **Gate A = FAIL · no se construye** |
+| P4-D5 · Gate A reevaluado | 2026-09-19 · **P4-D5 `ACCEPTED` · última evidencia negativa**; contrato v1.3 `ACCEPTED` en candidato; **Gate A = PASS**; **Gate B no se abre** hasta integrar esta gobernanza en `main` (§25) |
 
 ---
 
@@ -25,7 +26,7 @@ ella. **Solo gobernanza: el BUILD de Phase 4A no está autorizado.**
 > algoritmo único**, y quedan dos decisiones humanas —**P4-D3** y **P4-D4**— que esta ronda no
 > toma. Todo lo demás de este aterrizaje se mantiene.
 
-- **`docs/PLANNER_CONTRACT.md` v1.1** · `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA` (P4-D3, P4-D4).
+- **`docs/PLANNER_CONTRACT.md` v1.3** · `ACCEPTED` en candidato tras P4-D3, P4-D4 y P4-D5 (historia: v1.1 y v1.2 `PROPOSED · BLOQUEADO`).
 - **ADR-012 · Autoridad de decisión del Planner** · `ACCEPTED · v1.0`, `NOT IMPLEMENTED`.
 - **Disposiciones SPEC_DIFF** de H-P4-1a, por adenda.
 - **P4-D1** registrada como autoridad de producto.
@@ -800,3 +801,85 @@ La aceptación del contrato del Planner y, con ella, la Build Authorization de P
 Las ejecuciones pasadas conservan la versión con la que se tomaron. El único coste de cambiarla
 después es que la instantánea debe guardar **las dos** posiciones para que la historia siga siendo
 verificable; el contrato ya exige guardar la que ordena.
+
+---
+
+## 25 · P4-D5 · `ACCEPTED` · Gate A reevaluado · 2026-09-19
+
+### 25.1 · Decisión
+
+**P4-D5 · APPROVED · LAST NEGATIVE EVIDENCE.** Decisora: Ana Victoria, 2026-09-19.
+
+Cuando varias necesidades de reparación compiten, se ordenan por la **posición de flujo de la
+última evidencia negativa o conflictiva** de cada concepto, de más antigua a más reciente; a
+igualdad, por la clave de sílabo.
+
+Consecuencias que quedan fijadas:
+
+- **solo la evidencia mueve la clave.** Leer una reparación sin comprobarla no cambia su posición;
+  la necesidad sigue abierta y se vuelve a ofrecer. La presentación no cuenta como progreso, ni
+  para eliminar una necesidad (IR-P4A-01) ni para rebajarla (P4-D5);
+- la vivacidad se conserva: cada fallo nuevo refresca la clave;
+- la instantánea guarda esta posición (**P4-G23**);
+- la insistencia ante abandonos repetidos queda registrada como **OBS-4A-05** y, si resulta un
+  problema de producto, se resuelve en la experiencia de 4B y **no** cambiando la clave.
+
+`LAST_CONTACT` pasa a ser una **variante rechazada**. Se conserva en el modelo de referencia para
+que un control negativo demuestre que usarla cambia la decisión.
+
+### 25.2 · Gate A · reevaluación
+
+| Condición de §9 de la orden | Estado | Evidencia |
+| --- | --- | --- |
+| P4-D3 y P4-D4 correctamente registradas | **CUMPLE** | contrato §F.2 y §F.6; ADR-012 anexo v1.2; SD-031 |
+| Planner Contract internamente coherente | **CUMPLE** | v1.3; la tabla §F.1 se corrige para reflejar la granularidad híbrida, que seguía diciendo `APRENDER + COMPROBAR` para `NEW` |
+| Prueba residual A cierra | **CUMPLE** · por decisión humana, no por derivación | P4-D5 |
+| Prueba residual B cierra | **CUMPLE** | §23.3 |
+| No queda decisión semántica humana | **CUMPLE** | P4-D1, D3, D4, D5 aceptadas; P4-D2 diferida a 4B por decisión expresa |
+| Modelo formal en verde | **CUMPLE** | `tests/governance/modelCheck.spec.ts` |
+| Simulación adversarial en verde | **CUMPLE** | `tests/governance/simulation.spec.ts` |
+| Pruebas de gobernanza en verde | **CUMPLE** | vigilante, pruebas residuales, controles negativos |
+| Candidato del PR #17 coherente | **CUMPLE** | CI exigida en verde |
+
+**Gate A = PASS.**
+
+### 25.3 · Gate B · no se abre en esta ronda, y por qué
+
+§10 de la orden: *«If repository policy requires governance landing before BUILD, STOP after Gate
+A and state exactly why. Do not bypass governance rules merely because this order permits Gate B
+conditionally.»*
+
+La política del repositorio **sí lo exige**, por dos vías independientes:
+
+1. **CLAUDE.md §3** · «Toda fase se ejecuta en `phase/<n>-<nombre>`, que **parte de `main`**», y
+   el flujo es «rama de fase → CI en verde → PR → **revisión humana → merge** → tag».
+2. **Precedente sin excepciones.** Cada BUILD anterior partió de `main` **después** de que su
+   aterrizaje de gobernanza se integrara:
+
+   | Fase | Aterrizaje de gobernanza integrado | BUILD desde |
+   | --- | --- | --- |
+   | Phase 2 | PR #6 → `0cf7467` | `main` tras #6 |
+   | First Product Slice | PR #9 → `e32727c` | `main` tras #9 |
+   | Phase 3 | PR #12 → `8a21fc2` | `main` `8a21fc2` |
+
+Hoy la gobernanza de Phase 4A vive en el PR #17, **abierto y sin aceptación independiente**. Las
+dos maneras de construir ahora romperían la regla:
+
+- partir de `main` construiría **sin** el contrato, el ADR ni las decisiones que lo autorizan;
+- partir de `phase/4a-planner-governance` construiría sobre gobernanza **no aceptada ni
+  aterrizada**, y la rama de BUILD no partiría de `main`.
+
+Además, la ADR Policy v1.0 establece que solo un ADR `ACCEPTED` autoriza cambio arquitectónico, y
+ADR-012 solo consta aceptado en una rama no integrada.
+
+**Por tanto Gate B no se abre.** No existe rama de BUILD, paquete, esquema, migración ni mutación
+de STAGING.
+
+### 25.4 · Secuencia que desbloquea Gate B
+
+1. aceptación independiente del candidato de gobernanza (PR #17, head de esta ronda);
+2. integración del PR #17 en `main` por la vía protegida, sin bypass;
+3. rama de BUILD `phase/4a-planner-domain` desde ese `main`;
+4. Gate B tal como la orden lo define, sin cambios de alcance.
+
+Ninguno de esos pasos se ha dado en esta ronda.

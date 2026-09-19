@@ -1,6 +1,6 @@
 # ADR-012 · Autoridad de decisión del Planner
 
-STATUS: ACCEPTED · v1.0 (anexos v1.1 del 2026-09-17 y v1.2 del 2026-09-18 · el texto v1.0 se conserva íntegro)
+STATUS: ACCEPTED · v1.0 (anexos v1.1 del 2026-09-17, v1.2 del 2026-09-18 y v1.3 del 2026-09-19 · el texto v1.0 se conserva íntegro)
 DATE: 2026-09-17
 DECISION OWNER: Ana Victoria
 DECISION RECORD: **Phase 4A · Planner Domain / Decision Engine · Governance Landing** del 2026-09-17 · copia aceptada en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` · línea base congelada `7cf9190726f9f4edd8f41998acc6fee8792a2d3a`, sobre `phase-3-v1.1` → `577cc711e017f1fb48ba881ea34288d865317429`
@@ -300,3 +300,23 @@ determinado.
 
 Pendiente. Registra el resultado de Gate A y **no** resuelve P4-D5, que vuelve a Ana como ficha de
 decisión en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` §24.
+
+---
+
+## Anexo v1.3 · 2026-09-19 · P4-D5 · Gate A reevaluado
+
+El texto v1.0 y los anexos v1.1 y v1.2 **no se reescriben**.
+
+**P4-D5 · `ACCEPTED` · última evidencia negativa.** Cuando varias reparaciones compiten, las ordena
+la posición de flujo de la última evidencia negativa o conflictiva de cada concepto, de más
+antigua a más reciente. **Solo la evidencia mueve la clave**: el contacto sin verificación no la
+cambia. Queda como autoridad arquitectónica junto a la decisión 12 del anexo v1.1: la presentación
+no cuenta como progreso, ni para eliminar una necesidad ni para rebajarla.
+
+Con P4-D1, P4-D3, P4-D4 y P4-D5 aceptadas y P4-D2 diferida por decisión expresa, **el algoritmo
+queda completamente determinado**. `docs/PLANNER_CONTRACT.md` pasa a **v1.3 · `ACCEPTED`** dentro
+del candidato de gobernanza.
+
+**Estado de implementación: sigue `NOT IMPLEMENTED`.** Gate A pasa, pero ni este ADR ni el contrato
+autorizan un BUILD mientras no estén integrados en `main`: la ADR Policy v1.0 exige un ADR aceptado
+para autorizar cambio arquitectónico, y CLAUDE.md §3 exige que la rama de fase parta de `main`.

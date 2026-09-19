@@ -1685,3 +1685,39 @@ Complementa a los estados anteriores sin sustituirlos.
 | ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexos v1.1 y v1.2 registrados |
 
 **Total tras esta adenda: sin cambio** · 31 entradas SPEC_DIFF y 1 errata.
+
+---
+
+## SD-031 · **cierre** · 2026-09-19 · P4-D5
+
+**Corrige el estado de:** la segunda corrección de esta entrada (2026-09-18), que dejó el contrato
+`PROPOSED` por P4-D5. Los textos anteriores **no se reescriben**.
+
+**Decisión:** **P4-D5 · `ACCEPTED` · última evidencia negativa** · 2026-09-19 · Ana Victoria.
+**Estado resultante:** `docs/PLANNER_CONTRACT.md` **v1.3 · `ACCEPTED`** dentro del candidato de
+gobernanza de Phase 4A, pendiente de aceptación independiente y de integración en `main`.
+
+La afirmación de SD-031 sobre la composición queda, por fin, en su forma exacta: las siete
+cláusulas de P4-D1 determinan una familia de algoritmos; **P4-D3, P4-D4 y P4-D5** eligen dentro de
+ella, y con las tres tomadas el algoritmo queda completamente determinado. Ninguna de las tres fue
+derivada: las tres fueron decisiones humanas, y el registro lo dice así.
+
+**Impacto:** Gate A pasa. **El BUILD sigue sin autorizar** hasta que la gobernanza se integre en
+`main` (CLAUDE.md §3 y precedente de Phase 2, FPS y Phase 3).
+
+---
+
+## Estado de la adenda · tras P4-D5 · 2026-09-19
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| P4-D1 | composición categórica equilibrada | `ACCEPTED` con modificación |
+| P4-D2 | origen de los minutos planificados | `DEFERRED` a una decisión previa a 4B |
+| P4-D3 | granularidad de la acción | `ACCEPTED` · híbrida |
+| P4-D4 | orden dentro de la continuidad | `ACCEPTED` · `EXPOSED` primero |
+| **P4-D5** | clave de orden de la reparación | **`ACCEPTED` · última evidencia negativa** |
+| SD-030 | disposición de REQ-E03/E04/E10/E11 e INV-108 | `ACCEPTED` |
+| SD-031 | Planner Contract | **cerrada** · contrato v1.3 `ACCEPTED` en candidato |
+| ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexos v1.1, v1.2 y v1.3 · `NOT IMPLEMENTED` |
+
+**Total tras esta adenda: sin cambio** · 31 entradas SPEC_DIFF y 1 errata.

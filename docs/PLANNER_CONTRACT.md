@@ -1,17 +1,17 @@
-# STUDY OS · Planner Contract · v1.2
+# STUDY OS · Planner Contract · v1.3
 
-**ESTADO:** `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA` · **no aceptado**
-**CERRADAS:** **P4-D3** · granularidad híbrida (§F.2) y **P4-D4** · `EXPOSED` primero (§F.6), las
-dos `ACCEPTED` el 2026-09-18.
-**BLOQUEANTE:** **P4-D5** · qué posición de evidencia ordena la reparación (§F.5). Es un hallazgo
-**nuevo** de la prueba residual A: derrotar a cinco políticas rivales no demuestra unicidad, y
-sobreviven **dos** no equivalentes.
+**ESTADO:** `ACCEPTED` como contrato de Phase 4A · **en candidato de gobernanza, pendiente de
+aceptación independiente y de aterrizaje en `main`**
+**DECISIONES CERRADAS:** **P4-D3** · granularidad híbrida (§F.2) y **P4-D4** · `EXPOSED` primero
+(§F.6), `ACCEPTED` el 2026-09-18; **P4-D5** · la **última evidencia negativa** ordena la
+reparación (§F.5), `ACCEPTED` el 2026-09-19. **No queda ninguna decisión semántica abierta.**
 **HISTORIA:** v1.0 aterrizó como `ACCEPTED`; la revisión independiente encontró **IR-P4A-01** (una
 recomendación emitida contaba como respuesta a la reparación) e **IR-P4A-02** (la atomicidad
-estaba sobreafirmada) y el contrato pasó a v1.1 `PROPOSED`. v1.2 cierra P4-D3 y P4-D4 y abre
-P4-D5.
-**BUILD:** no autorizado.
-**FECHA:** 2026-09-18
+estaba sobreafirmada) y el contrato pasó a v1.1 `PROPOSED`. v1.2 cerró P4-D3 y P4-D4 y abrió
+P4-D5 (prueba residual A). v1.3 cierra P4-D5.
+**BUILD:** no autorizado todavía. El precedente del repositorio exige que la gobernanza aterrice
+en `main` antes de que la rama de BUILD parta de `main` (CLAUDE.md §3).
+**FECHA:** 2026-09-19
 **DECISORA:** Ana Victoria · Phase 4A · Planner Domain / Decision Engine · Governance Landing
 **PROPIETARIO NORMATIVO:** ADR-012
 **AUTORIDAD DE ORIGEN:** Master §1.1, §3, §7, §8, §9, §24, §49, §52 · Engineering Constitution
@@ -118,11 +118,11 @@ diferencia entre «no lo planifiqué» y «no lo vi».
 
 | Estado del motor | Necesidad | Acción correspondiente |
 | --- | --- | --- |
-| `NEW` | cobertura | **APRENDER + COMPROBAR** |
+| `NEW` | cobertura | **APRENDER** · tras su ejecución veraz el concepto pasa a `EXPOSED` (P4-D3) |
 | `EXPOSED` | verificación de un bucle abierto | **COMPROBAR** |
-| `EVIDENCE_NEGATIVE` | reparación | **REAPRENDER + COMPROBAR** |
-| `EVIDENCE_CONFLICTING` | reparación | **REAPRENDER + COMPROBAR** |
-| patrón de error estructural activo | reparación | **REAPRENDER + COMPROBAR** |
+| `EVIDENCE_NEGATIVE` | reparación | **REAPRENDER + COMPROBAR**, atómica (P4-D3) |
+| `EVIDENCE_CONFLICTING` | reparación | **REAPRENDER + COMPROBAR**, atómica (P4-D3) |
+| patrón de error estructural activo | reparación | **REAPRENDER + COMPROBAR**, atómica (P4-D3) |
 | `EVIDENCE_POSITIVE` | **ninguna en v1** | — (§K) |
 
 `EXPOSED` es una necesidad legítima e independiente: la persona vio material que el producto
@@ -217,7 +217,31 @@ categórico del motor diga que existe, y desaparece solo cuando la evidencia la 
 Ninguna ejecución anterior del Planner entra en la selección. El historial de ejecuciones es
 **auditoría** (§S), no señal (§R).
 
-### F.5 · Orden dentro de la reparación · `PROPOSED · BLOQUEADO POR DECISIÓN HUMANA P4-D5`
+### F.5 · Orden dentro de la reparación · **P4-D5 · `ACCEPTED` · última evidencia negativa**
+
+**Decisión humana del 2026-09-19.** Cuando varias necesidades de reparación compiten, se ordenan
+por la **posición de flujo de la última evidencia negativa o conflictiva** de cada concepto, **de
+más antigua a más reciente**; a igualdad, por la clave de sílabo de §H.
+
+Consecuencias normativas:
+
+- **solo la evidencia mueve la clave.** Leer una reparación sin comprobarla —contacto sin
+  verificación— **no** cambia su posición: la necesidad sigue abierta y el sistema vuelve a
+  ofrecerla. Es la misma regla que cerró IR-P4A-01, aplicada al orden: la presentación no cuenta
+  como progreso, ni para eliminar una necesidad ni para rebajarla;
+- **la vivacidad se conserva**: cada fallo nuevo refresca la clave y cede el turno a la siguiente
+  reparación pendiente;
+- la instantánea de la ejecución **guarda esta posición** (gate P4-G23), de modo que «la más
+  antigua sin atender» sea verificable después;
+- la insistencia que esto produce cuando alguien abandona repetidamente una reparación queda
+  registrada como **OBS-4A-05** y, si resulta ser un problema de producto, se resuelve en la
+  experiencia de 4B, **no** cambiando esta clave.
+
+El análisis que llevó a la decisión se conserva:
+
+---
+
+#### F.5.1 · Por qué esto era una decisión y no una derivación
 
 Si varias necesidades de reparación compiten, hace falta una clave de orden. La ronda anterior
 propuso «la posición de la última evidencia negativa, de más antigua a más reciente» y la llamó
@@ -248,7 +272,7 @@ verificación**: la persona abre la reparación, la lee y se marcha sin comproba
   sistema **no repite** lo que acaba de mostrar.
 
 Las dos son defendibles y las dos cumplen todos los criterios mecánicos. La diferencia es
-alcanzable de verdad, no artificial: abandonar tras leer la produce. **Este contrato no elige.**
+alcanzable de verdad, no artificial: abandonar tras leer la produce. Ninguna autoridad aceptada elegía entre ellas, y por eso volvió como decisión humana. **Ana eligió la última evidencia negativa el 2026-09-19.**
 
 ### F.6 · Orden dentro de la continuidad · **P4-D4 · `ACCEPTED` · `EXPOSED` primero**
 
@@ -372,11 +396,9 @@ algoritmos deterministas. Lo que sí queda derivado dentro de esa familia:
 | ¿Cadena pura como granularidad? | **falsada** (§F.2) |
 | ¿Tamaño de la acción: atómica o híbrida? | **decidido por P4-D3 · híbrida** |
 | ¿Orden entre `EXPOSED` y `NEW`? | **decidido por P4-D4 · `EXPOSED` primero** |
-| **¿Qué posición de evidencia ordena la reparación?** | **NO DERIVADO · P4-D5** (§F.5) |
+| ¿Qué posición de evidencia ordena la reparación? | **decidido por P4-D5 · última evidencia negativa** (§F.5) |
 
-Corregido el 2026-09-18: donde §F.5 decía «derivado por vivacidad», la prueba residual A demuestra
-que la vivacidad **elimina cinco** políticas y deja **dos**. El algoritmo queda determinado salvo
-esa clave.
+Corregido el 2026-09-18: donde §F.5 decía «derivado por vivacidad», la prueba residual A demostró que la vivacidad **elimina cinco** políticas y deja **dos**. Cerrado el 2026-09-19 por P4-D5: con las tres decisiones humanas tomadas, **el algoritmo queda completamente determinado** por las siete cláusulas de P4-D1 más P4-D3, P4-D4 y P4-D5.
 
 ### G.8 · Lo que esta composición no introduce
 
@@ -813,7 +835,6 @@ Este contrato **no** define, y Phase 4A **no** implementa:
 
 | Diferido | Motivo |
 | --- | --- |
-| **Clave de orden de la reparación (P4-D5)** | **bloquea la aceptación del contrato** · §F.5 |
 | Origen de la duración (P4-D2) | decisión de producto previa a 4B |
 | Umbrales de Rescue y de ausencia | Master §8/§9 no los definen; H-P4-5 |
 | Oferta a la persona de un ítem fuera de presupuesto | 4B/UX (§J) |

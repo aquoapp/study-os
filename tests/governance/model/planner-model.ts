@@ -114,7 +114,11 @@ export interface PlannerInput {
   readonly completedToday: readonly string[];
   readonly granularity: Granularity;
   readonly coverageOrder: CoverageOrder;
-  /** Por defecto `EVIDENCE_OLDEST`, que es la única que da vivacidad (ver `modelCheck.spec`). */
+  /**
+   * Por defecto `EVIDENCE_OLDEST`: la última evidencia negativa, de más antigua a más reciente.
+   * Es la decisión humana **P4-D5** (2026-09-19), no una derivación: la prueba residual A dejó dos
+   * políticas vivas y Ana eligió esta. Las demás variantes existen para ser falsadas.
+   */
   readonly remediationOrder?: RemediationOrder;
   readonly engineStale?: boolean;
   readonly mutations?: Mutations;
