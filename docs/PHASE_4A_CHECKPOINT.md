@@ -121,6 +121,7 @@ la negativa.
 | BF-3 | `pg_timezone_names` en el camino de cada petición: **~0,5 s por consulta** medido en STAGING | la zona se valida al declararla; el día de plan no vuelve a consultar el catálogo |
 | BF-4 | Una unicidad global de sesión abierta rompía el comportamiento congelado de `create_study_session` y 32 pruebas congeladas | alcance acotado al Planner y decisión humana (§M, OBS-4A-B2) |
 | BF-5 | Regex de la guarda de override sin barras invertidas en el primer commit | corregida |
+| BF-6 | La prueba RLS identificaba la tabla de solo servidor con `format('public.%I')`; en la base limpia de CI el optimizador la evaluaba sobre tablas de otros esquemas | consulta por OID |
 
 ## J · Seguridad y autoridad
 
@@ -160,6 +161,8 @@ añadido ninguna clave.
 | Roundtrip **acotado** en STAGING (solo 23 y 22) | down → push: huella de datos **idéntica**; firma estructural 1 255 entradas, **solo difiere el `ordinal_position` de las dos columnas añadidas con `ALTER`** (`profiles.timezone`, `concept_mastery.last_negative_position`): PostgreSQL no reutiliza `attnum`. El roundtrip completo con firma exacta es el de CI sobre base limpia |
 | Huella de STAGING (evidencia de Ana, sesiones, configuración del motor, pack de demo) | idéntica a la previa a Phase 4A, salvo la lista de migraciones |
 | Residuo | cero: un usuario (Ana), un pack (`demo-estudio-eficaz`), cero ejecuciones del Planner |
+| CI del PR #19 | **tres jobs en verde** (run `35447781199`): estático; base de datos local limpia con `db:roundtrip` completo, integración, RLS y E2E; deriva de esquema real contra STAGING. Un primer ciclo falló por una consulta de catálogo por nombre en la prueba RLS (BF-6), corregida por OID |
+| Ejecución limpia desde `git archive` | `npm ci`, typecheck, lint, format, build, unit, guardas, secret-scan y E2E estáticos en verde; `schema-drift` BLOQUEADO en local (sin Docker, D-13) y cubierto por CI |
 
 ## L.1 · Gates
 
@@ -177,7 +180,7 @@ añadido ninguna clave.
 | **P4-G10** | **PASS ACOTADO · DECISIÓN HUMANA** | sesión planificada exclusiva y arranque idempotente; la unicidad entre sesiones ajenas al Planner no se impone (OBS-4A-B2) |
 | **P4-G11** | PASS | RLS, columnas seguras, sin escritura ni RPC de cliente, registro y guardas por gobernanza |
 | **P4-G12** | PASS | lista blanca de `planner_config`, vocabulario, `NOTHING_ELIGIBLE` sin preparación |
-| **P4-G13** | PASS · pendiente de CI | roundtrip acotado, deriva limpia, residuo cero, PRODUCTION intacto; el roundtrip completo lo da CI |
+| **P4-G13** | PASS | roundtrip completo con firma idéntica en CI sobre base limpia; roundtrip acotado en STAGING; deriva de esquema real contra STAGING en CI; residuo cero; PRODUCTION intacto |
 | **P4-G14** | PASS · E2E en §L.2 | regresión completa de integración y RLS |
 | **P4-G15** | PASS | ninguna ruta consume el Planner; solo `GENERATED` |
 | **P4-G16** | PASS | módulo real contra PostgREST y la base reales |
