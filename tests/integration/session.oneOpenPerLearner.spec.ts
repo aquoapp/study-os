@@ -100,7 +100,9 @@ beforeAll(async () => {
   env = readTestEnv();
   admin = adminClient(env);
   pack = await buildSyntheticPack(admin, 'p4g10');
-  for (const index of [0, 1, 2]) await publishLearningUnit(admin, pack, index, `p4g10-u${index}`);
+  // Unidades solo para los conceptos 0 y 1: el concepto 2 tiene pregunta PRIMARY y ninguna unidad,
+  // que es el caso de `NO_PUBLISHED_UNIT` (OBS-4A-B1).
+  for (const index of [0, 1]) await publishLearningUnit(admin, pack, index, `p4g10-u${index}`);
   lia = await createLearner(env, 'p4g10-lia', pack);
   max = await createLearner(env, 'p4g10-max', pack);
   for (const learner of [lia, max]) {
@@ -308,5 +310,52 @@ describe('P4-G10 · el orden de errores congelado de create_study_session se con
       p_items: [{ item_type: 'QUESTION', target_id: question(pack, 0).questionId }],
     });
     expect(malformed.error?.message).toContain('SESSION_TYPE_MALFORMED');
+  });
+});
+
+describe('red team final · Phase 4A', () => {
+  it('una ejecución del Planner no se borra mientras exista la cuenta, ni referenciada ni suelta', () => {
+    const [run] = query<{ id: string }>(
+      `select id::text from public.planner_runs where user_id = '${lia.id}' order by created_at limit 1`,
+    );
+    const outcome = attack(`delete from public.planner_runs where id = '${run!.id}';`);
+    expect(outcome.rejected).toBe(true);
+  });
+
+  it('la auditoría es inmutable: ni se edita ni se borra', () => {
+    const [row] = query<{ id: string }>(
+      `select run_id::text as id from public.planner_run_audit where user_id = '${lia.id}' limit 1`,
+    );
+    expect(
+      attack(
+        `update public.planner_run_audit set decision_canonical = '{}' where run_id = '${row!.id}';`,
+      ).rejected,
+    ).toBe(true);
+    expect(
+      attack(`delete from public.planner_run_audit where run_id = '${row!.id}';`).rejected,
+    ).toBe(true);
+  });
+
+  it('NO_PUBLISHED_UNIT · un concepto con pregunta y sin unidad queda excluido con su razón', async () => {
+    await closeOpenSessions(max);
+    const outcome = await requestPlanForUser(max.id, { client: admin, durations: FIXTURE });
+    if (outcome.kind !== 'RUN') throw new Error(outcome.kind);
+    const byConcept = new Map(outcome.decision.candidates.map((c) => [c.conceptId, c]));
+    expect(byConcept.get(pack.conceptIds[2]!)?.exclusion).toBe('NO_PUBLISHED_UNIT');
+    // No se sustituye APRENDER por una pregunta ni se fabrica nada para ese concepto.
+    expect(outcome.decision.actions.map((a) => a.conceptId)).not.toContain(pack.conceptIds[2]);
+  });
+
+  it('ninguna instantánea del Planner contiene clave de respuesta, opción correcta ni explicación', () => {
+    const texts = query<{ t: string }>(
+      `select input_canonical || decision_canonical as t from public.planner_run_audit
+        where user_id in ('${lia.id}', '${max.id}')`,
+    );
+    expect(texts.length).toBeGreaterThan(0);
+    for (const { t } of texts) {
+      expect(t).not.toMatch(
+        /correct_option|correctOption|answer_key|answerKey|explanation|is_correct/,
+      );
+    }
   });
 });
