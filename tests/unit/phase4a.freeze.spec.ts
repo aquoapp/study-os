@@ -128,6 +128,26 @@ describe('Phase 4A · el registro de congelación no confunde los SHA', () => {
       '| D-13, D-18, D-20, D-22, D-23 · WATCH-P2-1 · OBS-3.1-01 | heredadas **sin cambio** |',
     );
   });
+
+  // Corrección documental posterior a la congelación: el estado vivo no puede quedarse atrás.
+  const lines = read('docs/ARCHITECTURE_STATE.md').split('\n');
+
+  it('la línea base viva de `main` no apunta a una fase congelada anterior', () => {
+    const live = lines.find((line) => line.startsWith('**Estado global:**')) ?? '';
+    const baseline = /línea base congelada `main` = `([0-9a-f]{40})`/.exec(live)?.[1];
+    expect(baseline, 'la línea «Estado global» no declara la línea base de `main`').toBeDefined();
+    for (const [tag, [, merge]] of Object.entries(HISTORICAL_TAGS)) {
+      expect(baseline, `la línea base viva es la de ${tag}`).not.toBe(merge);
+    }
+    expect(live).toContain('`phase-4a-v1.0`');
+  });
+
+  it('el inventario no da el Planner por candidato sin integrar', () => {
+    const row = lines.find((line) => line.startsWith('| `packages/planner-engine` |')) ?? '';
+    expect(row).not.toMatch(/sin integrar|Candidato en `phase\//);
+    expect(row).toContain('**Integrado y congelado en Phase 4A**');
+    expect(row).toContain('`phase-4a-v1.0`');
+  });
 });
 
 describe('Phase 4A · lo aceptado sigue aceptado y lo diferido sigue diferido', () => {
