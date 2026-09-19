@@ -16,7 +16,10 @@
       "misma disciplina que en Phase 0: la primera escritura desde el cliente falla en CI.",
       "intervention_outcomes NO se declara: REQ-D07 queda diferido (DEF-29) y la tabla no se",
       "crea en Phase 3. exam_readiness sigue declarada porque BD-04 la mantiene como proyección",
-      "de nivel objetivo, aunque Phase 3 no la crea ni la calcula."
+      "de nivel objetivo, aunque Phase 3 no la crea ni la calcula.",
+      "Ampliado el 2026-09-19 por la Phase 4A Build Authorization (Planner Contract v1.4 §Q, §S, §T):",
+      "planner_config y planner_run_audit son superficies de escritura exclusiva del servidor. planner_runs y",
+      "planner_items ya estaban declaradas desde Phase 0."
     ],
     "tables": [
       "concept_mastery",
@@ -26,7 +29,9 @@
       "engine_config",
       "exam_readiness",
       "planner_runs",
-      "planner_items"
+      "planner_items",
+      "planner_config",
+      "planner_run_audit"
     ]
   },
   "rpcs": {
@@ -36,7 +41,10 @@
       "CI. Phase 1A añade las funciones de la frontera de ingestión y del copy-forward, que",
       "existen como funciones de servidor y solo son invocables con rol de servicio.",
       "Cada nombre está anclado a un invariante o ADR aceptado; no son decisiones de producto",
-      "nuevas, son la lista de lo que el cliente no puede invocar."
+      "nuevas, son la lista de lo que el cliente no puede invocar.",
+      "Phase 4A añade la frontera del Planner (Planner Contract §U): lectura de contexto, lectura",
+      "categórica del motor, persistencia con revalidación y arranque de sesión planificada. Todas",
+      "solo rol de servicio: un plan es una decisión que el cliente no puede redactar (§U.4)."
     ],
     "names": [
       "grade_attempt",
@@ -58,7 +66,11 @@
       "engine_attribution_snapshot",
       "engine_recalculate_mastery",
       "engine_rebuild_projections",
-      "engine_stale_users"
+      "engine_stale_users",
+      "planner_context",
+      "engine_planner_snapshot",
+      "create_planner_run",
+      "start_planned_session"
     ],
     "anchors": {
       "grade_attempt": "INV-101 · la corrección ocurre en servidor y no devuelve la clave",
@@ -80,7 +92,11 @@
       "engine_attribution_snapshot": "D-26 · Phase 3.1 · delega en ingest.attribution_snapshot (SD-025)",
       "engine_recalculate_mastery": "D-26 · Phase 3.1 · delega en engine.recalculate_mastery (EC-002, watermark atómico)",
       "engine_rebuild_projections": "D-26 · Phase 3.1 · delega en engine.rebuild_projections (EC-006)",
-      "engine_stale_users": "D-26 · Phase 3.1 · delega en engine.stale_users (ruta B de recuperación)"
+      "engine_stale_users": "D-26 · Phase 3.1 · delega en engine.stale_users (ruta B de recuperación)",
+      "planner_context": "Planner Contract §C · entradas autoritativas en una sola lectura; la identidad la verifica el servidor (INV-116)",
+      "engine_planner_snapshot": "Planner Contract §W.1 · P4-D6 · estado categórico y last_negative_position, nunca el vector; sin exponer engine",
+      "create_planner_run": "Planner Contract §U.3 · §U.1 · INV-113 · persistencia autoritativa con revalidación en la misma transacción",
+      "start_planned_session": "Planner Contract §U.6 · §V · arranque idempotente por ejecución; una sola sesión abierta por persona"
     }
   },
   "readOnlyRpcs": {

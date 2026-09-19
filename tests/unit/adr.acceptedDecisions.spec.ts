@@ -543,6 +543,12 @@ describe('aceptar no es implementar · lo que sigue sin autorizar tras Phase 2',
         `create\\s+table\\s+(if\\s+not\\s+exists\\s+)?([a-z_]+\\.)?${table}\\b`,
       );
       for (const file of sqlFiles) {
+        // Actualizado el 2026-09-19 por la Phase 4A Build Authorization: `planner_runs` y
+        // `planner_items` existen, pero **solo** en la migración autorizada de Phase 4A. El
+        // resto de la lista sigue prohibido sin excepción.
+        if (table.startsWith('planner_') && file.endsWith('00000000000023_planner_domain.sql')) {
+          continue;
+        }
         expect(readFileSync(file, 'utf8').toLowerCase(), file).not.toMatch(creation);
       }
     });

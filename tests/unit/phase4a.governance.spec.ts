@@ -403,8 +403,31 @@ describe('Phase 4A · el BUILD construye solo lo autorizado', () => {
     expect(registry.dataApi.nonExposedSchemas).toEqual(['content', 'ingest', 'engine']);
   });
 
-  it('ningún módulo de aplicación importa ni menciona un motor de Planner', () => {
-    expect(readdirSync(join(REPO_ROOT, 'apps/web/src/server'))).not.toContain('planner');
+  /**
+   * Hasta el BUILD: «ningún módulo de aplicación menciona un Planner». Desde el BUILD el módulo de
+   * servidor existe, pero **ninguna ruta** lo consume: la selección visible sigue siendo
+   * `fps-fixed-v1` durante toda Phase 4A (P4-G15). HOY consumiendo el plan es Phase 4B.
+   */
+  it('ninguna ruta de la aplicación consume el Planner: cero cambio visible', () => {
+    const hits = execFileSync(
+      'node',
+      [
+        '-e',
+        `const {readdirSync,readFileSync,statSync}=require('fs');const {join}=require('path');` +
+          `let out=[];const walk=(d)=>{for(const e of readdirSync(d)){const p=join(d,e);` +
+          `if(statSync(p).isDirectory())walk(p);` +
+          `else if(/\\.(ts|tsx)$/.test(e)&&/server\\/planner|planner-engine/.test(readFileSync(p,'utf8')))out.push(p);}};` +
+          `walk(process.argv[1]);console.log(out.join('\\n'));`,
+        join(REPO_ROOT, 'apps/web/src/app'),
+      ],
+      { encoding: 'utf8' },
+    ).trim();
+    expect(hits, 'una ruta consume el Planner').toBe('');
+    expect(readdirSync(join(REPO_ROOT, 'apps/web/src/server/planner')).sort()).toEqual([
+      'admin.ts',
+      'run.ts',
+      'start.ts',
+    ]);
   });
 });
 
