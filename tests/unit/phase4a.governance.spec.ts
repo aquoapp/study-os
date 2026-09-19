@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -45,11 +46,13 @@ const adr = read(ADR);
 const authorization = read(AUTHORIZATION);
 
 describe('Phase 4A · el contrato del Planner solo se acepta con todas sus decisiones tomadas', () => {
-  it('es v1.3, ACCEPTED en candidato, y dice que el BUILD espera al aterrizaje', () => {
-    expect(contract).toContain('# STUDY OS · Planner Contract · v1.3');
+  it('es v1.4, ACCEPTED, y el BUILD solo existe tras aterrizar la gobernanza', () => {
+    expect(contract).toContain('# STUDY OS · Planner Contract · v1.4');
     expect(flat(contract)).toContain('**ESTADO:** `ACCEPTED` como contrato de Phase 4A');
     expect(flat(contract)).toContain('**No queda ninguna decisión semántica abierta.**');
-    expect(flat(contract)).toContain('**BUILD:** no autorizado todavía.');
+    expect(flat(contract)).toContain(
+      '**BUILD:** autorizado por separado, con esta gobernanza aterrizada antes en `main`',
+    );
     expect(flat(contract)).toContain('**PROPIETARIO NORMATIVO:** ADR-012');
     // La historia no se borra: v1.1 y v1.2 constan como PROPOSED y los dos defectos, nombrados.
     expect(flat(contract)).toContain('**IR-P4A-01**');
@@ -370,5 +373,150 @@ describe('Phase 4A · aceptar un contrato no es construirlo', () => {
 
   it('ningún módulo de aplicación importa ni menciona un motor de Planner', () => {
     expect(readdirSync(join(REPO_ROOT, 'apps/web/src/server'))).not.toContain('planner');
+  });
+});
+
+describe('Phase 4A · P4-D6 · el motor proyecta la clave de P4-D5', () => {
+  const engine = read('docs/LEARNING_ENGINE_CONTRACT.md');
+  const annex = engine.slice(engine.indexOf('## 25 · '));
+
+  it('el contrato del motor gana un anexo v1.1 aditivo y conserva su historia', () => {
+    // La cabecera histórica no se reescribe: el vigilante de Phase 3 la fija en «v1.0».
+    expect(engine).toMatch(/^# STUDY OS · Learning Engine Contract · v1\.0$/m);
+    expect(flat(engine)).toContain('**Versión vigente:** **v1.1** · anexo aditivo §25');
+    expect(annex).toMatch(
+      /^## 25 · Anexo v1\.1 · posición de la última evidencia negativa · P4-D6/,
+    );
+  });
+
+  it('§0–§24 siguen byte a byte como se aterrizaron en Phase 3', () => {
+    // Huella del tramo §0–§24 en `main` 3a8025f, antes del anexo.
+    const span = engine
+      .slice(engine.indexOf('## 0 ·'), engine.indexOf('## 25 ·'))
+      .replace(/\n---\n*$/, '')
+      .trimEnd();
+    expect(createHash('sha256').update(span).digest('hex')).toBe(
+      '7ca80a568f9140031546e61691294a01dd0eb98e418e2e7a30cadab226e51262',
+    );
+  });
+
+  it('la regla es la derivada: intento elegible no correcto más reciente, por posición de stream', () => {
+    const text = flat(annex);
+    expect(text).toContain('**`last_negative_position`** · la **posición de stream**');
+    expect(text).toContain('es **elegible** según §5.1');
+    expect(text).toContain('`INCORRECT` o `BLANK`');
+    expect(text).toContain('**Nunca** por `client_created_at`');
+    // La equivalencia con el estado es una invariante mecánica, no una convención.
+    expect(text).toContain(
+      '`last_negative_position IS NOT NULL` ⇔ el estado es `EVIDENCE_NEGATIVE` o `EVIDENCE_CONFLICTING`',
+    );
+    expect(text).toContain('**No existe patrón activo sobre un concepto `EVIDENCE_POSITIVE`**');
+  });
+
+  it('es un hecho y no una puntuación, vive fuera del vector y solo lo mueve la evidencia', () => {
+    const text = flat(annex);
+    expect(text).toContain('`last_negative_position` es **procedencia**');
+    expect(text).toContain('Vive **fuera del vector** de §5.2');
+    expect(text).toContain(
+      '**No lo mueven:** una recomendación, presentar o abrir contenido, leer, abandonar',
+    );
+    expect(text).toContain(
+      '**`rebuild == incremental` (EC-006) se exige también para este campo**',
+    );
+  });
+
+  it('hay un solo pliegue autoritativo: el Planner no reconstruye la clave', () => {
+    expect(flat(annex)).toContain(
+      '**hay un solo pliegue autoritativo de evidencia, y es el del motor.**',
+    );
+    expect(flat(contract)).toContain('**`last_negative_position`** por (persona, concepto)');
+    expect(flat(contract)).toContain('**no** deriva `last_negative_position` consultando intentos');
+    expect(flat(adr)).toContain('**14. Un solo pliegue autoritativo de evidencia.**');
+  });
+
+  it('el anexo del motor no filtra semántica del Planner ni del corpus oficial', () => {
+    for (const forbidden of [
+      'planner_runs',
+      'planner_items',
+      'run_planner',
+      'available_minutes',
+      'OFFICIAL',
+      'source_versions',
+    ]) {
+      expect(engine, `el contrato del motor introduce ${forbidden}`).not.toContain(forbidden);
+    }
+  });
+
+  it('P4-D6 consta aceptada y registrada por adenda, sin reabrir nada', () => {
+    const log = read(LOG);
+    expect(log).toContain(
+      '## SD-032 · Learning Engine Contract · anexo v1.1 · `last_negative_position` · P4-D6',
+    );
+    expect(flat(log)).toContain('**Total tras esta adenda: 32 entradas SPEC_DIFF y 1 errata.**');
+    expect(flat(authorization)).toContain('**P4-D6 · APPROVED · OPTION A**');
+    for (const closed of [
+      'P4-D3 · `ACCEPTED` · híbrida',
+      'P4-D4 · `ACCEPTED` · `EXPOSED` primero',
+      'P4-D5 · `ACCEPTED` · última evidencia negativa',
+    ]) {
+      expect(flat(contract)).toContain(closed);
+    }
+  });
+});
+
+describe('Phase 4A · decisión 15 de ADR-012 · cada entrada del modelo tiene fuente autorizada', () => {
+  /**
+   * El hallazgo que motivó P4-D6: el modelo de referencia tomó `lastNegativeAt` como entrada libre
+   * y probó la política sin preguntar de dónde saldría ese dato. Este mapa convierte la lección en
+   * prueba: un campo nuevo en la entrada del modelo sin fuente registrada rompe la suite.
+   */
+  const PROVENANCE: Record<string, string> = {
+    // Concept
+    id: 'identidad estable del concepto · contenido canónico',
+    syllabus: 'orden de sílabo · sort_order de bloque, tema y concepto',
+    state: 'Learning Engine · mastery_state (contrato del Planner §W.1)',
+    errorPattern: 'Learning Engine · error_patterns activos (§W.1)',
+    lastNegativeAt: 'Learning Engine · last_negative_position (P4-D6, contrato del motor §25)',
+    firstNegativeAt: 'SIN FUENTE · variante FIRST_UNRESOLVED, falsada y rechazada',
+    lastContactAt: 'SIN FUENTE · variante LAST_CONTACT, rechazada por P4-D5',
+    learnMinutes: 'ENTRADA DE DURACIÓN · P4-D2 diferida · solo fixtures de prueba',
+    checkMinutes: 'ENTRADA DE DURACIÓN · P4-D2 diferida · solo fixtures de prueba',
+    eligibleContent: 'contenido publicado con mapeo PRIMARY VALIDATED (§E)',
+    // PlannerInput
+    concepts: 'colección de candidatos de servidor',
+    budget: 'declaraciones de la persona · override, día de la semana, valor por defecto (§I.2)',
+    completedToday: 'session_items completados en el día de plan (§E.5)',
+    granularity: 'P4-D3 · constante HYBRID',
+    coverageOrder: 'P4-D4 · constante EXPOSED_FIRST',
+    remediationOrder: 'P4-D5 · constante EVIDENCE_OLDEST',
+    engineStale: 'comparación de la tupla de frescura (§M)',
+    mutations: 'SOLO PRUEBAS · controles negativos, nunca producción',
+  };
+
+  const model = read('tests/governance/model/planner-model.ts');
+  const fieldsOf = (name: string) => {
+    const body = model.slice(model.indexOf(`export interface ${name} {`));
+    const block = body.slice(0, body.indexOf('\n}'));
+    return [...block.matchAll(/^\s+readonly (\w+)\??:/gm)].map((m) => m[1]!);
+  };
+
+  it('toda entrada de Concept y de PlannerInput tiene una procedencia registrada', () => {
+    const fields = [...fieldsOf('Concept'), ...fieldsOf('PlannerInput')];
+    expect(fields.length).toBeGreaterThan(10);
+    for (const field of fields) {
+      expect(
+        PROVENANCE[field],
+        `la entrada ${field} del modelo no tiene fuente registrada`,
+      ).toBeDefined();
+    }
+  });
+
+  it('las entradas sin fuente de producción solo sirven a variantes rechazadas', () => {
+    const unsourced = Object.entries(PROVENANCE).filter(([, source]) =>
+      source.startsWith('SIN FUENTE'),
+    );
+    expect(unsourced.map(([field]) => field).sort()).toEqual(['firstNegativeAt', 'lastContactAt']);
+    // Y la política aceptada usa la clave que sí tiene fuente.
+    expect(model).toContain("const order = input.remediationOrder ?? 'EVIDENCE_OLDEST';");
   });
 });

@@ -1,16 +1,18 @@
-# STUDY OS · Planner Contract · v1.3
+# STUDY OS · Planner Contract · v1.4
 
-**ESTADO:** `ACCEPTED` como contrato de Phase 4A · **en candidato de gobernanza, pendiente de
-aceptación independiente y de aterrizaje en `main`**
+**ESTADO:** `ACCEPTED` como contrato de Phase 4A · v1.3 aterrizado en `main` (`3a8025f`) · v1.4
+añade la lectura autorizada por **P4-D6**
 **DECISIONES CERRADAS:** **P4-D3** · granularidad híbrida (§F.2) y **P4-D4** · `EXPOSED` primero
 (§F.6), `ACCEPTED` el 2026-09-18; **P4-D5** · la **última evidencia negativa** ordena la
-reparación (§F.5), `ACCEPTED` el 2026-09-19. **No queda ninguna decisión semántica abierta.**
+reparación (§F.5), `ACCEPTED` el 2026-09-19; **P4-D6** · el **motor** proyecta esa posición y el
+Planner la lee (§W.1), `ACCEPTED` el 2026-09-19. **No queda ninguna decisión semántica abierta.**
 **HISTORIA:** v1.0 aterrizó como `ACCEPTED`; la revisión independiente encontró **IR-P4A-01** (una
 recomendación emitida contaba como respuesta a la reparación) e **IR-P4A-02** (la atomicidad
 estaba sobreafirmada) y el contrato pasó a v1.1 `PROPOSED`. v1.2 cerró P4-D3 y P4-D4 y abrió
-P4-D5 (prueba residual A). v1.3 cierra P4-D5.
-**BUILD:** no autorizado todavía. El precedente del repositorio exige que la gobernanza aterrice
-en `main` antes de que la rama de BUILD parta de `main` (CLAUDE.md §3).
+P4-D5 (prueba residual A). v1.3 cierra P4-D5. v1.4 registra P4-D6: al empezar el BUILD se
+comprobó que la clave de P4-D5 no existía en ninguna fuente que el Planner pudiera leer; el motor
+pasa a proyectarla (contrato del Learning Engine, anexo v1.1 §25).
+**BUILD:** autorizado por separado, con esta gobernanza aterrizada antes en `main` (CLAUDE.md §3).
 **FECHA:** 2026-09-19
 **DECISORA:** Ana Victoria · Phase 4A · Planner Domain / Decision Engine · Governance Landing
 **PROPIETARIO NORMATIVO:** ADR-012
@@ -63,6 +65,7 @@ puede explicarse no cumple este contrato.
 | Contenido publicado, estados y orden de sílabo | `content` vía frontera de servidor | `sort_order` de bloque, tema y concepto |
 | Mapeo PRIMARY VALIDATED y generación de atribución | `ingest.attribution_snapshot` | INV-109 |
 | Estado categórico por concepto, incertidumbre y patrones de error activos | Learning Engine (§W) | **solo categorías**; nunca el vector |
+| Posición de la última evidencia negativa por concepto | Learning Engine · `last_negative_position` (§W.1; contrato del motor §25) | clave de P4-D5; **la proyecta el motor**, el Planner nunca la calcula (P4-D6) |
 | Tupla de frescura del motor | `engine_version`, `engine_config_version`, `attribution_pack_version_id`, `attribution_generation`, `consumed_position` | §M |
 | Sesión abierta y su cursor | `study_sessions`, `session_items` | §N |
 | Historial de sesiones e ítems completados | `session_items` | exclusión `COMPLETED_TODAY` |
@@ -222,6 +225,12 @@ Ninguna ejecución anterior del Planner entra en la selección. El historial de 
 **Decisión humana del 2026-09-19.** Cuando varias necesidades de reparación compiten, se ordenan
 por la **posición de flujo de la última evidencia negativa o conflictiva** de cada concepto, **de
 más antigua a más reciente**; a igualdad, por la clave de sílabo de §H.
+
+**Fuente de la clave · P4-D6.** La posición la **proyecta el motor** como `last_negative_position`
+(contrato del Learning Engine, anexo v1.1 §25) y el Planner la lee por la frontera gobernada
+(§W.1). El Planner no la calcula nunca. Por la derivación de ese anexo, el campo es no nulo
+**exactamente** cuando el concepto está en `EVIDENCE_NEGATIVE` o `EVIDENCE_CONFLICTING`, de modo que
+toda necesidad de reparación tiene clave y ninguna otra la tiene.
 
 Consecuencias normativas:
 
@@ -791,10 +800,16 @@ no llega a escribirse.
 
 ## W · Relación con el Learning Engine
 
-1. El Planner lee **solo** `mastery_state`, `uncertainty` y patrones de error activos por
-   (persona, concepto), más la tupla de frescura.
+1. El Planner lee **solo** `mastery_state`, `uncertainty`, patrones de error activos y
+   **`last_negative_position`** por (persona, concepto), más la tupla de frescura. El último campo
+   lo añade **P4-D6** (2026-09-19): es la posición de stream de la evidencia negativa más reciente,
+   definida y proyectada por el motor en el mismo pliegue que el estado (contrato del motor §25).
+   Es procedencia, no puntuación, y vive **fuera** del vector.
 2. **La ausencia de fila significa `NEW`**: el motor solo crea filas cuando hay evidencia.
-3. El Planner **no** vuelve a plegar la evidencia ni lee el vector (§D).
+3. El Planner **no** vuelve a plegar la evidencia ni lee el vector (§D). En particular, **no**
+   deriva `last_negative_position` consultando intentos ni reimplementa atribución, exclusión de
+   diagnóstico, semántica de generación, elegibilidad ni clasificación de resultado: hay **un solo
+   pliegue autoritativo de evidencia**, el del motor (P4-D6).
 4. El Planner **no** emite ni infiere `LEARNING`, `CONSOLIDATING`, `MASTERED` ni `STRONG`, y no
    programa repasos.
 5. `EVIDENCE_POSITIVE` significa «tiene evidencia positiva». No significa «terminado» ni

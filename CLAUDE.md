@@ -322,6 +322,16 @@ gobernanza (PR #17) y **Gate A pasa**. **Gate B no se abre**: el repositorio exi
 se integre en `main` antes de que la rama de BUILD parta de `main` (§3), como en Phase 2, FPS y
 Phase 3. No existe ningún código, esquema ni migración de Planner.
 
+**Aterrizaje y P4-D6 · 2026-09-19.** La gobernanza de Phase 4A se integró en `main` (PR #17 →
+`3a8025f`, árbol idéntico al candidato aceptado). Al abrir el BUILD, antes de escribir código, se
+comprobó que la clave de P4-D5 **no existía** en ninguna fuente que el Planner pudiera leer: el
+modelo de referencia la había tomado como entrada libre. **P4-D6 · opción A**: el Learning Engine
+la proyecta como `last_negative_position` (contrato del motor **v1.1**, anexo aditivo §25; contrato
+del Planner v1.4; SD-032). Hay **un solo pliegue autoritativo de evidencia** y ningún consumidor lo
+reimplementa. Lección: **una propiedad demostrada sobre una entrada sin procedencia autorizada no
+está demostrada**; cada entrada del modelo de gobernanza debe tener una fuente de producción
+permitida.
+
 La lección, que ya es la segunda vez: **derrotar rivales no demuestra unicidad**. Una clave de
 ordenación solo es derivada cuando se enumera la familia completa bajo la autoridad vigente y
 sobrevive exactamente una.

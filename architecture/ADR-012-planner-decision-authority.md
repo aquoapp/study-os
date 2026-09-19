@@ -1,6 +1,6 @@
 # ADR-012 · Autoridad de decisión del Planner
 
-STATUS: ACCEPTED · v1.0 (anexos v1.1 del 2026-09-17, v1.2 del 2026-09-18 y v1.3 del 2026-09-19 · el texto v1.0 se conserva íntegro)
+STATUS: ACCEPTED · v1.0 (anexos v1.1 del 2026-09-17, v1.2 del 2026-09-18, v1.3 y v1.4 del 2026-09-19 · el texto v1.0 se conserva íntegro)
 DATE: 2026-09-17
 DECISION OWNER: Ana Victoria
 DECISION RECORD: **Phase 4A · Planner Domain / Decision Engine · Governance Landing** del 2026-09-17 · copia aceptada en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` · línea base congelada `7cf9190726f9f4edd8f41998acc6fee8792a2d3a`, sobre `phase-3-v1.1` → `577cc711e017f1fb48ba881ea34288d865317429`
@@ -320,3 +320,46 @@ del candidato de gobernanza.
 **Estado de implementación: sigue `NOT IMPLEMENTED`.** Gate A pasa, pero ni este ADR ni el contrato
 autorizan un BUILD mientras no estén integrados en `main`: la ADR Policy v1.0 exige un ADR aceptado
 para autorizar cambio arquitectónico, y CLAUDE.md §3 exige que la rama de fase parta de `main`.
+
+---
+
+## Anexo v1.4 · 2026-09-19 · P4-D6 · el motor proyecta la clave de P4-D5
+
+El texto v1.0 y los anexos v1.1, v1.2 y v1.3 **no se reescriben**.
+
+**Hallazgo que lo motiva.** Al abrir Gate B, antes de escribir código, se comprobó que la clave
+aceptada en P4-D5 —la posición de stream de la última evidencia negativa de cada concepto— **no
+existía en ninguna fuente que el Planner pudiera leer**. La proyección del motor emitía estado,
+incertidumbre y vector; `latest_evidence_at` es una marca de `client_created_at` sobre todos los
+resultados, y SD-023 prohíbe el reloj del cliente como autoridad de orden;
+`concept_mastery.event_watermark` es la posición consumida por persona, idéntica en todas sus
+filas. Y este ADR, junto al contrato, prohibía al Planner leer el vector y volver a plegar
+evidencia. El modelo de referencia de gobernanza había tomado esa posición como una entrada
+libre: probó la conducta de la política sin preguntar de dónde saldría el dato en producción.
+
+**Decisión humana P4-D6 · `ACCEPTED` · opción A.** El **Learning Engine proyecta** el hecho
+`last_negative_position` (contrato del Learning Engine, anexo v1.1 §25), y el Planner lo lee por
+la frontera gobernada. Se añade como decisión arquitectónica:
+
+> **14. Un solo pliegue autoritativo de evidencia.** Ningún consumidor del motor —el Planner
+> incluido— vuelve a plegar intentos ni reimplementa atribución, exclusión de diagnóstico,
+> semántica de generación, elegibilidad o clasificación de resultado. Si un consumidor necesita
+> un hecho sobre la evidencia que el motor no emite, el hecho se añade **al motor**, por anexo de
+> su contrato, y se prueba con `rebuild == incremental`.
+
+Y una regla de método, porque el hallazgo no debe repetirse:
+
+> **15. Un modelo de gobernanza solo prueba lo que su entrada puede recibir.** Toda entrada del
+> modelo de referencia del Planner debe corresponder a una fuente de producción que el contrato
+> permite leer. Una propiedad demostrada sobre una entrada sin procedencia autorizada no está
+> demostrada.
+
+**Lo que no cambia.** P4-D1, P4-D3, P4-D4 y P4-D5 quedan intactas; P4-D2 sigue diferida. El esquema
+`engine` sigue sin exponerse (ADR-011 no se amplía). La superficie de RPC invocable por cliente no
+cambia. `phase-3-v1.0` y `phase-3-v1.1` no se mueven: P4-D6 es un requisito nuevo de un
+consumidor nuevo, no la corrección de un defecto de Phase 3.
+
+**Gates.** P4-G23 y la propiedad P28 pasan a ser implementables. La implementación queda dentro
+del BUILD de Phase 4A.
+
+**Estado de implementación:** sigue `NOT IMPLEMENTED` hasta el BUILD.

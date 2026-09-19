@@ -15,6 +15,7 @@ ella. **Solo gobernanza: el BUILD de Phase 4A no está autorizado.**
 | Validación adversarial | 2026-09-17 · **IR-P4A-01** e **IR-P4A-02** aceptados · el contrato pasa a `PROPOSED · BLOQUEADO` (§6) |
 | Gate A · cierre | 2026-09-18 · **P4-D3** y **P4-D4** `ACCEPTED`; prueba residual B cerrada; **prueba residual A NO cierra** → **P4-D5** (§23, §24). **Gate A = FAIL · no se construye** |
 | P4-D5 · Gate A reevaluado | 2026-09-19 · **P4-D5 `ACCEPTED` · última evidencia negativa**; contrato v1.3 `ACCEPTED` en candidato; **Gate A = PASS**; **Gate B no se abre** hasta integrar esta gobernanza en `main` (§25) |
+| P4-D6 | 2026-09-19 · **`ACCEPTED` · opción A**: el motor proyecta `last_negative_position`; contrato del motor v1.1 (anexo §25), contrato del Planner v1.4, SD-032 (§26) |
 
 ---
 
@@ -883,3 +884,58 @@ de STAGING.
 4. Gate B tal como la orden lo define, sin cambios de alcance.
 
 Ninguno de esos pasos se ha dado en esta ronda.
+
+---
+
+## 26 · P4-D6 · `ACCEPTED` · el motor proyecta la clave de P4-D5 · 2026-09-19
+
+### 26.1 · Por qué hizo falta
+
+La gobernanza de Phase 4A aterrizó en `main` el 2026-09-19 (PR #17 → `3a8025f`, árbol idéntico al
+candidato aceptado `8653663`). Al abrir Gate B, **antes de escribir ninguna línea de código**, se
+comprobó que la clave de P4-D5 no existía en ninguna fuente que el Planner pudiera leer, y que
+todas las ordenaciones posibles con las entradas permitidas eran de las ya falsadas por inanición.
+El BUILD se detuvo sin construir nada.
+
+### 26.2 · Decisión
+
+**P4-D6 · APPROVED · OPTION A** · decisora Ana Victoria · 2026-09-19.
+
+El Learning Engine proyecta la posición autoritativa de la última evidencia negativa. El Planner
+**no** vuelve a plegar evidencia ni deriva ese valor consultando intentos. Hay **un solo pliegue
+autoritativo**, el del motor. P4-D5 se conserva sin cambio: **última evidencia negativa, la más
+antigua primero**.
+
+### 26.3 · Significado exacto, derivado y no elegido
+
+La decisión exige que el hecho signifique la posición de la contribución de evidencia elegible
+más reciente que establece la evidencia negativa o conflictiva relevante del concepto, bajo el
+pliegue aceptado, y que se pare si la autoridad no basta para fijarlo. **Basta**, y el significado
+queda fijado en el contrato del motor, anexo v1.1 §25:
+
+> posición de stream del `submitted_event_id` del intento **elegible** (§5.1) más reciente cuyo
+> resultado es **`INCORRECT` o `BLANK`**; `NULL` si no hay ninguno.
+
+La derivación completa está en el anexo. En resumen: los dos estados de reparación dependen de
+`ever_incorrect`; los tres tipos de patrón estructural se apoyan solo en intentos no correctos, así
+que no existe patrón activo sobre un concepto positivo; el campo es no nulo exactamente cuando hay
+necesidad de reparación; y cada fallo nuevo cuenta, como exige el texto aceptado de P4-D5. Se
+verificó además en el código del motor que todo intento elegible no correcto entra en la misma
+rama del pliegue que alimenta `ever_incorrect`.
+
+### 26.4 · Qué aterriza y qué no
+
+Aterriza solo gobernanza: anexo v1.1 del contrato del Learning Engine, contrato del Planner v1.4,
+ADR-012 anexo v1.4 y SD-032. **No** aterriza ninguna migración, función, paquete ni cambio de
+runtime: todo eso es BUILD de Phase 4A.
+
+`phase-3-v1.0` y `phase-3-v1.1` no se mueven: P4-D6 es un requisito nuevo de un consumidor nuevo,
+no la corrección de un defecto.
+
+### 26.5 · Lección registrada
+
+El modelo de referencia de gobernanza había tomado la posición como una **entrada libre** y probó
+la política sin preguntar de dónde saldría ese dato en producción. Es la lección de D-26 en forma
+de gobernanza: **una propiedad demostrada sobre una entrada sin procedencia autorizada no está
+demostrada**. Queda como decisión 15 de ADR-012 y como prueba mecánica en el vigilante de
+gobernanza, que exige que cada entrada del modelo tenga una fuente de producción permitida.
