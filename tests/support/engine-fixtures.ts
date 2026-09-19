@@ -107,6 +107,7 @@ export function payloadOf(result: EngineResult): Record<string, unknown> {
       masteryState: concept.masteryState,
       uncertainty: concept.uncertainty,
       vector: concept.vector,
+      lastNegativePosition: concept.lastNegativePosition,
     })),
     errorPatterns: result.errorPatterns.map((pattern) => ({
       conceptId: pattern.conceptId,
@@ -206,9 +207,11 @@ export function persistedProjection(userId: string): string {
     mastery_state: string;
     uncertainty: string;
     next_review_at: string | null;
+    last_negative_position: string | number | null;
     vector: Record<string, unknown>;
   }>(
-    `select concept_id, mastery_state::text, uncertainty::text, next_review_at, vector
+    `select concept_id, mastery_state::text, uncertainty::text, next_review_at,
+            last_negative_position, vector
      from engine.concept_mastery where user_id = ${sqlText(userId)}::uuid order by concept_id`,
   );
   const patterns = query<{ concept_id: string; pattern_type: string; evidence_count: number }>(
@@ -232,6 +235,9 @@ export function persistedProjection(userId: string): string {
       masteryState: row.mastery_state,
       uncertainty: row.uncertainty,
       nextReviewAt: row.next_review_at,
+      // §25 · `bigint` llega como texto por JSON; se normaliza para comparar la posición.
+      lastNegativePosition:
+        row.last_negative_position === null ? null : Number(row.last_negative_position),
       vector: row.vector,
     })),
     errorPatterns: patterns.map((row) => ({
@@ -252,6 +258,7 @@ export function expectedProjection(result: EngineResult): string {
       masteryState: concept.masteryState,
       uncertainty: concept.uncertainty,
       nextReviewAt: concept.nextReviewAt,
+      lastNegativePosition: concept.lastNegativePosition,
       vector: concept.vector as unknown as Record<string, unknown>,
     })),
     errorPatterns: result.errorPatterns.map((pattern) => ({

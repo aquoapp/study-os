@@ -23,6 +23,7 @@ export function runEngine(input: EngineInput): EngineResult {
       vector,
       // `review_intervals` está sin fijar: no se programa ningún repaso (contrato §8).
       nextReviewAt: null,
+      lastNegativePosition: folded.lastNegativePositions.get(conceptId) ?? null,
     });
   }
   concepts.sort((a, b) => a.conceptId.localeCompare(b.conceptId));
@@ -63,6 +64,7 @@ export function canonicalResult(result: EngineResult): string {
       masteryState: concept.masteryState,
       uncertainty: concept.uncertainty,
       nextReviewAt: concept.nextReviewAt,
+      lastNegativePosition: concept.lastNegativePosition,
       vector: concept.vector,
     })),
     errorPatterns: result.errorPatterns,
@@ -83,6 +85,7 @@ export function canonicalProjection(result: EngineResult): string {
       masteryState: concept.masteryState,
       uncertainty: concept.uncertainty,
       nextReviewAt: concept.nextReviewAt,
+      lastNegativePosition: concept.lastNegativePosition,
       vector: concept.vector,
     })),
     errorPatterns: result.errorPatterns,

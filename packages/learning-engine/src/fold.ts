@@ -89,6 +89,12 @@ interface ConceptAccumulator {
   readonly incorrectCells: Map<number, number>;
   firstEvidenceAt: string | null;
   latestEvidenceAt: string | null;
+  /**
+   * Contrato del motor §25 · P4-D6 · posición de stream del intento elegible **no correcto** más
+   * reciente. Se alimenta en la **misma rama** que `everIncorrect`, así que es exactamente la
+   * evidencia que establece `EVIDENCE_NEGATIVE` o `EVIDENCE_CONFLICTING`. `null` si no la hay.
+   */
+  lastNegativePosition: number | null;
 }
 
 function emptyAccumulator(): ConceptAccumulator {
@@ -111,6 +117,7 @@ function emptyAccumulator(): ConceptAccumulator {
     incorrectCells: new Map(),
     firstEvidenceAt: null,
     latestEvidenceAt: null,
+    lastNegativePosition: null,
   };
 }
 
@@ -134,6 +141,14 @@ function accumulate(
     if (outcome === 'BLANK') accumulator.blankCount += 1;
     else accumulator.incorrectCount += 1;
     accumulator.everIncorrect.add(attempt.questionId);
+    // §25 · cada fallo o blanco elegible cuenta, también sobre una pregunta ya fallada: es lo que
+    // exige P4-D5 («cada fallo nuevo refresca la clave»). Máximo por posición, nunca por reloj.
+    if (
+      accumulator.lastNegativePosition === null ||
+      attempt.streamPosition > accumulator.lastNegativePosition
+    ) {
+      accumulator.lastNegativePosition = attempt.streamPosition;
+    }
   }
 
   const previous = accumulator.latest.get(attempt.questionId);
@@ -243,6 +258,8 @@ function patternsOf(conceptId: string, accumulator: ConceptAccumulator): ErrorPa
 export interface FoldOutcome {
   readonly vectors: ReadonlyMap<string, ConceptVector>;
   readonly patterns: readonly ErrorPattern[];
+  /** §25 · posición de la última evidencia negativa por concepto; fuera del vector a propósito. */
+  readonly lastNegativePositions: ReadonlyMap<string, number | null>;
   readonly unattributedAttemptCount: number;
   readonly diagnosticAttemptCount: number;
   readonly attemptsFolded: number;
@@ -290,10 +307,12 @@ export function foldEvidence(input: EngineInput): FoldOutcome {
   }
 
   const vectors = new Map<string, ConceptVector>();
+  const lastNegativePositions = new Map<string, number | null>();
   const patterns: ErrorPattern[] = [];
   for (const conceptId of [...accumulators.keys()].sort()) {
     const accumulator = accumulators.get(conceptId) as ConceptAccumulator;
     vectors.set(conceptId, vectorOf(accumulator));
+    lastNegativePositions.set(conceptId, accumulator.lastNegativePosition);
     patterns.push(...patternsOf(conceptId, accumulator));
   }
   patterns.sort(
@@ -303,6 +322,7 @@ export function foldEvidence(input: EngineInput): FoldOutcome {
   return {
     vectors,
     patterns,
+    lastNegativePositions,
     unattributedAttemptCount: unattributed,
     diagnosticAttemptCount: diagnostic,
     attemptsFolded: folded,

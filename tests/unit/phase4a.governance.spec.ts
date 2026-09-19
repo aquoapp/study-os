@@ -336,26 +336,50 @@ describe('Phase 4A · disposiciones registradas', () => {
   });
 });
 
-describe('Phase 4A · aceptar un contrato no es construirlo', () => {
-  it('ninguna migración crea sustrato de Planner', () => {
+describe('Phase 4A · el BUILD construye solo lo autorizado', () => {
+  /**
+   * Hasta el 2026-09-19 este bloque decía «aceptar un contrato no es construirlo». Con el BUILD de
+   * Phase 4A autorizado, la guarda cambia de forma pero no de fuerza: el sustrato del Planner solo
+   * puede nacer en la migración autorizada de Phase 4A, y lo que 4A no construye —almacenamiento
+   * del override del día, que es 4B— no puede aparecer en ninguna.
+   */
+  const PLANNER_OBJECTS = [
+    'planner_runs',
+    'planner_items',
+    'planner_config',
+    'create_planner_run',
+    'start_planned_session',
+  ];
+  const PLANNER_MIGRATION = '00000000000023_planner_domain.sql';
+
+  it('el sustrato del Planner solo aparece en su migración autorizada', () => {
     const migrations = readdirSync(join(REPO_ROOT, 'supabase/migrations')).filter((f) =>
       f.endsWith('.sql'),
     );
-    expect(migrations).toHaveLength(22);
+    for (const file of migrations) {
+      if (file === PLANNER_MIGRATION) continue;
+      const sql = read(`supabase/migrations/${file}`)
+        .replace(/--[^\n]*/g, '')
+        .toLowerCase();
+      for (const object of PLANNER_OBJECTS) {
+        expect(sql, `${file} crea ${object}`).not.toContain(object);
+      }
+    }
+  });
+
+  it('ninguna migración crea almacenamiento del override del día: es de Phase 4B', () => {
+    const migrations = readdirSync(join(REPO_ROOT, 'supabase/migrations')).filter((f) =>
+      f.endsWith('.sql'),
+    );
     for (const file of migrations) {
       const sql = read(`supabase/migrations/${file}`)
         .replace(/--[^\n]*/g, '')
         .toLowerCase();
-      for (const object of [
-        'planner_runs',
-        'planner_items',
-        'planner_config',
-        'create_planner_run',
-        'start_planned_session',
-        'learner_today_overrides',
-      ]) {
-        expect(sql, `${file} crea ${object}`).not.toContain(object);
-      }
+      // El enum de eventos contiene `TODAY_OVERRIDE_SET` desde la migración 18: es una etiqueta, no
+      // almacenamiento. Lo prohibido es una tabla o columna que guarde el override.
+      expect(sql, `${file} crea almacenamiento de override`).not.toMatch(
+        /learner_today_overrides|creates+tables+(ifs+nots+existss+)?[a-z_.]*override|adds+columns+(ifs+nots+existss+)?[a-z_]*override/,
+      );
     }
   });
 
