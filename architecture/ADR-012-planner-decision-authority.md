@@ -4,7 +4,7 @@ STATUS: ACCEPTED · v1.0 (anexos v1.1 del 2026-09-17, v1.2 del 2026-09-18, v1.3 
 DATE: 2026-09-17
 DECISION OWNER: Ana Victoria
 DECISION RECORD: **Phase 4A · Planner Domain / Decision Engine · Governance Landing** del 2026-09-17 · copia aceptada en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` · línea base congelada `7cf9190726f9f4edd8f41998acc6fee8792a2d3a`, sobre `phase-3-v1.1` → `577cc711e017f1fb48ba881ea34288d865317429`
-IMPLEMENTATION STATUS: **AUTHORIZED** · BUILD de Phase 4A (2026-09-19) · construido como candidato en `phase/4a-planner-domain`, **sin integrar en `main`**: `packages/planner-engine`, migración 23 y el módulo de servidor del Planner (`docs/PHASE_4A_CHECKPOINT.md`). Hasta el 2026-09-19 constaba como NOT IMPLEMENTED
+IMPLEMENTATION STATUS: **IMPLEMENTED** · Phase 4A · **integrado en `main` y congelado el 2026-09-19** (PR #19 → `5a8f603`, tag `phase-4a-v1.0`). Construido como candidato en `phase/4a-planner-domain` (aceptado `120d166`): `packages/planner-engine`, migración 23 y el módulo de servidor del Planner (`docs/PHASE_4A_CHECKPOINT.md`). Hasta el 2026-09-19 constaba como NOT IMPLEMENTED
 OWNS: autoridad de decisión del Planner · frontera cálculo/persistencia · replicabilidad e historia de las ejecuciones · gobernanza de la configuración del Planner
 SPEC REFERENCES: Master Product Specification v1.0 §1.1, §7, §8, §9, §24, §49, §52; Engineering Constitution EC-003, EC-006, EC-014, EC-017; Technical Architecture v1.0 §2.3, §6, §6.1; Canonical Data & Event Model v1.0 §17, §22, §23, §26; ADR-003 v1.2 (anexo §C y §E); ADR-007 v1.1; ADR-011 anexo v1.1; INV-101, INV-106, INV-109, INV-113, INV-116; `docs/LEARNING_ENGINE_CONTRACT.md` v1.0; `docs/PLANNER_CONTRACT.md` v1.0
 

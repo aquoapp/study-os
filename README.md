@@ -16,8 +16,10 @@ Sistema de estudio adaptativo. **Study OS es el producto; TAI es el primer pack 
 > **PASS WITH DEBT** en `docs/PHASE_3_1_CHECKPOINT.md`): el motor se invoca desde la aplicación
 > real por una frontera gobernada, sin exponer ningún esquema privado. El motor es determinista y sin red, su proyección es
 > un **vector de evidencia sin ninguna puntuación**, y vive en el esquema `engine`, **no
-> expuesto**: ninguna superficie de aprendiz lo alcanza. Phase 1B, Phase 4 y Phase 5 no
-> autorizados.
+> expuesto**: ninguna superficie de aprendiz lo alcanza. **Phase 4A · Planner Domain / Decision
+> Engine · aceptada y congelada** (`phase-4a-v1.0`, checkpoint **PASS WITH DEBT** en
+> `docs/PHASE_4A_CHECKPOINT.md`): el Planner es determinista y de servidor, y ninguna ruta lo consume
+> todavía. Phase 1B, Phase 4B y Phase 5 no autorizados.
 > Ningún planificador y ningún contenido oficial: el corpus del primer pack no entra en este
 > repositorio público. Ver `docs/ARCHITECTURE_STATE.md`.
 
