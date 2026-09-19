@@ -2,14 +2,18 @@
 
 **Formato:** `Checkpoint Contract v1.0`.
 **Alcance:** P4-D6 (el Learning Engine proyecta la clave de P4-D5) y BUILD completo de Phase 4A,
-construidos el 2026-09-19 como **candidato**. **Sin merge, sin tag, sin congelación**, sin Phase 4B
-y sin PRODUCTION.
-**Fecha:** 2026-09-19.
+construidos el 2026-09-19 como candidato; **aceptados, integrados y congelados el 2026-09-19**
+(§P). Sin Phase 4B y sin PRODUCTION.
+**Fecha:** 2026-09-19 · congelación 2026-09-19.
 **Autoridad:** `docs/PLANNER_CONTRACT.md` v1.4 · ADR-012 (anexos v1.1 … v1.4) ·
 `docs/LEARNING_ENGINE_CONTRACT.md` v1.1 (anexo §25) · `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md`
 · SD-030 … SD-032.
 
-**PHASE 4A · CANDIDATO REEMITIDO · LISTO PARA ACEPTACIÓN INDEPENDIENTE.** Las decisiones humanas del
+**PHASE 4A · FROZEN · PASS WITH DEBT.** La implementación quedó integrada en `main` por el PR #19
+(commit de merge `5a8f6038537fc8fce5dc092ec472ec4b2a418f91`, árbol idéntico al candidato aceptado) y
+etiquetada con el tag anotado `phase-4a-v1.0` (§P). Los tags históricos no se han movido.
+
+Registro del candidato, tal como se aceptó: **PHASE 4A · CANDIDATO REEMITIDO · LISTO PARA ACEPTACIÓN INDEPENDIENTE.** Las decisiones humanas del
 2026-09-19 están aplicadas (§M): `NO_PUBLISHED_UNIT` ratificado (OBS-4A-B1), **una sola sesión abierta
 por persona para todo origen** tras el análisis EC-019 (OBS-4A-B2, P4-G10,
 `docs/PHASE_4A_EC019_SESSION_INVARIANT.md`) y §G.1 del contrato corregida por la errata E-P4A-1
@@ -236,6 +240,55 @@ Detalle en `docs/PHASE_4A_EC019_SESSION_INVARIANT.md`. Resumen:
 
 ## N · Lo que sigue sin autorizar
 
-Merge del BUILD, tag, congelación, Phase 4B (HOY consumiendo el plan, superficie del override,
-Rescue/Recovery, oferta fuera de presupuesto), P4-D2, Phase 1B, corpus oficial, readiness,
-retención, PRODUCTION, Vercel Production, infraestructura de pago y AQUO.
+Phase 4B (HOY consumiendo el plan, superficie del override, Rescue/Recovery, oferta fuera de
+presupuesto), P4-D2, Phase 1B, corpus oficial, readiness, retención, PRODUCTION, Vercel Production,
+infraestructura de pago y AQUO. La congelación de Phase 4A **no autoriza la fase siguiente**.
+
+## P · Aceptación humana y congelación · 2026-09-19
+
+**PHASE 4A · FINAL CANDIDATE · HUMAN ACCEPTANCE: APPROVED** · Ana Victoria, tras revisión
+independiente del paquete de evidencia y del candidato. La aceptación se aplica **solo** al HEAD
+exacto aceptado.
+
+| Campo | Valor |
+| --- | --- |
+| Candidato aceptado | `phase/4a-planner-domain` → `120d166ecd5928445e773bc141ee04f8a0ed7c6f` |
+| Árbol aceptado | `ea6a228a45d661ca1e89bdf8afee37dd8907c5b6` |
+| Base | `a96cafc86830238ae813e80763530f0455ee56ac` |
+| Paquete | SHA-256 `461ae82bfc073cb4ad8f59f1d6ea0e5fd6b9b9dd85850fa297b85fe57df54b72` · `MANIFEST.md` `ffb27450abd03e91bd1952e4ade38d03b51d490121dec68586d1932a6328afce` |
+| CI del candidato | run `35459173813` (PR) · tres jobs obligatorios en verde |
+| Merge de implementación | PR #19 → `5a8f6038537fc8fce5dc092ec472ec4b2a418f91` · 2026-09-19T18:28:15Z |
+| Padres | `a96cafc86830238ae813e80763530f0455ee56ac` (main) y `120d166ecd5928445e773bc141ee04f8a0ed7c6f` (candidato) |
+| Árbol del merge | `ea6a228a45d661ca1e89bdf8afee37dd8907c5b6` **==** árbol del candidato (`git diff` vacío) |
+| Tag | `phase-4a-v1.0`, anotado, objeto `dd78090f586caef15b196d5a5ec3faf9af650592`, pela a `5a8f603` (el merge de implementación, **no** el de esta congelación documental) |
+| Tags históricos | `phase-0-v1.0`, `phase-1a-v1.0`, `phase-2-v1.0`, `fps-v1.0`, `phase-3-v1.0`, `phase-3-v1.1`: **sin mover** |
+| Vercel Production del merge | «Canceled by Ignored Build Step», según la regla del proyecto |
+
+**Huellas congeladas de las migraciones de Phase 4A:**
+
+| Fichero | SHA-256 |
+| --- | --- |
+| `00000000000022_engine_last_negative_position.sql` | `4702b00e917f915fe65953ad81a3d95c847fc9985f2f7464e4a3d29c1c86d630` |
+| `down/00000000000022_engine_last_negative_position.down.sql` | `b53356d106068cd63b2d15e7750db946cf5a333a36575ba8d33e634776242128` |
+| `00000000000023_planner_domain.sql` | `e3d2eb8b78389fbe7c65734f4072f5684dcbc1d39e756c7c6059e2d97acad0bb` |
+| `down/00000000000023_planner_domain.down.sql` | `859082ae71a60256605275b2c22020887c2d2ab88eacc569c2784be766707dc9` |
+
+**STAGING en la congelación (solo lectura):** 24 migraciones (00 … 23); la 22 y la 23 aplicadas; la
+restricción `study_sessions_one_open_per_user` (exclusión diferida) presente; las cuatro tablas del
+Planner con RLS forzado y sus cuatro funciones solo de rol de servicio; `last_negative_position`
+presente; `engine` no expuesto. Residuo cero: una cuenta (Ana), un pack (`demo-estudio-eficaz`), cero
+ejecuciones del Planner, cero sesiones abiertas. Evidencia de Ana, sesiones, configuración del motor y
+pack de demostración **idénticos** a la huella previa a Phase 4A. Nada se reconstruyó ni se resembró.
+
+**Estado aceptado:** P4-D1, P4-D3, P4-D4, P4-D5 (última evidencia negativa) y P4-D6 implementadas;
+**P4-D2 DIFERIDA**; errata E-P4A-1; `NO_PUBLISHED_UNIT` ratificado; EC-019 e invariante global de una
+sola sesión abierta por persona; P4-G23. P4-G2: **contrato de dominio probado · captura de producto
+diferida a Phase 4B**. P4-G18 pertenece a Phase 4B.
+
+| Deuda y observaciones al congelar | Estado |
+| --- | --- |
+| **OBS-4A-B1**, **OBS-4A-B2**, **OBS-4A-B4** | **CERRADAS** |
+| OBS-4A-B3, OBS-4A-B5, OBS-4A-B6 | viajan como vigilancia u observación |
+| D-13, D-18, D-20, D-22, D-23 · WATCH-P2-1 · OBS-3.1-01 | heredadas **sin cambio** |
+
+PRODUCTION sigue **pausado e intacto**. **Phase 4B no está autorizada.**

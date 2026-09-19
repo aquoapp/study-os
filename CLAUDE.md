@@ -332,12 +332,14 @@ reimplementa. Lección: **una propiedad demostrada sobre una entrada sin procede
 está demostrada**; cada entrada del modelo de gobernanza debe tener una fuente de producción
 permitida.
 
-**BUILD de Phase 4A · candidato · 2026-09-19.** Construido en `phase/4a-planner-domain` desde
-`a96cafc`, **sin merge, sin tag y sin congelación** (`docs/PHASE_4A_CHECKPOINT.md`): migración 22
+**BUILD de Phase 4A · 2026-09-19 · FROZEN · PASS WITH DEBT.** Construido en
+`phase/4a-planner-domain` desde `a96cafc`, **aceptado por Ana tras revisión independiente y
+congelado el mismo día**: PR #19 integrado en `main` (`5a8f603`, árbol idéntico al candidato
+aceptado `120d166`), tag anotado `phase-4a-v1.0` (`docs/PHASE_4A_CHECKPOINT.md` §P). Contenido: migración 22
 (P4-D6, el motor persiste `last_negative_position`), `packages/planner-engine` (Planner v1 puro y
 determinista), migración 23 (`profiles.timezone` declarada, `planner_config`, `planner_runs`,
-`planner_items`, `planner_run_audit`, FK RESTRICT de la sesión y exclusión de la sesión
-planificada) y el módulo real `apps/web/src/server/planner`, que **ninguna ruta consume**: la
+`planner_items`, `planner_run_audit`, FK RESTRICT de la sesión y una sola sesión abierta por
+persona) y el módulo real `apps/web/src/server/planner`, que **ninguna ruta consume**: la
 selección visible sigue siendo `fps-fixed-v1`. Sin fuente de duración decidida (P4-D2), el Planner
 responde `DURATION_SOURCE_UNDECIDED` y no escribe nada; las duraciones de las pruebas son fixture.
 Decisiones humanas del 2026-09-19, aplicadas: `NO_PUBLISHED_UNIT` ratificado (**OBS-4A-B1**); **como
@@ -345,7 +347,10 @@ mucho una sesión abierta por persona**, global y en base de datos, tras el aná
 (**OBS-4A-B2**, `docs/PHASE_4A_EC019_SESSION_INVARIANT.md`); y la errata E-P4A-1 del contrato del
 Planner (**OBS-4A-B4**). Lección del BUILD: **PostgREST reintenta
 por sí solo las transacciones que fallan con 40001**; una revalidación que debe devolver el control
-al servidor no puede usar ese código.
+al servidor no puede usar ese código. **PHASE 4A · FROZEN · PASS WITH DEBT**: OBS-4A-B1, B2 y B4
+cerradas; OBS-4A-B3, B5 y B6 viajan; D-13, D-18, D-20, D-22, D-23, WATCH-P2-1 y OBS-3.1-01 heredadas.
+P4-D2 sigue diferida. **Phase 4B, Phase 1B, corpus oficial, readiness, Release y PRODUCTION siguen
+sin autorizar.**
 
 La lección, que ya es la segunda vez: **derrotar rivales no demuestra unicidad**. Una clave de
 ordenación solo es derivada cuando se enumera la familia completa bajo la autoridad vigente y
