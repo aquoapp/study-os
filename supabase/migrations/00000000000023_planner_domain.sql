@@ -569,8 +569,10 @@ stable
 security invoker
 set search_path = ''
 as $$
-  select case when public.timezone_is_declarable(p_timezone)
-              then (now() at time zone p_timezone)::date end;
+  -- La zona se valida contra el catálogo **al declararla** (trigger del perfil). Aquí no se
+  -- vuelve a consultar `pg_timezone_names`: esa vista lee la base de zonas entera y medida en
+  -- STAGING cuesta del orden de medio segundo por llamada, en el camino de cada petición.
+  select case when p_timezone is not null then (now() at time zone p_timezone)::date end;
 $$;
 revoke all on function public.planner_plan_day(text) from public, anon, authenticated, service_role;
 

@@ -52,7 +52,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | `packages/config` | **EXISTE** | Tres entornos, políticas, allowlist pública, frontera `server-only`, guardas destructivas |
 | `packages/domain` | **EXISTE** | `Projection<T>` (INV-113), `VerifiedIdentity` (INV-116), registro de autoridad |
 | `packages/learning-engine` | **EXISTE** | Phase 3 · motor determinista, sin red y sin dependencias; calcula, y la persistencia la hace una función de rol de servicio |
-| `packages/planner-engine` | NO EXISTE | Phase 4A · el contrato está aceptado (`docs/PLANNER_CONTRACT.md`, ADR-012) y el BUILD **no** está autorizado |
+| `packages/planner-engine` | **EXISTE · candidato** | Phase 4A · Planner v1 puro y determinista, sin red y sin dependencias; persistencia por funciones de rol de servicio (migración 23). Candidato en `phase/4a-planner-domain`, **sin integrar** (`docs/PHASE_4A_CHECKPOINT.md`) |
 | Capa de IA | NO EXISTE | Phase 8. MI-05b no se ha solicitado |
 | Tests unitarios | **1086 · todos ejecutados y en verde** | 50 ficheros, incluidos el vigilante `phase4a.governance.spec` y los tres ficheros de validación adversarial de `tests/governance/`. Recuento verificable con `vitest --reporter=json`. Incluye las guardas de Phase 1A, la vigilancia documental de cada checkpoint, la frontera de invocación de Phase 3.1 y el vigilante de congelación `phase3_1.freeze.spec` |
 | E2E estáticos | **ejecutados y en verde** | arranque, PWA, accesibilidad renderizada y su fixture negativo. No tocan Supabase |
@@ -85,7 +85,7 @@ adenda; ahí la regla es la opuesta, y por eso se trata distinto.
 | ADR-009 | Identidad estable de concepto · **BD-02** / SD-002 | **ACCEPTED** · v1.1 · 2026-09-07 (v1.0) y 2026-09-09 (anexo) · Ana Victoria · **implementación autorizada en Phase 1A** |
 | ADR-010 | Convocatorias y ocurrencias oficiales · **BD-05** / SD-001 | **ACCEPTED** · v1.1 · 2026-09-07 (v1.0) y 2026-09-09 (anexo) · Ana Victoria · **implementación de la estructura autorizada en Phase 1A** (carga oficial en Phase 1B) |
 | ADR-011 | Topología de esquemas y frontera de exposición del Data API | **ACCEPTED** · v1.1 · 2026-09-09 (v1.0) y 2026-09-11 (anexo v1.1 · D-24 · alta del esquema no expuesto `engine`, **y ningún otro**) · Ana Victoria · **implementación autorizada en Phase 1A**; el esquema `engine`, en Phase 3 |
-| ADR-012 | Autoridad de decisión del Planner | **ACCEPTED** · v1.0 · 2026-09-17 · Ana Victoria · **`NOT IMPLEMENTED`**: el BUILD de Phase 4A **no** está autorizado. Propietario normativo de `docs/PLANNER_CONTRACT.md` v1.0 |
+| ADR-012 | Autoridad de decisión del Planner | **ACCEPTED** · v1.0 · 2026-09-17 · Ana Victoria · **`AUTHORIZED`**: BUILD de Phase 4A construido como candidato, **sin integrar**; hasta el 2026-09-19 constaba como `NOT IMPLEMENTED`. Propietario normativo de `docs/PLANNER_CONTRACT.md` v1.4 |
 
 **Las cinco decisiones del 2026-09-07 están ACCEPTED.** Cada una nació en
 `ACCEPTED · NOT IMPLEMENTED`, con un único propietario normativo, aprobada mediante el
@@ -692,7 +692,7 @@ Línea base: `main` = `7cf9190726f9f4edd8f41998acc6fee8792a2d3a`, sobre `phase-3
 | Artefacto | Estado |
 | --- | --- |
 | `docs/PLANNER_CONTRACT.md` v1.3 | **`ACCEPTED`** en candidato · P4-D3, P4-D4 y P4-D5 cerradas · pendiente de aceptación independiente e integración en `main` |
-| ADR-012 · autoridad de decisión del Planner | **`ACCEPTED · v1.0`** · **`NOT IMPLEMENTED`** |
+| ADR-012 · autoridad de decisión del Planner | **`ACCEPTED · v1.0`** · **`AUTHORIZED`** (BUILD candidato, sin integrar; antes `NOT IMPLEMENTED`) |
 | `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` | copia aceptada de la autorización |
 | SD-030 y SD-031 | adenda del `SPEC_DIFF_LOG` |
 | P4-D1 | **aprobada con modificación** · composición categórica equilibrada |

@@ -233,9 +233,11 @@ describe('Phase 4A · P4-D2 sigue diferida y no deja constantes detrás', () => 
 });
 
 describe('Phase 4A · ADR-012 congela la frontera arquitectónica', () => {
-  it('es ACCEPTED v1.0 y NOT IMPLEMENTED', () => {
+  it('es ACCEPTED v1.0 y, desde el BUILD, AUTHORIZED sin integrar, con su historia', () => {
     expect(adr).toContain('STATUS: ACCEPTED · v1.0');
-    expect(flat(adr)).toContain('IMPLEMENTATION STATUS: **NOT IMPLEMENTED**');
+    expect(flat(adr)).toContain('IMPLEMENTATION STATUS: **AUTHORIZED**');
+    expect(flat(adr)).toContain('**sin integrar en `main`**');
+    expect(flat(adr)).toContain('Hasta el 2026-09-19 constaba como NOT IMPLEMENTED');
     expect(flat(adr)).toContain('Approved by: Ana Victoria');
   });
 
