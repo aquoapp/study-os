@@ -3,6 +3,8 @@
 **Estado:** `ACCEPTED` · 2026-09-10 · Phase 3 Governance Landing Authorization ·
 decisora **Ana Victoria** · copia aceptada del registro de decisión en
 `docs/PHASE_3_GOVERNANCE_AUTHORIZATION.md`.
+**Versión vigente:** **v1.1** · anexo aditivo §25 aceptado el 2026-09-19 (P4-D6). El texto v1.0
+de §0 a §24 se conserva íntegro.
 **Naturaleza:** contrato semántico **autoritativo** del Learning Engine v1. Sustituye la
 dependencia de `Learning System v0.4` —declarado **NO DISPONIBLE**— para todo lo que gobierna
 Phase 3.
@@ -515,3 +517,111 @@ despliegue ni siembra. No autoriza Phase 4, Phase 1B, corpus oficial, IA, infrae
 pago ni ninguna mutación de PRODUCTION. No modifica el FPS congelado.
 
 El BUILD de Phase 3 exige una autorización humana independiente y posterior.
+
+---
+
+## 25 · Anexo v1.1 · posición de la última evidencia negativa · P4-D6
+
+**Estado:** `ACCEPTED` · 2026-09-19 · decisión humana **P4-D6** · decisora **Ana Victoria**.
+**Naturaleza:** anexo **aditivo**. El texto de §0 a §24 se conserva íntegro, byte a byte, como en
+todos los anexos aceptados del repositorio (ADR-009, ADR-010 y ADR-011 v1.1; ADR-003 v1.2). Este
+anexo añade **un hecho proyectado** y no modifica ninguna definición anterior: ni el vector de
+§5.2, ni la función de estado de §9.1, ni los patrones de §17, ni la reconstrucción de §15.
+**Motivo:** un consumidor nuevo y autorizado —la decisión de reparación del contrato de
+planificación de Phase 4A, P4-D5— necesita un hecho que la proyección v1.0 no emite. **No es la
+corrección de un defecto de Phase 3**: el motor v1.0 cumplía su contrato. `phase-3-v1.0` y
+`phase-3-v1.1` no se tocan.
+
+### 25.1 · El hecho
+
+Por cada par (persona, concepto), la proyección emite:
+
+> **`last_negative_position`** · la **posición de stream** del `submitted_event_id` del intento
+> más reciente que cumple **a la vez**:
+>
+> 1. es **elegible** según §5.1 —las cuatro condiciones, con el mismo watermark declarado y la
+>    misma versión de pack declarada que el resto de la proyección—; y
+> 2. su resultado **no es correcto**: `INCORRECT` o `BLANK`, la misma clase de resultado que
+>    §5.2 cuenta en `distinct_questions_ever_incorrect` («algún fallo **o** blanco»).
+>
+> `NULL` si no existe ningún intento así.
+
+«Más reciente» se resuelve **por `stream_position`**, igual que todo «último» en este contrato
+(§5.2). **Nunca** por `client_created_at`, por reloj del servidor, por historial de ningún
+consumidor ni por identificadores.
+
+### 25.2 · Por qué esta regla y no otra · derivación
+
+La decisión humana exige que el hecho signifique «la posición asociada a la contribución de
+evidencia elegible más reciente que establece la evidencia negativa o conflictiva relevante del
+concepto, bajo el pliegue aceptado». La regla de §25.1 es **exactamente** eso, por cinco razones
+que salen de este mismo contrato:
+
+1. **Las dos condiciones de reparación dependen de `ever_incorrect`.** Por §9.1,
+   `EVIDENCE_NEGATIVE` exige `eligible > 0` y `ever_correct = 0`, así que todo intento elegible es
+   no correcto y `ever_incorrect > 0`; `EVIDENCE_CONFLICTING` exige `ever_incorrect > 0`
+   explícitamente. La evidencia que establece cualquiera de los dos estados es, por tanto, el
+   conjunto de intentos elegibles no correctos.
+2. **Los patrones estructurales no amplían ese conjunto.** Los tres tipos de §17
+   —`RECURRENT_INCORRECT`, `RECURRENT_BLANK`, `MAX_CONFIDENCE_INCORRECT`— se apoyan en intentos
+   no correctos. Un patrón activo implica `ever_incorrect > 0` y, con ello, un estado
+   `EVIDENCE_NEGATIVE` o `EVIDENCE_CONFLICTING`. **No existe patrón activo sobre un concepto
+   `EVIDENCE_POSITIVE`**, y toda necesidad de reparación tiene al menos un intento que cuenta.
+3. **Por eso el hecho es no nulo exactamente cuando hay necesidad de reparación.** Se cumple
+   `last_negative_position IS NOT NULL` ⇔ el estado es `EVIDENCE_NEGATIVE` o
+   `EVIDENCE_CONFLICTING`. Es una invariante mecánica, no una convención, y se impone por
+   restricción en la proyección.
+4. **Cada fallo nuevo cuenta, también sobre una pregunta ya fallada.** Es lo que exige el texto
+   aceptado de P4-D5 («cada fallo nuevo refresca la clave»), y es lo que da vivacidad a la
+   ordenación. Por eso el hecho es un máximo sobre **intentos**, no sobre la primera contribución
+   de cada pregunta.
+5. **La anomalía temporal no afecta.** §5.1 no excluye los intentos con reloj anómalo: solo los
+   excluye de `first_evidence_at` y `latest_evidence_at`. Como el hecho se basa en la posición de
+   stream, que asigna el servidor, un reloj anómalo no puede moverlo.
+
+La evidencia de diagnóstico (§5.1.2) y la no atribuida (§5.1.4) quedan fuera **por la misma
+regla** que las deja fuera del vector: no hay una segunda definición de elegibilidad.
+
+### 25.3 · Hecho, no puntuación
+
+`last_negative_position` es **procedencia**. No es dominio, readiness, prioridad, debilidad,
+recencia puntuada, recuento de intentos, recuento de errores, fecha de repaso ni estimación de
+retención. Es una posición del stream de la persona, comparable solo con otras posiciones del
+mismo stream.
+
+Vive **fuera del vector** de §5.2, en su propio campo de la proyección. El contrato de
+planificación prohíbe a su consumidor leer el vector, y así sigue siendo.
+
+### 25.4 · Qué puede moverlo, y qué no
+
+Solo lo mueve un intento **elegible no correcto** con posición mayor, o una **reconstrucción**
+legítima de la proyección —cambio de configuración, de versión de pack declarada o de
+generación de atribución (§14, §15)—, que lo recalcula entero bajo la atribución nueva.
+
+**No lo mueven:** una recomendación, presentar o abrir contenido, leer, abandonar, un acierto
+posterior, ni el paso del tiempo. Un acierto posterior no borra una evidencia negativa anterior,
+igual que tampoco la borra de `ever_incorrect`.
+
+### 25.5 · Reconstrucción e incremento
+
+El hecho es un **máximo** sobre un conjunto de posiciones. El máximo es asociativo y conmutativo,
+así que continuar desde lo persistido y plegar desde cero dan el mismo resultado sobre la misma
+tupla semántica. **`rebuild == incremental` (EC-006) se exige también para este campo**, en los
+dos planos, sin tolerancia.
+
+### 25.6 · Frontera
+
+El hecho nace **en el mismo pliegue** que el resto de la proyección y se persiste por la misma
+frontera de escritura. Ningún consumidor lo recalcula a partir de intentos, y ningún consumidor
+reimplementa atribución, exclusión de diagnóstico, semántica de generación, elegibilidad ni
+clasificación de resultado: **hay un solo pliegue autoritativo de evidencia, y es el del motor.**
+
+El esquema `engine` sigue **sin exponerse** al Data API (ADR-011). El hecho llega a su consumidor
+solo por la frontera de servidor gobernada, ejecutable únicamente con rol de servicio. Ningún
+cliente puede escribirlo ni leerlo directamente.
+
+### 25.7 · Alcance
+
+Este anexo es gobernanza: **no autoriza** por sí mismo ninguna migración, función ni despliegue.
+Su implementación queda dentro del BUILD de Phase 4A ya autorizado por separado, con la prueba de
+`rebuild == incremental`, la de seguridad y la de runtime real que ese BUILD exige.

@@ -1721,3 +1721,51 @@ derivada: las tres fueron decisiones humanas, y el registro lo dice así.
 | ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexos v1.1, v1.2 y v1.3 · `NOT IMPLEMENTED` |
 
 **Total tras esta adenda: sin cambio** · 31 entradas SPEC_DIFF y 1 errata.
+
+---
+
+## SD-032 · Learning Engine Contract · anexo v1.1 · `last_negative_position` · P4-D6
+
+**Documentos afectados:** `docs/LEARNING_ENGINE_CONTRACT.md` (anexo aditivo §25; §0–§24 intactos);
+`docs/PLANNER_CONTRACT.md` §C, §F.5 y §W; `Canonical Data & Event Model v1.0` §14 por vinculación
+(la forma de la proyección gana un campo fuera del vector).
+**Origen:** decisión humana **P4-D6 · opción A** · Phase 4A · 2026-09-19.
+**Estado:** **`ACCEPTED`** · 2026-09-19 · Ana Victoria.
+**Ficheros canónicos:** contrato del Learning Engine **v1.1** (por anexo), contrato del Planner
+**v1.4**, ADR-012 anexo v1.4.
+
+La proyección del Learning Engine emite, por (persona, concepto), la **posición de stream del
+intento elegible no correcto más reciente** —`INCORRECT` o `BLANK`, bajo la elegibilidad de §5.1—,
+o `NULL` si no lo hay. La derivación demuestra que esa regla es **exactamente** la evidencia que
+establece `EVIDENCE_NEGATIVE` y `EVIDENCE_CONFLICTING`: los dos estados dependen de
+`ever_incorrect`, los tres tipos de patrón estructural se apoyan en intentos no correctos (así que
+no hay patrón activo sobre un concepto `EVIDENCE_POSITIVE`), y el campo es no nulo exactamente
+cuando hay necesidad de reparación.
+
+**Versión.** v1.1 por la regla del repositorio para ampliaciones aditivas aceptadas: el texto
+previo se conserva íntegro y el anexo sube la versión menor, como en ADR-009, ADR-010 y ADR-011
+v1.1 y ADR-003 v1.2. La cabecera histórica «v1.0» del contrato no se reescribe; la versión vigente
+consta en su línea de estado.
+
+**No es la corrección de un defecto de Phase 3.** El motor v1.0 cumplía su contrato. Ningún tag
+se mueve.
+
+**Impacto:** Phase 4A. **No autoriza por sí misma ninguna migración**: la implementación queda
+dentro del BUILD de Phase 4A, con `rebuild == incremental` exigido también para este campo.
+
+---
+
+## Estado de la adenda · tras P4-D6 · 2026-09-19
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| P4-D1 | composición categórica equilibrada | `ACCEPTED` con modificación |
+| P4-D2 | origen de los minutos planificados | `DEFERRED` |
+| P4-D3 | granularidad de la acción | `ACCEPTED` · híbrida |
+| P4-D4 | orden dentro de la continuidad | `ACCEPTED` · `EXPOSED` primero |
+| P4-D5 | clave de orden de la reparación | `ACCEPTED` · última evidencia negativa |
+| **P4-D6** | fuente de esa clave | **`ACCEPTED` · la proyecta el motor** |
+| **SD-032** | contrato del Learning Engine · anexo v1.1 | **`ACCEPTED`** |
+| ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexos v1.1 a v1.4 · `NOT IMPLEMENTED` |
+
+**Total tras esta adenda: 32 entradas SPEC_DIFF y 1 errata.**
