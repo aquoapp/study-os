@@ -70,8 +70,12 @@ const ownedTables = query<{ table: string }>(
  */
 const serverOnlyTables = new Set(
   query<{ table: string }>(
-    "select c.table_name as table from information_schema.columns c where c.table_schema = 'public' and c.column_name = 'user_id' " +
-      "and not has_any_column_privilege('authenticated', format('public.%I', c.table_name), 'SELECT') order by 1",
+    // Por OID y no por nombre: el optimizador puede evaluar la función antes que el filtro de
+    // esquema, y un nombre calificado a mano fallaría sobre tablas de otros esquemas.
+    'select c.relname as table from pg_class c join pg_namespace n on n.oid = c.relnamespace ' +
+      "where n.nspname = 'public' and c.relkind = 'r' " +
+      "and exists (select 1 from pg_attribute a where a.attrelid = c.oid and a.attname = 'user_id' and not a.attisdropped) " +
+      "and not has_any_column_privilege('authenticated', c.oid, 'SELECT') order by 1",
   ).map((row) => row.table),
 );
 
