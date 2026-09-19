@@ -332,6 +332,19 @@ reimplementa. Lección: **una propiedad demostrada sobre una entrada sin procede
 está demostrada**; cada entrada del modelo de gobernanza debe tener una fuente de producción
 permitida.
 
+**BUILD de Phase 4A · candidato · 2026-09-19.** Construido en `phase/4a-planner-domain` desde
+`a96cafc`, **sin merge, sin tag y sin congelación** (`docs/PHASE_4A_CHECKPOINT.md`): migración 22
+(P4-D6, el motor persiste `last_negative_position`), `packages/planner-engine` (Planner v1 puro y
+determinista), migración 23 (`profiles.timezone` declarada, `planner_config`, `planner_runs`,
+`planner_items`, `planner_run_audit`, FK RESTRICT de la sesión y exclusión de la sesión
+planificada) y el módulo real `apps/web/src/server/planner`, que **ninguna ruta consume**: la
+selección visible sigue siendo `fps-fixed-v1`. Sin fuente de duración decidida (P4-D2), el Planner
+responde `DURATION_SOURCE_UNDECIDED` y no escribe nada; las duraciones de las pruebas son fixture.
+Quedan dos decisiones humanas: el alcance de la unicidad de sesión abierta (**OBS-4A-B2**, P4-G10)
+y la ratificación de `NO_PUBLISHED_UNIT` (**OBS-4A-B1**). Lección del BUILD: **PostgREST reintenta
+por sí solo las transacciones que fallan con 40001**; una revalidación que debe devolver el control
+al servidor no puede usar ese código.
+
 La lección, que ya es la segunda vez: **derrotar rivales no demuestra unicidad**. Una clave de
 ordenación solo es derivada cuando se enumera la familia completa bajo la autoridad vigente y
 sobrevive exactamente una.
