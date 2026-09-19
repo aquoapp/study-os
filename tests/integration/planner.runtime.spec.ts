@@ -6,6 +6,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 // Los módulos de servidor empiezan con `import 'server-only'`. Se neutraliza SOLO ese marcador: el
 // resto —módulo, cliente, llamadas por la frontera gobernada— es código de producción.
 vi.mock('server-only', () => ({}));
+// Cada caso recorre el módulo real y la puesta al día del motor por la red: margen explícito.
+vi.setConfig({ testTimeout: 180_000 });
 
 import { resolveBudget } from '@study-os/planner-engine';
 
@@ -755,5 +757,27 @@ describe('§P · un destino retirado o una ejecución sustituida no arrancan', (
     expect((await startPlannedSession(ana.id, run.runId, { client: admin })).kind).toBe(
       'RUN_STALE',
     );
+  });
+});
+
+describe('P4-G10 · alcance · lo que no viene del Planner no cambia (OBS-4A-B2)', () => {
+  const fpsSession = () =>
+    rpc(bruno.client, 'create_study_session', {
+      p_goal_id: bruno.goalId,
+      p_session_type: 'FPS_FIXED',
+      p_items: [{ item_type: 'QUESTION', target_id: question(pack, 0).questionId }],
+    });
+
+  it('con una sesión ajena al Planner abierta, la planificada no arranca y el plan cede', async () => {
+    const run = asRun(await request(bruno));
+    expect((await fpsSession()).error).toBeNull();
+    expect((await startPlannedSession(bruno.id, run.runId, { client: admin })).kind).toBe(
+      'OPEN_SESSION',
+    );
+    expect((await request(bruno)).kind).toBe('RESUME_REQUIRED');
+  });
+
+  it('dos sesiones que no vienen del Planner se siguen admitiendo, como en Phase 2', async () => {
+    expect((await fpsSession()).error).toBeNull();
   });
 });

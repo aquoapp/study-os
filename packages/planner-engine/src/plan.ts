@@ -280,7 +280,17 @@ export function plan(input: PlannerInput): PlanDecision {
   const placed = new Map<string, number>();
   const actions: PlannedAction[] = [];
 
-  const finish = (outcome: PlanDecision['outcome']): PlanDecision => ({
+  const finish = (outcome: PlanDecision['outcome']): PlanDecision => {
+    // Todo elegible no colocado se intentó en su turno y no cupo (§E · `OVER_BUDGET`, §J), también
+    // con presupuesto cero (§L): ningún candidato queda en la auditoría sin su razón (§S).
+    for (const candidate of eligible) {
+      if (!placed.has(candidate.concept.conceptId)) {
+        exclusions.set(candidate.concept.conceptId, 'OVER_BUDGET');
+      }
+    }
+    return decisionOf(outcome);
+  };
+  const decisionOf = (outcome: PlanDecision['outcome']): PlanDecision => ({
     outcome,
     plannedMinutes: actions.reduce((sum, action) => sum + action.minutes, 0),
     actions,
@@ -325,13 +335,6 @@ export function plan(input: PlannerInput): PlanDecision {
   // 3 · el resto de la reparación, solo agotada la continuidad.
   for (const candidate of remediation) {
     if (!placed.has(candidate.concept.conceptId)) place(candidate, 'REMEDIATION_OVERFLOW');
-  }
-
-  // Todo elegible no colocado se intentó en su turno y no cupo (§E · `OVER_BUDGET`, §J).
-  for (const candidate of eligible) {
-    if (!placed.has(candidate.concept.conceptId)) {
-      exclusions.set(candidate.concept.conceptId, 'OVER_BUDGET');
-    }
   }
 
   return finish(actions.length === 0 ? 'NOTHING_FITS' : 'PLANNED');

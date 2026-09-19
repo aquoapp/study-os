@@ -22,8 +22,9 @@
 --                                   ninguna concesión a roles de cliente: contiene estados del
 --                                   motor.
 --   - `study_sessions`            · `planner_run_id` pasa a referenciar una ejecución real
---                                   (`ON DELETE RESTRICT`, §V), una sesión por ejecución y **una
---                                   sola sesión abierta por persona** (§U.1, P4-G10).
+--                                   (`ON DELETE RESTRICT`, §V), una sesión por ejecución, y
+--                                   **ninguna sesión planificada abierta junto a otra abierta**
+--                                   (§U.1, §N, P4-G10; alcance en la sección 6).
 --   - funciones de servidor       · lectura de contexto, lectura del motor, persistencia con
 --                                   revalidación en la misma transacción (§U.1) y arranque de
 --                                   sesión planificada idempotente por ejecución (§U.6).
@@ -309,7 +310,7 @@ create policy planner_runs_select_own
 -- §U.5 · la persona lee sus ejecuciones, solo en columnas seguras: ni versiones, ni tupla del
 -- motor, ni hash.
 grant select (
-  id, learner_exam_goal_id, plan_day, outcome, budget_minutes, planned_minutes, item_count,
+  id, user_id, learner_exam_goal_id, plan_day, outcome, budget_minutes, planned_minutes, item_count,
   supersedes_run_id, created_at
 ) on public.planner_runs to authenticated;
 grant select on public.planner_runs to service_role;
@@ -388,7 +389,7 @@ create policy planner_items_select_own
   using (user_id = (select auth.uid()));
 -- §R · los códigos de razón no se exponen: la redacción visible es de Phase 5.
 grant select (
-  id, run_id, position, item_type, learning_unit_id, question_id, planned_minutes, created_at
+  id, run_id, user_id, position, item_type, learning_unit_id, question_id, planned_minutes, created_at
 ) on public.planner_items to authenticated;
 grant select on public.planner_items to service_role;
 
@@ -447,20 +448,49 @@ alter table public.study_sessions
 create unique index if not exists study_sessions_one_per_run
   on public.study_sessions (planner_run_id) where planner_run_id is not null;
 
--- §U.1 · P4-G10 · una sola sesión abierta por persona, impuesta por la base de datos.
+-- §U.1 · §N · P4-G10 · una sesión planificada nunca convive con otra sesión abierta.
 --
--- Es una restricción de exclusión **diferida** y no un índice único parcial, y es deliberado:
--- `create_study_session` (Phase 2, congelada) inserta la sesión antes de validar sus ítems. Con
--- una comprobación inmediata, una petición inválida hecha con una sesión ya abierta respondería
--- «sesión duplicada» en lugar de su error real (`TARGET_NOT_FOUND`, `ITEMS_MALFORMED`…), y el
--- orden de errores de la frontera congelada cambiaría. Diferida al final de la transacción, la
--- garantía es la misma —ninguna transacción confirma dos sesiones abiertas— y el orden de
--- errores de Phase 2 no se toca.
-alter table public.study_sessions
-  add constraint study_sessions_one_open_per_user
-  exclude using btree (user_id with =)
-  where (status in ('PLANNED', 'ACTIVE', 'INTERRUPTED'))
-  deferrable initially deferred;
+-- **Alcance, y es una decisión que se reporta (OBS-4A-B2):** la garantía se impone en base de
+-- datos para toda sesión en la que interviene el Planner —ninguna sesión planificada abierta
+-- junto a otra abierta, de cualquier tipo, y nunca dos planificadas abiertas—, y **no** para dos
+-- sesiones abiertas que no vienen del Planner. Extenderla a estas cambiaría el comportamiento de
+-- `create_study_session`, congelado en Phase 2, y las pruebas congeladas de Phase 2 y del FPS lo
+-- usan en decenas de casos: esa ampliación exige decisión humana (EC-019). Entre sesiones que no
+-- vienen del Planner la regla sigue viviendo donde vivía, en HOY.
+--
+-- Trigger de restricción **diferido** y serializado por persona con un bloqueo consultivo de
+-- transacción: diferido para que `create_study_session`, que inserta la sesión antes de validar
+-- sus ítems, conserve el orden de sus errores; serializado para que dos transacciones que abren
+-- sesión a la vez no se validen cada una sin ver a la otra.
+create or replace function public.check_planned_session_exclusive()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.status not in ('PLANNED', 'ACTIVE', 'INTERRUPTED') then
+    return null;
+  end if;
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('study_os.open_session.' || new.user_id::text, 0));
+  if exists (
+    select 1 from public.study_sessions s
+    where s.user_id = new.user_id and s.id <> new.id
+      and s.status in ('PLANNED', 'ACTIVE', 'INTERRUPTED')
+      and (new.planner_run_id is not null or s.planner_run_id is not null)
+  ) then
+    raise exception 'STUDY_OS_SESSION · OPEN_SESSION_EXISTS' using errcode = 'exclusion_violation';
+  end if;
+  return null;
+end;
+$$;
+revoke all on function public.check_planned_session_exclusive() from public, anon, authenticated, service_role;
+drop trigger if exists study_sessions_planned_exclusive on public.study_sessions;
+create constraint trigger study_sessions_planned_exclusive
+  after insert or update of status on public.study_sessions
+  deferrable initially deferred
+  for each row execute function public.check_planned_session_exclusive();
 
 -- 7 · Lectura del motor para el Planner -------------------------------------------------------
 
@@ -842,6 +872,12 @@ revoke all on function public.planner_target_is_available(uuid, uuid, uuid, publ
   from public, anon, authenticated, service_role;
 
 -- 10 · Persistencia de una ejecución --------------------------------------------------------
+--
+-- `STALE_INPUT` se señala con `object_not_in_prerequisite_state` (55000) y **no** con
+-- `serialization_failure` (40001), aunque semánticamente se parezca: PostgREST reintenta por sí
+-- solo las transacciones que fallan con 40001, y una entrada atrasada no deja de estarlo por
+-- repetir la misma escritura. El resultado era un bucle hasta el tiempo límite del gateway. El
+-- recálculo es responsabilidad del servidor, que vuelve a leer y a decidir.
 
 create or replace function public.create_planner_run(p_user uuid, p_payload jsonb)
 returns jsonb
@@ -907,7 +943,7 @@ begin
           (engine ->> 'attributionGeneration')::bigint,
           (engine ->> 'consumedPosition')::bigint
         ) then
-    raise exception 'STUDY_OS_PLANNER · STALE_INPUT' using errcode = 'serialization_failure';
+    raise exception 'STUDY_OS_PLANNER · STALE_INPUT' using errcode = 'object_not_in_prerequisite_state';
   end if;
 
   -- La instantánea canónica dice lo mismo que la fila: no hay dos versiones de la entrada.
@@ -944,7 +980,7 @@ begin
          (item ->> 'learningUnitVersionId')::uuid,
          (item ->> 'questionId')::uuid,
          (item ->> 'questionRepresentationId')::uuid) then
-      raise exception 'STUDY_OS_PLANNER · STALE_INPUT' using errcode = 'serialization_failure';
+      raise exception 'STUDY_OS_PLANNER · STALE_INPUT' using errcode = 'object_not_in_prerequisite_state';
     end if;
   end loop;
   if minutes_sum is distinct from (p_payload ->> 'plannedMinutes')::integer then
@@ -1001,7 +1037,7 @@ begin
 exception
   -- Una carrera perdida contra otra ejecución del mismo objetivo: el servidor recalcula.
   when unique_violation then
-    raise exception 'STUDY_OS_PLANNER · STALE_INPUT' using errcode = 'serialization_failure';
+    raise exception 'STUDY_OS_PLANNER · STALE_INPUT' using errcode = 'object_not_in_prerequisite_state';
 end;
 $$;
 comment on function public.create_planner_run(uuid, jsonb) is

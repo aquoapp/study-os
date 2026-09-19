@@ -211,6 +211,8 @@ describe('§J · §K · §L · P4-G8 · P4-G19 · estados de agotamiento', () =>
     expect(decision.outcome).toBe('ZERO_TIME');
     expect(decision.actions).toEqual([]);
     expect(Object.keys(decision)).toEqual(['outcome', 'plannedMinutes', 'actions', 'candidates']);
+    // §S · ningún candidato queda sin razón: con cero minutos, lo elegible no cabía.
+    expect(reasonOf(decision, 'c-0001')).toBe('OVER_BUDGET');
   });
 
   it('NOTHING_ELIGIBLE: todo positivo no se recicla y no se fabrica actividad', () => {

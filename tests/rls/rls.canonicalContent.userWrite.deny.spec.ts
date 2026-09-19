@@ -40,8 +40,14 @@ let user: TestUser;
  * `study_sessions`, `learning_events`, `question_attempts`…) quedan fuera y las cubre
  * `rls.userIsolation.phase2.spec`, que prueba el aislamiento entre usuarios.
  */
+// Phase 4A (2026-09-19): `planner_config` no tiene propietario y **no** es contenido ni
+// referencia del aprendiz: es política de servidor sin ninguna concesión de cliente (Planner
+// Contract §T, §U). Queda fuera de esta batería y se prueba abajo que nadie de cliente la lee.
+const SERVER_ONLY_TABLES = ['planner_config'];
+
 const tables = query<{ table: string }>(
   "select t.tablename as table from pg_tables t where t.schemaname = 'public' and t.tablename <> 'profiles' " +
+    `and t.tablename not in (${SERVER_ONLY_TABLES.map((t) => `'${t}'`).join(', ')}) ` +
     "and not exists (select 1 from information_schema.columns c where c.table_schema = 'public' and c.table_name = t.tablename and c.column_name = 'user_id') " +
     'order by 1',
 ).map((row) => row.table);
@@ -144,3 +150,16 @@ for (const table of tables) {
     });
   });
 }
+
+describe('Phase 4A · la política del Planner no es legible ni escribible desde el cliente', () => {
+  for (const table of SERVER_ONLY_TABLES) {
+    it(`public.${table} · ni authenticated ni anon leen, y authenticated no escribe`, async () => {
+      for (const client of [user.client, anonClient(env)]) {
+        const { error } = await client.from(table).select('*').limit(1);
+        expect(error?.code).toBe('42501');
+      }
+      const { error } = await user.client.from(table).insert({});
+      expect(error?.code).toBe('42501');
+    });
+  }
+});

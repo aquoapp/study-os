@@ -17,7 +17,8 @@ drop function if exists public.planner_plan_day(text);
 drop function if exists public.engine_planner_snapshot(uuid);
 drop function if exists engine.planner_snapshot(uuid);
 
-alter table public.study_sessions drop constraint if exists study_sessions_one_open_per_user;
+drop trigger if exists study_sessions_planned_exclusive on public.study_sessions;
+drop function if exists public.check_planned_session_exclusive();
 drop index if exists public.study_sessions_one_per_run;
 alter table public.study_sessions drop constraint if exists study_sessions_planner_run_type;
 alter table public.study_sessions drop constraint if exists study_sessions_planner_run_fk;

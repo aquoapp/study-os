@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+
+// Solo se neutraliza el marcador `server-only` del módulo real del Planner.
+vi.mock('server-only', () => ({}));
 
 import {
   buildSyntheticPack,
@@ -15,6 +18,7 @@ import {
   eventFor,
   itemAt,
   presentAndAnswer,
+  publishLearningUnit,
   type Learner,
 } from '../support/phase2-fixtures';
 import { query } from '../support/sql';
@@ -25,6 +29,7 @@ import {
   readTestEnv,
   type TestEnv,
 } from '../support/supabase-test-env';
+import { requestPlanForUser, type DurationSource } from '../../apps/web/src/server/planner/run';
 
 /**
  * `rls.userIsolation.phase2.spec` · EC-009 · REQ-C13 · gate P2-G6 · fallo duro.
@@ -57,6 +62,44 @@ const ownedTables = query<{ table: string }>(
   "select table_name as table from information_schema.columns where table_schema = 'public' and column_name = 'user_id' order by 1",
 ).map((row) => row.table);
 
+/**
+ * Phase 4A (2026-09-19) · tablas con propietario que **no** están expuestas a la persona: sin
+ * ninguna concesión de columna a `authenticated`. Hoy es solo la auditoría del Planner (Planner
+ * Contract §S, §U.5). Se leen del catálogo, y para ellas el aislamiento se prueba como denegación
+ * total: ni la persona ni `anon` leen, y nadie de cliente escribe.
+ */
+const serverOnlyTables = new Set(
+  query<{ table: string }>(
+    "select c.table_name as table from information_schema.columns c where c.table_schema = 'public' and c.column_name = 'user_id' " +
+      "and not has_any_column_privilege('authenticated', format('public.%I', c.table_name), 'SELECT') order by 1",
+  ).map((row) => row.table),
+);
+
+/** Duraciones de fixture para sembrar el Planner: datos de prueba (P4-D2 diferida). */
+const FIXTURE_DURATIONS: DurationSource = {
+  provenance: 'FIXTURE',
+  minutesFor: ({ learningUnitIds, questionIds }) => ({
+    units: new Map(learningUnitIds.map((id) => [id, 5])),
+    questions: new Map(questionIds.map((id) => [id, 3])),
+  }),
+};
+
+/** Una ejecución real del Planner, por el módulo real, antes de abrir ninguna sesión. */
+async function seedPlanner(learner: Learner): Promise<void> {
+  const tz = await learner.client
+    .from('profiles')
+    .update({ timezone: 'Europe/Madrid' })
+    .eq('id', learner.id);
+  if (tz.error) throw new Error(`timezone: ${tz.error.message}`);
+  const outcome = await requestPlanForUser(learner.id, {
+    client: admin,
+    durations: FIXTURE_DURATIONS,
+  });
+  if (outcome.kind !== 'RUN' || outcome.outcome !== 'PLANNED') {
+    throw new Error(`planner: ${outcome.kind === 'RUN' ? outcome.outcome : outcome.kind}`);
+  }
+}
+
 /** Datos completos del aprendiz: preferencias, objetivo, dispositivo, diagnóstico, sesión, evidencia e intento. */
 async function seedEverything(learner: Learner): Promise<void> {
   const goal = await learner.client
@@ -84,8 +127,12 @@ beforeAll(async () => {
   env = readTestEnv();
   admin = adminClient(env);
   pack = await buildSyntheticPack(admin, 'p2rls');
+  // Una unidad publicada para que el Planner tenga algo que planificar (Phase 4A).
+  await publishLearningUnit(admin, pack, 0, 'p2rls-u0');
   alice = await createLearner(env, 'rls-alice', pack);
   bob = await createLearner(env, 'rls-bob', pack);
+  await seedPlanner(alice);
+  await seedPlanner(bob);
   await seedEverything(alice);
   await seedEverything(bob);
 }, 300_000);
@@ -114,7 +161,30 @@ describe('el catálogo aporta las tablas con propietario', () => {
   });
 });
 
-for (const table of ownedTables) {
+describe('Phase 4A · la auditoría del Planner no está expuesta', () => {
+  it('el catálogo la identifica como tabla de solo servidor, y es la única', () => {
+    expect([...serverOnlyTables]).toEqual(['planner_run_audit']);
+  });
+
+  for (const table of ['planner_run_audit']) {
+    it(`public.${table} · ni la persona ni anon leen ni escriben, aunque existan filas`, async () => {
+      const rows = query<{ n: number }>(
+        `select count(*)::int as n from public.${table} where user_id in ('${alice.id}', '${bob.id}')`,
+      );
+      expect(Number(rows[0]?.n)).toBe(2);
+      for (const client of [alice.client, bob.client, anonClient(env)]) {
+        const { error } = await client.from(table).select('user_id').limit(1);
+        expect(error?.code).toBe('42501');
+      }
+      const insert = await alice.client.from(table).insert({ user_id: bob.id });
+      expect(insert.error?.code).toBe('42501');
+      const remove = await alice.client.from(table).delete().eq('user_id', bob.id);
+      expect(remove.error?.code).toBe('42501');
+    });
+  }
+});
+
+for (const table of ownedTables.filter((name) => !serverOnlyTables.has(name))) {
   describe(`public.${table} · aislamiento entre usuarios`, () => {
     it('cada aprendiz ve sus propias filas', async () => {
       for (const learner of [alice, bob]) {
