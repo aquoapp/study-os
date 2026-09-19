@@ -40,6 +40,8 @@ let admin: ReturnType<typeof adminClient>;
 let pack: SyntheticPack;
 let ana: Learner;
 let session: CreatedSession;
+/** La sesión del segundo caso: la única abierta del aprendiz desde entonces (EC-019). */
+let second: CreatedSession;
 
 const attemptCounter = (userId: string, questionId: string) =>
   Number(
@@ -103,7 +105,7 @@ describe('ADR-008 · la idempotencia del intento precede al attempt_number', () 
 
   it('otra respuesta a la misma pregunta en otra sesión es un intento nuevo con el número siguiente', async () => {
     const q = question(pack, 0);
-    const second = await createSession(ana, [{ item_type: 'QUESTION', target_id: q.questionId }]);
+    second = await createSession(ana, [{ item_type: 'QUESTION', target_id: q.questionId }]);
     await accept(ana, eventFor(ana, second, 'SESSION_STARTED'));
     const item = itemAt(second, 0);
     await accept(
@@ -125,10 +127,13 @@ describe('ADR-008 · la idempotencia del intento precede al attempt_number', () 
   });
 
   it('no puede responderse dos veces el mismo ítem: el ítem ya está completado', async () => {
+    // EC-019 · P4-G10 · la sesión del primer caso ya no puede seguir abierta junto a la segunda:
+    // la propiedad (un ítem completado no admite otra respuesta) se comprueba sobre la sesión
+    // abierta vigente, cuyo ítem acaba de completarse. El recuento esperado no cambia.
     const q = question(pack, 0);
-    const item = itemAt(session, 0);
+    const item = itemAt(second, 0);
     const { error } = await ana.client.rpc('append_learning_event', {
-      p_event: itemEvent(ana, session, item, 'ANSWER_SUBMITTED', {
+      p_event: itemEvent(ana, second, item, 'ANSWER_SUBMITTED', {
         question_representation_id: q.representationId,
         answer_kind: 'BLANK',
       }),

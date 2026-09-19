@@ -577,3 +577,45 @@ describe('Phase 4A · decisión 15 de ADR-012 · cada entrada del modelo tiene f
     expect(model).toContain("const order = input.remediationOrder ?? 'EVIDENCE_OLDEST';");
   });
 });
+
+describe('Phase 4A · decisiones humanas finales del BUILD · 2026-09-19', () => {
+  const migration = read('supabase/migrations/00000000000023_planner_domain.sql');
+  const log = read(LOG);
+
+  it('OBS-4A-B4 · §G.1 ordena la reparación como §F.5 y la redacción vieja solo vive en la errata', () => {
+    const g1 = contract.slice(contract.indexOf('### G.1'), contract.indexOf('### G.2'));
+    expect(flat(g1)).toContain('la primera de **R** en el orden de §F.5');
+    expect(flat(g1)).toContain('**última evidencia negativa, más antigua primero**');
+    // La frase antigua aparece solo dentro de la nota de fe de erratas, nunca como norma.
+    const stale = /menor clave de sílabo entre las de/;
+    for (const line of contract.split('\n').filter((l) => stale.test(l))) {
+      expect(
+        line.trimStart().startsWith('>'),
+        `redacción antigua fuera de la errata: ${line}`,
+      ).toBe(true);
+    }
+    expect(contract).toContain('**FE DE ERRATAS:** **E-P4A-1**');
+    expect(log).toContain('## ERRATA · E-P4A-1 · §G.1 del contrato del Planner contradecía P4-D5');
+    expect(flat(log)).toContain('**Total tras esta adenda: 32 entradas SPEC_DIFF y 2 erratas.**');
+  });
+
+  it('OBS-4A-B1 · NO_PUBLISHED_UNIT está ratificado y sin marca pendiente', () => {
+    expect(migration).not.toContain('pending_ratification');
+    expect(migration).toContain("'ratified', jsonb_build_object('NO_PUBLISHED_UNIT'");
+    expect(flat(contract)).toContain(
+      '**`NO_PUBLISHED_UNIT` · ratificado el 2026-09-19 (OBS-4A-B1).**',
+    );
+    expect(flat(authorization)).toContain('**OBS-4A-B1** · `NO_PUBLISHED_UNIT` | **APROBADA.**');
+  });
+
+  it('OBS-4A-B2 · P4-G10 · como mucho una sesión abierta por persona, para todo origen', () => {
+    const code = migration.replace(/--[^\n]*/g, '');
+    expect(code).toMatch(
+      /add constraint study_sessions_one_open_per_user\s+exclude using btree \(user_id with =\)\s+where \(status in \('PLANNED', 'ACTIVE', 'INTERRUPTED'\)\)\s+deferrable initially deferred/,
+    );
+    // Ninguna excepción por origen: la restricción no menciona el Planner.
+    expect(code).not.toContain('check_planned_session_exclusive');
+    expect(flat(authorization)).toContain('**OPCIÓN B, condicionada a EC-019.**');
+    expect(read('docs/PHASE_4A_EC019_SESSION_INVARIANT.md')).toContain('## Resultado');
+  });
+});

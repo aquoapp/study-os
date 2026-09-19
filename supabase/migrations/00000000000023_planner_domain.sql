@@ -23,8 +23,8 @@
 --                                   motor.
 --   - `study_sessions`            · `planner_run_id` pasa a referenciar una ejecución real
 --                                   (`ON DELETE RESTRICT`, §V), una sesión por ejecución, y
---                                   **ninguna sesión planificada abierta junto a otra abierta**
---                                   (§U.1, §N, P4-G10; alcance en la sección 6).
+--                                   **como mucho una sesión abierta por persona**, para toda
+--                                   sesión (§U.1, §N, P4-G10; EC-019 en la sección 6).
 --   - funciones de servidor       · lectura de contexto, lectura del motor, persistencia con
 --                                   revalidación en la misma transacción (§U.1) y arranque de
 --                                   sesión planificada idempotente por ejecución (§U.6).
@@ -199,7 +199,7 @@ select 'v1', 'ACTIVE',
     'contract', 'docs/PLANNER_CONTRACT.md v1.4',
     'adr', 'ADR-012',
     'decisions', jsonb_build_array('P4-D1', 'P4-D3', 'P4-D4', 'P4-D5', 'P4-D6'),
-    'pending_ratification', jsonb_build_array('NO_PUBLISHED_UNIT')
+    'ratified', jsonb_build_object('NO_PUBLISHED_UNIT', 'OBS-4A-B1 · decisión humana 2026-09-19')
   )
 where not exists (select 1 from public.planner_config where version = 'v1');
 
@@ -448,49 +448,25 @@ alter table public.study_sessions
 create unique index if not exists study_sessions_one_per_run
   on public.study_sessions (planner_run_id) where planner_run_id is not null;
 
--- §U.1 · §N · P4-G10 · una sesión planificada nunca convive con otra sesión abierta.
+-- §U.1 · §N · P4-G10 · **como mucho una sesión abierta por persona**, impuesta por la base de
+-- datos para toda sesión, venga del Planner, del FPS, del flujo de Phase 2 o de un llamador futuro.
 --
--- **Alcance, y es una decisión que se reporta (OBS-4A-B2):** la garantía se impone en base de
--- datos para toda sesión en la que interviene el Planner —ninguna sesión planificada abierta
--- junto a otra abierta, de cualquier tipo, y nunca dos planificadas abiertas—, y **no** para dos
--- sesiones abiertas que no vienen del Planner. Extenderla a estas cambiaría el comportamiento de
--- `create_study_session`, congelado en Phase 2, y las pruebas congeladas de Phase 2 y del FPS lo
--- usan en decenas de casos: esa ampliación exige decisión humana (EC-019). Entre sesiones que no
--- vienen del Planner la regla sigue viviendo donde vivía, en HOY.
+-- Decisión humana del 2026-09-19 (OBS-4A-B2, opción B por EC-019). El análisis de impacto
+-- (`docs/PHASE_4A_EC019_SESSION_INVARIANT.md`) no encontró ninguna autoridad que establezca
+-- sesiones abiertas simultáneas como comportamiento del producto: el Master habla de «la sesión
+-- activa», el contrato de pantalla del FPS dice que una sesión abierta siempre gana y nunca se
+-- ofrece crear otra, y el contrato del Planner (§U.1, §V) pide respaldarlo en base de datos.
 --
--- Trigger de restricción **diferido** y serializado por persona con un bloqueo consultivo de
--- transacción: diferido para que `create_study_session`, que inserta la sesión antes de validar
--- sus ítems, conserve el orden de sus errores; serializado para que dos transacciones que abren
--- sesión a la vez no se validen cada una sin ver a la otra.
-create or replace function public.check_planned_session_exclusive()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  if new.status not in ('PLANNED', 'ACTIVE', 'INTERRUPTED') then
-    return null;
-  end if;
-  perform pg_catalog.pg_advisory_xact_lock(
-    pg_catalog.hashtextextended('study_os.open_session.' || new.user_id::text, 0));
-  if exists (
-    select 1 from public.study_sessions s
-    where s.user_id = new.user_id and s.id <> new.id
-      and s.status in ('PLANNED', 'ACTIVE', 'INTERRUPTED')
-      and (new.planner_run_id is not null or s.planner_run_id is not null)
-  ) then
-    raise exception 'STUDY_OS_SESSION · OPEN_SESSION_EXISTS' using errcode = 'exclusion_violation';
-  end if;
-  return null;
-end;
-$$;
-revoke all on function public.check_planned_session_exclusive() from public, anon, authenticated, service_role;
-drop trigger if exists study_sessions_planned_exclusive on public.study_sessions;
-create constraint trigger study_sessions_planned_exclusive
-  after insert or update of status on public.study_sessions
-  deferrable initially deferred
-  for each row execute function public.check_planned_session_exclusive();
+-- Restricción de exclusión **diferida**: nativa, segura bajo concurrencia sin bloqueos de
+-- aplicación, y comprobada al confirmar. Diferida para que `create_study_session` (Phase 2,
+-- congelada), que inserta la sesión antes de validar sus ítems, conserve el orden de sus errores:
+-- una petición inválida sigue respondiendo con su propio error, y solo una válida hecha con otra
+-- sesión abierta falla, al confirmar, por esta restricción.
+alter table public.study_sessions
+  add constraint study_sessions_one_open_per_user
+  exclude using btree (user_id with =)
+  where (status in ('PLANNED', 'ACTIVE', 'INTERRUPTED'))
+  deferrable initially deferred;
 
 -- 7 · Lectura del motor para el Planner -------------------------------------------------------
 

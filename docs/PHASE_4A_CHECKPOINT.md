@@ -9,10 +9,11 @@ y sin PRODUCTION.
 `docs/LEARNING_ENGINE_CONTRACT.md` v1.1 (anexo §25) · `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md`
 · SD-030 … SD-032.
 
-**PHASE 4A · CANDIDATO · HUMAN DECISION REQUIRED.** Todo lo que el contrato define está construido
-y probado en la frontera real de runtime. Dos puntos necesitan decisión humana antes de la
-aceptación (§M): el **alcance de la unicidad de sesión abierta** (P4-G10, OBS-4A-B2) y la
-**ratificación del código de exclusión `NO_PUBLISHED_UNIT`** (OBS-4A-B1).
+**PHASE 4A · CANDIDATO REEMITIDO · LISTO PARA ACEPTACIÓN INDEPENDIENTE.** Las decisiones humanas del
+2026-09-19 están aplicadas (§M): `NO_PUBLISHED_UNIT` ratificado (OBS-4A-B1), **una sola sesión abierta
+por persona para todo origen** tras el análisis EC-019 (OBS-4A-B2, P4-G10,
+`docs/PHASE_4A_EC019_SESSION_INVARIANT.md`) y §G.1 del contrato corregida por la errata E-P4A-1
+(OBS-4A-B4). El candidato anterior `2ef913a` y su paquete quedan como evidencia histórica.
 
 ---
 
@@ -31,7 +32,7 @@ aceptación (§M): el **alcance de la unicidad de sesión abierta** (P4-G10, OBS
 | --- | --- | --- |
 | P4-D6 · hecho del motor | `packages/learning-engine` · migración 22 | `last_negative_position` por (persona, concepto): la posición de stream del intento elegible más reciente INCORRECT o BLANK, en el mismo pliegue que el estado; fuera del vector; tres CHECK (positiva, dentro del watermark, no nula ⇔ reparación) |
 | Planner puro | `packages/planner-engine` | decisión determinista: elegibilidad con razón, necesidad categórica, granularidad híbrida, reparación por la última evidencia negativa más antigua, `EXPOSED` antes que `NEW`, una reparación en la cabeza, empaquetado que salta lo que no cabe; texto canónico, SHA-256 y reproducción |
-| Esquema | migración 23 | `profiles.timezone`, `planner_config`, `planner_runs`, `planner_items`, `planner_run_audit`, FK `study_sessions.planner_run_id` RESTRICT, una sesión por ejecución y exclusión de la sesión planificada |
+| Esquema | migración 23 | `profiles.timezone`, `planner_config`, `planner_runs`, `planner_items`, `planner_run_audit`, FK `study_sessions.planner_run_id` RESTRICT, una sesión por ejecución y **como mucho una sesión abierta por persona** (EC-019) |
 | Frontera de servidor | migración 23 | `planner_context`, `engine_planner_snapshot`, `create_planner_run` (revalidación en la misma transacción), `start_planned_session` (idempotente) · **solo rol de servicio** |
 | Módulo real | `apps/web/src/server/planner` | puesta al día bloqueante del motor, recálculo ante entrada cambiada, negativa veraz sin fuente de duración; **ninguna ruta lo consume** |
 
@@ -119,7 +120,7 @@ la negativa.
 | BF-1 | La revalidación se señalaba con `serialization_failure` (40001). **PostgREST reintenta por sí solo** las transacciones 40001: una escritura atrasada entraba en bucle hasta el tiempo límite del gateway | `STALE_INPUT` usa 55000; el recálculo lo hace el servidor. Diagnosticado observando `pg_stat_activity` durante la carrera |
 | BF-2 | Con `ZERO_TIME`, los candidatos elegibles quedaban en la auditoría **sin razón** | todo elegible no colocado lleva `OVER_BUDGET`, también con presupuesto cero (§S). Lo encontró el corpus sintético |
 | BF-3 | `pg_timezone_names` en el camino de cada petición: **~0,5 s por consulta** medido en STAGING | la zona se valida al declararla; el día de plan no vuelve a consultar el catálogo |
-| BF-4 | Una unicidad global de sesión abierta rompía el comportamiento congelado de `create_study_session` y 32 pruebas congeladas | alcance acotado al Planner y decisión humana (§M, OBS-4A-B2) |
+| BF-4 | Una unicidad global de sesión abierta rompía 50 casos de pruebas congeladas | resuelto por EC-019 (§O): invariante global en base de datos; el arnés cierra por la frontera real las sesiones que dejaba abiertas; ninguna aserción debilitada |
 | BF-5 | Regex de la guarda de override sin barras invertidas en el primer commit | corregida |
 | BF-6 | La prueba RLS identificaba la tabla de solo servidor con `format('public.%I')`; en la base limpia de CI el optimizador la evaluaba sobre tablas de otros esquemas | consulta por OID |
 
@@ -169,7 +170,7 @@ añadido ninguna clave.
 | Gate | Estado | Prueba |
 | --- | --- | --- |
 | **P4-G1** | PASS | cambiar el valor por defecto replanifica hacia delante; la fila pasada, byte a byte igual |
-| **P4-G2** | PASS · dominio | la precedencia con override está probada en el paquete; en 4A no existe almacenamiento del override (su captura es 4B), así que nada puede tocar el valor por defecto |
+| **P4-G2** | **CONTRATO DE DOMINIO PROBADO · CAPTURA DE PRODUCTO DIFERIDA A 4B** | la precedencia override → día → valor por defecto, y que el override no toca el valor por defecto, están probadas en el paquete puro; el almacenamiento y la captura del override del día son de 4B (autorización §11), así que en 4A nada puede tocar el valor por defecto |
 | **P4-G3** | PASS | un cero declarado para hoy da `ZERO_TIME`, cero ítems, sin deuda |
 | **P4-G4** | PASS | `explainRun` reproduce la instantánea byte a byte; el hash lo recalcula la base |
 | **P4-G5** | PASS | orden de filas invariante; peticiones repetidas y concurrentes dan la misma ejecución |
@@ -177,7 +178,7 @@ añadido ninguna clave.
 | **P4-G7** | PASS | puesta al día bloqueante; con fallo inyectado en la frontera, `PLAN_UNAVAILABLE_ENGINE` sin escritura |
 | **P4-G8** | PASS | duraciones de fixture; `NOTHING_FITS`, `ZERO_TIME`, `NOTHING_ELIGIBLE` |
 | **P4-G9** | PASS | reanudación, reutilización, replanificación, cadena append-only, `RUN_SUPERSEDED`, `RUN_STALE` |
-| **P4-G10** | **PASS ACOTADO · DECISIÓN HUMANA** | sesión planificada exclusiva y arranque idempotente; la unicidad entre sesiones ajenas al Planner no se impone (OBS-4A-B2) |
+| **P4-G10** | PASS | **como mucho una sesión abierta por persona, para todo origen**, en base de datos (restricción de exclusión diferida); los diez casos y la concurrencia real en `session.oneOpenPerLearner.spec`; arranque idempotente por ejecución |
 | **P4-G11** | PASS | RLS, columnas seguras, sin escritura ni RPC de cliente, registro y guardas por gobernanza |
 | **P4-G12** | PASS | lista blanca de `planner_config`, vocabulario, `NOTHING_ELIGIBLE` sin preparación |
 | **P4-G13** | PASS | roundtrip completo con firma idéntica en CI sobre base limpia; roundtrip acotado en STAGING; deriva de esquema real contra STAGING en CI; residuo cero; PRODUCTION intacto |
@@ -204,13 +205,31 @@ P4-G18 pertenece a Phase 4B.
 
 | Id | Qué | Estado |
 | --- | --- | --- |
-| **OBS-4A-B2** · P4-G10 | La base impide que una sesión **planificada** conviva con otra abierta (y dos planificadas). **No** impide dos sesiones abiertas ajenas al Planner: Phase 2 congelada lo admite en `create_study_session` y sus pruebas congeladas lo usan en decenas de casos. Extenderlo cambia comportamiento congelado (EC-019) | **DECISIÓN HUMANA**: (a) aceptar el alcance acotado, o (b) extenderlo a toda sesión con análisis de impacto y adaptación del arnés de Phase 2 y FPS |
-| **OBS-4A-B1** | `NO_PUBLISHED_UNIT` no está en la lista de §E: nombra una exclusión forzada (§E.2 admite un concepto con solo pregunta, pero APRENDER exige una unidad) | **RATIFICACIÓN**: consta en `planner_config` v1 como `pending_ratification` |
+| **OBS-4A-B2** · P4-G10 | Alcance de la unicidad de sesión abierta | **CERRADA** · opción B por EC-019: invariante global (§O) |
+| **OBS-4A-B1** | `NO_PUBLISHED_UNIT` | **CERRADA** · ratificado el 2026-09-19; sin `pending_ratification` |
 | OBS-4A-B3 | `EVIDENCE_CONFLICTING` es absorbente en el motor v1: una reparación con evidencia mixta no se disuelve nunca. La vivacidad de P4-D5 la hace rotar, no desaparecer | vigilancia · semántica del motor, no del Planner |
-| OBS-4A-B4 | §G.1 del contrato dice «la de menor clave de sílabo»; §F.5 y §G.2 (v1.3) dicen «evidencia más antigua». Se implementa §F.5/§G.2, que es la decisión P4-D5 | errata de redacción · no cambia semántica |
+| OBS-4A-B4 | §G.1 decía «la de menor clave de sílabo» frente a §F.5/§G.2 | **CERRADA** · errata E-P4A-1; P4-D5 sin cambios; una guarda impide que la redacción vieja vuelva a ser norma |
 | OBS-4A-B5 | La simulación de «día siguiente» en las pruebas retrasa `session_items.completed_at` del aprendiz sintético; no toca evidencia | registrada |
 | OBS-4A-B6 | El motor ordena con `localeCompare` (congelado en Phase 3); el Planner compara por punto de código (§H). No afecta a la proyección | vigilancia |
 | D-13, D-18, D-20, D-22, D-23 · WATCH-P2-1 · OBS-3.1-01 | heredadas, sin cambios | abiertas y aceptadas |
+
+## O · EC-019 · una sola sesión abierta por persona
+
+Detalle en `docs/PHASE_4A_EC019_SESSION_INVARIANT.md`. Resumen:
+
+- **Autoridad:** ninguna establece sesiones abiertas simultáneas como comportamiento; el contrato de
+  pantalla del FPS dice que una sesión abierta siempre gana y nunca se ofrece crear otra. Sin
+  contradicción, se continúa sin nueva parada.
+- **Implementación:** `EXCLUDE USING btree (user_id WITH =) WHERE status IN ('PLANNED', 'ACTIVE',
+  'INTERRUPTED') DEFERRABLE INITIALLY DEFERRED`. Diferida para conservar el orden de errores congelado
+  de `create_study_session`; nativa y segura bajo concurrencia.
+- **Precomprobación de STAGING (solo lectura):** 0 personas con varias sesiones abiertas; Ana, 2
+  sesiones `COMPLETED`.
+- **Pruebas congeladas:** 12 ficheros afectados, todos de clase A. Un cambio de fixture homogéneo
+  (`closeOpenSessions` en `createSession`, por la frontera real de eventos) y dos casos A2 adaptados
+  uno a uno. Ninguna aserción debilitada.
+- **FPS:** una línea en HOY para continuar la sesión que ganó una carrera de creación.
+- **Arranque planificado:** una carrera perdida al confirmar se traduce en `OPEN_SESSION`.
 
 ## N · Lo que sigue sin autorizar
 

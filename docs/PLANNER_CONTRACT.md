@@ -6,6 +6,8 @@ añade la lectura autorizada por **P4-D6**
 (§F.6), `ACCEPTED` el 2026-09-18; **P4-D5** · la **última evidencia negativa** ordena la
 reparación (§F.5), `ACCEPTED` el 2026-09-19; **P4-D6** · el **motor** proyecta esa posición y el
 Planner la lee (§W.1), `ACCEPTED` el 2026-09-19. **No queda ninguna decisión semántica abierta.**
+**FE DE ERRATAS:** **E-P4A-1** (2026-09-19) · §G.1 alineada con P4-D5, sin ningún cambio semántico
+(OBS-4A-B4).
 **HISTORIA:** v1.0 aterrizó como `ACCEPTED`; la revisión independiente encontró **IR-P4A-01** (una
 recomendación emitida contaba como respuesta a la reparación) e **IR-P4A-02** (la atomicidad
 estaba sobreafirmada) y el contrato pasó a v1.1 `PROPOSED`. v1.2 cerró P4-D3 y P4-D4 y abrió
@@ -111,6 +113,12 @@ concepto es candidato si y solo si:
 
 Toda exclusión se registra con su razón: `TARGET_RETIRED`, `NO_ATTRIBUTED_QUESTION`,
 `SOURCE_STATUS_EXCLUDED`, `COMPLETED_TODAY`, `POSITIVE_NO_REVIEW_POLICY`, `OVER_BUDGET`.
+
+**`NO_PUBLISHED_UNIT` · ratificado el 2026-09-19 (OBS-4A-B1).** Razón canónica del caso
+estructuralmente imposible en que la acción que el Planner selecciona exige una unidad publicada
+(`APRENDER`, `REAPRENDER`) y no existe ninguna válida. Solo nombra y audita una exclusión ya
+forzada: **no** autoriza actividad sintética, contenido de respaldo, sustituir `APRENDER` por una
+pregunta, inventar duraciones ni ninguna política de aprendizaje distinta.
 
 Un candidato excluido **no desaparece**: queda en la auditoría con su razón (§S). Esa es la
 diferencia entre «no lo planifiqué» y «no lo vi».
@@ -333,7 +341,13 @@ explícitamente cualquier parámetro numérico o cíclico de equilibrio (P4-D1.7
 
 **G-R · garantía de reparación** — derivada de P4-D1.1.
 Si **R ≠ ∅** y el presupuesto admite su acción correspondiente, el plan contiene una acción de
-reparación: la de menor clave de sílabo entre las de **R**.
+reparación: la primera de **R** en el orden de §F.5 —**última evidencia negativa, más antigua
+primero**; a igualdad, clave de sílabo (§H)—.
+
+> **Fe de erratas E-P4A-1 · 2026-09-19.** Hasta esta corrección, esta línea decía «la de menor
+> clave de sílabo entre las de R», un residuo de la redacción anterior a P4-D5 que contradecía
+> §F.5 y §G.2. La decisión humana vigente es **P4-D5** y no cambia: la corrección solo alinea la
+> redacción. Registro en `docs/SPEC_DIFF_LOG.md`, ERRATA E-P4A-1.
 
 **G-C · garantía de continuidad** — derivada de P4-D1.2.
 Mientras queden acciones de **C** elegibles y quepan, la reparación no consume el resto del plan.

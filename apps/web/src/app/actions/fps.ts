@@ -186,7 +186,11 @@ export async function startOrResumeSessionAction(): Promise<FpsActionState> {
         p_planned_minutes: null,
         p_items: items,
       });
-      if (created.error) {
+      // P4-G10 · EC-019 · la base impone una sola sesión abierta por persona. Si otra petición
+      // (un doble toque, otra pestaña) abrió una en el mismo instante, esta pierde al confirmar
+      // y lo correcto es continuar la que ganó, que es lo que HOY ofrece siempre.
+      const lostRace = created.error?.message.includes('study_sessions_one_open_per_user');
+      if (created.error && !lostRace) {
         return { error: humanMessage(rejection(created.error.message)) };
       }
       session = await findOpenSession(supabase);

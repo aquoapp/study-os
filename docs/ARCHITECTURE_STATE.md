@@ -782,7 +782,9 @@ completo de Phase 4A. **Sin merge, sin tag, sin congelación.** Detalle y gates 
 | P4-D2 | diferida: sin fuente de duración, `DURATION_SOURCE_UNDECIDED` y ninguna escritura |
 | Zona horaria | `profiles.timezone` declarada por la persona (CDEM §3), IANA, nunca deducida ni rellenada |
 
-Decisiones humanas abiertas: **OBS-4A-B2** (alcance de la unicidad de sesión abierta, P4-G10) y
-**OBS-4A-B1** (ratificar `NO_PUBLISHED_UNIT`). Observaciones OBS-4A-B3 … B6 en el checkpoint.
+Decisiones humanas del 2026-09-19, aplicadas: **OBS-4A-B1** (`NO_PUBLISHED_UNIT` ratificado),
+**OBS-4A-B2** (como mucho una sesión abierta por persona, global, tras el análisis EC-019 en
+`docs/PHASE_4A_EC019_SESSION_INVARIANT.md`) y **OBS-4A-B4** (errata E-P4A-1 del contrato del
+Planner). OBS-4A-B3, B5 y B6 siguen como vigilancia u observación.
 Lo que sigue sin autorizar: merge del BUILD, tag, congelación, Phase 4B, P4-D2, Phase 1B, corpus
 oficial, readiness, PRODUCTION, Vercel Production y AQUO.

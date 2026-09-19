@@ -939,3 +939,19 @@ la política sin preguntar de dónde saldría ese dato en producción. Es la lec
 de gobernanza: **una propiedad demostrada sobre una entrada sin procedencia autorizada no está
 demostrada**. Queda como decisión 15 de ADR-012 y como prueba mecánica en el vigilante de
 gobernanza, que exige que cada entrada del modelo tenga una fuente de producción permitida.
+
+## 27 · Decisiones humanas finales del BUILD · 2026-09-19
+
+Tras la inspección independiente del candidato `2ef913a` (PR #19), Ana resuelve las dos decisiones
+que el BUILD devolvió.
+
+| Decisión | Resolución |
+| --- | --- |
+| **OBS-4A-B1** · `NO_PUBLISHED_UNIT` | **APROBADA.** Razón canónica de exclusión para el caso estructuralmente imposible en que la acción seleccionada exige una unidad publicada y no existe ninguna válida. No autoriza actividad sintética, contenido de respaldo, sustituir `APRENDER` por una pregunta, inventar duraciones ni otra política de aprendizaje. Se retira `pending_ratification` |
+| **OBS-4A-B2** · P4-G10 | **OPCIÓN B, condicionada a EC-019.** Invariante objetivo: **como mucho una sesión abierta por persona**, global, no específica del Planner, impuesta por la base de datos para todo origen. Antes de tocar runtime o esquema, análisis de impacto EC-019 y clasificación de cada prueba afectada; sin reescribir expectativas congeladas para ponerlas en verde; parada si alguna autoridad aceptada exige varias sesiones abiertas |
+| **OBS-4A-B4** · §G.1 | **CERRAR** con la errata mínima e históricamente honesta, sin cambiar P4-D5 |
+| OBS-4A-B3, B5, B6 | se mantienen como vigilancia u observación |
+| **P4-G2** | se registra con precisión: **contrato de dominio probado · captura de producto diferida a 4B** |
+
+El análisis EC-019 y su resultado constan en `docs/PHASE_4A_EC019_SESSION_INVARIANT.md`. Siguen sin
+autorizar el merge, el tag, la congelación, Phase 4B y todo lo que ya estaba fuera de alcance.

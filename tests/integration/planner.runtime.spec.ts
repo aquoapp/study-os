@@ -760,7 +760,7 @@ describe('§P · un destino retirado o una ejecución sustituida no arrancan', (
   });
 });
 
-describe('P4-G10 · alcance · lo que no viene del Planner no cambia (OBS-4A-B2)', () => {
+describe('P4-G10 · una sola sesión abierta por persona, para todo origen (EC-019)', () => {
   const fpsSession = () =>
     rpc(bruno.client, 'create_study_session', {
       p_goal_id: bruno.goalId,
@@ -777,7 +777,8 @@ describe('P4-G10 · alcance · lo que no viene del Planner no cambia (OBS-4A-B2)
     expect((await request(bruno)).kind).toBe('RESUME_REQUIRED');
   });
 
-  it('dos sesiones que no vienen del Planner se siguen admitiendo, como en Phase 2', async () => {
-    expect((await fpsSession()).error).toBeNull();
+  it('una segunda sesión ajena al Planner tampoco se abre: el invariante es global', async () => {
+    const second = await fpsSession();
+    expect(second.error?.message).toContain('study_sessions_one_open_per_user');
   });
 });

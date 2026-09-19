@@ -340,8 +340,10 @@ determinista), migración 23 (`profiles.timezone` declarada, `planner_config`, `
 planificada) y el módulo real `apps/web/src/server/planner`, que **ninguna ruta consume**: la
 selección visible sigue siendo `fps-fixed-v1`. Sin fuente de duración decidida (P4-D2), el Planner
 responde `DURATION_SOURCE_UNDECIDED` y no escribe nada; las duraciones de las pruebas son fixture.
-Quedan dos decisiones humanas: el alcance de la unicidad de sesión abierta (**OBS-4A-B2**, P4-G10)
-y la ratificación de `NO_PUBLISHED_UNIT` (**OBS-4A-B1**). Lección del BUILD: **PostgREST reintenta
+Decisiones humanas del 2026-09-19, aplicadas: `NO_PUBLISHED_UNIT` ratificado (**OBS-4A-B1**); **como
+mucho una sesión abierta por persona**, global y en base de datos, tras el análisis EC-019
+(**OBS-4A-B2**, `docs/PHASE_4A_EC019_SESSION_INVARIANT.md`); y la errata E-P4A-1 del contrato del
+Planner (**OBS-4A-B4**). Lección del BUILD: **PostgREST reintenta
 por sí solo las transacciones que fallan con 40001**; una revalidación que debe devolver el control
 al servidor no puede usar ese código.
 

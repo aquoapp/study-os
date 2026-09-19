@@ -191,7 +191,9 @@ type Resolution =
  * `NO_PUBLISHED_UNIT` no figura en la lista de §E. Nombra una exclusión **forzada**, no una
  * regla: §E.2 admite como candidato un concepto con solo pregunta atribuida, pero `APRENDER` y
  * `REAPRENDER` (§F.1) exigen una unidad que no existe. No planificar lo inexistente no es una
- * decisión; la etiqueta sí es nueva, y se reporta para ratificación humana (OBS-4A-B1).
+ * decisión; la etiqueta es nueva y está **ratificada** por decisión humana del 2026-09-19
+ * (OBS-4A-B1). No autoriza actividad sintética, contenido de respaldo ni sustituir APRENDER por
+ * una pregunta: solo nombra y audita una exclusión forzada.
  */
 function resolveAction(concept: PlannerConcept, kind: ActionKind): Resolution {
   const steps: PlannedStep[] = [];

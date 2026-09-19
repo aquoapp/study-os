@@ -55,6 +55,10 @@ export async function startPlannedSession(
       call.error.message.includes(`STUDY_OS_PLANNER · ${code}`),
     );
     if (refusal) return { kind: refusal };
+    // P4-G10 · la unicidad global de sesión abierta se comprueba al confirmar (restricción
+    // diferida): una carrera perdida contra otra sesión que se abría a la vez llega así.
+    if (call.error.message.includes('study_sessions_one_open_per_user'))
+      return { kind: 'OPEN_SESSION' };
     throw new Error(`arranque de sesión planificada: ${call.error.message}`);
   }
   const data = call.data as { sessionId: string; reused: boolean };
