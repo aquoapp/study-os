@@ -356,7 +356,11 @@ describe('P3.1-G7 / G8 · la frontera corregida no amplía ninguna autoridad', (
        from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname like 'engine\\_%' order by p.proname`,
     );
-    expect(rows.map((row) => row.proname).sort()).toEqual(Object.values(ENGINE_RPC).sort());
+    // Phase 4A (2026-09-19) añade `engine_planner_snapshot`, con la misma forma: invoker, search_path
+    // vacío y EXECUTE solo para el rol de servicio. Es la única entrada nueva.
+    expect(rows.map((row) => row.proname).sort()).toEqual(
+      [...Object.values(ENGINE_RPC), 'engine_planner_snapshot'].sort(),
+    );
     for (const row of rows) {
       expect(row.prosecdef, `${row.proname} es SECURITY DEFINER`).toBe(false);
       expect(row.config).toBe('search_path=""');

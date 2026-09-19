@@ -120,6 +120,7 @@ function payloadOf(result: EngineResult): Record<string, unknown> {
       masteryState: concept.masteryState,
       uncertainty: concept.uncertainty,
       vector: concept.vector,
+      lastNegativePosition: concept.lastNegativePosition,
     })),
     errorPatterns: result.errorPatterns.map((pattern) => ({
       conceptId: pattern.conceptId,

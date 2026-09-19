@@ -95,11 +95,40 @@ export interface CreatedSession {
   readonly items: SessionItemRef[];
 }
 
+/**
+ * Cierra, por la frontera real de eventos y como lo haría la propia persona, toda sesión que el
+ * arnés dejó abierta para este aprendiz.
+ *
+ * **Phase 4A · EC-019 · P4-G10 (2026-09-19).** La base impone ahora como mucho una sesión abierta
+ * por persona (`study_sessions_one_open_per_user`). Muchas pruebas congeladas abren una sesión
+ * nueva **por caso** para el mismo aprendiz y dejaban la anterior abierta por conveniencia; ninguna
+ * afirma que dos sesiones abiertas deban convivir (clase A del análisis de impacto,
+ * `docs/PHASE_4A_EC019_SESSION_INVARIANT.md`). Cerrarla antes de abrir otra es el recorrido veraz
+ * del producto: `SESSION_COMPLETED` (precedido de `SESSION_STARTED` o `SESSION_RESUMED` cuando el
+ * estado lo exige). No toca ninguna evidencia existente: solo añade la que el cierre produce.
+ */
+export async function closeOpenSessions(learner: Learner): Promise<void> {
+  const open = await learner.client
+    .from('study_sessions')
+    .select('id, status')
+    .in('status', ['PLANNED', 'ACTIVE', 'INTERRUPTED']);
+  if (open.error) throw new Error(`sesiones abiertas: ${open.error.message}`);
+  for (const row of (open.data ?? []) as Array<{ id: string; status: string }>) {
+    const ref: CreatedSession = { session_id: row.id, status: row.status, items: [] };
+    if (row.status === 'PLANNED') await accept(learner, eventFor(learner, ref, 'SESSION_STARTED'));
+    if (row.status === 'INTERRUPTED') {
+      await accept(learner, eventFor(learner, ref, 'SESSION_RESUMED'));
+    }
+    await accept(learner, eventFor(learner, ref, 'SESSION_COMPLETED'));
+  }
+}
+
 export async function createSession(
   learner: Learner,
   items: Array<{ item_type: string; target_id: string; planned_minutes?: number }>,
   sessionType = 'FIXTURE',
 ): Promise<CreatedSession> {
+  await closeOpenSessions(learner);
   const result = await rpc<CreatedSession>(learner.client, 'create_study_session', {
     p_goal_id: learner.goalId,
     p_session_type: sessionType,

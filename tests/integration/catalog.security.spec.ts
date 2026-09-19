@@ -34,6 +34,17 @@ const CANONICAL_CONTENT_TABLES = new Set(
     .concat('question_options'),
 );
 
+/**
+ * Phase 4A · tablas del Planner: ninguna concesión de **tabla** a `authenticated`. Las dos que la
+ * persona puede leer lo hacen por columnas seguras, y se comprueba aparte.
+ */
+const PLANNER_SERVER_TABLES = new Set([
+  'planner_config',
+  'planner_runs',
+  'planner_items',
+  'planner_run_audit',
+]);
+
 /** Tablas con propietario: las de `public` con columna `user_id`, más el perfil. */
 const OWNED_TABLES = new Set(
   query<{ table: string }>(
@@ -86,6 +97,10 @@ function expectedPrivileges(schema: string, table: string, role: string): string
     // El UPDATE de `profiles` es de columna (display_name, locale), no de tabla: se
     // comprueba aparte con role_column_grants.
     if (table === 'profiles') return ['SELECT'];
+    // Phase 4A (2026-09-19) · Planner Contract §U.5: la persona lee sus ejecuciones e ítems solo
+    // en columnas seguras (concesión de columna, no de tabla), y la configuración y la auditoría
+    // no tienen ninguna concesión de cliente.
+    if (PLANNER_SERVER_TABLES.has(table)) return [];
     return AUTHENTICATED_WRITE_ALLOWLIST[table] ?? ['SELECT'];
   }
   if (role === 'service_role') {
@@ -176,11 +191,17 @@ describe('toda tabla de public, content e ingest tiene RLS habilitado y forzado'
       // batería en `engine.security.spec`.
       'ingest.attribution_generations',
       'ingest.mapping_transitions',
+      // Phase 4A · migración 23 · Planner Contract §Q, §S, §T.
+      'public.planner_config',
+      'public.planner_runs',
+      'public.planner_items',
+      'public.planner_run_audit',
     ]) {
       expect(names, `falta ${expected}`).toContain(expected);
     }
-    // 23 de Phase 1A + 12 de Phase 2 en `public` + 2 contadores + 2 tablas de atribución.
-    expect(names).toHaveLength(39);
+    // 23 de Phase 1A + 12 de Phase 2 en `public` + 2 contadores + 2 tablas de atribución
+    // + 4 del Planner (Phase 4A).
+    expect(names).toHaveLength(43);
   });
 
   for (const row of tables) {
@@ -308,9 +329,11 @@ describe('matriz rol × privilegio derivada del catálogo (SI-1A-4)', () => {
       "select table_name as table, column_name as column, privilege_type as privilege from information_schema.role_column_grants where grantee = 'authenticated' and table_schema = 'public' and privilege_type <> 'SELECT' order by 1, 2, 3",
     );
     const perfil = columns.filter((row) => row.table === 'profiles');
+    // Phase 4A añade `timezone`: la persona declara su zona (CDEM §3; Planner Contract §I.1).
     expect(perfil).toEqual([
       { table: 'profiles', column: 'display_name', privilege: 'UPDATE' },
       { table: 'profiles', column: 'locale', privilege: 'UPDATE' },
+      { table: 'profiles', column: 'timezone', privilege: 'UPDATE' },
     ]);
     // Y fuera del perfil no hay más escritura que la declarada en la allowlist.
     const fuera = [

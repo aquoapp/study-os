@@ -220,8 +220,8 @@ describe('la matriz de aceptación es la misma en todos los registros', () => {
     for (const adr of ['ADR-001', 'ADR-002', 'ADR-004', 'ADR-005']) {
       expect(state).toMatch(new RegExp(`^\\| ${adr} \\|[^\\n]*PROPOSED`, 'm'));
     }
-    // ADR-012 se acepta sin implementar: el BUILD de Phase 4A no está autorizado.
-    expect(state).toMatch(/^\| ADR-012 \|[^\n]*`NOT IMPLEMENTED`/m);
+    // ADR-012 · desde el BUILD de Phase 4A (2026-09-19) consta AUTHORIZED, conservando su historia.
+    expect(state).toMatch(/^\| ADR-012 \|[^\n]*`AUTHORIZED`[^\n]*`NOT IMPLEMENTED`/m);
     expect(state).toContain('ACCEPTED · NOT IMPLEMENTED');
     expect(state).not.toContain('Ninguna decisión está ACCEPTED');
     for (const [decision, adr] of MATRIX) {

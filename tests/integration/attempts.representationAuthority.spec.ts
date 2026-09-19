@@ -55,6 +55,11 @@ let env: TestEnv;
 let admin: ReturnType<typeof adminClient>;
 let pack: SyntheticPack;
 let ana: Learner;
+/**
+ * Otra persona sintética para la sonda de «B no es presentable sin su clave». EC-019 · P4-G10: la
+ * sonda no puede ser una segunda sesión abierta de `ana` junto a la que tiene A presentada.
+ */
+let probe: Learner | undefined;
 
 /** Pregunta con dos representaciones: A presentada, B publicada después. */
 let repA = '';
@@ -121,6 +126,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (ana) await deleteTestUser(env, ana.id);
+  if (probe) await deleteTestUser(env, probe.id);
   if (pack) await purgePack(admin, pack.packId);
 }, 120_000);
 
@@ -271,10 +277,16 @@ describe('attempt.representationAuthority.presentedWins · una representación p
     // filas nuevas, así que la clave de A no la evalúa —eso sería exactamente el retroceso
     // a «la clave más reciente de la pregunta» que SD-023 §3 prohíbe—. Mientras B no tenga
     // su clave, B no es presentable (SD-023 §3d): una pregunta a medio corregir no se sirve.
-    const otraSesion = await sessionFor(questionAB);
+    // EC-019 · P4-G10 · la sonda la hace otra persona que empieza ahora: `ana` sigue con A
+    // presentada en su única sesión abierta. La propiedad no depende de quién pregunte.
+    probe = await createLearner(env, 'repauth-probe', pack);
+    const otraSesion = await createSession(probe, [
+      { item_type: 'QUESTION', target_id: questionAB },
+    ]);
+    await accept(probe, eventFor(probe, otraSesion, 'SESSION_STARTED'));
     await reject(
-      ana,
-      itemEvent(ana, otraSesion, itemAt(otraSesion, 0), 'QUESTION_PRESENTED', {
+      probe,
+      itemEvent(probe, otraSesion, itemAt(otraSesion, 0), 'QUESTION_PRESENTED', {
         question_representation_id: repB,
       }),
       'NO_ANSWER_KEY',

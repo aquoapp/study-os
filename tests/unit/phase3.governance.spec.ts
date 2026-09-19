@@ -535,16 +535,32 @@ describe('aterrizaje de gobernanza · nada de Phase 3 ha llegado al runtime', ()
   it('las migraciones de Phase 3 son exactamente las dos autorizadas', () => {
     // Phase 3.1 (corrección D-26) añade una única migración, la 21, que solo crea envoltorios
     // de invocación en `public`. Las de Phase 3 siguen siendo exactamente la 19 y la 20.
-    expect(migrations).toHaveLength(22);
-    expect(migrations.sort().slice(-3)).toEqual([
+    //
+    // Phase 4A (2026-09-19) añade migraciones posteriores, autorizadas por su propio BUILD. Esta
+    // guarda deja de contar el total —que ya no es de Phase 3— y fija por nombre lo que sí lo es:
+    // el tramo hasta la 21 no cambia, y todo lo posterior tiene que estar en la lista de Phase 4A.
+    const sorted = migrations.sort();
+    const upTo21 = sorted.filter((name) => name.slice(0, 14) <= '00000000000021');
+    expect(upTo21).toHaveLength(22);
+    expect(upTo21.slice(-3)).toEqual([
       '00000000000019_attribution_boundary.sql',
       '00000000000020_engine_core.sql',
       '00000000000021_engine_invocation_boundary.sql',
     ]);
+    const PHASE_4A_AUTHORIZED = [
+      '00000000000022_engine_last_negative_position.sql',
+      '00000000000023_planner_domain.sql',
+    ];
+    for (const later of sorted.filter((name) => name.slice(0, 14) > '00000000000021')) {
+      expect(PHASE_4A_AUTHORIZED, `migración no autorizada: ${later}`).toContain(later);
+    }
   });
 
   it('ninguna migración crea sustrato que Phase 3 no autoriza', () => {
+    // Actualizado el 2026-09-19 por la Phase 4A Build Authorization: `planner_runs` y
+    // `planner_items` existen, pero **solo** en la migración autorizada de Phase 4A.
     const sql = migrations
+      .filter((name) => name !== '00000000000023_planner_domain.sql')
       .map((name) => readFileSync(join(migrationsDir, name), 'utf8').toLowerCase())
       .join('\n');
     for (const table of [
@@ -560,13 +576,14 @@ describe('aterrizaje de gobernanza · nada de Phase 3 ha llegado al runtime', ()
     }
   });
 
-  it('existe el paquete del motor y ningún otro', () => {
+  it('existe el paquete del motor y, desde Phase 4A, el del Planner; ningún otro', () => {
     expect(existsSync(join(REPO_ROOT, 'packages', 'learning-engine'))).toBe(true);
     expect(readdirSync(join(REPO_ROOT, 'packages')).sort()).toEqual([
       'config',
       'design-system',
       'domain',
       'learning-engine',
+      'planner-engine',
     ]);
   });
 

@@ -153,6 +153,12 @@ export interface ConceptProjection {
   readonly vector: ConceptVector;
   /** `NULL` mientras `review_intervals` esté sin fijar (contrato §8). */
   readonly nextReviewAt: null;
+  /**
+   * Contrato §25 · P4-D6 · posición de stream del intento elegible no correcto más reciente, o
+   * `null`. **Procedencia, no puntuación**, y fuera del vector. No nulo exactamente cuando el
+   * estado es `EVIDENCE_NEGATIVE` o `EVIDENCE_CONFLICTING`.
+   */
+  readonly lastNegativePosition: number | null;
 }
 
 /** Patrón de error activo. Derivado, no acumulado: se recalcula desde la evidencia. */

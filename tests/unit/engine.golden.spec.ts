@@ -94,7 +94,12 @@ function golden(
  * qué debe salir y por qué. Esta línea fija ese resultado ya verificado para que un cambio
  * futuro de semántica tenga que ser deliberado y quede a la vista en el diff.
  */
-const GOLDEN_SHA256 = 'd4da1253a34919cda4c98da2175ec1bccd1c1b7910269571014653974dba4efe';
+/**
+ * Cambio deliberado del 2026-09-19 · contrato del motor v1.1 §25 · P4-D6. La forma canónica gana
+ * `lastNegativePosition` por concepto y nada más: las aserciones semánticas de abajo no cambian.
+ * Huella anterior, de `phase-3-v1.1`: d4da1253a34919cda4c98da2175ec1bccd1c1b7910269571014653974dba4efe.
+ */
+const GOLDEN_SHA256 = '2ec793d74e08f5131cf32b737b47e7c2c3561e8f767fe561fd965e48642ed410';
 
 describe('REQ-D02 · dataset golden', () => {
   const result = runEngine(GOLDEN_INPUT);

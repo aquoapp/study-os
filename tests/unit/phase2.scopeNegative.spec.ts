@@ -27,6 +27,10 @@ const migrations = readdirSync(migrationsDir).filter((name) => name.endsWith('.s
 const allMigrationSql = migrations
   .map((name) => readFileSync(join(migrationsDir, name), 'utf8').toLowerCase())
   .join('\n');
+const migrationSqlOutsidePlanner = migrations
+  .filter((name) => name !== '00000000000023_planner_domain.sql')
+  .map((name) => readFileSync(join(migrationsDir, name), 'utf8').toLowerCase())
+  .join('\n');
 
 describe('el alcance del motor es exactamente Phase 3 (nada de Phase 4 en adelante)', () => {
   /**
@@ -34,12 +38,25 @@ describe('el alcance del motor es exactamente Phase 3 (nada de Phase 4 en adelan
    * migración autorizada ha aterrizado, de modo que el Learning Engine deja de estar
    * prohibido y pasa a estar **acotado**. Lo que sigue prohibido no se relaja ni un ápice.
    */
-  it('existe el motor de aprendizaje y no existe ningún otro motor', () => {
-    for (const pkg of ['planner-engine', 'risk-engine']) {
-      expect(existsSync(join(REPO_ROOT, 'packages', pkg)), `packages/${pkg} existe`).toBe(false);
-    }
+  /*
+   * Actualizado el 2026-09-19 por la Phase 4A Build Authorization (P4-D6 + BUILD completo), con el
+   * mismo criterio que en Phase 3: lo que la autorización construye deja de estar prohibido y
+   * pasa a estar **acotado por nombre**. El Planner existe solo como `planner-engine` y como la
+   * migración 23; el resto sigue prohibido sin relajarse.
+   */
+  it('existen el motor de aprendizaje y el Planner, y ningún otro motor', () => {
+    expect(
+      existsSync(join(REPO_ROOT, 'packages', 'risk-engine')),
+      'packages/risk-engine existe',
+    ).toBe(false);
     const packages = readdirSync(join(REPO_ROOT, 'packages'));
-    expect(packages.sort()).toEqual(['config', 'design-system', 'domain', 'learning-engine']);
+    expect(packages.sort()).toEqual([
+      'config',
+      'design-system',
+      'domain',
+      'learning-engine',
+      'planner-engine',
+    ]);
   });
 
   it('ninguna migración crea una tabla de proyección, de planner o de configuración de motor', () => {
@@ -65,7 +82,9 @@ describe('el alcance del motor es exactamente Phase 3 (nada de Phase 4 en adelan
       // Se busca la **creación** de la tabla, no su mención: `exam_sittings.notes` es una
       // columna legítima de Phase 1A, y una prueba que confundiera una subcadena con una
       // tabla obligaría a relajarla en cuanto apareciera la primera coincidencia inocente.
-      expect(allMigrationSql, `alguna migración crea la tabla ${table}`).not.toMatch(
+      // Las tablas del Planner solo pueden nacer en su migración autorizada (Phase 4A).
+      const scope = table.startsWith('planner_') ? migrationSqlOutsidePlanner : allMigrationSql;
+      expect(scope, `alguna migración crea la tabla ${table}`).not.toMatch(
         new RegExp(
           `create\\s+table\\s+(if\\s+not\\s+exists\\s+)?(public\\.|ingest\\.|content\\.)?${table}\\b`,
         ),

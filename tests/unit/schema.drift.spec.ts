@@ -82,6 +82,8 @@ describe('schema.drift · REQ-A04 · EC-011', () => {
     for (const name of migrations) {
       const sql = readMigration(name).toLowerCase();
       for (const table of domainTables) {
+        // Phase 4A Build Authorization (2026-09-19): las tablas del Planner solo en su migración.
+        if (table.startsWith('planner_') && name === '00000000000023_planner_domain.sql') continue;
         expect(sql, `${name} crea la tabla de dominio ${table}`).not.toMatch(
           new RegExp(`create\\s+table\\s+(if\\s+not\\s+exists\\s+)?(public\\.)?${table}\\b`),
         );

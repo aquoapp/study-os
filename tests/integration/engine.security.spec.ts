@@ -358,12 +358,24 @@ describe('la proyección no admite precisión falsa ni por la puerta de atrás',
 });
 
 describe('nada de Phase 4 ni de readiness ha llegado al catálogo', () => {
-  it('no existe ninguna tabla de readiness, intervención ni planner', () => {
+  it('no existe ninguna tabla de readiness ni de intervención; el Planner solo en public (Phase 4A)', () => {
     const rows = query<{ table_name: string }>(
       `select table_name from information_schema.tables
-       where table_name in ('exam_readiness', 'intervention_outcomes', 'planner_runs',
-                            'planner_items', 'review_schedule', 'simulation_runs')`,
+       where table_name in ('exam_readiness', 'intervention_outcomes', 'review_schedule',
+                            'simulation_runs')`,
     );
     expect(rows).toEqual([]);
+    // Actualizado el 2026-09-19 por la Phase 4A Build Authorization: las tablas del Planner
+    // existen, en `public` y nunca en el esquema del motor (Planner Contract §U.8).
+    const planner = query<{ schema: string; table: string }>(
+      `select table_schema as schema, table_name as table from information_schema.tables
+        where table_name like 'planner\\_%' order by 2`,
+    );
+    expect(planner).toEqual([
+      { schema: 'public', table: 'planner_config' },
+      { schema: 'public', table: 'planner_items' },
+      { schema: 'public', table: 'planner_run_audit' },
+      { schema: 'public', table: 'planner_runs' },
+    ]);
   });
 });

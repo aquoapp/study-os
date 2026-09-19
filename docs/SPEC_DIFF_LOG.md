@@ -1769,3 +1769,32 @@ dentro del BUILD de Phase 4A, con `rebuild == incremental` exigido también para
 | ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexos v1.1 a v1.4 · `NOT IMPLEMENTED` |
 
 **Total tras esta adenda: 32 entradas SPEC_DIFF y 1 errata.**
+
+---
+
+## ERRATA · E-P4A-1 · §G.1 del contrato del Planner contradecía P4-D5
+
+**Documento afectado:** `docs/PLANNER_CONTRACT.md` v1.4, §G.1 («G-R · garantía de reparación»).
+**Texto anterior:** «el plan contiene una acción de reparación: la de menor clave de sílabo entre
+las de R».
+**Hecho:** la decisión humana vigente es **P4-D5** (2026-09-19): la reparación se ordena por la
+**última evidencia negativa, más antigua primero**, y así lo dicen §F.5 y §G.2. La línea de §G.1
+era un residuo de la redacción anterior a P4-D5. El BUILD implementa §F.5/§G.2 (OBS-4A-B4).
+**Corrección:** §G.1 dice ahora «la primera de R en el orden de §F.5 —última evidencia negativa,
+más antigua primero; a igualdad, clave de sílabo (§H)—», con la redacción anterior conservada en
+una nota de fe de erratas en el propio contrato.
+**Impacto:** documental. **Ninguno** semántico: P4-D5 no se reabre y ningún registro de decisión
+se reescribe. Una prueba de gobernanza impide que la redacción anterior vuelva a ser normativa.
+**Estado:** **ACCEPTED · aplicada** por la decisión humana del 2026-09-19 que cierra OBS-4A-B4.
+
+---
+
+## Estado de la adenda · decisiones finales de Phase 4A · 2026-09-19
+
+| Decisión | Estado |
+| --- | --- |
+| OBS-4A-B1 · `NO_PUBLISHED_UNIT` | **ratificado** como razón de exclusión canónica de una exclusión forzada |
+| OBS-4A-B2 · P4-G10 | **opción B por EC-019**: como mucho una sesión abierta por persona, global, en base de datos |
+| OBS-4A-B4 · §G.1 | **cerrada** por la errata E-P4A-1 |
+
+**Total tras esta adenda: 32 entradas SPEC_DIFF y 2 erratas.**

@@ -220,14 +220,24 @@ describe('Phase 4A · P4-D2 sigue diferida y no deja constantes detrás', () => 
         /estimated_minutes|duration_minutes|default_item_minutes/i,
       );
     }
-    expect(readdirSync(join(REPO_ROOT, 'packages'))).not.toContain('planner-engine');
+    // Desde el BUILD el paquete existe; lo que no puede contener es una duración de runtime.
+    const source = readdirSync(join(REPO_ROOT, 'packages/planner-engine/src'))
+      .map((file) => read(`packages/planner-engine/src/${file}`))
+      .join('\n');
+    // `default_daily_minutes` es una declaración de la persona (§I.2), no una duración.
+    expect(source).not.toMatch(/const\s+DEFAULT_[A-Z_]*MINUTES/);
+    expect(source).not.toMatch(/estimated_minutes|duration_minutes|minutesPerItem|MINUTES_PER/i);
+    // La única procedencia de duración que admite el tipo es la de fixture.
+    expect(source).toContain("export const DURATION_PROVENANCES = ['FIXTURE'] as const;");
   });
 });
 
 describe('Phase 4A · ADR-012 congela la frontera arquitectónica', () => {
-  it('es ACCEPTED v1.0 y NOT IMPLEMENTED', () => {
+  it('es ACCEPTED v1.0 y, desde el BUILD, AUTHORIZED sin integrar, con su historia', () => {
     expect(adr).toContain('STATUS: ACCEPTED · v1.0');
-    expect(flat(adr)).toContain('IMPLEMENTATION STATUS: **NOT IMPLEMENTED**');
+    expect(flat(adr)).toContain('IMPLEMENTATION STATUS: **AUTHORIZED**');
+    expect(flat(adr)).toContain('**sin integrar en `main`**');
+    expect(flat(adr)).toContain('Hasta el 2026-09-19 constaba como NOT IMPLEMENTED');
     expect(flat(adr)).toContain('Approved by: Ana Victoria');
   });
 
@@ -336,26 +346,50 @@ describe('Phase 4A · disposiciones registradas', () => {
   });
 });
 
-describe('Phase 4A · aceptar un contrato no es construirlo', () => {
-  it('ninguna migración crea sustrato de Planner', () => {
+describe('Phase 4A · el BUILD construye solo lo autorizado', () => {
+  /**
+   * Hasta el 2026-09-19 este bloque decía «aceptar un contrato no es construirlo». Con el BUILD de
+   * Phase 4A autorizado, la guarda cambia de forma pero no de fuerza: el sustrato del Planner solo
+   * puede nacer en la migración autorizada de Phase 4A, y lo que 4A no construye —almacenamiento
+   * del override del día, que es 4B— no puede aparecer en ninguna.
+   */
+  const PLANNER_OBJECTS = [
+    'planner_runs',
+    'planner_items',
+    'planner_config',
+    'create_planner_run',
+    'start_planned_session',
+  ];
+  const PLANNER_MIGRATION = '00000000000023_planner_domain.sql';
+
+  it('el sustrato del Planner solo aparece en su migración autorizada', () => {
     const migrations = readdirSync(join(REPO_ROOT, 'supabase/migrations')).filter((f) =>
       f.endsWith('.sql'),
     );
-    expect(migrations).toHaveLength(22);
+    for (const file of migrations) {
+      if (file === PLANNER_MIGRATION) continue;
+      const sql = read(`supabase/migrations/${file}`)
+        .replace(/--[^\n]*/g, '')
+        .toLowerCase();
+      for (const object of PLANNER_OBJECTS) {
+        expect(sql, `${file} crea ${object}`).not.toContain(object);
+      }
+    }
+  });
+
+  it('ninguna migración crea almacenamiento del override del día: es de Phase 4B', () => {
+    const migrations = readdirSync(join(REPO_ROOT, 'supabase/migrations')).filter((f) =>
+      f.endsWith('.sql'),
+    );
     for (const file of migrations) {
       const sql = read(`supabase/migrations/${file}`)
         .replace(/--[^\n]*/g, '')
         .toLowerCase();
-      for (const object of [
-        'planner_runs',
-        'planner_items',
-        'planner_config',
-        'create_planner_run',
-        'start_planned_session',
-        'learner_today_overrides',
-      ]) {
-        expect(sql, `${file} crea ${object}`).not.toContain(object);
-      }
+      // El enum de eventos contiene `TODAY_OVERRIDE_SET` desde la migración 18: es una etiqueta, no
+      // almacenamiento. Lo prohibido es una tabla o columna que guarde el override.
+      expect(sql, `${file} crea almacenamiento de override`).not.toMatch(
+        /learner_today_overrides|create\s+table\s+(if\s+not\s+exists\s+)?[a-z_.]*override|add\s+column\s+(if\s+not\s+exists\s+)?[a-z_]*override/,
+      );
     }
   });
 
@@ -371,8 +405,31 @@ describe('Phase 4A · aceptar un contrato no es construirlo', () => {
     expect(registry.dataApi.nonExposedSchemas).toEqual(['content', 'ingest', 'engine']);
   });
 
-  it('ningún módulo de aplicación importa ni menciona un motor de Planner', () => {
-    expect(readdirSync(join(REPO_ROOT, 'apps/web/src/server'))).not.toContain('planner');
+  /**
+   * Hasta el BUILD: «ningún módulo de aplicación menciona un Planner». Desde el BUILD el módulo de
+   * servidor existe, pero **ninguna ruta** lo consume: la selección visible sigue siendo
+   * `fps-fixed-v1` durante toda Phase 4A (P4-G15). HOY consumiendo el plan es Phase 4B.
+   */
+  it('ninguna ruta de la aplicación consume el Planner: cero cambio visible', () => {
+    const hits = execFileSync(
+      'node',
+      [
+        '-e',
+        `const {readdirSync,readFileSync,statSync}=require('fs');const {join}=require('path');` +
+          `let out=[];const walk=(d)=>{for(const e of readdirSync(d)){const p=join(d,e);` +
+          `if(statSync(p).isDirectory())walk(p);` +
+          `else if(/\\.(ts|tsx)$/.test(e)&&/server\\/planner|planner-engine/.test(readFileSync(p,'utf8')))out.push(p);}};` +
+          `walk(process.argv[1]);console.log(out.join('\\n'));`,
+        join(REPO_ROOT, 'apps/web/src/app'),
+      ],
+      { encoding: 'utf8' },
+    ).trim();
+    expect(hits, 'una ruta consume el Planner').toBe('');
+    expect(readdirSync(join(REPO_ROOT, 'apps/web/src/server/planner')).sort()).toEqual([
+      'admin.ts',
+      'run.ts',
+      'start.ts',
+    ]);
   });
 });
 
@@ -518,5 +575,47 @@ describe('Phase 4A · decisión 15 de ADR-012 · cada entrada del modelo tiene f
     expect(unsourced.map(([field]) => field).sort()).toEqual(['firstNegativeAt', 'lastContactAt']);
     // Y la política aceptada usa la clave que sí tiene fuente.
     expect(model).toContain("const order = input.remediationOrder ?? 'EVIDENCE_OLDEST';");
+  });
+});
+
+describe('Phase 4A · decisiones humanas finales del BUILD · 2026-09-19', () => {
+  const migration = read('supabase/migrations/00000000000023_planner_domain.sql');
+  const log = read(LOG);
+
+  it('OBS-4A-B4 · §G.1 ordena la reparación como §F.5 y la redacción vieja solo vive en la errata', () => {
+    const g1 = contract.slice(contract.indexOf('### G.1'), contract.indexOf('### G.2'));
+    expect(flat(g1)).toContain('la primera de **R** en el orden de §F.5');
+    expect(flat(g1)).toContain('**última evidencia negativa, más antigua primero**');
+    // La frase antigua aparece solo dentro de la nota de fe de erratas, nunca como norma.
+    const stale = /menor clave de sílabo entre las de/;
+    for (const line of contract.split('\n').filter((l) => stale.test(l))) {
+      expect(
+        line.trimStart().startsWith('>'),
+        `redacción antigua fuera de la errata: ${line}`,
+      ).toBe(true);
+    }
+    expect(contract).toContain('**FE DE ERRATAS:** **E-P4A-1**');
+    expect(log).toContain('## ERRATA · E-P4A-1 · §G.1 del contrato del Planner contradecía P4-D5');
+    expect(flat(log)).toContain('**Total tras esta adenda: 32 entradas SPEC_DIFF y 2 erratas.**');
+  });
+
+  it('OBS-4A-B1 · NO_PUBLISHED_UNIT está ratificado y sin marca pendiente', () => {
+    expect(migration).not.toContain('pending_ratification');
+    expect(migration).toContain("'ratified', jsonb_build_object('NO_PUBLISHED_UNIT'");
+    expect(flat(contract)).toContain(
+      '**`NO_PUBLISHED_UNIT` · ratificado el 2026-09-19 (OBS-4A-B1).**',
+    );
+    expect(flat(authorization)).toContain('**OBS-4A-B1** · `NO_PUBLISHED_UNIT` | **APROBADA.**');
+  });
+
+  it('OBS-4A-B2 · P4-G10 · como mucho una sesión abierta por persona, para todo origen', () => {
+    const code = migration.replace(/--[^\n]*/g, '');
+    expect(code).toMatch(
+      /add constraint study_sessions_one_open_per_user\s+exclude using btree \(user_id with =\)\s+where \(status in \('PLANNED', 'ACTIVE', 'INTERRUPTED'\)\)\s+deferrable initially deferred/,
+    );
+    // Ninguna excepción por origen: la restricción no menciona el Planner.
+    expect(code).not.toContain('check_planned_session_exclusive');
+    expect(flat(authorization)).toContain('**OPCIÓN B, condicionada a EC-019.**');
+    expect(read('docs/PHASE_4A_EC019_SESSION_INVARIANT.md')).toContain('## Resultado');
   });
 });
