@@ -45,7 +45,10 @@ por persona para todo origen** tras el análisis EC-019 (OBS-4A-B2, P4-G10,
 | `98248df` | migración 23, módulo de servidor y prueba en la frontera real |
 | `4687543` | revalidación no reintentable, exclusión acotada, auditoría completa, enmiendas de catálogo |
 | `c2ff1e4` | rendimiento del día de plan; ADR-012 `AUTHORIZED` sin integrar |
-| punta | este checkpoint y la documentación de estado |
+| `2ef913a` | CI en verde del primer candidato; candidato **histórico** |
+| `b7d9041` | EC-019: una sola sesión abierta por persona, global; decisiones finales; errata E-P4A-1 |
+| `dc56448` | red team final |
+| punta | checkpoint reemitido |
 
 ## D · Migraciones
 
@@ -155,14 +158,14 @@ añadido ninguna clave.
 | Comprobación | Resultado |
 | --- | --- |
 | Unitarias + gobernanza (`test:unit`) | 56 ficheros en verde |
-| Integración completa contra STAGING | **662/662** · 32 ficheros (con `--maxWorkers=3`; en paralelo total STAGING Free se satura y aparecen `statement timeout` que cambian de suite en cada ejecución) |
+| Integración completa contra STAGING | **678/678** · 33 ficheros, con el invariante global (`--maxWorkers=3`: en paralelo total STAGING Free se satura con `statement timeout` que cambian de suite en cada ejecución) |
 | RLS contra STAGING | **207/207** · 3 ficheros |
-| Frontera real del Planner (`planner.runtime.spec`) | 31/31, incluido el recorrido P4-D4 → P4-D5 → P4-D6 de punta a punta |
+| Frontera real del Planner (`planner.runtime.spec`) y P4-G10 (`session.oneOpenPerLearner.spec`) | 31/31 y 16/16, incluidos el recorrido P4-D4 → P4-D5 → P4-D6 de punta a punta, los diez casos de P4-G10 con concurrencia real y el red team final |
 | Motor tras P4-D6 (6 suites) | 113/113 |
-| Roundtrip **acotado** en STAGING (solo 23 y 22) | down → push: huella de datos **idéntica**; firma estructural 1 255 entradas, **solo difiere el `ordinal_position` de las dos columnas añadidas con `ALTER`** (`profiles.timezone`, `concept_mastery.last_negative_position`): PostgreSQL no reutiliza `attnum`. El roundtrip completo con firma exacta es el de CI sobre base limpia |
+| Roundtrip **acotado** en STAGING (solo 23 y 22) | down → push. **Identidad semántica:** huella de datos idéntica. **Identidad de catálogo:** 1 252 de 1 254 entradas idénticas; difiere solo el `ordinal_position` de las dos columnas añadidas con `ALTER` (`profiles.timezone`, `concept_mastery.last_negative_position`), porque PostgreSQL no reutiliza `attnum` al volver a añadir una columna en una tabla que sobrevive. **Identidad exacta de base limpia:** el `db:roundtrip` completo de CI, que es la prueba estructural exacta según la política del repositorio |
 | Huella de STAGING (evidencia de Ana, sesiones, configuración del motor, pack de demo) | idéntica a la previa a Phase 4A, salvo la lista de migraciones |
 | Residuo | cero: un usuario (Ana), un pack (`demo-estudio-eficaz`), cero ejecuciones del Planner |
-| CI del PR #19 | **tres jobs en verde** (run `35447781199`): estático; base de datos local limpia con `db:roundtrip` completo, integración, RLS y E2E; deriva de esquema real contra STAGING. Un primer ciclo falló por una consulta de catálogo por nombre en la prueba RLS (BF-6), corregida por OID |
+| CI del PR #19 sobre el candidato histórico `2ef913a` | **tres jobs en verde** (run `35447781199`; el CI del candidato reemitido consta en el manifiesto del paquete): estático; base de datos local limpia con `db:roundtrip` completo, integración, RLS y E2E; deriva de esquema real contra STAGING. Un primer ciclo falló por una consulta de catálogo por nombre en la prueba RLS (BF-6), corregida por OID |
 | Ejecución limpia desde `git archive` | `npm ci`, typecheck, lint, format, build, unit, guardas, secret-scan y E2E estáticos en verde; `schema-drift` BLOQUEADO en local (sin Docker, D-13) y cubierto por CI |
 
 ## L.1 · Gates
