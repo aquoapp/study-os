@@ -1482,3 +1482,242 @@ exigiendo su propia enmienda), ni merge, ni tag, ni congelación, ni ninguna fas
 ninguna mutación de PRODUCTION. `dataApi.exposedSchemas` sigue siendo `["public"]`.
 
 **Total tras esta adenda: sin cambio** · 29 entradas SPEC_DIFF y 1 errata.
+
+---
+
+## SD-030 · disposición de los requisitos con fuente retirada · REQ-E03, REQ-E04, REQ-E10, REQ-E11 e INV-108
+
+**Documentos afectados:** `spec/requirements.md` REQ-E03, REQ-E04, REQ-E10, REQ-E11;
+`spec/invariant-register.md` INV-108; `Canonical Data & Event Model v1.0` §26 (`priority_score`).
+**Origen:** Phase 4A · Planner Domain / Decision Engine · Governance Landing · disposición
+H-P4-1a. Los cuatro requisitos y la invariante tenían como única fuente `Learning System v0.4`,
+declarado **NO DISPONIBLE** en el aterrizaje de gobernanza de Phase 3 y sin valor normativo desde
+entonces.
+**Estado:** **`ACCEPTED`** · 2026-09-17 · Ana Victoria · copia aceptada en
+`docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md`.
+**Fichero canónico:** `docs/PLANNER_CONTRACT.md` v1.0 · propietario normativo **ADR-012**.
+
+| Requisito | Disposición |
+| --- | --- |
+| **REQ-E03** · prioridad numérica de siete factores | **`SUPERSEDED`** por ADR-003 v1.2 anexo §C. Planner v1 no tiene puntuación de prioridad, y ninguna columna, cálculo intermedio ni código de razón puede reintroducirla con otro nombre |
+| **REQ-E04** · asignador de sesión | **reinterpretado**, no derogado: se cumple como acumulación honesta de presupuesto. La semántica de desplazamiento de repasos **no aplica** mientras no exista programación de repasos (DEF-28) |
+| **REQ-E10** · prerrequisitos flexibles | **`DEFERRED`**. `strength` (WEAK/MEDIUM/STRONG) no tiene significado aceptado, los ciclos no están impedidos en el esquema y ninguna aplicación lee prerrequisitos. Usarlos exigiría inventar la regla, que CLAUDE.md §2 prohíbe |
+| **REQ-E11** · ningún repaso se descarta en silencio | **vacuo en v1** · no existe calendario de repaso autoritativo que descartar |
+| **INV-108** | **vacua en v1**, por el mismo motivo. Vuelve a ser exigible en cuanto exista una política de repaso aceptada |
+
+**`priority_score` de CDEM §26:** queda dispuesto como **no implementado**, en favor de ADR-003
+v1.2 anexo §C. No se crea la columna.
+
+Ninguna de estas disposiciones debilita un requisito canónico vigente: retiran autoridad a
+requisitos cuya fuente ya no gobierna, y lo hacen por registro explícito en vez de por omisión
+silenciosa. Vuelven a estar sobre la mesa el día que exista una especificación de sistema de
+aprendizaje aceptada.
+
+**Impacto:** Phase 4A. **No autoriza ninguna migración.**
+
+---
+
+## SD-031 · Planner Contract v1.0 · selección categórica, composición equilibrada y ausencia de parámetro de equilibrio
+
+**Documentos afectados:** `Master Product Specification v1.0` §24 y §49 por vinculación;
+`Technical Architecture v1.0` §2.3 y §6.1; `Canonical Data & Event Model v1.0` §17, §22, §23 y
+§26; `spec/domain-model.md` §10 (lista de entradas del Planner heredada de la fuente retirada).
+**Origen:** Phase 4A Governance Landing · decisión humana **P4-D1 · aprobada con modificación**.
+**Estado:** **`ACCEPTED`** · 2026-09-17 · Ana Victoria.
+**Fichero canónico:** `docs/PLANNER_CONTRACT.md` v1.0 · propietario normativo **ADR-012**.
+
+Planner v1 selecciona por **composición categórica equilibrada**: una garantía existencial de
+reparación en la cabeza del plan, continuidad de cobertura en el resto, desbordamiento de
+reparación solo una vez agotada la cobertura, y desempate lexicográfico sobre datos estables de
+contenido. La política **no** es «reparación primero» ni «cobertura primero».
+
+**Cero parámetros de equilibrio.** Ni ratios, ni porcentajes, ni pesos, ni cuotas, ni turnos
+rotatorios, ni longitudes de ciclo, ni constantes de alternancia, ni máximos de categorías
+consecutivas, ni azar. La única cantidad que aparece —una acción de reparación— es la **aridad de
+una garantía existencial**, no una proporción elegida; la derivación completa y su red team están
+en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` §6.
+
+`EVIDENCE_POSITIVE` no es elegible de forma independiente en v1 y no se recicla: Planner v1 no
+tiene modelo de retención, decaimiento, espaciado ni estabilidad, y por tanto carece de autoridad
+para programar su revisión. El agotamiento honesto se expresa como `NOTHING_ELIGIBLE`, que
+**nunca** significa preparación, dominio permanente ni fin del aprendizaje.
+
+**El origen de los minutos planificados NO se decide aquí:** P4-D2 queda **diferida** a una
+decisión de producto previa a Phase 4B, y el contrato recibe la duración autoritativa **como
+entrada**. En Phase 4A no se crean metadatos de duración, ni valores por defecto, ni constantes de
+runtime, y FPS-OBS-04 **no** queda cerrada.
+
+**Impacto:** Phase 4A. **No autoriza ninguna migración ni el BUILD.**
+
+---
+
+## Estado de la adenda · tras la Phase 4A Governance Landing · 2026-09-17
+
+Complementa a los estados anteriores sin sustituirlos.
+
+**Registro de decisión:** Phase 4A · Planner Domain / Decision Engine · Governance Landing ·
+2026-09-17 · decisora Ana Victoria · línea base `7cf9190726f9f4edd8f41998acc6fee8792a2d3a` ·
+copia en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md`.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| P4-D1 | `docs/PLANNER_CONTRACT.md` v1.0 · composición categórica equilibrada | **`ACCEPTED` con modificación** |
+| P4-D2 | origen de los minutos planificados | **`DEFERRED`** a decisión previa a Phase 4B |
+| H-P4-0 | invocación del motor en runtime | **RESUELTA POR PHASE 3.1** |
+| H-P4-1a | REQ-E03/E04/E10/E11 e INV-108 | **SD-030** |
+| H-P4-3, H-P4-4, H-P4-5, H-P4-6, H-P4-7 | disposiciones derivadas de autoridad existente | registradas en `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` §5 |
+| — | ADR-012 · autoridad de decisión del Planner | **`ACCEPTED · v1.0`** · `NOT IMPLEMENTED` |
+
+**Total tras esta adenda: 31 entradas SPEC_DIFF y 1 errata.**
+
+---
+
+## SD-031 · **corrección** · 2026-09-17 · validación adversarial de Phase 4A
+
+**Corrige el estado de:** la propia entrada SD-031 de esta adenda, que registró
+`docs/PLANNER_CONTRACT.md` v1.0 como `ACCEPTED`. El texto original **no se reescribe**: queda
+arriba como cronología, y esta entrada lo corrige.
+
+**Origen:** revisión independiente del candidato de gobernanza de Phase 4A · hallazgos
+**IR-P4A-01** e **IR-P4A-02** · validación adversarial en `tests/governance/`.
+**Estado:** `docs/PLANNER_CONTRACT.md` pasa a **v1.1 · `PROPOSED · BLOQUEADO POR DECISIÓN
+HUMANA`**. **No** está aceptado.
+
+**Qué se corrige, y por qué el estado anterior era falso:**
+
+1. **IR-P4A-01.** El contrato definía una necesidad de reparación como «respondida» cuando una
+   ejecución anterior **emitió** la acción. Con eso, planificar sin ejecutar retiraba evidencia
+   negativa de la presión del Planner. `PLANIFICADO` no equivale a `PRESENTADO`, `INICIADO`,
+   `COMPLETADO`, `COMPROBADO` ni `EVIDENCIA REGISTRADA`. El concepto de «necesidad respondida»
+   **se elimina**: solo la evidencia nueva registrada satisface P4-D1.1, y el historial de
+   ejecuciones pasa a ser auditoría, nunca señal.
+2. **IR-P4A-02.** La atomicidad de `APRENDER + COMPROBAR` estaba **sobreafirmada**. La cadena pura
+   queda falsada mecánicamente, pero quedan dos modelos admisibles y no equivalentes, y ninguna
+   autoridad elige entre ellos.
+
+**Consecuencia sobre la afirmación central de SD-031.** Donde decía que la composición se deriva
+entera de las invariantes aceptadas, la afirmación correcta es más modesta y más honesta:
+
+> Las siete cláusulas de P4-D1 determinan una **familia** de algoritmos deterministas, no uno
+> único. Quedan derivados la posición y la aridad de la garantía de reparación, la asimetría
+> frente a la cobertura, el orden dentro de la reparación —evidencia más antigua primero, con las
+> dos alternativas falsadas—, el empaquetado y el rechazo de toda optimización. Quedan **sin
+> determinar** la granularidad de la acción (**P4-D3**) y el orden entre `EXPOSED` y `NEW`
+> (**P4-D4**).
+
+**Lo que no cambia:** ADR-012 sigue `ACCEPTED` —la arquitectura no estaba en disputa—, y siguen
+en pie la ausencia de puntuación y de pesos, la exclusión de `EVIDENCE_POSITIVE`, el agotamiento
+honesto, la prohibición de actividad sintética y la prohibición de todo parámetro de equilibrio.
+SD-030 no se toca.
+
+**Impacto:** Phase 4A. **Ninguna Build Authorization puede emitirse** mientras P4-D3 y P4-D4
+sigan abiertas.
+
+---
+
+## Estado de la adenda · tras la validación adversarial de Phase 4A · 2026-09-17
+
+Complementa al estado anterior sin sustituirlo.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| P4-D1 | composición categórica equilibrada | `ACCEPTED` con modificación · sin cambio |
+| P4-D2 | origen de los minutos planificados | `DEFERRED` · sin cambio |
+| **P4-D3** | granularidad de la acción | **ABIERTA · bloquea la aceptación del contrato** |
+| **P4-D4** | orden entre `EXPOSED` y `NEW` | **ABIERTA · bloquea la aceptación del contrato** |
+| SD-030 | disposición de REQ-E03/E04/E10/E11 e INV-108 | `ACCEPTED` · sin cambio |
+| SD-031 | Planner Contract | **corregido** · el contrato pasa a `PROPOSED · BLOQUEADO` |
+| ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexo v1.1 registrado |
+
+**Total tras esta adenda: sin cambio** · 31 entradas SPEC_DIFF y 1 errata.
+
+---
+
+## SD-031 · **segunda corrección** · 2026-09-18 · Gate A de Phase 4A
+
+**Corrige el estado de:** la corrección del 2026-09-17 de esta misma entrada, que declaró el orden
+de reparación «derivado por vivacidad». Los textos anteriores **no se reescriben**: quedan arriba
+como cronología.
+
+**Origen:** Gate A · pruebas residuales A y B ·
+`tests/governance/residualProofs.spec.ts`.
+**Estado:** `docs/PLANNER_CONTRACT.md` pasa a **v1.2**, y sigue **`PROPOSED · BLOQUEADO POR
+DECISIÓN HUMANA`**, ahora solo por **P4-D5**.
+
+**Qué cierra:**
+
+| Decisión | Estado |
+| --- | --- |
+| **P4-D3** · granularidad de la acción | **`ACCEPTED` · híbrida** · 2026-09-18 · Ana Victoria |
+| **P4-D4** · orden dentro de la continuidad | **`ACCEPTED` · `EXPOSED` primero** · 2026-09-18 · Ana Victoria |
+| Empaquetado del presupuesto | **derivado y único** · prueba residual B cerrada |
+
+**Qué abre:** **P4-D5** · qué posición de evidencia ordena la reparación. La afirmación anterior
+—«la última evidencia negativa es la única política con vivacidad»— es **falsa**. Ampliada la
+familia, la vivacidad elimina cinco políticas y deja dos no equivalentes: **última evidencia
+negativa** y **último contacto real**, que divergen ante contacto sin verificación.
+
+Quedan excluidas por autoridad, no por rendimiento: menos-recientemente-servido y turno rotatorio
+(historial del Planner como señal), por número de intentos o de errores (recuento derivado del
+vector, contrato del motor §10) y aleatoria sembrada (P4-D1.7).
+
+**Lección registrada, y es la misma dos veces:** derrotar rivales no demuestra unicidad. Una clave
+de ordenación solo es derivada cuando se enumera la familia completa bajo la autoridad vigente y
+sobrevive exactamente una.
+
+**Impacto:** Phase 4A. **Ninguna Build Authorization puede emitirse** mientras P4-D5 siga abierta.
+
+---
+
+## Estado de la adenda · tras Gate A de Phase 4A · 2026-09-18
+
+Complementa a los estados anteriores sin sustituirlos.
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| P4-D1 | composición categórica equilibrada | `ACCEPTED` con modificación · sin cambio |
+| P4-D2 | origen de los minutos planificados | `DEFERRED` · sin cambio |
+| **P4-D3** | granularidad de la acción | **`ACCEPTED` · híbrida** |
+| **P4-D4** | orden dentro de la continuidad | **`ACCEPTED` · `EXPOSED` primero** |
+| **P4-D5** | clave de orden de la reparación | **ABIERTA · bloquea la aceptación del contrato** |
+| SD-030 | disposición de REQ-E03/E04/E10/E11 e INV-108 | `ACCEPTED` · sin cambio |
+| SD-031 | Planner Contract | **corregida por segunda vez** · contrato v1.2, sigue `PROPOSED` |
+| ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexos v1.1 y v1.2 registrados |
+
+**Total tras esta adenda: sin cambio** · 31 entradas SPEC_DIFF y 1 errata.
+
+---
+
+## SD-031 · **cierre** · 2026-09-19 · P4-D5
+
+**Corrige el estado de:** la segunda corrección de esta entrada (2026-09-18), que dejó el contrato
+`PROPOSED` por P4-D5. Los textos anteriores **no se reescriben**.
+
+**Decisión:** **P4-D5 · `ACCEPTED` · última evidencia negativa** · 2026-09-19 · Ana Victoria.
+**Estado resultante:** `docs/PLANNER_CONTRACT.md` **v1.3 · `ACCEPTED`** dentro del candidato de
+gobernanza de Phase 4A, pendiente de aceptación independiente y de integración en `main`.
+
+La afirmación de SD-031 sobre la composición queda, por fin, en su forma exacta: las siete
+cláusulas de P4-D1 determinan una familia de algoritmos; **P4-D3, P4-D4 y P4-D5** eligen dentro de
+ella, y con las tres tomadas el algoritmo queda completamente determinado. Ninguna de las tres fue
+derivada: las tres fueron decisiones humanas, y el registro lo dice así.
+
+**Impacto:** Gate A pasa. **El BUILD sigue sin autorizar** hasta que la gobernanza se integre en
+`main` (CLAUDE.md §3 y precedente de Phase 2, FPS y Phase 3).
+
+---
+
+## Estado de la adenda · tras P4-D5 · 2026-09-19
+
+| Decisión | Artefacto | Estado |
+| --- | --- | --- |
+| P4-D1 | composición categórica equilibrada | `ACCEPTED` con modificación |
+| P4-D2 | origen de los minutos planificados | `DEFERRED` a una decisión previa a 4B |
+| P4-D3 | granularidad de la acción | `ACCEPTED` · híbrida |
+| P4-D4 | orden dentro de la continuidad | `ACCEPTED` · `EXPOSED` primero |
+| **P4-D5** | clave de orden de la reparación | **`ACCEPTED` · última evidencia negativa** |
+| SD-030 | disposición de REQ-E03/E04/E10/E11 e INV-108 | `ACCEPTED` |
+| SD-031 | Planner Contract | **cerrada** · contrato v1.3 `ACCEPTED` en candidato |
+| ADR-012 | autoridad de decisión del Planner | `ACCEPTED` · anexos v1.1, v1.2 y v1.3 · `NOT IMPLEMENTED` |
+
+**Total tras esta adenda: sin cambio** · 31 entradas SPEC_DIFF y 1 errata.

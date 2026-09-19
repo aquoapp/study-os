@@ -273,8 +273,69 @@ y sin semántica nueva. **PHASE 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integr
 (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`, **D-26
 cerrada**. `phase-3-v1.0` es inmutable y conserva el defecto como historia. Observaciones
 OBS-3.1-01 (Vercel sin clave de servidor: el motor devuelve `SKIPPED` en Preview), OBS-3.1-02 y
-OBS-3.1-03. Phase 4 no está autorizado y ninguna decisión H-P4 está aceptada salvo H-P4-0. Lección: **una ruta de
+OBS-3.1-03. Lección: **una ruta de
 runtime solo está probada cuando una prueba ejecuta el módulo real contra la frontera real**.
+
+**Phase 4A · Planner Domain / Decision Engine · gobernanza aterrizada el 2026-09-17. El BUILD no
+está autorizado.** La pre-autorización posterior a Phase 3.1 redujo las siete decisiones humanas
+escaladas a dos, y Ana resolvió ambas: **P4-D1 aceptada con modificación** —composición
+categórica equilibrada, ni «reparación primero» ni «cobertura primero»— y **P4-D2 diferida** a
+una decisión previa a Phase 4B, de modo que el contrato recibe la duración de cada candidato
+**como entrada** y en 4A no se inventa ningún minuto ni se cierra FPS-OBS-04.
+
+Aterrizan `docs/PLANNER_CONTRACT.md` y **ADR-012**, más SD-030 y SD-031 por adenda. La selección
+es **categórica y determinista**: sin puntuación de dominio, sin `priority_score`, sin pesos y sin
+proxy de readiness. La composición pone una garantía **existencial** de reparación en la cabeza
+del plan y continuidad de cobertura en el resto, y **no introduce ningún parámetro de
+equilibrio**: la única cantidad que aparece es la aridad de un existencial, no una proporción
+elegida.
+
+**Validación adversarial el mismo día, y corrigió el candidato.** La revisión independiente
+encontró dos defectos reales. **IR-P4A-01:** el contrato daba una necesidad de reparación por
+«respondida» cuando el Planner había **emitido** la acción, de modo que cerrar la aplicación sin
+hacer nada retiraba evidencia negativa de su presión. Corregido: **un plan es un registro de
+decisión, no evidencia de ejecución**, solo la evidencia nueva registrada satisface la garantía, y
+el historial de ejecuciones pasa a ser auditoría y nunca señal. **IR-P4A-02:** la atomicidad de
+`APRENDER + COMPROBAR` estaba sobreafirmada. La cadena pura queda falsada mecánicamente, pero
+quedan dos modelos admisibles y no equivalentes. Conclusión honesta: **las siete cláusulas de
+P4-D1 no determinan un algoritmo único**, así que el contrato pasó a
+**`PROPOSED · BLOQUEADO POR DECISIÓN HUMANA`** y volvieron a Ana **P4-D3** (granularidad de la
+acción) y **P4-D4** (orden entre `EXPOSED` y `NEW`). ADR-012 sigue `ACCEPTED` con anexos: la
+arquitectura no estaba en disputa.
+
+**Gate A · 2026-09-18.** Ana cerró las dos: **P4-D3 · granularidad híbrida** —`APRENDER` puede
+planificarse solo para `NEW`, porque `EXPOSED` ya es la representación autoritativa del bucle
+abierto, y la reparación sigue siendo atómica sin inventar ningún estado intermedio— y
+**P4-D4 · `EXPOSED` primero**, precedencia categórica sin pesos ni cuotas. La prueba residual B
+**cierra**: `skip-non-fitting` es la única política que preserva la prioridad sin inventar un
+objetivo de optimización. La prueba residual A **no cierra**: al ampliar la familia de políticas,
+la vivacidad elimina cinco y deja **dos** no equivalentes —ordenar por la última evidencia
+negativa o por el último contacto real—, que divergen cuando alguien abre una reparación, la lee y
+se va sin comprobar. Se abre **P4-D5**, el contrato pasa a **v1.2** y sigue bloqueado.
+**Gate A = FAIL y no se ha construido nada.**
+
+**P4-D5 · 2026-09-19.** Ana eligió la **última evidencia negativa**: solo la evidencia mueve la
+clave de orden de la reparación, y leer una reparación sin comprobarla no la rebaja (la presentación
+no cuenta como progreso, ni para eliminar una necesidad ni para rebajarla). Con P4-D3, P4-D4 y
+P4-D5 tomadas, el contrato del Planner pasa a **v1.3 `ACCEPTED`** dentro del candidato de
+gobernanza (PR #17) y **Gate A pasa**. **Gate B no se abre**: el repositorio exige que la gobernanza
+se integre en `main` antes de que la rama de BUILD parta de `main` (§3), como en Phase 2, FPS y
+Phase 3. No existe ningún código, esquema ni migración de Planner.
+
+La lección, que ya es la segunda vez: **derrotar rivales no demuestra unicidad**. Una clave de
+ordenación solo es derivada cuando se enumera la familia completa bajo la autoridad vigente y
+sobrevive exactamente una.
+
+La validación vive en `tests/governance/` —modelo de referencia parametrizado para poder falsar
+cada variante, 557 550 estados enumerados, 1 560 trayectorias sembradas de 100 sesiones y
+controles negativos— y **no es código de producción ni afirma nada sobre eficacia pedagógica**.
+`EVIDENCE_POSITIVE` no es elegible en v1 y no se recicla; el agotamiento honesto es
+`NOTHING_ELIGIBLE`, que nunca significa preparación ni dominio permanente; y el Planner no
+fabrica actividad para evitar un plan vacío. Un plan es **una decisión que el cliente no puede
+redactar**: por eso la superficie de RPC invocable por cliente sigue en dos y no se crea ningún
+esquema privado nuevo. Observaciones OBS-4A-01 y OBS-4A-02, vigilancia WATCH-4A-1, y **OBS-3.1-01
+pasa a prerrequisito con milestone nombrado** para el recorrido desplegado de Phase 4B. Detalle
+en `docs/ARCHITECTURE_STATE.md` §16.
 
 El BUILD lo ejecutaron dos modelos: Fable 5.1 hasta agotar su límite de uso y Opus 5 tras
 una recuperación forense del estado interrumpido. Si vuelve a ocurrir, la regla es la misma:

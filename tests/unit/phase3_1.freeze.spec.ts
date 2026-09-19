@@ -117,8 +117,11 @@ describe('Phase 3.1 · el registro de congelación no confunde los SHA', () => {
   it('la congelación no autoriza Phase 4 ni ninguna decisión H-P4', () => {
     expect(checkpoint).toContain('No autoriza Phase 4, ninguna de H-P4-1 … H-P4-7');
     expect(state).toContain('Phase 4 y las decisiones H-P4-1 … H-P4-7 **siguen sin autorizar**');
+    // El aterrizaje de gobernanza de Phase 4A (2026-09-17) acepta P4-D1 y difiere P4-D2, de modo
+    // que CLAUDE.md ya no puede decir que ninguna decisión H-P4 está aceptada. Lo que la
+    // congelación de Phase 3.1 sigue exigiendo es que el **BUILD** de Phase 4 no esté autorizado.
     expect(flat(read('CLAUDE.md'))).toContain(
-      'Phase 4 no está autorizado y ninguna decisión H-P4 está aceptada salvo H-P4-0',
+      'Phase 4A · Planner Domain / Decision Engine · gobernanza aterrizada el 2026-09-17. El BUILD no',
     );
   });
 });
