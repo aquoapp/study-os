@@ -1798,3 +1798,316 @@ se reescribe. Una prueba de gobernanza impide que la redacción anterior vuelva 
 | OBS-4A-B4 · §G.1 | **cerrada** por la errata E-P4A-1 |
 
 **Total tras esta adenda: 32 entradas SPEC_DIFF y 2 erratas.**
+
+---
+
+## SD-019 · **aceptación** · opción C · AA aplica al texto · AA-1 registrada
+
+**Corrige el estado de:** la entrada SD-019 de este mismo registro, que dejó la elección entre las
+opciones B y C **diferida con plazo antes de Phase 5**, con la opción A autorizada y aplicada.
+**Documentos afectados:** `STUDY_OS_Design_System_v1.0` §14 (Accessibility). **§2 no se toca.**
+**Origen:** Product UX · Wave 3 · resolución humana final · VIS-D5.
+**Estado:** **`ACCEPTED`** · 2026-09-20 · Ana Victoria.
+**Fichero canónico:** `docs/PRODUCT_UX_CONTRACT.md` §R.
+
+**Cambio aceptado · opción C.** Ningún valor de color congelado se mueve. §14 se aclara por cambio
+de especificación versionado: **AA aplica al texto**; los colores que no admiten un emparejamiento
+de texto accesible en la paleta congelada son, **en esos contextos**, colores de indicador, de
+superficie o de acento, y no pueden llevar texto en un emparejamiento inválido.
+
+Restricciones, todas medidas y ninguna inventada:
+
+| Combinación | Ratio | Disposición |
+| --- | --- | --- |
+| `onDark` sobre `teal` | **3.95** | indicador, superficie o acento; nunca texto |
+| `onDark` sobre `amber` | **4.42** | ídem |
+| `slate` sobre `canvas` | **4.31** | `slate` es texto solo sobre `surface` (4.70) |
+| **`magenta` sobre `canvas`** | **4.47** | **AA-1** · micro-acento como indicador; **nunca texto normal sobre `canvas`**. Sobre `surface` mide 4.87 y sí es admisible |
+
+**AA-1 es un hallazgo nuevo de esta ronda**, medido al construir el sistema visual: es un cuarto par
+por debajo de 4.5 que la entrada original de SD-019 no listaba. **No crea contradicción**: el
+repositorio ya trataba `magenta` sobre `canvas` como indicador de 3:1 en `CONTRAST_REQUIREMENTS`.
+Lo que hace esta entrada es **escribirlo** en vez de dejarlo implícito.
+
+**La separación tonal `surface`/`canvas` de 1.09:1 queda registrada como restricción de
+profundidad**, nunca como excepción de contraste de texto.
+
+**Lo que no cambia:** el suelo de WCAG no se debilita; `teal` nunca transporta significado por sí
+solo; la visibilidad de foco, el movimiento reducido, el zoom al 200 %, las dianas mínimas y la
+medida de lectura siguen siendo exigibles.
+
+**Deuda registrada, no corregida aquí · OBS-4B-03.** `packages/design-system/src/status.ts`,
+`packages/design-system/src/tokens.ts` y `tests/unit/designSystem.blocked.spec.ts` siguen diciendo
+que B y C están diferidas «antes de Phase 5». Es **código**, y un aterrizaje documental no muta en
+silencio código que vigila una fase congelada: la corrección entra en el primer acto de
+implementación autorizado, con su prueba, en el mismo commit.
+
+**Impacto:** Product UX y Phase 4B. **No autoriza ninguna migración ni ningún cambio de código.**
+
+---
+
+## SD-033 · P4-D2 resuelta · autoridad de duración operativa híbrida
+
+**Documentos afectados:** `Master Product Specification v1.0` §1.1 y §8 por vinculación ·
+`Canonical Data & Event Model v1.0` §6 · `docs/PLANNER_CONTRACT.md` §C, §I.3 y §T ·
+`Design System v1.0` §6, cuyo «remaining estimate» pasa a ser satisfacible.
+**Origen:** Phase 4B · Human Decision Packet · **P4-D2**.
+**Estado:** **`ACCEPTED`** · 2026-09-20 · Ana Victoria.
+**Fichero canónico:** `architecture/ADR-013-operational-duration-authority.md`; aterrizaje en
+`docs/PHASE_4B_PREAUTHORIZATION.md` §2.
+
+La duración es una **estimación operativa de planificación**, nunca un hecho de ciencia del
+aprendizaje, de dominio, de retención ni de rendimiento, y nunca una predicción sobre esta persona.
+Su origen es **híbrido**: metadato de autoría **versionado y fijado a la versión exacta** para el
+paso de unidad; **estimación gobernada determinista e independiente de la persona**, en
+`planner_config`, para el paso de pregunta. La acción atómica suma ambas y cabe entera o no cabe.
+
+La prohibición de duraciones de §T **se estrecha, no se abre**: admite exactamente una clave entera
+y acotada, y todas las demás prohibiciones —pesos, ratios, porcentajes, cuotas, longitudes de
+ciclo, umbrales de evidencia, intervalos de repaso, semividas, factores de decaimiento— siguen
+literalmente en pie.
+
+**La reproducibilidad no exige mecanismo nuevo**: los minutos de cada candidato ya viven dentro de
+la entrada canónica congelada de cada ejecución, de modo que ninguna reproducción consulta una
+fuente de duración y todo mecanismo futuro es aditivo (P4-G4). Un metadato ausente produce la razón
+de exclusión nueva `NO_DURATION_METADATA`, **nunca un valor por defecto**.
+
+**FPS-OBS-04 no se declara cerrada** hasta que una implementación demuestre que la estimación
+restante se produce (R-6).
+
+**Impacto:** Phase 4B. **No autoriza ninguna migración.**
+
+---
+
+## SD-034 · P4B-D1 · `NOTHING_FITS` no ofrece acción fuera de presupuesto
+
+**Documentos afectados:** `docs/PLANNER_CONTRACT.md` §J · `Master Product Specification v1.0` §49,
+reafirmado · `Onboarding & Edge States v1.0` ED-01 por vinculación.
+**Origen:** Phase 4B · Human Decision Packet · **P4B-D1**.
+**Estado:** **`ACCEPTED`** · 2026-09-20 · Ana Victoria.
+**Fichero canónico:** `docs/PHASE_4B_PREAUTHORIZATION.md` §3.
+
+§J dejaba explícitamente a 4B/UX la decisión de ofrecer o no la acción por encima del presupuesto.
+**No se ofrece como ejecutable.** El tiempo declarado por la persona es autoritativo y Master §49
+se conserva literalmente. La ejecución no cambia de forma. La interfaz puede enunciar con verdad la
+estimación de la acción elegible más corta y permitir subir el tiempo de hoy, **sin preselección,
+sin destacado y sin presión**. Sin microacción sintética, sin acción truncada, sin violación oculta
+de presupuesto, sin lenguaje de culpa ni de deuda.
+
+**Impacto:** Phase 4B. **No autoriza ninguna migración.**
+
+---
+
+## SD-035 · P4B-D2 · consumo de ejecución y linaje de sucesora · enmienda acotada de §O
+
+**Documentos afectados:** `docs/PLANNER_CONTRACT.md` §O, §Q.2 y §U.6 · `Master Product
+Specification v1.0` §10 · REQ-C12 / Closure D-003 · `Onboarding & Edge States v1.0` ED-03.
+**Origen:** Phase 4B · Human Decision Packet · **P4B-D2**, opción B2-a.
+**Estado:** **`ACCEPTED`** · 2026-09-20 · Ana Victoria.
+**Fichero canónico:** `docs/PHASE_4B_PREAUTHORIZATION.md` §4.
+
+Una persona puede terminar una sesión del Planner antes de agotar el plan. Una ejecución queda
+**consumida** cuando la sesión que la referencia alcanza un estado terminal, y **una ejecución
+consumida no se reutiliza**: la petición siguiente escribe una sucesora aunque la entrada canónica
+no haya cambiado.
+
+**La entrada canónica no codifica el consumo.** El predicado se evalúa en la persistencia contra
+`study_sessions`, fuera de `PlannerInput`, de modo que el hash, la reproducción byte a byte (P4-G4)
+y «planificar dos veces sin ejecución da el mismo plan» (P4-G21) conservan su objeto exacto: el
+escenario de P4-G21 es *sin ejecución* y la enmienda solo dispara *con* ejecución.
+
+Se conservan sin tocar: una sesión por ejecución, una sesión abierta por persona, historia
+append-only, linaje lineal y su seguridad bajo concurrencia, que los índices únicos ya existentes
+garantizan **sin primitiva nueva**. `start_planned_session` devuelve la sesión existente solo si
+está abierta y añade el rechazo `RUN_ALREADY_CONSUMED`. Terminar antes **no fabrica evidencia**.
+
+**Consecuencia aceptada · OBS-4B-01:** arrancar y terminar repetidamente genera una sucesora por
+ciclo. No se inventa caducidad temporal, que §Q.2 prohíbe.
+
+**Impacto:** Phase 4B. **No autoriza ninguna migración.**
+
+---
+
+## SD-036 · P4B-D3 · override del mismo día como entidad canónica más declaración duradera
+
+**Documentos afectados:** `Canonical Data & Event Model v1.0` §3 (entidad nueva) y §10–§11
+(taxonomía de eventos) · `docs/PLANNER_CONTRACT.md` §I.2 · `Master Product Specification v1.0` §7 ·
+REQ-E06 · INV-106.
+**Origen:** Phase 4B · Human Decision Packet · **P4B-D3**, más la disposición independiente de R-8.
+**Estado:** **`ACCEPTED`** · 2026-09-20 · Ana Victoria.
+**Fichero canónico:** `docs/PHASE_4B_PREAUTHORIZATION.md` §5 y §6.
+
+El override vigente es **estado canónico mutable** que el Planner lee, clavado por persona y día de
+plan, con minutos 0–600 donde **el cero es dato**; su declaración duradera se registra **además**
+como evento `TODAY_OVERRIDE_SET`, con contrato de campos explícito. La escritura es **solo de rol
+de servicio** desde una acción con identidad verificada, y **deriva el día de plan en servidor**
+desde la zona horaria declarada: el cliente nunca nombra la fecha (SD-023). **La superficie de RPC
+invocable por cliente permanece en dos.** La precedencia no cambia y el override **nunca** escribe
+`default_daily_minutes`.
+
+**R-8 · cerrada a nivel de semántica de gobernanza.** El camino canónico de escritura de la
+disponibilidad semanal y por defecto debe emitir `AVAILABILITY_CHANGED` bajo el mismo principio:
+cambio de estado canónico **más** declaración duradera, con el evento autoritativo de servidor.
+**No clasifica la disponibilidad como evidencia de aprendizaje**: es una declaración duradera de la
+persona.
+
+**Consecuencia que obliga a INV-118:** `public.append_learning_event` reenvía cualquier tipo con
+contrato de campos y está concedido a `authenticated`; sin una lista de tipos **solo de servidor**,
+aceptar el contrato de `TODAY_OVERRIDE_SET` permitiría a un cliente crear una declaración sin fila
+canónica y poner historia y estado en desacuerdo.
+
+**Impacto:** Phase 4B. **No autoriza ninguna migración.**
+
+---
+
+## SD-037 · Fidelidad de plan · la versión seleccionada es la presentada · INV-117
+
+**Documentos afectados:** `Canonical Data & Event Model v1.0` §9 (`session_items`) ·
+`docs/PLANNER_CONTRACT.md` §V · **SD-023**, cuya autoridad de representación se extiende con una
+fuente nueva.
+**Origen:** Phase 4B · reconciliación de pre-autorización · hallazgo **Q-3**.
+**Estado:** **`ACCEPTED`** · 2026-09-20 · Ana Victoria.
+**Fichero canónico:** `docs/PHASE_4B_PREAUTHORIZATION.md` §7.1.
+
+`planner_items` fija la versión de unidad y la representación de pregunta, pero
+`start_planned_session` no las traslada a la instantánea de sesión, de modo que la capa de
+presentación resuelve por su cuenta «la publicada vigente». Una publicación entre la creación del
+plan y la presentación podía **sustituir en silencio** la versión decidida, y la auditoría de la
+ejecución nombraría un artefacto distinto del mostrado.
+
+**INV-117:** la versión de unidad y la representación de pregunta que el Planner selecciona son las
+que se presentan; una publicación intermedia nunca sustituye otra.
+
+La consecuencia es notablemente pequeña: fijar `presented_*` en el insert. El trigger de fijación
+única ya congela esos campos y **las comprobaciones de igualdad existentes de la frontera de
+eventos se convierten en la guarda sin escribir ninguna comprobación nueva**. El respaldo «resolver
+la publicada vigente» queda inalcanzable para sesiones planificadas y se conserva solo para
+sesiones históricas `FPS_FIXED`.
+
+**Impacto:** Phase 4B. **No autoriza ninguna migración.**
+
+---
+
+## SD-038 · Reconciliación de CDEM §17 · campos del Planner sin disposición
+
+**Documentos afectados:** `Canonical Data & Event Model v1.0` §17 · `docs/PLANNER_CONTRACT.md` §Q ·
+EC-003, cuya nota de enforcement se satisface en sustancia.
+**Origen:** Phase 4B · reconciliación de pre-autorización · hallazgos **R-1** y **R-2**.
+**Estado:** **`ACCEPTED`** · 2026-09-20 · Ana Victoria.
+**Fichero canónico:** `docs/PHASE_4B_PREAUTHORIZATION.md` §8.1.
+
+Siete campos de CDEM §17 quedaban sin disposición escrita. Ninguno exige decisión humana: la
+autoridad aceptada los determina.
+
+| Campo | Disposición |
+| --- | --- |
+| `run_type: DAILY \| REPLAN` | **SUPERSEDED** por el modelo de linaje: ambos se computan de columnas persistidas, y una columna los denormalizaría |
+| `run_type: RESCUE` · `RECOVERY` | **DIFERIDOS** con sus experiencias nombradas: sus criterios no existen en ninguna autoridad aceptada (H-P4-5) |
+| **neto `run_type`** | **NO IMPLEMENTADO** en Planner v1; no se crea la columna |
+| `input_watermark` | **SUPERSEDED** por la tupla de frescura de cinco partes, estrictamente más fuerte |
+| `available_minutes` | **IMPLEMENTADO con procedencia** como `budget_minutes` + `budget_source` (§I.2) |
+| `reason_codes_json` de ejecución | **IMPLEMENTADO, distribuido** por ítem y por exclusión (§R, §S) |
+| `planner_items.item_ref_id` | **SUPERSEDED** por un destino tipado con integridad referencial (ADR-007 v1.1, SD-006) |
+| `planner_items.scheduled_date` | **DIFERIDO · no aplicable** en un Planner de un solo día; reapertura con planificación multi-día |
+| `planner_items.status` | **SUPERSEDED** por `session_items` (§Q) |
+
+`priority_score` ya estaba dispuesto por SD-030 y no se reabre.
+
+**Impacto:** documental. **Ninguna migración.**
+
+---
+
+## SD-039 · Product UX Contract v1.0 · experiencia y sistema visual del vertical del Planner
+
+**Documentos afectados:** `Design System v1.0` §1–§17 por instanciación · `Onboarding & Edge States
+v1.0` por instanciación y por alcance · `docs/FPS_SCREEN_CONTRACT.md`, que queda como autoridad
+histórica de FPS v1 en la superficie visible · REQ-F01 … REQ-F15 por disposición parcial ·
+`Master Product Specification v1.0` §4, §37 y §49.
+**Origen:** Product UX · Waves 1–2 (Revisión 1) y Wave 3 · **PRODUCT UX · WAVE 3 · HUMAN
+ACCEPTANCE: APPROVED**, tras revisión independiente sobre los artboards renderizados.
+**Estado:** **`ACCEPTED`** · 2026-09-20 · Ana Victoria.
+**Fichero canónico:** `docs/PRODUCT_UX_CONTRACT.md` v1.0.
+
+Aterriza como autoridad de producto: el modelo mental, el bucle percibido, el mapeo entre paso de
+dominio, paso percibido y pantalla, el **inventario normativo de 21 estados** derivado de las
+salidas reales del servidor, la **jerarquía de verdad** de cinco niveles, la **jerarquía de
+divulgación** de tres, el modelo de tiempo, de continuidad, de reparación atómica, de corrección y
+de estados terminales, la arquitectura de información de **un solo destino**, el modelo responsive
+y el de accesibilidad, y **UX-INV-1 … UX-INV-24** como criterio de aceptación mecánico.
+
+Sistema visual: **L2 · System Intelligence**, con B+ como línea base histórica de la que deriva.
+Principio normativo de visibilidad: **cuando el aprendiz estudia, STUDY OS se retira; cuando STUDY
+OS decide o adapta, se hace perceptible.** Gramática propia: espina del sistema neutra en reposo,
+superficie de decisión anclada, dos voces tipográficas, actividad adaptativa **temporal**,
+transformación en vez de sustitución, y retirada en LEER.
+
+**Firma adaptativa AS-2 · solo activo**, y su consecuencia de gobernanza: **el teal conserva un
+único significado —STUDY OS está actuando o adaptándose— y la existencia de una decisión válida se
+comunica estructuralmente**. La ampliación semántica que se había propuesto para el teal **queda
+retirada por innecesaria** y no se aprueba.
+
+Tipografía: **IBM Plex Sans**, **una sola familia**, sin serif para LEER en Phase 4B, con voz de
+sistema y voz de aprendizaje diferenciadas dentro de la familia y **sin monoespaciada para
+comunicar computación**.
+
+**Wordmark de producto v1: W1**, aprobado **solo** como wordmark en producto. **El logotipo y la
+identidad externa definitivos quedan explícitamente DIFERIDOS y son NO BLOQUEANTES para Phase 4B.**
+No se selecciona W6 y no se codifica la espina en el wordmark.
+
+**L3 · Frontier no se selecciona**, y sus gestos quedan rechazados para Phase 4B: marcas de
+posición persistentes, canal de sistema de 24 px, tensado del radio, oscurecimiento del campo,
+capacidad como raíl lleno, desplazamiento estático de AS-3, voz de sistema monoespaciada y
+cualquier señal tecnológica decorativa o permanente.
+
+**Impacto:** Product UX y Phase 4B. **No autoriza ninguna implementación.**
+
+---
+
+## ERRATA · E-P4B-1 · el gate P4-G3 nombra un `run_type` que no existe
+
+**Documentos afectados:** `docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md` §13 y
+`docs/PHASE_4A_CHECKPOINT.md` §L.1, **que no se editan**: son registros congelados de Phase 4A.
+**Origen:** reconciliación de CDEM §17 (SD-038).
+**Qué decía:** P4-G3 se enuncia como «presupuesto cero: ejecución **RESCUE** con cero ítems».
+**Hecho:** `run_type` no está implementado y queda dispuesto como no implementado (SD-038). El
+sistema construido registra `outcome = 'ZERO_TIME'` conforme a §L del contrato del Planner, que es
+sobre lo que el gate se marcó PASS el 2026-09-19.
+**Corrección:** la redacción vigente del gate es **`ZERO_TIME`**. **Ningún cambio semántico**: el
+comportamiento aceptado, probado y congelado no se toca, y ningún registro de decisión se
+reescribe. Se corrige aquí, no en los documentos congelados, exactamente como se trató E-P4A-1.
+**Estado:** **ACCEPTED · registrada** el 2026-09-20.
+
+---
+
+## Estado de la adenda · Product UX Wave 3 y pre-autorización de Phase 4B · 2026-09-20
+
+Complementa a los estados anteriores sin sustituirlos.
+
+**Registro de decisión:** Product UX · Wave 3 · Human Acceptance: APPROVED, y Phase 4B ·
+Human Decision Packet · RESOLVED · 2026-09-20 · decisora Ana Victoria · línea base
+`6fa4b067875c358cf3f63127bab51bcd98777154` · copias aceptadas en
+`docs/PRODUCT_UX_CONTRACT.md` y `docs/PHASE_4B_PREAUTHORIZATION.md`.
+
+| Decisión | Estado |
+| --- | --- |
+| **P4-D2** · origen de la duración | **`ACCEPTED`** · híbrida · propietario normativo ADR-013 |
+| **P4B-D1** · `NOTHING_FITS` | **`ACCEPTED`** · no se ofrece acción fuera de presupuesto |
+| **P4B-D2** · salida anticipada | **`ACCEPTED`** · B2-a · enmienda acotada de §O |
+| **P4B-D3** · override del mismo día | **`ACCEPTED`** · tabla más evento, escritura solo de servidor |
+| **R-8** · `AVAILABILITY_CHANGED` | **cerrada** en semántica de gobernanza; implementación en el BUILD |
+| **SD-019** | **`ACCEPTED`** · opción C, con AA-1 registrada |
+| **VIS-D1** · dirección visual | **`ACCEPTED`** · L2 · System Intelligence |
+| **VIS-D7** · firma adaptativa | **`ACCEPTED`** · AS-2 · solo activo |
+| **VIS-D8** · ampliación semántica del teal | **RETIRADA por innecesaria**, no aprobada |
+| **VIS-D2 / VIS-D3** · tipografía | **`ACCEPTED`** · IBM Plex Sans, una sola familia |
+| **VIS-D4** · wordmark | **`ACCEPTED`** · W1 **solo como wordmark de producto v1**; marca externa **DIFERIDA y no bloqueante** |
+| **L3 · Frontier** | **no seleccionada**; sus gestos quedan rechazados para Phase 4B |
+| Invariantes nuevas | **INV-117** · fidelidad de plan · **INV-118** · eventos solo de servidor |
+| Gates nuevos | **P4-G24 … P4-G38**, con **P4-G18** heredado y **P4-G35** como QA de diseño y accesibilidad |
+| Observaciones nuevas | **OBS-4B-01** · sucesoras por ciclo · **OBS-4B-02** · corregir una duración acuña versión · **OBS-4B-03** · SD-019 opción C pendiente de reflejo en código |
+
+**Lo que esta adenda no hace:** no autoriza el BUILD de Phase 4B, no crea esquema, no crea
+migraciones, no toca runtime, no muta STAGING ni PRODUCTION, no cambia Vercel, no pide ni añade
+ninguna credencial, no abre Phase 1B ni el corpus oficial, y no mueve ningún tag.
+
+**Total tras esta adenda: 39 entradas SPEC_DIFF y 3 erratas.**

@@ -8,6 +8,16 @@ reparación (§F.5), `ACCEPTED` el 2026-09-19; **P4-D6** · el **motor** proyect
 Planner la lee (§W.1), `ACCEPTED` el 2026-09-19. **No queda ninguna decisión semántica abierta.**
 **FE DE ERRATAS:** **E-P4A-1** (2026-09-19) · §G.1 alineada con P4-D5, sin ningún cambio semántico
 (OBS-4A-B4).
+**SUPERSESIÓN PARCIAL · 2026-09-20 · pre-autorización de Phase 4B.** El cuerpo de este documento se
+conserva como **artefacto de Phase 4A** y no se reescribe. Siete secciones quedan **superseded** por
+decisiones humanas posteriores, recogidas en `docs/PHASE_4B_PREAUTHORIZATION.md` y registradas en
+SD-033 … SD-038: **§C** e **§I.3** (P4-D2 resuelta · autoridad híbrida de duración · propietario
+normativo **ADR-013**), **§T** (la prohibición de duraciones se estrecha a una sola clave acotada),
+**§J** (P4B-D1 · no se ofrece la acción fuera de presupuesto), **§O**, **§Q.2** y **§U.6** (P4B-D2 ·
+consumo de ejecución y sucesora), **§I.2** (P4B-D3 · almacenamiento del override del mismo día) y
+**§V** (INV-117 · la versión seleccionada es la presentada). Las filas de **§Z** correspondientes a
+esas decisiones dejan de estar diferidas; el resto de §Z sigue vigente. **Ninguna de esas
+decisiones autoriza el BUILD de Phase 4B**, y ninguna reabre P4-D1, P4-D3, P4-D4, P4-D5 ni P4-D6.
 **HISTORIA:** v1.0 aterrizó como `ACCEPTED`; la revisión independiente encontró **IR-P4A-01** (una
 recomendación emitida contaba como respuesta a la reparación) e **IR-P4A-02** (la atomicidad
 estaba sobreafirmada) y el contrato pasó a v1.1 `PROPOSED`. v1.2 cerró P4-D3 y P4-D4 y abrió
@@ -73,7 +83,7 @@ puede explicarse no cumple este contrato.
 | Historial de sesiones e ítems completados | `session_items` | exclusión `COMPLETED_TODAY` |
 | Ejecuciones anteriores del Planner | `planner_runs`, `planner_items` | **auditoría, no señal** · solo para reutilizar un plan de hash idéntico (§O); **nunca** entran en la selección (§F.4) |
 | Disponibilidad declarada | override del día · entrada del día de la semana · `default_daily_minutes` | §I |
-| Duración autoritativa por candidato | **entrada del contrato** (§I.3) | su origen es decisión P4-D2, **diferida** |
+| Duración autoritativa por candidato | **entrada del contrato** (§I.3) | sigue siendo entrada. Su origen era la decisión P4-D2, diferida durante Phase 4A y **resuelta el 2026-09-20**: autoridad híbrida, propietario normativo **ADR-013** (SD-033) |
 | Fecha de calendario y zona horaria de la persona | §I.1 | «hoy» no existe sin ella |
 
 ## D · Entradas explícitamente prohibidas
@@ -456,6 +466,13 @@ zona horaria no existe «hoy», y el Planner no la deduce de la IP, del navegado
 
 ### I.2 · Origen del presupuesto
 
+> **SUPERSEDED en su parte diferida · 2026-09-20 · P4B-D3.** El override del mismo día **ya tiene
+> almacenamiento canónico decidido**: entidad en `public` clavada por persona y día de plan, con
+> escritura solo de rol de servicio y el día derivado en servidor desde la zona declarada, más la
+> declaración duradera `TODAY_OVERRIDE_SET`. La **precedencia de esta sección no cambia** y el
+> override sigue sin tocar `default_daily_minutes`. `docs/PHASE_4B_PREAUTHORIZATION.md` §5;
+> SD-036.
+
 Precedencia, aceptada en H-P4-4:
 
 1. **override válido del mismo día**, si existe;
@@ -472,9 +489,19 @@ Cada ejecución registra el valor usado **y su procedencia**.
 
 ### I.3 · Duración: entrada, no política
 
-El Planner recibe la duración autoritativa de cada candidato **como entrada del contrato**. Este
-contrato **no** fija su origen: P4-D2 está deliberadamente diferida a una decisión previa a
-Phase 4B.
+El Planner recibe la duración autoritativa de cada candidato **como entrada del contrato**.
+
+> **SUPERSEDED · 2026-09-20 · P4-D2 resuelta.** Lo que sigue en esta sección **describía el estado
+> de Phase 4A** y se conserva como tal. Mientras estuvo vigente decía que este contrato no fija el
+> origen de la duración porque *P4-D2 está deliberadamente diferida a una decisión previa a
+> Phase 4B*. **Ya no está diferida:** la autoridad de duración es **híbrida** —metadato de autoría
+> versionado y fijado a la versión exacta de la unidad, más estimación gobernada determinista para
+> la pregunta—, su propietario normativo es **ADR-013**, y su aterrizaje está en
+> `docs/PHASE_4B_PREAUTHORIZATION.md` §2 y en SD-033. La duración sigue siendo **entrada** del
+> contrato y sigue sin ser un hecho de ciencia del aprendizaje. La lista de prohibiciones que
+> aparece más abajo describe lo que Phase 4A no hizo; lo que Phase 4B puede hacer lo fija ADR-013,
+> y el código conserva `DURATION_PROVENANCES = ['FIXTURE']` hasta que un BUILD autorizado lo
+> amplíe.
 
 En consecuencia, y esto es vinculante:
 
@@ -529,6 +556,11 @@ que el tercer criterio prohíbe. Detenerse antes viola el cuarto. Por tanto la p
 presupuestos 0–60 (`tests/governance/residualProofs.spec.ts`).
 
 ## J · `NOTHING_FITS`
+
+> **SUPERSEDED en su parte diferida · 2026-09-20 · P4B-D1.** La decisión de producto que esta
+> sección dejaba a 4B/UX está tomada: **la acción por encima del presupuesto no se ofrece como
+> ejecutable**. La interfaz puede enunciar su estimación y permitir subir el tiempo de hoy, sin
+> preselección ni presión. Todo lo demás de §J sigue vigente sin cambios. SD-034.
 
 Si existen candidatos elegibles pero **ninguna acción completa cabe** en el presupuesto:
 
@@ -616,6 +648,14 @@ Si existe una sesión válida abierta, gana siempre:
 Esto preserva sin cambios la semántica de Phase 2 y del FPS.
 
 ## O · Reutilización del plan
+
+> **SUPERSEDED · 2026-09-20 · P4B-D2.** La regla de reutilización gana una condición: se reutiliza
+> si el hash coincide **y la ejecución no ha sido consumida**. Una ejecución está **consumida**
+> cuando la sesión que la referencia alcanza un estado terminal, y entonces **no se reutiliza**: la
+> petición siguiente escribe una sucesora aunque la entrada canónica no haya cambiado. Una
+> ejecución nunca arrancada conserva íntegra su idempotencia. **La entrada canónica no codifica el
+> consumo.** Redacción enmendada y prueba de propiedades en
+> `docs/PHASE_4B_PREAUTHORIZATION.md` §4; SD-035.
 
 Una ejecución es una instantánea. Si vuelve a pedirse un plan y el **hash de entrada canónica**
 es idéntico al de la última ejecución no superseded del día, se reutiliza esa ejecución y **no**
@@ -724,6 +764,14 @@ concesión a `anon` ni a `authenticated` (§U).
 
 ## T · Gobernanza de la configuración
 
+> **SUPERSEDED en un punto · 2026-09-20 · P4-D2.** La prohibición de «duraciones por defecto» de
+> esta sección remitía a §I.3, que era la cláusula de diferimiento de P4-D2; resolverla es la
+> autoridad que la levanta, y la levanta **para exactamente una clave**, entera y acotada: la
+> estimación gobernada del paso de comprobación. **Todas las demás prohibiciones de §T siguen
+> literalmente en pie** — pesos, ratios, porcentajes, cuotas, longitudes de ciclo, constantes de
+> alternancia, umbrales sobre recuentos de evidencia, intervalos de repaso, semividas y factores de
+> decaimiento. ADR-013; SD-033.
+
 Tres cosas distintas, y la distinción es normativa:
 
 | Clase | Dónde vive | Ejemplo |
@@ -801,6 +849,12 @@ no llega a escribirse.
 
 ## V · Relación con `study_sessions`
 
+> **AMPLIADA · 2026-09-20 · INV-117.** La instantánea de sesión pasa a llevar la **identidad fijada
+> por el Planner**: la versión de unidad y la representación de pregunta que la ejecución
+> seleccionó son las que se presentan, y una publicación posterior nunca las sustituye.
+> `docs/PHASE_4B_PREAUTHORIZATION.md` §7.1; SD-037. **§U.6** gana además el rechazo
+> `RUN_ALREADY_CONSUMED`: el arranque devuelve la sesión existente solo si está abierta (SD-035).
+
 - `study_sessions.planner_run_id` deja de ser una columna sin semántica: pasa a referenciar una
   ejecución real, con integridad referencial y `ON DELETE RESTRICT`.
 - Lo fija el **servidor** al crear una sesión planificada; el cliente no puede proponerlo — ya
@@ -859,6 +913,15 @@ La prioridad de selección es un **orden de acciones**, no una afirmación sobre
 la persona. ADR-003 v1.2 anexo §E sigue siendo el propietario de readiness, y es Phase 6.
 
 ## Z · Semántica diferida
+
+> **ACTUALIZADA · 2026-09-20.** Cuatro filas de la tabla dejan de estar diferidas por decisión
+> humana: **origen de la duración (P4-D2)**, **oferta de un ítem fuera de presupuesto (P4B-D1)**,
+> **consumo del plan por HOY y selección visible**, que pasa a estar gobernada por
+> `docs/PRODUCT_UX_CONTRACT.md` aunque su **BUILD siga sin autorizar**, y el almacenamiento del
+> override del mismo día (P4B-D3, §I.2). **El resto de §Z sigue diferido sin cambios**: umbrales de
+> Rescue y de ausencia, programación de repasos, retención, decaimiento y espaciado, semántica de
+> prerrequisitos, planificación de `PRACTICAL` y `CONCEPT_REVIEW`, diagnóstico como entrada, ritmo
+> por `target_date` y readiness.
 
 Este contrato **no** define, y Phase 4A **no** implementa:
 

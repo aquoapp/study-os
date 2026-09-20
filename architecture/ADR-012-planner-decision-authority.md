@@ -363,3 +363,95 @@ consumidor nuevo, no la corrección de un defecto de Phase 3.
 del BUILD de Phase 4A.
 
 **Estado de implementación:** sigue `NOT IMPLEMENTED` hasta el BUILD.
+
+---
+
+## Anexo v1.5 · decisiones de pre-autorización de Phase 4B · 2026-09-20
+
+**Estado:** `ACCEPTED` · decisora Ana Victoria, tras la reconciliación de pre-autorización de
+Phase 4B y su revisión independiente.
+**Estado de implementación:** **`NOT IMPLEMENTED`**. Este anexo no crea esquema, ni migraciones,
+ni runtime, y **no autoriza el BUILD de Phase 4B**.
+**Aterrizaje:** `docs/PHASE_4B_PREAUTHORIZATION.md`. **Duración:** propietario normativo
+**ADR-013**, no este ADR.
+
+Tres decisiones de autoridad de decisión del Planner quedan resueltas. Ninguna reabre P4-D1, P4-D3,
+P4-D4, P4-D5 ni P4-D6, y ninguna introduce puntuación, peso, ratio, cuota ni parámetro de
+equilibrio.
+
+### 1 · P4B-D1 · `NOTHING_FITS` no ofrece acción fuera de presupuesto
+
+§J dejaba la elección a 4B/UX sin decidirla. **Resuelta: no se ofrece como ejecutable.** El tiempo
+declarado por la persona es autoritativo, Master §49 se conserva literalmente y la ejecución no
+cambia de forma: cero ítems, y la acción elegible más corta registrada como `OVER_BUDGET`. La
+interfaz puede enunciar con verdad esa estimación y permitir subir el tiempo de hoy, sin
+preselección ni presión.
+
+### 2 · P4B-D2 · consumo de ejecución · enmienda acotada de §O
+
+Una ejecución está **consumida** cuando la sesión que la referencia alcanza un estado terminal. Una
+ejecución consumida **no se reutiliza**: la petición siguiente escribe una sucesora aunque la
+entrada canónica no haya cambiado. Una ejecución nunca arrancada conserva íntegra su
+idempotencia.
+
+**La entrada canónica no codifica el consumo.** El predicado vive en la persistencia, contra
+`study_sessions`, fuera de `PlannerInput`. De ahí que P4-G4 y P4-G21 conserven su objeto exacto: el
+escenario de P4-G21 es planificar dos veces *sin ejecución*, y la enmienda solo dispara *con*
+ejecución.
+
+No se toca ninguna garantía estructural: una sesión por ejecución, una sesión abierta por persona,
+historia append-only y linaje lineal siguen igual, y la seguridad bajo concurrencia la dan los
+índices únicos que ya existen, **sin ninguna primitiva nueva**. `start_planned_session` devuelve la
+sesión existente solo si está abierta y gana el rechazo `RUN_ALREADY_CONSUMED`.
+
+**Por qué era una decisión y no una derivación.** Edge States ED-03 nombra «Replanificar lo que
+queda» como acción secundaria y REQ-C12 dice que lo no terminado vuelve al Planner; pero §O más el
+índice único de una sesión por ejecución producían un punto muerto cuando la sesión terminaba sin
+completar nada que cambiara la elegibilidad: la misma ejecución se reutilizaba y su arranque
+devolvía una sesión ya terminal. Salir de ahí exigía enmendar §O o la entrada canónica. Enmendar la
+entrada canónica habría hecho que la entrada dependiera de su propio consumo, que es justo lo que
+la vuelve canónica; por eso se enmienda §O.
+
+### 3 · P4B-D3 · override del mismo día · tabla más evento
+
+El override vigente es **estado canónico mutable** que el Planner lee, clavado por persona y día de
+plan, con el cero como dato; su declaración duradera se registra **además** como evento
+`TODAY_OVERRIDE_SET`. La escritura es **solo de rol de servicio**, desde una acción con identidad
+verificada, y **el día de plan se deriva en servidor** desde la zona horaria declarada: el cliente
+nunca nombra la fecha. **La superficie de RPC invocable por cliente permanece en dos.**
+
+CDEM no da hogar canónico al override —§3 no lo lleva en `learner_settings` y ninguna otra entidad
+lo tiene—, mientras el enum de eventos sí trae el tipo desde la migración 18 sin contrato de
+campos. Sobrevivían dos colocaciones admisibles, y la elegida es la que mantiene la lectura del
+presupuesto como una consulta simple y deja la historia en el flujo append-only.
+
+**Consecuencia que obliga a INV-118.** Aceptar un contrato de campos hace el tipo emitible por
+cualquier cliente a través de `public.append_learning_event`, que reenvía todo tipo aceptado.
+Historia y estado canónico podrían divergir. La lista de tipos **solo de servidor** cierra el
+vector, con el mismo idioma que el registro de autoridad ya usa para las RPC.
+
+### 4 · Invariantes que este anexo añade
+
+| Id | Regla |
+| --- | --- |
+| **INV-117** | La versión de unidad y la representación de pregunta que el Planner selecciona son las que se presentan; una publicación intermedia nunca sustituye otra |
+| **INV-118** | Un tipo de evento cuya autoridad de producción es el servidor no es emitible por un cliente |
+
+**INV-113 no cambia y no se amplía:** la tabla de override **no** es una proyección autoritativa,
+sino una declaración de la persona, de modo que no entra en `projections` del registro de
+autoridad; su escritura es de servidor por integridad, no por ser proyección.
+
+### 5 · Lo que no cambia
+
+P4-D1, P4-D3, P4-D4, P4-D5 y P4-D6 intactas. Selección categórica sin puntuación, sin pesos y sin
+parámetro de equilibrio. `EVIDENCE_POSITIVE` sigue sin ser elegible en v1. El esquema `engine`
+sigue sin exponerse y ADR-011 no se amplía. Ningún esquema privado nuevo. `phase-3-v1.0`,
+`phase-3-v1.1` y `phase-4a-v1.0` no se mueven, y los documentos congelados de Phase 4A no se
+editan: la errata **E-P4B-1** sobre la redacción del gate P4-G3 se registra en el SPEC_DIFF_LOG,
+no sobre ellos.
+
+### 6 · Gates
+
+**P4-G24 … P4-G38** quedan definidos en `docs/PHASE_4B_PREAUTHORIZATION.md` §10, con **P4-G18**
+heredado. Ninguno se declara PASS en gobernanza. La implementación queda dentro de un BUILD de
+Phase 4B que **todavía no está autorizado**.

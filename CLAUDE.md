@@ -349,7 +349,8 @@ Planner (**OBS-4A-B4**). Lección del BUILD: **PostgREST reintenta
 por sí solo las transacciones que fallan con 40001**; una revalidación que debe devolver el control
 al servidor no puede usar ese código. **PHASE 4A · FROZEN · PASS WITH DEBT**: OBS-4A-B1, B2 y B4
 cerradas; OBS-4A-B3, B5 y B6 viajan; D-13, D-18, D-20, D-22, D-23, WATCH-P2-1 y OBS-3.1-01 heredadas.
-P4-D2 sigue diferida. **Phase 4B, Phase 1B, corpus oficial, readiness, Release y PRODUCTION siguen
+P4-D2 siguió diferida hasta el 2026-09-20, cuando quedó resuelta (más abajo).
+**Phase 4B, Phase 1B, corpus oficial, readiness, Release y PRODUCTION siguen
 sin autorizar.**
 
 La lección, que ya es la segunda vez: **derrotar rivales no demuestra unicidad**. Una clave de
@@ -376,6 +377,28 @@ retomarlo con Git.
 **INV-101 ya no está abierto.** Ana lo aprobó, con su redacción congelada, en la
 autorización de arranque de Phase 0. Aparece en la tabla de §4 como invariante
 vigente, no como decisión pendiente. Lo mismo ocurre con **INV-113**.
+
+**Product UX · Waves 1–3 · `ACCEPTED` el 2026-09-20, y las decisiones previas a Phase 4B
+resueltas.** Aterrizaje **documental**: no crea esquema, ni migraciones, ni runtime, y **no
+autoriza el BUILD de Phase 4B**. La experiencia y el sistema visual pasan a estar gobernados por
+[`docs/PRODUCT_UX_CONTRACT.md`](docs/PRODUCT_UX_CONTRACT.md) v1.0 —HOY como único destino, la
+**acción** como unidad percibida, **21 estados** derivados de las salidas reales del servidor, una
+jerarquía de verdad de cinco niveles, otra de divulgación de tres, y **UX-INV-1 … UX-INV-24**—, con
+dirección visual **L2 · System Intelligence** y su principio normativo: **cuando el aprendiz
+estudia, STUDY OS se retira; cuando STUDY OS decide o adapta, se hace perceptible**. Tipografía
+IBM Plex Sans, una sola familia; **wordmark de producto v1 = W1**, y la identidad externa
+**diferida y no bloqueante**. La firma adaptativa **AS-2 · solo activo** deja el teal con **un solo
+significado** —STUDY OS está actuando— y por eso la ampliación semántica que se le había propuesto
+**queda retirada por innecesaria**.
+Las decisiones de pre-autorización de Phase 4B están en
+[`docs/PHASE_4B_PREAUTHORIZATION.md`](docs/PHASE_4B_PREAUTHORIZATION.md): **P4-D2** resuelta como
+autoridad de duración híbrida (**ADR-013**), **P4B-D1** (`NOTHING_FITS` no ofrece acción fuera de
+presupuesto), **P4B-D2** (consumo de ejecución y sucesora, enmienda acotada de §O), **P4B-D3**
+(override del mismo día: tabla más evento, escritura solo de servidor), **SD-019 opción C** con
+**AA-1**, **R-8** cerrada, y las invariantes **INV-117** y **INV-118**. El contrato del Planner
+conserva su cuerpo v1.4 como artefacto de Phase 4A y recibe la supersesión por anexo, como ya se
+hizo con ADR-003, ADR-007, ADR-008 y ADR-011. Lección de esta ronda: **hacer rara una señal puede
+retirar una ampliación semántica en vez de justificarla**.
 
 Estado real del repositorio: [`docs/ARCHITECTURE_STATE.md`](docs/ARCHITECTURE_STATE.md).
 Informes de fase: [`docs/PHASE_0_CHECKPOINT.md`](docs/PHASE_0_CHECKPOINT.md) y
