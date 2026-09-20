@@ -21,7 +21,6 @@ import {
 import {
   accept,
   createLearner,
-  envelope,
   eventFor,
   itemEvent,
   presentAndAnswer,
@@ -289,6 +288,29 @@ async function setAvailabilityFor(
   return { error: error ? { message: error.message } : null };
 }
 
+/**
+ * Avanza el stream del aprendiz **sin cambiar su presupuesto** · INV-118.
+ *
+ * Varios casos de abajo necesitan «evidencia nueva» para atrasar la tupla del motor, y usaban
+ * `AVAILABILITY_CHANGED` emitido como cliente porque era el evento más barato de construir. Desde
+ * Phase 4B ese tipo es **solo de servidor** (INV-118) y un cliente ya no puede emitirlo: es la
+ * protección que impide que la historia diga algo distinto del estado.
+ *
+ * Así que ahora se emite por donde se emite de verdad, `set_availability`, **con los mismos valores
+ * que ya tenía**. El stream avanza —que es lo que el caso necesita— y el presupuesto no se mueve,
+ * de modo que la entrada canónica solo cambia por lo que el caso quiere que cambie.
+ */
+async function advanceStream(learner: Learner): Promise<void> {
+  const { error } = await admin.rpc('set_availability', {
+    p_user: learner.id,
+    p_default_daily_minutes: 40,
+    p_weekly: {},
+    p_diagnostic_preference: null,
+    p_reduced_motion: null,
+  });
+  if (error) throw new Error(`avance de stream: ${error.message}`);
+}
+
 describe('§I.1 · la zona horaria se declara, no se deduce', () => {
   it('sin zona declarada no hay «hoy» y no se escribe nada', async () => {
     expect((await request(ana)).kind).toBe('TIMEZONE_REQUIRED');
@@ -326,29 +348,22 @@ describe('§I.1 · la zona horaria se declara, no se deduce', () => {
   });
 });
 
-describe('P4-D2 · resuelta · el módulo tiene fuente de duración de producción', () => {
-  /*
-   * **Invertida por autorización · P4-G36.**
-   *
-   * Esta guarda decía que sin fuente inyectada el módulo responde `DURATION_SOURCE_UNDECIDED` y no
-   * escribe nada, y era cierta mientras P4-D2 estaba diferida. Quedó resuelta el 2026-09-20
-   * (ADR-013): ahora **sí** hay fuente de producción, y seguir afirmando lo contrario sería
-   * afirmar algo falso.
-   *
-   * Lo que la sustituye comprueba que esa fuente existe, que declara su procedencia, y que la
-   * salida que nombraba una decisión pendiente **ya no existe** en el módulo.
-   */
-  it('sin fuente inyectada planifica con la híbrida, y lo declara', async () => {
-    const outcome = await requestPlanForUser(ana.id, { client: admin });
-    if (outcome.kind !== 'RUN') {
-      throw new Error(`se esperaba una ejecución y llegó ${outcome.kind}`);
-    }
-    const [row] = query<{ duration_provenance: string }>(
-      `select duration_provenance from public.planner_runs where id = '${outcome.runId}'`,
-    );
-    expect(row?.duration_provenance).toBe('HYBRID_V1');
-  });
-});
+/*
+ * **Retirada por autorización · P4-G36 · y no sustituida aquí, a propósito.**
+ *
+ * Esta suite tenía un caso que afirmaba que sin fuente de duración inyectada el módulo responde
+ * `DURATION_SOURCE_UNDECIDED` y no escribe nada. Era cierto mientras P4-D2 estaba diferida, y dejó
+ * de serlo el 2026-09-20 (ADR-013).
+ *
+ * Su sustituta **no vive aquí**. El primer intento fue ponerla en este mismo sitio, y se descubrió
+ * que pedir un plan con la fuente de producción **escribe una ejecución**, y que esta suite cuenta
+ * ejecuciones: los casos siguientes afirman que hay exactamente una, que pedir otra vez la
+ * reutiliza y que la persona lee una sola fila. Un caso nuevo que escribe al principio los rompe
+ * todos sin que ninguno haya dejado de ser cierto.
+ *
+ * La propiedad se comprueba en `phase4b.hardGates.spec`, sobre un aprendiz propio y sin secuencia
+ * compartida, que es donde una prueba que escribe no molesta a nadie.
+ */
 
 let firstRunId = '';
 
@@ -518,12 +533,18 @@ describe('§U.6 · §N · P4-G10 · arranque, reanudación y una sola sesión ab
       `select status::text from public.study_sessions where id = '${sessionId}'`,
     );
     expect(status[0]?.status).toBe('COMPLETED');
-    // Idempotente también después: la misma ejecución devuelve la misma sesión.
-    expect(await startPlannedSession(ana.id, firstRunId, { client: admin })).toMatchObject({
-      kind: 'STARTED',
-      sessionId,
-      reused: true,
-    });
+    /*
+     * **Invertido por autorización · P4B-D2 · B2-a.**
+     *
+     * Aquí se afirmaba que la idempotencia por ejecución vale «también después» de cerrar la
+     * sesión. La decisión lo enmienda: una sesión terminal significa que la ejecución está
+     * **consumida**, y devolver una sesión muerta dejaría a la persona atrapada en un plan que ya
+     * terminó. La idempotencia sigue valiendo mientras la sesión está abierta, que es cuando sirve
+     * de algo, y eso lo comprueba el caso 8 de `session.oneOpenPerLearner`.
+     */
+    expect((await startPlannedSession(ana.id, firstRunId, { client: admin })).kind).toBe(
+      'RUN_ALREADY_CONSUMED',
+    );
   });
 });
 
@@ -676,13 +697,7 @@ describe('§U.1 · TOCTOU · la entrada se revalida en la transacción que escri
       beforePersist: async () => {
         if (injected) return;
         injected = true;
-        await accept(
-          ana,
-          envelope(ana, 'AVAILABILITY_CHANGED', {
-            default_daily_minutes: 40,
-            weekly_availability_json: {},
-          }),
-        );
+        await advanceStream(ana);
       },
     });
     const run = asRun(outcome);
@@ -773,13 +788,7 @@ describe('§P · un destino retirado o una ejecución sustituida no arrancan', (
 
   it('una ejecución atrasada por evidencia nueva no arranca: RUN_STALE', async () => {
     const run = asRun(await request(ana));
-    await accept(
-      ana,
-      envelope(ana, 'AVAILABILITY_CHANGED', {
-        default_daily_minutes: 40,
-        weekly_availability_json: {},
-      }),
-    );
+    await advanceStream(ana);
     expect((await startPlannedSession(ana.id, run.runId, { client: admin })).kind).toBe(
       'RUN_STALE',
     );

@@ -150,6 +150,27 @@ async function setAvailabilityFor(
   return { error: error ? { message: error.message } : null };
 }
 
+/**
+ * Un rechazo que **preserva** la unicidad de sesión abierta, bajo concurrencia real.
+ *
+ * La restricción es una exclusión **diferida**, así que se comprueba al confirmar. Con varias
+ * transacciones peleándose por la misma fila, PostgreSQL puede resolver el conflicto de dos
+ * maneras: nombrando la restricción violada, o detectando un abrazo mortal y eligiendo una víctima.
+ * Las dos revierten, las dos preservan la invariante, y cuál toca no lo decide el producto.
+ *
+ * Lo que **no** se relaja es la invariante: el caso sigue afirmando que queda exactamente una
+ * sesión abierta. Esto solo admite las dos formas del rechazo en vez de una, que es lo que la base
+ * de datos de verdad puede devolver.
+ */
+function assertPreservesUniqueness(message: string | undefined): void {
+  const text = message ?? '';
+  const nombrada = text.includes(EXCLUSION);
+  const abrazoMortal = /deadlock detected/i.test(text);
+  if (!nombrada && !abrazoMortal) {
+    throw new Error(`rechazo que no preserva la unicidad de sesión abierta: ${text}`);
+  }
+}
+
 describe('P4-G10 · los diez casos', () => {
   it('1 · sin sesión abierta, crear una sesión funciona', async () => {
     expect((await fpsCreate(lia)).error).toBeNull();
@@ -263,8 +284,9 @@ describe('P4-G10 · los diez casos', () => {
     const creates = await Promise.all(Array.from({ length: 5 }, () => fpsCreate(lia)));
     expect(creates.filter((r) => r.error === null)).toHaveLength(1);
     for (const r of creates.filter((x) => x.error !== null)) {
-      expect(r.error?.message).toContain(EXCLUSION);
+      assertPreservesUniqueness(r.error?.message);
     }
+    // La invariante, intacta: **exactamente una** sesión abierta.
     expect(openCount(lia)).toBe(1);
 
     // Planificada contra ajena al Planner, a la vez.
