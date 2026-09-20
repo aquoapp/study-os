@@ -4,8 +4,8 @@
 documento describe algo que no existe en el código, el documento está mal.
 
 **Versión:** 11.27 · copia viva
-**Última actualización:** 2026-09-19 · **Phase 4A · FROZEN · PASS WITH DEBT**: PR #19 integrado en `main` (`5a8f603`, árbol idéntico al candidato aceptado `120d166`), tag anotado `phase-4a-v1.0`; Phase 4B no autorizada (§17) · 2026-09-19 · **Phase 4A · P4-D6 `ACCEPTED`** (opción A): el motor proyecta `last_negative_position`, contrato del Learning Engine **v1.1** por anexo §25, contrato del Planner **v1.4**, ADR-012 anexo v1.4, SD-032 (§16); la gobernanza de Phase 4A ya está en `main` (PR #17 → `3a8025f`) · 2026-09-19 · **Phase 4A · P4-D5 `ACCEPTED`** (última evidencia negativa): contrato del Planner **v1.3 `ACCEPTED` en candidato**, **Gate A = PASS**; **Gate B no se abre** hasta integrar la gobernanza en `main` (CLAUDE.md §3); nada construido (§16) · 2026-09-18 · **Phase 4A · Gate A**: **P4-D3** (granularidad híbrida) y **P4-D4** (`EXPOSED` primero) `ACCEPTED`; prueba residual B cerrada; **la prueba residual A no cierra** y abre **P4-D5**; contrato v1.2 sigue `PROPOSED · BLOQUEADO`; **Gate A = FAIL, no se construye** (§16) · 2026-09-17 · **Phase 4A · validación adversarial**: IR-P4A-01 e IR-P4A-02 aceptados; el contrato del Planner pasa a **`PROPOSED · BLOQUEADO`** por **P4-D3** y **P4-D4**; ADR-012 gana el anexo v1.1 y sigue `ACCEPTED`; SD-031 corregida; gates P4-G21 y P4-G22 (§16) · 2026-09-17 · **Phase 4A · Planner Domain / Decision Engine · aterrizaje de gobernanza**: contrato del Planner y **ADR-012**, P4-D1 aceptada con modificación, P4-D2 diferida, SD-030 y SD-031 por adenda (§16). **El BUILD de Phase 4A no está autorizado.** La tabla viva de §1 queda reconciliada con la línea base congelada · 2026-09-17 · **Phase 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integrado en `main` (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`; **D-26 cerrada** (§15.3) · 2026-09-16 · Phase 3.1 · corrección D-26 construida como candidato: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
-**Fase actual:** **Phase 4A · Planner Domain / Decision Engine · FROZEN · PASS WITH DEBT** (`phase-4a-v1.0` → `5a8f603`, §17), sobre **Phase 3.1 · Learning Engine Runtime Corrective · FROZEN · PASS WITH DEBT** (`phase-3-v1.1` → `577cc71`), P3.1-G1 … P3.1-G12 en PASS, sobre **Phase 3 · FROZEN · PASS WITH DEBT** (`phase-3-v1.0` → `f5d0b10`, que contiene D-26 como historia) · ninguna fase posterior autorizada · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · Phase 1B, Phase 4B, Phase 5 y PRODUCTION no autorizados
+**Última actualización:** 2026-09-20 · **Product UX · Waves 1–3 `ACCEPTED`** y **decisiones de pre-autorización de Phase 4B resueltas** (§18): `docs/PRODUCT_UX_CONTRACT.md` v1.0, `docs/PHASE_4B_PREAUTHORIZATION.md`, **ADR-013**, ADR-012 anexo v1.5, SD-033 … SD-039, aceptación de SD-019 opción C con AA-1, errata E-P4B-1, **INV-117** e **INV-118**. Aterrizaje **documental**: ningún esquema, ninguna migración, ningún runtime; **el BUILD de Phase 4B sigue sin autorizar** · 2026-09-19 · **Phase 4A · FROZEN · PASS WITH DEBT**: PR #19 integrado en `main` (`5a8f603`, árbol idéntico al candidato aceptado `120d166`), tag anotado `phase-4a-v1.0`; Phase 4B no autorizada (§17) · 2026-09-19 · **Phase 4A · P4-D6 `ACCEPTED`** (opción A): el motor proyecta `last_negative_position`, contrato del Learning Engine **v1.1** por anexo §25, contrato del Planner **v1.4**, ADR-012 anexo v1.4, SD-032 (§16); la gobernanza de Phase 4A ya está en `main` (PR #17 → `3a8025f`) · 2026-09-19 · **Phase 4A · P4-D5 `ACCEPTED`** (última evidencia negativa): contrato del Planner **v1.3 `ACCEPTED` en candidato**, **Gate A = PASS**; **Gate B no se abre** hasta integrar la gobernanza en `main` (CLAUDE.md §3); nada construido (§16) · 2026-09-18 · **Phase 4A · Gate A**: **P4-D3** (granularidad híbrida) y **P4-D4** (`EXPOSED` primero) `ACCEPTED`; prueba residual B cerrada; **la prueba residual A no cierra** y abre **P4-D5**; contrato v1.2 sigue `PROPOSED · BLOQUEADO`; **Gate A = FAIL, no se construye** (§16) · 2026-09-17 · **Phase 4A · validación adversarial**: IR-P4A-01 e IR-P4A-02 aceptados; el contrato del Planner pasa a **`PROPOSED · BLOQUEADO`** por **P4-D3** y **P4-D4**; ADR-012 gana el anexo v1.1 y sigue `ACCEPTED`; SD-031 corregida; gates P4-G21 y P4-G22 (§16) · 2026-09-17 · **Phase 4A · Planner Domain / Decision Engine · aterrizaje de gobernanza**: contrato del Planner y **ADR-012**, P4-D1 aceptada con modificación, P4-D2 diferida, SD-030 y SD-031 por adenda (§16). **El BUILD de Phase 4A no está autorizado.** La tabla viva de §1 queda reconciliada con la línea base congelada · 2026-09-17 · **Phase 3.1 · FROZEN · PASS WITH DEBT**: PR #15 integrado en `main` (`577cc71`, árbol idéntico al candidato aceptado `04d4669`), tag anotado `phase-3-v1.1`; **D-26 cerrada** (§15.3) · 2026-09-16 · Phase 3.1 · corrección D-26 construida como candidato: `phase-3-v1.0` contiene un defecto de invocación del motor en runtime, descubierto en la pre-autorización de Phase 4 · **Phase 3 · FROZEN · PASS WITH DEBT**: PR #13 integrado en `main` (`f5d0b10`, árbol idéntico al candidato aceptado `2ea5038`), tag anotado `phase-3-v1.0` (§14.8) · 2026-09-16 · **D-25 cerrada**: contraseña de STAGING rotada por Ana, credencial vieja rechazada y `STAGING_DB_URL` reemplazado (§14.7). PRODUCTION pausado e intacto · 2026-09-11 · **Phase 3 Acceptance Review**: candidato técnicamente aceptado sujeto a D-24 y D-25. **D-24 cerrada** (ADR-011 anexo v1.1 firmado). Sin merge, sin tag y sin congelación · 2026-09-10 · BUILD de Phase 3 construido: migraciones 19 y 20, esquema `engine` no expuesto, `packages/learning-engine` y la doble ruta de invocación; D-21 cerrada. Candidato en `docs/PHASE_3_CHECKPOINT.md`
+**Fase actual:** **Phase 4A · Planner Domain / Decision Engine · FROZEN · PASS WITH DEBT** (`phase-4a-v1.0` → `5a8f603`, §17), sobre **Phase 3.1 · Learning Engine Runtime Corrective · FROZEN · PASS WITH DEBT** (`phase-3-v1.1` → `577cc71`), P3.1-G1 … P3.1-G12 en PASS, sobre **Phase 3 · FROZEN · PASS WITH DEBT** (`phase-3-v1.0` → `f5d0b10`, que contiene D-26 como historia) · ninguna fase posterior autorizada · First Product Slice `FROZEN · HUMAN ACCEPTED`, Phase 2 `FROZEN · PASS WITH DEBT`, Phase 0 y Phase 1A congeladas e intactas · **Product UX · Waves 1–3 `ACCEPTED` el 2026-09-20** y las decisiones de pre-autorización de Phase 4B resueltas (§18), sin que ninguna autorice implementación · Phase 1B, Phase 4B, Phase 5 y PRODUCTION no autorizados
 **Estado global:** **PASS WITH DEBT** · línea base congelada `main` = `109ca86c6a5430d26b96bbc098ef6f151fa33baa` (congelación documental de Phase 4A, PR #20) · tag anotado `phase-4a-v1.0` → merge de implementación `5a8f6038537fc8fce5dc092ec472ec4b2a418f91` (Phase 3.1: `577cc71…`, `phase-3-v1.1`; Phase 3: `f5d0b10…`, `phase-3-v1.0`; FPS: `6bde0a0…`, `fps-v1.0`; Phase 2: `46b8fcd…`, `phase-2-v1.0`; Phase 1A: `be5a26a…`, `phase-1a-v1.0`; Phase 0: `5d8296c…`, `phase-0-v1.0`) · ver `docs/PHASE_4A_CHECKPOINT.md`, `docs/PHASE_3_1_CHECKPOINT.md` y `docs/PHASE_3_CHECKPOINT.md`
 
 ---
@@ -180,7 +180,7 @@ SD-006, SD-007, BD-02 y BD-05 (aceptados el 2026-09-07, §4), y BD-03 (resuelto 
 | D-04 | La familia tipográfica es de sistema | §2 da dirección, no nombre | Al decidirla |
 | D-05 | `next-env.d.ts` versionado y en `.prettierignore` | Lo regenera cada build; Next lo requiere para el typecheck | — |
 | D-06 | Listas espejo entre TypeScript y las herramientas `.mjs` | Las herramientas no pueden importar TS. Hay tests que comparan ambas | Aceptable |
-| D-07 | `teal` y `amber` no pueden llevar texto normal, y `slate` solo sobre `surface` | Restricciones de SD-019 opción A. No son deuda oculta: la prueba de accesibilidad renderizada las hace cumplir en cada ejecución | Al elegir entre B y C · antes de Phase 5 |
+| D-07 | `teal` y `amber` no pueden llevar texto normal, y `slate` solo sobre `surface`; desde el 2026-09-20 se añade `magenta` sobre `canvas` (**AA-1**, 4.47) | **Cambia de naturaleza el 2026-09-20**: SD-019 queda aceptada en **opción C** y estas restricciones dejan de ser deuda diferida para ser **regla permanente y exigible**. La prueba de accesibilidad renderizada las hace cumplir en cada ejecución | **Resuelto como decisión** · queda **OBS-4B-03**: el reflejo en código (`status.ts`, `tokens.ts` y su prueba siguen diciendo «diferido antes de Phase 5») se corrige en el primer acto de implementación autorizado |
 | D-08 | ~~Los E2E de auth no se han ejecutado nunca~~ **Cerrada el 2026-09-08**: 16/16 contra STAGING y en CI, con limpieza verificada | — | — |
 | D-09 | La resolución de ámbitos no sigue tipos ni `export *`, y trata las declaraciones de función como de bloque | Aceptable · cuando no resuelve devuelve `null`, y `null` es «no demostrado» | — |
 | D-10 | El motor de propagación es insensible al flujo, sigue un nivel de propiedades y no distingue instancias de una declaración entre llamadas | Aceptable · cada simplificación produce más hechos, no menos | — |
@@ -798,3 +798,97 @@ Decisiones humanas del 2026-09-19, aplicadas: **OBS-4A-B1** (`NO_PUBLISHED_UNIT`
 Planner). OBS-4A-B3, B5 y B6 siguen como vigilancia u observación.
 Lo que sigue sin autorizar: Phase 4B, P4-D2, Phase 1B, corpus oficial, readiness, PRODUCTION,
 Vercel Production y AQUO.
+
+## 18. Product UX · Waves 1–3 · y pre-autorización de Phase 4B · 2026-09-20
+
+**Aterrizaje documental. El BUILD de Phase 4B sigue sin autorizar.** Nada de esta sección crea
+esquema, migraciones, runtime ni dependencias, y nada muta STAGING, PRODUCTION ni Vercel.
+
+### 18.1 · Qué queda aceptado
+
+| Decisión | Estado |
+| --- | --- |
+| **Product UX · Waves 1–2 (Revisión 1) y Wave 3** | **`ACCEPTED`** · revisión independiente sobre los artboards renderizados · `docs/PRODUCT_UX_CONTRACT.md` v1.0 |
+| **P4-D2** · origen de la duración | **`ACCEPTED`** · híbrida · propietario normativo **ADR-013** |
+| **P4B-D1** · `NOTHING_FITS` | **`ACCEPTED`** · no se ofrece la acción fuera de presupuesto |
+| **P4B-D2** · salida anticipada y consumo de ejecución | **`ACCEPTED`** · B2-a · enmienda acotada de §O |
+| **P4B-D3** · override del mismo día | **`ACCEPTED`** · tabla canónica más evento, escritura solo de servidor |
+| **R-8** · `AVAILABILITY_CHANGED` | **cerrada** en semántica de gobernanza |
+| **SD-019** | **`ACCEPTED`** · opción C, con **AA-1** registrada |
+| **Q-1 … Q-6** | dispuestos: Q-1 cerrado por P4B-D2; Q-3 pasa a **INV-117** |
+| **R-1 … R-6** | reconciliados; CDEM §17 deja de tener campos sin disposición (SD-038) |
+
+Registro completo en `docs/PHASE_4B_PREAUTHORIZATION.md`; entradas SD-033 … SD-039, la aceptación
+de SD-019 y la errata **E-P4B-1** en `docs/SPEC_DIFF_LOG.md`.
+
+### 18.2 · El modelo de producto, en cinco frases
+
+HOY es **la decisión de hoy** y el único destino: no se monta el shell de los cinco espacios porque
+tres de ellos no tienen capacidad, y afirmarlos sería lo que EC-012 prohíbe. La unidad de trabajo
+que percibe la persona es **la acción**, no el ítem, de modo que una reparación atómica es una sola
+acción repartida en dos rutas. El inventario de estados no se copia de ningún recuento histórico:
+se **deriva** de las salidas reales del servidor, y son **21**. Cada frase de la interfaz es
+atribuible a exactamente uno de **cinco niveles de verdad**, y lo que el sistema infiere solo puede
+aflorar como **acción más razón**, nunca como afirmación sobre la persona. El vacío veraz —
+`ZERO_TIME`, `NOTHING_FITS`, `NOTHING_ELIGIBLE` — se dibuja como producto y no como error, y
+`NOTHING_ELIGIBLE` **no lleva ninguna acción**.
+
+### 18.3 · El sistema visual, y por qué es apropiable
+
+Dirección **L2 · System Intelligence**, derivada de B+. Principio normativo: **cuando el aprendiz
+estudia, STUDY OS se retira; cuando STUDY OS decide o adapta, se hace perceptible.**
+
+Lo propio no es la paleta ni el logotipo: es la gramática. Una **espina de sistema** neutra en
+reposo que ancla lo que el sistema decide y da continuidad entre estados; una **superficie de
+decisión anclada** a ella, con radio solo a la derecha, que dice que el objeto lo produjo el
+sistema; **dos voces tipográficas** que hacen visible la autoría en un fotograma quieto; y una
+**actividad adaptativa temporal**, que es la parte más fuerte y la que menos dura.
+
+**Firma adaptativa AS-2 · solo activo**, con una consecuencia de gobernanza que vale la pena
+registrar: al hacer el teal **raro** se volvió innecesaria la ampliación semántica que se había
+propuesto para él. El teal conserva **un solo significado** —STUDY OS está actuando— y la
+existencia de una decisión válida se comunica **estructuralmente**. Un gesto de diseño cerró a la
+vez un problema de diseño y uno de gobernanza.
+
+**L3 · Frontier no se selecciona.** Su valor es haber fijado la frontera, que quedó enunciada:
+STUDY OS deja de ser Calm Intelligence en cuanto una señal del sistema permanece cuando el sistema
+no hace nada, ocupa espacio que pertenece a la lectura, o empieza a medir algo.
+
+Tipografía **IBM Plex Sans**, una sola familia, sin serif para LEER. **Wordmark de producto v1:
+W1**, y **la identidad externa definitiva queda explícitamente diferida y no bloquea Phase 4B**.
+
+### 18.4 · Invariantes y gates nuevos
+
+**INV-117** · la versión de unidad y la representación de pregunta que el Planner selecciona son
+las que se presentan. **INV-118** · un tipo de evento cuya autoridad de producción es el servidor
+no es emitible por un cliente. **UX-INV-1 … UX-INV-24** como criterio de aceptación mecánico de la
+experiencia. **P4-G24 … P4-G38**, con P4-G18 heredado y **P4-G35** como QA de diseño y
+accesibilidad, que incorpora la validación de **presencia en escritorio**: el objeto de producto no
+puede leerse como una aplicación de tamaño móvil flotando en un monitor grande.
+
+### 18.5 · Observaciones nuevas
+
+| Id | Contenido |
+| --- | --- |
+| **OBS-4B-01** | Arrancar y terminar repetidamente genera una sucesora por ciclo. Cada ciclo exige dos actos deliberados y cada ejecución es historia inmutable. No se inventa caducidad temporal, que §Q.2 prohíbe |
+| **OBS-4B-02** | Corregir una duración equivocada acuña una versión nueva de unidad, porque una versión publicada es inmutable. Coste directo de «fijada a la versión exacta»; acotado, porque las ejecuciones pasadas conservan sus minutos congelados |
+| **OBS-4B-03** | SD-019 opción C es autoridad desde hoy, pero `packages/design-system/src/status.ts`, `tokens.ts` y `designSystem.blocked.spec.ts` siguen diciendo que B y C están diferidas. Un aterrizaje documental no muta en silencio código que vigila una fase congelada: se corrige en el primer acto de implementación autorizado, con su prueba, en el mismo commit |
+
+### 18.6 · Dos hallazgos mecánicos que conviene no perder
+
+**La reproducibilidad de las duraciones ya estaba garantizada.** Los minutos de cada candidato son
+campos de `PlannerInput`, y la entrada canónica de cada ejecución los congela con su hash. Ninguna
+reproducción consulta jamás una fuente de duración, así que cualquier mecanismo futuro —incluida
+una fuente aprendida— es aditivo por construcción. Se verificó en vez de diseñarse.
+
+**La consecuencia de INV-117 es minúscula.** Basta con que el arranque de sesión copie las dos
+identidades que hoy descarta: el trigger de fijación única ya las congela y **las comprobaciones de
+igualdad que la frontera de eventos ya tiene se convierten en la guarda**, sin escribir ninguna
+comprobación nueva.
+
+### 18.7 · Lo que sigue sin autorizar
+
+BUILD de Phase 4B · esquema · migraciones · dependencias · mutación de STAGING · cambios en Vercel ·
+credenciales · el prerrequisito OBS-3.1-01 · Phase 1B · corpus oficial · readiness · PRODUCTION ·
+infraestructura de pago · AQUO · y la identidad externa de marca, que queda diferida y **no
+bloquea** Phase 4B.
