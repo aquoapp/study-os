@@ -29,8 +29,8 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | --- | --- |
 | Rama | `phase/4b-product-integration` |
 | Base | `852a9c99e4eb60c3debee0f2e3fd215d2cceb735` (`main`, PR #22 integrado) |
-| HEAD | `5c256aa` |
-| Último commit verde conocido | ver §2, última fila marcada VERDE |
+| HEAD | `1e55d6d` |
+| Último commit verde conocido | `5c256aa` · verde en typecheck, lint, format, 1227 unitarias, guardas y secret-scan. Las suites con base de datos las valida CI |
 | Árbol local | limpio |
 | STAGING | **sin mutar** por Phase 4B |
 | Preview | despliegue automático de Vercel por rama; sin configuración nueva |
@@ -42,22 +42,21 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 
 | # | Bloque | Estado | Commit |
 | --- | --- | --- | --- |
-| 0 | Línea base y log de continuación | **HECHO** | este commit |
-| 1 | Esquema y dominio de Phase 4B (migración 24) + OBS-4B-03 | **HECHO** | `65e2499` |
-| 2 | Dominio, registro de autoridad y OBS-4B-03 | **HECHO** | `a5d34a1` |
-| 3 | Corpus sintético de Preview | pendiente | — |
-| 4 | Sesión real: LEER · COMPROBAR · CORRECCIÓN · FIN | pendiente | — |
-| 5 | HOY + Planner runtime + sistema visual L2 | **HECHO** | `5c256aa` |
-| 6 | Sistema visual L2 | pendiente | — |
-| 7 | Telemetría y readout de validación | pendiente | — |
-| 8 | Endurecimiento de Preview y pruebas | pendiente | — |
+| 0 | Línea base y log de continuación | **HECHO** | `ee496b5` |
+| 1 | Migración 24 · esquema y fronteras (§11 completa, más R-8) | **HECHO** | `65e2499` |
+| 2 | Dominio, registro de autoridad y cierre de OBS-4B-03 | **HECHO** | `b4a2472` |
+| 3 | Runtime del Planner, HOY real y sistema visual L2 | **HECHO** | `5c256aa` |
+| 4 | Superficies de sesión con cabecera de acción · /ajustes · /hoy/replanificar | pendiente | — |
+| 5 | Corpus sintético de Preview | pendiente | — |
+| 6 | Telemetría y readout de validación | pendiente | — |
+| 7 | Endurecimiento de Preview y pruebas | pendiente | — |
 
 ---
 
 ## 3 · Tarea siguiente exacta
 
-Bloque 4 · superficies de sesión con cabecera de acción, /ajustes y /hoy/replanificar. (Histórico: bloque 1 · migración `supabase/migrations/00000000000024_phase4b_product_integration.sql` con su
-`down/`, según la lista cerrada de `docs/PHASE_4B_PREAUTHORIZATION.md` §11 · **hecho**.)
+Bloque 4 · las tres superficies de sesión con cabecera de acción (UX-INV-17, UX-INV-24),
+`/ajustes` (S12) y `/hoy/replanificar` (S21).
 
 ---
 
