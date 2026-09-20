@@ -46,7 +46,8 @@
     "guard:private-schemas": "node tools/guards/private-schema-grant-guard.mjs",
     "db:roundtrip": "node tools/db-roundtrip.mjs",
     "seed:preview": "node tools/seed-preview-corpus.mjs",
-    "readout": "node tools/validation-readout.mjs"
+    "readout": "node tools/validation-readout.mjs",
+    "db:push": "node tools/db.mjs push"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
