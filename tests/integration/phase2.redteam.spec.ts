@@ -328,14 +328,51 @@ describe('validación de esquema de evento (REQ-C06 · CDEM §10)', () => {
       eventFor(ana, session, 'QUESTION_PRESENTED', { question_representation_id: randomUUID() }),
       'ITEM_REQUIRED',
     );
+    /*
+     * **Actualizada por autorización · Phase 4B · INV-118.**
+     *
+     * Este caso comprobaba que un evento de ámbito `user` con sesión se rechaza con
+     * `SESSION_NOT_ALLOWED`, y usaba `AVAILABILITY_CHANGED` porque era el único de ese ámbito.
+     * Desde Phase 4B los dos tipos de ámbito `user` son **solo de servidor**, así que un cliente
+     * choca antes con un rechazo **más fuerte**: no llega a la comprobación de ámbito porque no
+     * puede emitir el tipo en absoluto.
+     *
+     * La regla de ámbito no se deja de comprobar: se comprueba abajo, invocando la frontera de
+     * ingestión con el rol de servicio, que es quien sí puede emitirlo.
+     */
     await reject(
       ana,
       eventFor(ana, session, 'AVAILABILITY_CHANGED', {
         default_daily_minutes: 30,
         weekly_availability_json: { mon: 30 },
       }),
-      'SESSION_NOT_ALLOWED',
+      'SERVER_ONLY_EVENT_TYPE',
     );
+  });
+
+  it('la regla de ámbito sigue en pie para quien sí puede emitir el tipo (INV-118)', async () => {
+    // `AVAILABILITY_CHANGED` es de ámbito `user`: traerlo con una sesión se rechaza. Ese rechazo
+    // ya no es alcanzable desde el cliente —INV-118 lo corta antes—, así que se comprueba en la
+    // frontera de ingestión, que vive en un esquema no expuesto y por tanto se invoca por SQL.
+    //
+    // `attack()` lo hace **sin residuo**: el bloque termina siempre en excepción y la transacción
+    // se revierte, de modo que ni el evento ni su posición de stream sobreviven al caso.
+    const session = await createSession(ana, [
+      { item_type: 'CONCEPT_REVIEW', target_id: pack.conceptIds[0] ?? '' },
+    ]);
+    const outcome = attack(
+      `perform ingest.append_learning_event('${ana.id}'::uuid, jsonb_build_object(
+         'event_id', '${randomUUID()}'::uuid,
+         'event_type', 'AVAILABILITY_CHANGED',
+         'schema_version', 1,
+         'client_created_at', now(),
+         'session_id', '${session.session_id}'::uuid,
+         'payload', jsonb_build_object(
+           'default_daily_minutes', 30,
+           'weekly_availability_json', jsonb_build_object('mon', 30))));`,
+    );
+    expect(outcome.rejected, outcome.message).toBe(true);
+    expect(outcome.message).toContain('SESSION_NOT_ALLOWED');
   });
 
   it('exige que el tipo de ítem case con el tipo de evento', async () => {

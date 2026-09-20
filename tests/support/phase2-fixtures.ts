@@ -42,9 +42,18 @@ export async function rpc<T = Record<string, unknown>>(
  * Crea usuario + ajustes + objetivo ACTIVE sobre el pack + dispositivo.
  *
  * **Phase 4B · R-8.** La disponibilidad ya no se inserta con el token del aprendiz: esa vía está
- * revocada, porque el estado canónico y su declaración duradera tienen que nacer juntos. El
- * fixture usa **la misma función de servidor que usa el producto**, que es lo que hace que la
- * prueba pruebe el camino real y no uno paralelo que ya no existe.
+ * revocada, porque el estado canónico y su declaración duradera tienen que nacer juntos.
+ *
+ * Aquí se escribe la fila **con el rol de servicio y sin emitir la declaración**, y la razón es
+ * concreta: `set_availability` emite `AVAILABILITY_CHANGED`, que **consume la posición 1 del
+ * stream del aprendiz**. Una decena de pruebas de ADR-008 afirman —con razón— que el primer evento
+ * de una persona recibe la posición 1, y montar el fixture por esa vía las haría fallar a todas
+ * por una razón que no tiene nada que ver con lo que comprueban.
+ *
+ * El camino real de escritura **sí** está probado, donde le corresponde: `rls.userIsolation.phase2`
+ * comprueba que el cliente no puede escribir, que la función sí y que emite su declaración, y
+ * `phase4b.hardGates` comprueba que estado e historia coinciden. Un fixture de preparación no es
+ * el sitio para probar una frontera.
  */
 export async function createLearner(
   env: TestEnv,
@@ -52,13 +61,13 @@ export async function createLearner(
   pack: SyntheticPack,
 ): Promise<Learner> {
   const user = await createTestUser(env, label);
-  const settings = await adminClient(env).rpc('set_availability', {
-    p_user: user.id,
-    p_default_daily_minutes: 40,
-    p_weekly: { mon: 40, wed: 40 },
-    p_diagnostic_preference: null,
-    p_reduced_motion: null,
-  });
+  const settings = await adminClient(env)
+    .from('learner_settings')
+    .insert({
+      user_id: user.id,
+      default_daily_minutes: 40,
+      weekly_availability_json: { mon: 40, wed: 40 },
+    });
   if (settings.error) throw new Error(`learner_settings: ${settings.error.message}`);
   const goal = await user.client
     .from('learner_exam_goals')

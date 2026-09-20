@@ -129,25 +129,24 @@ afterAll(async () => {
 }, 300_000);
 
 /**
- * La disponibilidad declarada, por **la función de servidor** · R-8.
+ * Mueve el presupuesto declarado · R-8.
  *
- * La escritura directa sobre `learner_settings` desde el token del aprendiz está revocada desde
- * Phase 4B: el estado canónico y su declaración duradera (`AVAILABILITY_CHANGED`) tienen que nacer
- * juntos. Estas pruebas no comprobaban esa vía, la usaban para mover el presupuesto; ahora usan la
- * misma que usa el producto.
+ * La escritura directa desde el token del aprendiz está revocada desde Phase 4B, así que esto va
+ * con el rol de servicio. Y va **sobre la tabla**, no por `set_availability`, a propósito: esa
+ * función emite `AVAILABILITY_CHANGED`, y un evento más adelanta el stream del aprendiz, deja la
+ * proyección del motor atrasada y obliga a una puesta al día en medio de pruebas que cuentan
+ * ejecuciones y posiciones. Estas pruebas no comprueban el camino de declaración —lo hacen
+ * `rls.userIsolation.phase2` y `phase4b.hardGates`—: lo que necesitan es mover el presupuesto.
  */
 async function setAvailabilityFor(
   learner: Learner,
   defaultDailyMinutes: number,
   weekly: Record<string, number>,
 ): Promise<{ error: { message: string } | null }> {
-  const { error } = await admin.rpc('set_availability', {
-    p_user: learner.id,
-    p_default_daily_minutes: defaultDailyMinutes,
-    p_weekly: weekly,
-    p_diagnostic_preference: null,
-    p_reduced_motion: null,
-  });
+  const { error } = await admin
+    .from('learner_settings')
+    .update({ default_daily_minutes: defaultDailyMinutes, weekly_availability_json: weekly })
+    .eq('user_id', learner.id);
   return { error: error ? { message: error.message } : null };
 }
 
@@ -230,7 +229,18 @@ describe('P4-G10 · los diez casos', () => {
     expect(openCount(lia)).toBe(1);
   });
 
-  it('8 · arrancar dos veces la misma ejecución devuelve la misma sesión, también tras cerrarla', async () => {
+  /*
+   * **Invertida por autorización · P4B-D2 · B2-a.**
+   *
+   * Hasta Phase 4A, arrancar dos veces la misma ejecución devolvía la misma sesión **también tras
+   * cerrarla**, y eso era la idempotencia por ejecución de §U.6. La decisión la enmienda: una
+   * sesión terminal significa que la ejecución está **consumida**, y devolver una sesión muerta
+   * dejaría a la persona atrapada en un plan que ya terminó.
+   *
+   * La idempotencia **no desaparece**: sigue valiendo mientras la sesión está abierta, que es
+   * cuando sirve de algo. Lo que cambia es el caso terminal, y su rechazo tiene nombre propio.
+   */
+  it('8 · devuelve la misma sesión mientras está abierta; tras cerrarla, RUN_ALREADY_CONSUMED', async () => {
     await closeOpenSessions(lia);
     const run = await supersedingRun(lia, 35);
     const first = await startPlannedSession(lia.id, run, { client: admin });
@@ -242,7 +252,8 @@ describe('P4-G10 · los diez casos', () => {
     }
     await closeOpenSessions(lia);
     const closed = await startPlannedSession(lia.id, run, { client: admin });
-    expect(closed).toMatchObject({ kind: 'STARTED', reused: true });
+    expect(closed.kind).toBe('RUN_ALREADY_CONSUMED');
+    // Y no atrapa: no queda ninguna sesión abierta, así que pedir plan escribirá una sucesora.
     expect(openCount(lia)).toBe(0);
   });
 

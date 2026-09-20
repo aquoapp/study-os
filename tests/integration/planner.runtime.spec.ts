@@ -268,25 +268,24 @@ afterAll(async () => {
 }, 300_000);
 
 /**
- * La disponibilidad declarada, por **la función de servidor** · R-8.
+ * Mueve el presupuesto declarado · R-8.
  *
- * La escritura directa sobre `learner_settings` desde el token del aprendiz está revocada desde
- * Phase 4B: el estado canónico y su declaración duradera (`AVAILABILITY_CHANGED`) tienen que nacer
- * juntos. Estas pruebas no comprobaban esa vía, la usaban para mover el presupuesto; ahora usan la
- * misma que usa el producto.
+ * La escritura directa desde el token del aprendiz está revocada desde Phase 4B, así que esto va
+ * con el rol de servicio. Y va **sobre la tabla**, no por `set_availability`, a propósito: esa
+ * función emite `AVAILABILITY_CHANGED`, y un evento más adelanta el stream del aprendiz, deja la
+ * proyección del motor atrasada y obliga a una puesta al día en medio de pruebas que cuentan
+ * ejecuciones y posiciones. Estas pruebas no comprueban el camino de declaración —lo hacen
+ * `rls.userIsolation.phase2` y `phase4b.hardGates`—: lo que necesitan es mover el presupuesto.
  */
 async function setAvailabilityFor(
   learner: Learner,
   defaultDailyMinutes: number,
   weekly: Record<string, number>,
 ): Promise<{ error: { message: string } | null }> {
-  const { error } = await admin.rpc('set_availability', {
-    p_user: learner.id,
-    p_default_daily_minutes: defaultDailyMinutes,
-    p_weekly: weekly,
-    p_diagnostic_preference: null,
-    p_reduced_motion: null,
-  });
+  const { error } = await admin
+    .from('learner_settings')
+    .update({ default_daily_minutes: defaultDailyMinutes, weekly_availability_json: weekly })
+    .eq('user_id', learner.id);
   return { error: error ? { message: error.message } : null };
 }
 
@@ -327,11 +326,27 @@ describe('§I.1 · la zona horaria se declara, no se deduce', () => {
   });
 });
 
-describe('P4-D2 · sin fuente de duración no se planifica', () => {
-  it('el módulo real responde DURATION_SOURCE_UNDECIDED y no escribe ninguna ejecución', async () => {
+describe('P4-D2 · resuelta · el módulo tiene fuente de duración de producción', () => {
+  /*
+   * **Invertida por autorización · P4-G36.**
+   *
+   * Esta guarda decía que sin fuente inyectada el módulo responde `DURATION_SOURCE_UNDECIDED` y no
+   * escribe nada, y era cierta mientras P4-D2 estaba diferida. Quedó resuelta el 2026-09-20
+   * (ADR-013): ahora **sí** hay fuente de producción, y seguir afirmando lo contrario sería
+   * afirmar algo falso.
+   *
+   * Lo que la sustituye comprueba que esa fuente existe, que declara su procedencia, y que la
+   * salida que nombraba una decisión pendiente **ya no existe** en el módulo.
+   */
+  it('sin fuente inyectada planifica con la híbrida, y lo declara', async () => {
     const outcome = await requestPlanForUser(ana.id, { client: admin });
-    expect(outcome.kind).toBe('DURATION_SOURCE_UNDECIDED');
-    expect(runCount(ana.id)).toBe(0);
+    if (outcome.kind !== 'RUN') {
+      throw new Error(`se esperaba una ejecución y llegó ${outcome.kind}`);
+    }
+    const [row] = query<{ duration_provenance: string }>(
+      `select duration_provenance from public.planner_runs where id = '${outcome.runId}'`,
+    );
+    expect(row?.duration_provenance).toBe('HYBRID_V1');
   });
 });
 

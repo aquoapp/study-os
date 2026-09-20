@@ -29,7 +29,15 @@ export type StartOutcome =
         | 'RUN_SUPERSEDED'
         | 'RUN_STALE'
         | 'TARGET_UNAVAILABLE'
-        | 'OPEN_SESSION';
+        | 'OPEN_SESSION'
+        /**
+         * P4B-D2 · la ejecución ya fue consumida: su sesión alcanzó un estado terminal.
+         *
+         * Es un **rechazo de producto**, no un fallo: quien sostiene un identificador caducado
+         * vuelve a pedir plan en lugar de recibir una sesión muerta. La interfaz lo funde en S20
+         * con los otros cuatro rechazos de frescura, porque la acción de la persona es idéntica.
+         */
+        | 'RUN_ALREADY_CONSUMED';
     }
   | { readonly kind: 'SKIPPED'; readonly reason: string };
 
@@ -40,6 +48,7 @@ const REFUSALS = [
   'RUN_STALE',
   'TARGET_UNAVAILABLE',
   'OPEN_SESSION',
+  'RUN_ALREADY_CONSUMED',
 ] as const;
 
 export async function startPlannedSession(

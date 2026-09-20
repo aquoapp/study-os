@@ -123,46 +123,25 @@ describe('P4-G26 · autoridad de duración · todo minuto tiene procedencia auto
     }
   });
 
-  it('una versión sin duración declarada se excluye, y no se rellena', async () => {
-    // Solo pueden carecer de duración las versiones publicadas antes de la migración 24: la
-    // frontera de ingestión ya la exige. Se reproduce esa condición histórica poniendo la
-    // columna a nula, que es la única forma honesta de llegar a ella.
-    const before = asRun(await plan());
-    const conceptId = pack.conceptIds[0];
-    const [unit] = query<{ version_id: string }>(
-      `select uv.id as version_id
-         from public.learning_unit_versions uv
-         join public.learning_units u on u.id = uv.learning_unit_id
-        where u.concept_id = '${conceptId}' and uv.status = 'PUBLISHED'
-        limit 1`,
-    );
-    expect(unit?.version_id).toBeTruthy();
-
-    // El trigger de inmutabilidad protege el contenido publicado; para reproducir una fila
-    // anterior a la migración hay que desactivarlo, y se vuelve a activar inmediatamente.
-    query(
-      `alter table public.learning_unit_versions disable trigger learning_unit_versions_immutable`,
-    );
-    try {
-      query(
-        `update public.learning_unit_versions set estimated_minutes = null where id = '${unit!.version_id}'`,
-      );
-      const after = asRun(await plan());
-      expect(after.runId).not.toBe(before.runId);
-      const audit = after.decision.candidates.find((c) => c.conceptId === conceptId);
-      // La razón es **propia**: reutilizar `NO_PUBLISHED_UNIT` confundiría dos causas distintas.
-      expect(audit?.exclusion).toBe('NO_DURATION_METADATA');
-      // Y la ejecución **continúa** con el resto: §E excluye candidatos, no aborta planes.
-      expect(after.decision.actions.length).toBeGreaterThan(0);
-    } finally {
-      query(
-        `update public.learning_unit_versions set estimated_minutes = ${UNIT_MINUTES} where id = '${unit!.version_id}'`,
-      );
-      query(
-        `alter table public.learning_unit_versions enable trigger learning_unit_versions_immutable`,
-      );
-    }
-  });
+  /*
+   * La exclusión `NO_DURATION_METADATA` **no se prueba aquí**, y la razón es una lección, no una
+   * comodidad.
+   *
+   * El primer intento reproducía la condición desactivando el trigger de inmutabilidad para poner
+   * la columna a nula. Funcionaba, y era peligroso: si el caso falla entre el `disable` y el
+   * `enable`, el trigger **se queda desactivado** para todas las suites que comparten la base, y
+   * la siguiente que comprueba que el contenido publicado es inmutable pasa creyendo que lo
+   * comprueba. Un arnés que puede debilitar una invariante de otra suite no vale lo que prueba.
+   *
+   * La propiedad queda cubierta por tres piezas, cada una donde le corresponde:
+   *
+   *   - que la frontera de ingestión **exija** la duración y no la rellene ·
+   *     `learningUnits.lifecycle.spec`, con la clave ausente y con la clave fuera de rango;
+   *   - que el motor puro **excluya** un candidato sin duración con esa razón propia y siga
+   *     planificando el resto · `planner.durationAuthority.spec`, donde la entrada es un dato y no
+   *     hace falta ninguna DDL;
+   *   - que toda duración de producción tenga procedencia autorizada · los dos casos de arriba.
+   */
 });
 
 describe('P4-G24 · INV-117 · fidelidad de plan', () => {
