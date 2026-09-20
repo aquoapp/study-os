@@ -29,8 +29,8 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | --- | --- |
 | Rama | `phase/4b-product-integration` |
 | Base | `852a9c99e4eb60c3debee0f2e3fd215d2cceb735` (`main`, PR #22 integrado) |
-| HEAD | `55a2e11` |
-| Último commit verde conocido | `5c256aa` · verde en typecheck, lint, format, 1227 unitarias, guardas y secret-scan. Las suites con base de datos las valida CI |
+| HEAD | `8a639b6` |
+| Último commit verde conocido | `8a639b6` en los checks sin base de datos (typecheck, lint, format, 1241 unitarias, seis guardas, secret-scan). **Las suites con base de datos y los E2E están en CI sobre este mismo commit; ver §5.** |
 | Árbol local | limpio |
 | STAGING | **sin mutar** por Phase 4B |
 | Preview | despliegue automático de Vercel por rama; sin configuración nueva |
@@ -50,8 +50,10 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | 5 | Corpus sintético de Preview | **HECHO** | `6a567b7` |
 | 6 | Readout de validación de producto | **HECHO** | `228087d` |
 | 7 | Puertas duras contra la frontera real | **HECHO** | `55a2e11` |
-| 8 | STAGING migrado y corpus sembrado | **BLOQUEADO** · espera CI verde | — |
-| 9 | Recorrido humano en Preview (P4-G18) | **BLOQUEADO** · espera OBS-3.1-01 | — |
+| 8 | Zona horaria en el onboarding, /fin sin doble final, E2E al bucle real | **HECHO** | `3a89abf` |
+| 9 | Convergencia de CI · arnés y guardas | **EN CURSO** | `8a639b6` |
+| 10 | STAGING migrado y corpus sembrado | **BLOQUEADO** · espera el job de base de datos en verde | — |
+| 11 | Recorrido humano en Preview (P4-G18) | **BLOQUEADO** · espera OBS-3.1-01 | — |
 
 ---
 
@@ -143,3 +145,54 @@ hasta que ese job esté en verde.
 
 **Siguiente:** `/ajustes` (S12), `/hoy/replanificar` (S21), las tres superficies de sesión con
 cabecera de acción, tipografía IBM Plex Sans, corpus sintético, telemetría y readout.
+
+### 2026-09-21 · convergencia de CI y reescritura de los E2E
+
+**Lo que CI enseñó, en tres rondas.** Docker no está en la máquina de desarrollo, de modo que las
+suites con base de datos solo se ven en CI. Cada ronda descubrió una clase distinta de consecuencia
+de las decisiones de Phase 4B, y ninguna era un fallo de las decisiones: eran lugares del arnés que
+todavía describían el mundo anterior.
+
+**Ronda 1 · R-8 rompió el fixture compartido.** `createLearner` pasaba por `set_availability`, que
+emite `AVAILABILITY_CHANGED`, y ese evento **consume la posición 1 del stream**. Una decena de
+pruebas de ADR-008 afirman, con razón, que el primer evento de una persona recibe la posición 1. El
+fixture vuelve a escribir la fila con el rol de servicio y sin emitir la declaración; el camino real
+se prueba en `rls.userIsolation.phase2` y en `phase4b.hardGates`, que es donde le toca.
+
+**Ronda 2 · dos defectos míos.**
+
+1. `RUN_ALREADY_CONSUMED` no estaba en la lista de rechazos de `startPlannedSession`, así que
+   lanzaba en vez de devolverlo: un identificador caducado producía un error en lugar del estado
+   S20.
+2. Mi prueba de `NO_DURATION_METADATA` **desactivaba un trigger** para poner la columna a nula. Si
+   el caso falla entre el `disable` y el `enable`, el trigger se queda desactivado para todas las
+   suites que comparten la base, y la siguiente que comprueba que el contenido publicado es
+   inmutable **pasa creyendo que lo comprueba**. Ocurrió. Se retiró, y la propiedad se cubre en tres
+   piezas: la ingestión exige la duración, el motor puro excluye sin ella (`planner.durationAuthority`,
+   sin DDL) y la ejecución declara su procedencia.
+
+**Ronda 3 · una lección de arnés y una de concurrencia.** Puse la sustituta de una guarda retirada
+al principio de `planner.runtime`, y pedir un plan **escribe** una ejecución: esa suite cuenta
+ejecuciones, y cuatro casos que seguían siendo ciertos se rompieron. Se movió a donde no molesta. Y
+la exclusión diferida de sesión única puede rechazar nombrándose o por abrazo mortal: se admiten las
+dos formas, sin relajar la invariante, que sigue siendo «exactamente una abierta».
+
+**Lo que faltaba de verdad, y se implementó al mirar los E2E:**
+
+- **§O · el onboarding declara la zona horaria**, y es obligatoria: sin ella no existe «hoy» y
+  terminar sin declararla dejaba a la persona en un estado que no puede hacer nada.
+- **UX-INV-18 · `/fin` pierde la pantalla previa** · **FPS-OBS-03 cerrada**. El cierre pasa a la
+  acción que la persona pulsa. Hacerlo al renderizar habría sido más corto y estaba mal:
+  `SESSION_COMPLETED` es un evento y ningún render emite evidencia.
+- **Dos frases que dejaron de ser ciertas**: `/fin` y el onboarding decían que no había plan. Era
+  exacto en el FPS y es falso desde que el Planner decide; dejarlo sería EC-012 al revés.
+
+**Los E2E se reescribieron al bucle que el Planner produce de verdad.** Asumían la sesión fija de
+cinco pasos. Con granularidad híbrida, un concepto `NEW` recibe **solo APRENDER**; COMPROBAR llega
+cuando está `EXPOSED`, y para estarlo hay que haber completado su lectura. Por eso el recorrido tiene
+dos días, y **que haya que escribirlo así es la prueba** de que el plan responde a la evidencia y no
+a un guion. El paso del día se simula retrasando los `completed_at` de los ítems completados: es
+estado de sesión, no evidencia, y ningún evento se toca.
+
+**OBS-4B-04 registrada:** `CANNOT_PLAN` no deja rastro consultable, porque por construcción no
+escribe ejecución.
