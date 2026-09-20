@@ -73,6 +73,27 @@ export function OnboardingForm({ action, packs }: OnboardingFormProps) {
         </select>
       </label>
 
+      {/*
+       * Phase 4B · §O · el onboarding se amplía con la **zona horaria**, porque sin ella no existe
+       * «hoy» (§I.1) y el Planner se niega a inventarlo.
+       *
+       * UX-INV-21 · **la elige la persona.** No se deduce del navegador, del servidor ni de la IP,
+       * y no se escribe por render ni por abandono. La lista se ofrece como sugerencia visible y
+       * el campo es obligatorio, de modo que no se pueda terminar el onboarding sin declararla:
+       * llegar a HOY sin zona sería llegar a un estado que no puede hacer nada.
+       */}
+      <label style={{ display: 'grid', gap: 4 }}>
+        <span>¿En qué zona horaria estudias?</span>
+        <select name="timezone" required data-testid="timezone-select" style={fieldStyle}>
+          <option value="">Elige tu zona horaria</option>
+          {timezones().map((zone) => (
+            <option key={zone} value={zone}>
+              {zone}
+            </option>
+          ))}
+        </select>
+      </label>
+
       <label style={{ display: 'grid', gap: 4 }}>
         <span>¿Cuántos minutos al día puedes dedicar?</span>
         <input
@@ -138,4 +159,33 @@ export function OnboardingForm({ action, packs }: OnboardingFormProps) {
       </button>
     </form>
   );
+}
+
+/**
+ * El catálogo de zonas del navegador, si lo expone.
+ *
+ * Es una **sugerencia visible**, no una deducción: la persona sigue teniendo que elegir una, y el
+ * campo llega sin nada seleccionado (UX-INV-21). Cuando el navegador no expone el catálogo se
+ * ofrece un conjunto corto y explícito en vez de inventar uno largo: media lista mal adivinada es
+ * peor que una corta que se sabe incompleta, y quien no se vea puede fijarla después en /ajustes.
+ */
+function timezones(): readonly string[] {
+  try {
+    const supported = (
+      Intl as unknown as { supportedValuesOf?: (key: string) => string[] }
+    ).supportedValuesOf?.('timeZone');
+    if (supported && supported.length > 0) return supported;
+  } catch {
+    // Sin catálogo: se cae al conjunto corto de abajo.
+  }
+  return [
+    'Europe/Madrid',
+    'Atlantic/Canary',
+    'Europe/Lisbon',
+    'Europe/London',
+    'America/Mexico_City',
+    'America/Bogota',
+    'America/Argentina/Buenos_Aires',
+    'UTC',
+  ];
 }

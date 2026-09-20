@@ -94,6 +94,9 @@ test.describe('onboarding mínimo · REQ-C01', () => {
     await expect(select).toBeVisible();
     await select.selectOption({ label: `fixture: pack sintético e2e${test.info().workerIndex}` });
 
+    // Phase 4B · §O · el onboarding gana la zona horaria, y es obligatoria: sin ella no existe
+    // «hoy» (§I.1) y terminar sin declararla dejaría a la persona en un estado que no hace nada.
+    await page.getByTestId('timezone-select').selectOption('Europe/Madrid');
     await page.getByTestId('daily-minutes-input').fill('45');
     await page.getByTestId('availability-mon').fill('60');
     await page.getByTestId('availability-wed').fill('30');
@@ -105,10 +108,20 @@ test.describe('onboarding mínimo · REQ-C01', () => {
     await expect(page.getByTestId('onboarding-completado')).toBeVisible();
     await expect(page.getByTestId('resumen-minutos')).toHaveText('45');
     await expect(page.getByTestId('resumen-fecha')).toHaveText('2027-06-01');
-    const aviso = page.getByTestId('plan-provisional-aviso');
+    /*
+     * **Invertida por autorización.** Este caso comprobaba que el onboarding **no** prometiera un
+     * plan, porque no existía. Existe desde Phase 4B, y seguir afirmando que no sería la misma
+     * falsedad de EC-012 al revés: negar una capacidad real.
+     *
+     * Lo que se comprueba ahora es que dice **dónde** se ve y que no promete nada que el sistema no
+     * pueda cumplir: ni cuánto, ni qué, ni que haya algo.
+     */
+    const aviso = page.getByTestId('plan-siguiente-aviso');
     await expect(aviso).toBeVisible();
-    await expect(aviso).toContainText('Provisional');
-    await expect(aviso).toContainText('no hay un plan calculado');
+    await expect(aviso).toContainText('Hoy');
+    await expect(aviso).not.toContainText('no hay un plan calculado');
+    const texto = await aviso.innerText();
+    expect(texto).not.toMatch(/garantiz|siempre tendrás|te prometemos|cada día tendrás/i);
 
     // Y no aparece ninguna superficie de producto de Phase 5 ni del First Product Sight.
     for (const espacio of ['HOY', 'APRENDER', 'ENTRENAR', 'PROGRESO', 'PLAN']) {
@@ -127,6 +140,7 @@ test.describe('onboarding mínimo · REQ-C01', () => {
 
     await page.goto('/onboarding');
     await page.getByTestId('pack-select').selectOption({ index: 0 });
+    await page.getByTestId('timezone-select').selectOption('Europe/Madrid');
     await page.getByTestId('daily-minutes-input').fill('20');
     await page.getByTestId('onboarding-submit').click();
     await expect(page.getByTestId('onboarding-completado')).toBeVisible();

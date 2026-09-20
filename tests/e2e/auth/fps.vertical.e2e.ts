@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { buildSyntheticPack, purgePack, type SyntheticPack } from '../../support/phase1a-fixtures';
 import { publishLearningUnit } from '../../support/phase2-fixtures';
+import { query } from '../../support/sql';
 import {
   auditContrast,
   auditSlateOffSurface,
@@ -113,7 +114,9 @@ async function registerAndOnboard(page: Page, label: string): Promise<void> {
   await page
     .getByTestId('pack-select')
     .selectOption({ label: `fixture: pack sintético fps-e2e${test.info().workerIndex}` });
-  await page.getByTestId('daily-minutes-input').fill('30');
+  // Phase 4B · §I.1 · sin zona declarada no existe «hoy» y el Planner se niega, con razón.
+  await page.getByTestId('timezone-select').selectOption('Europe/Madrid');
+  await page.getByTestId('daily-minutes-input').fill('60');
   await page.getByTestId('onboarding-submit').click();
   await expect(page.getByTestId('onboarding-completado')).toBeVisible();
 
@@ -125,8 +128,9 @@ test.beforeAll(async () => {
   const env = readTestEnv();
   const admin = adminClient(env);
   pack = await buildSyntheticPack(admin, `fps-e2e${test.info().workerIndex}`);
-  await publishLearningUnit(admin, pack, 0, 'e2e-uno');
-  await publishLearningUnit(admin, pack, 1, 'e2e-dos');
+  // ADR-013 · la duración es metadato de autoría y la frontera de ingestión la exige.
+  await publishLearningUnit(admin, pack, 0, 'e2e-uno', { minutes: 5 });
+  await publishLearningUnit(admin, pack, 1, 'e2e-dos', { minutes: 5 });
 });
 
 test.afterAll(async () => {
@@ -145,123 +149,216 @@ test.afterAll(async () => {
   await purgePack(admin, pack.packId);
 });
 
-test.describe('First Product Slice · el recorrido completo', () => {
+test.describe('Phase 4B · el bucle real del producto', () => {
   test('las rutas del vertical exigen identidad verificada', async ({ page }) => {
-    for (const route of ['/hoy', '/aprender/1', '/comprobar/1', '/fin']) {
+    for (const route of ['/hoy', '/aprender/1', '/comprobar/1', '/fin', '/ajustes']) {
       await page.goto(route);
       await expect(page).toHaveURL(/\/entrar/);
     }
   });
 
-  test('estudiar, responder, interrumpir, volver y terminar', async ({ page }) => {
-    await registerAndOnboard(page, 'fps');
+  /**
+   * El recorrido que la autorización describe como objetivo, contra el Planner real.
+   *
+   * **Lo que cambia respecto al FPS, y no es cosmético.** La sesión fija daba siempre dos unidades
+   * y tres preguntas. El Planner da lo que la evidencia justifica, y para alguien que acaba de
+   * empezar eso es **solo APRENDER**: con granularidad híbrida (P4-D3), un concepto `NEW` recibe
+   * APRENDER, nunca APRENDER + COMPROBAR. COMPROBAR llega cuando el concepto está `EXPOSED`, y para
+   * estarlo hace falta haber completado su lectura.
+   *
+   * Por eso este recorrido tiene dos días. El primero se lee; el segundo se comprueba. Que haya que
+   * escribirlo así **es** la prueba de que el plan responde a la evidencia y no a un guion.
+   */
+  test('día 1 · leer lo que el Planner elige, interrumpir, volver y cerrar', async ({ page }) => {
+    await registerAndOnboard(page, 'p4b');
 
-    // ---------------------------------------------------------------- HOY
+    // ---------------------------------------------------------------- HOY · S5
     await expect(page.getByTestId('hoy-titulo')).toHaveText('Hoy');
-    await expect(page.getByTestId('hoy-provisional')).toContainText('Sesión fija');
-    await expect(page.getByTestId('hoy-preview')).toContainText('unidades para leer');
+    await expect(page.getByTestId('hoy-plan')).toBeVisible();
+    // La naturaleza de la acción, en términos de la persona. Dos conceptos nuevos: dos acciones.
+    await expect(page.getByTestId('hoy-siguiente')).toContainText('Aprender');
+    await expect(page.getByTestId('hoy-forma-sesion')).toContainText('2 acciones');
+    await expect(page.getByTestId('hoy-razon')).toContainText('nuevo');
     await assertProductSurface(page);
 
     await page.getByTestId('hoy-primaria').click();
     await expect(page).toHaveURL(/\/aprender\/1/);
 
-    // ------------------------------------------------------------- APRENDER
+    // ------------------------------------------------------------- APRENDER · S13
     await expect(page.getByTestId('aprender-cuerpo')).toBeVisible();
+    // UX-INV-24 · la posición es de la **acción**, no del ítem ni de la ruta.
+    await expect(page.getByTestId('accion-posicion')).toHaveText('Acción 1 de 2');
+    // UX-INV-17 · una acción de un solo paso **no** muestra indicador de fase.
+    await expect(page.getByTestId('accion-fase')).toHaveCount(0);
     const primeraUnidad = await page.getByTestId('aprender-titulo').innerText();
     await assertProductSurface(page);
 
-    // Una recarga vuelve a mostrar exactamente la misma versión vinculada.
+    // INV-117 · una recarga vuelve a mostrar exactamente la versión que el Planner fijó.
     await page.reload();
+    await expect(page.getByTestId('aprender-titulo')).toHaveText(primeraUnidad);
+
+    // ---- Interrupción: dejarlo por ahora. La sesión sigue abierta, sin juicio.
+    await page.getByTestId('dejarlo').click();
+    await expect(page).toHaveURL(/\/hoy/);
+    // UX-INV-19 · S10 no llama a la sesión abierta «el plan de hoy».
+    await expect(page.getByTestId('hoy-retomar')).toContainText('Te quedaste');
+    await assertProductSurface(page);
+
+    await page.getByTestId('hoy-primaria').click();
+    await expect(page).toHaveURL(/\/aprender\/1/);
     await expect(page.getByTestId('aprender-titulo')).toHaveText(primeraUnidad);
 
     await page.getByTestId('aprender-continuar').click();
     await expect(page).toHaveURL(/\/aprender\/2/);
-    await page.getByTestId('aprender-continuar').click();
-    await expect(page).toHaveURL(/\/comprobar\/3/);
+    await expect(page.getByTestId('accion-posicion')).toHaveText('Acción 2 de 2');
+    await expect(page.getByTestId('aprender-titulo')).not.toHaveText(primeraUnidad);
 
-    // ------------------------------------------------------------ COMPROBAR
-    await expect(page.getByTestId('comprobar-enunciado')).toBeVisible();
-    // Antes de responder no hay ninguna señal de corrección en la pantalla.
-    const antes = await page.locator('body').innerText();
-    expect(antes).not.toMatch(/correcto|incorrecto|respuesta correcta|explicación/i);
+    // ------------------------------------------------------------------ FIN · S16
+    // UX-INV-18 · **sin pantalla previa**: la acción cierra y aterriza en el resumen.
+    await page.getByTestId('aprender-continuar').click();
+    await expect(page).toHaveURL(/\/fin/);
+    await expect(page.getByTestId('fin-titulo')).toHaveText('Sesión terminada');
+    await expect(page.getByTestId('resumen')).toContainText('Unidades leídas');
+    // El cierre ya no dice que no hay plan: eso era cierto en el FPS y es falso ahora.
+    await expect(page.getByTestId('fin-cierre')).not.toContainText('Todavía no hay un plan');
     await assertProductSurface(page);
 
-    // Sin confianza no se puede comprobar, y la pantalla dice por qué (INV-102).
+    // ---- Vuelta a HOY el mismo día: los dos conceptos se trabajaron hoy, así que no hay nada
+    // que recomendar. Es vacío **veraz**, y S8 no ofrece ninguna acción (UX-INV-23).
+    await page.getByTestId('fin-volver').click();
+    await expect(page).toHaveURL(/\/hoy/);
+    await expect(page.getByTestId('hoy-nada-elegible')).toBeVisible();
+    await expect(page.getByTestId('hoy-primaria')).toHaveCount(0);
+    await expect(page.getByTestId('tiempo-hoy-abrir')).toHaveCount(0);
+    // Y no insinúa que haya terminado ni que esté preparada.
+    const vacio = await page.locator('body').innerText();
+    expect(vacio).not.toMatch(/preparad|list[oa] para|domina|has terminado|temario completo/i);
+    await assertProductSurface(page);
+  });
+
+  /**
+   * Día 2 · la evidencia mueve el plan.
+   *
+   * El paso del día se simula como en `planner.runtime.spec`: se retrasan dos días los
+   * `completed_at` de los ítems completados. Es **estado de sesión**, no evidencia: ningún evento
+   * ni intento se toca, de modo que lo que el motor plegó sigue igual y lo único que cambia es que
+   * esos conceptos dejan de contar como trabajados hoy.
+   */
+  test('día 2 · el Planner pide comprobar lo que se leyó, y la corrección es veraz', async ({
+    page,
+  }) => {
+    await registerAndOnboard(page, 'p4b-d2');
+
+    // Día 1, abreviado: leer las dos unidades y cerrar.
+    await page.getByTestId('hoy-primaria').click();
+    await page.getByTestId('aprender-continuar').click();
+    await page.getByTestId('aprender-continuar').click();
+    await expect(page).toHaveURL(/\/fin/);
+
+    // Pasa el día.
+    const email = createdEmails[createdEmails.length - 1];
+    query(
+      `update public.session_items si set completed_at = si.completed_at - interval '2 days'
+         where si.status = 'COMPLETED' and si.user_id = (
+           select id from auth.users where email = '${email}'
+         )`,
+    );
+
+    await page.goto('/hoy');
+    // Los dos conceptos están ahora EXPOSED: la necesidad es verificación, y la acción COMPROBAR.
+    await expect(page.getByTestId('hoy-plan')).toBeVisible();
+    await expect(page.getByTestId('hoy-siguiente')).toContainText('Comprobar');
+    await expect(page.getByTestId('hoy-razon')).toContainText('ya lo has visto');
+    await assertProductSurface(page);
+
+    await page.getByTestId('hoy-primaria').click();
+    await expect(page).toHaveURL(/\/comprobar\/1/);
+
+    // ------------------------------------------------------------ COMPROBAR · S14
+    await expect(page.getByTestId('comprobar-enunciado')).toBeVisible();
+    // INV-103 · UX-INV-4 · ninguna señal de corrección antes del envío.
+    const antes = await page.locator('body').innerText();
+    expect(antes).not.toMatch(/correcto|incorrecto|respuesta correcta|explicación/i);
+    // INV-102 · UX-INV-5 · sin confianza no se envía, y la pantalla dice por qué.
     await expect(page.getByTestId('comprobar')).toBeDisabled();
     await expect(page.getByTestId('falta-confianza')).toBeVisible();
+    await assertProductSurface(page);
 
     await page.getByTestId('opcion-A').click();
     await expect(page.getByTestId('opcion-A')).toHaveAttribute('aria-checked', 'true');
-
-    // ---- Interrupción 1: antes de enviar. Al volver, la elección sigue ahí.
-    await page.getByTestId('dejarlo').click();
-    await expect(page).toHaveURL(/\/hoy/);
-    await expect(page.getByTestId('hoy-continuar')).toContainText('Te quedaste aquí');
-    await page.getByTestId('hoy-primaria').click();
-    await expect(page).toHaveURL(/\/comprobar\/3/);
-    await expect(page.getByTestId('opcion-A')).toHaveAttribute('aria-checked', 'true');
-
     await page.getByTestId('confianza-3').click();
     await expect(page.getByTestId('comprobar')).toBeEnabled();
     await page.getByTestId('comprobar').click();
 
-    // -------------------------------------------------------------- FEEDBACK
+    // ------------------------------------------------------------- CORRECCIÓN · S15
     await expect(page.getByTestId('feedback')).toBeVisible();
     await expect(page.getByTestId('resultado')).toBeVisible();
     await expect(page.getByTestId('respuesta-correcta')).not.toBeEmpty();
     await expect(page.getByTestId('explicacion')).not.toBeEmpty();
-    await expect(page.getByTestId('calibracion')).toContainText('Bastante');
+    // El resultado nunca depende solo del color: hay palabra.
+    await expect(page.getByTestId('resultado')).not.toBeEmpty();
     await assertProductSurface(page);
 
-    // ---- Interrupción 2: entre el envío y la corrección. El cursor del servidor ya
-    // apunta a la pregunta siguiente, y aun así la corrección pendiente se muestra antes.
-    await page.goto('/hoy');
-    await page.getByTestId('hoy-primaria').click();
-    await expect(page).toHaveURL(/\/comprobar\/3/);
-    await expect(page.getByTestId('feedback')).toBeVisible();
-    await expect(page.getByTestId('respuesta-correcta')).not.toBeEmpty();
-
     await page.getByTestId('feedback-siguiente').click();
-    await expect(page).toHaveURL(/\/comprobar\/4/);
-
-    // ---- Segunda pregunta: en blanco, que es una respuesta legítima.
+    // Segunda acción: la otra pregunta. En blanco es una respuesta legítima.
+    await expect(page).toHaveURL(/\/comprobar\/2/);
     await page.getByTestId('confianza-1').click();
     await page.getByTestId('comprobar').click();
     await expect(page.getByTestId('resultado')).toContainText('Sin responder');
     await expect(page.getByTestId('tu-respuesta')).toContainText('No respondiste');
-    await expect(page.getByTestId('respuesta-correcta')).not.toBeEmpty();
-    await page.getByTestId('feedback-siguiente').click();
-
-    // ---- Tercera pregunta: la última.
-    await expect(page).toHaveURL(/\/comprobar\/5/);
-    await page.getByTestId('opcion-B').click();
-    await page.getByTestId('confianza-4').click();
-    await page.getByTestId('comprobar').click();
-    await expect(page.getByTestId('feedback')).toBeVisible();
     await expect(page.getByTestId('feedback-siguiente')).toHaveText('Terminar la sesión');
     await page.getByTestId('feedback-siguiente').click();
 
-    // ------------------------------------------------------------------ FIN
     await expect(page).toHaveURL(/\/fin/);
-    await page.getByTestId('fin-cerrar').click();
-    await expect(page.getByTestId('fin-titulo')).toHaveText('Sesión terminada');
-    await expect(page.getByTestId('resumen')).toContainText('Unidades leídas');
     await expect(page.getByTestId('resumen')).toContainText('Preguntas respondidas');
-    await expect(page.getByTestId('fin-cierre')).toContainText('Todavía no hay un plan');
+    await assertProductSurface(page);
+  });
+
+  /**
+   * El tiempo de hoy es autoritativo, y cambiarlo recompone el plan.
+   *
+   * Es el demostrador principal de §S.6: la persona cambia su disponibilidad, el sistema acepta la
+   * restricción y trae una decisión nueva y veraz. Con un minuto, nada completo cabe, y
+   * `NOTHING_FITS` **no ofrece** la acción fuera de presupuesto (P4B-D1).
+   */
+  test('cambiar el tiempo de hoy recompone el plan, y el cero es legítimo', async ({ page }) => {
+    await registerAndOnboard(page, 'p4b-time');
+    await expect(page.getByTestId('hoy-plan')).toBeVisible();
+
+    // ---- Un minuto: hay trabajo, pero nada completo cabe. Cero acciones primarias.
+    await page.getByTestId('tiempo-hoy-abrir').click();
+    await page.getByTestId('tiempo-hoy-personalizar').fill('1');
+    await page.getByTestId('tiempo-hoy-guardar').click();
+    await expect(page.getByTestId('hoy-nada-cabe')).toBeVisible();
+    await expect(page.getByTestId('hoy-primaria')).toHaveCount(0);
+    // P4B-D1 · puede decir con verdad cuánto necesita la más corta.
+    await expect(page.getByTestId('hoy-mas-corta')).toContainText('min');
     await assertProductSurface(page);
 
-    // Una sesión terminada no reanuda: HOY vuelve a ofrecer empezar.
-    await page.getByTestId('fin-volver').click();
-    await expect(page).toHaveURL(/\/hoy/);
-    await expect(page.getByTestId('hoy-primaria')).toHaveText('Empezar la sesión');
+    // ---- Cero: su propia declaración, respetada. Ni deuda, ni día perdido, ni empujón.
+    await page.getByTestId('tiempo-hoy-abrir').click();
+    await page.getByTestId('tiempo-hoy-opcion-0').click();
+    await page.getByTestId('tiempo-hoy-guardar').click();
+    await expect(page.getByTestId('hoy-tiempo-cero')).toBeVisible();
+    await expect(page.getByTestId('hoy-primaria')).toHaveCount(0);
+    const cero = await page.locator('body').innerText();
+    expect(cero).not.toMatch(/deber[íi]as|aprovecha|no pierdas|deuda|recupera/i);
+    await assertProductSurface(page);
+
+    // ---- Y volver a subirlo trae un plan de verdad: la recomposición es real.
+    await page.getByTestId('tiempo-hoy-abrir').click();
+    await page.getByTestId('tiempo-hoy-opcion-30').click();
+    await page.getByTestId('tiempo-hoy-guardar').click();
+    await expect(page.getByTestId('hoy-plan')).toBeVisible();
+    await expect(page.getByTestId('hoy-primaria')).toBeVisible();
   });
 });
 
-test.describe('First Product Slice · lo que no se puede forzar desde el navegador', () => {
+test.describe('Phase 4B · lo que no se puede forzar desde el navegador', () => {
   test('la URL no adelanta el paso, no abre el de otra persona y no revive lo terminado', async ({
     page,
   }) => {
-    await registerAndOnboard(page, 'fps-rt');
+    await registerAndOnboard(page, 'p4b-rt');
     await page.getByTestId('hoy-primaria').click();
     await expect(page).toHaveURL(/\/aprender\/1/);
 
@@ -272,49 +369,31 @@ test.describe('First Product Slice · lo que no se puede forzar desde el navegad
     await expect(page).toHaveURL(/\/aprender\/1/);
     await page.goto('/fin');
     await expect(page).toHaveURL(/\/aprender\/1/);
-
-    // Un ordinal que no existe en la sesión tampoco inventa nada.
     await page.goto('/comprobar/99');
     await expect(page).toHaveURL(/\/aprender\/1/);
 
-    // El botón atrás puede devolver una pantalla ya superada desde la caché del navegador:
-    // eso lo hace el navegador y no se le discute. Lo que no puede ocurrir es que repetir la
-    // acción desde ahí rompa. Tiene que avanzar al paso real y no dejar ningún error a la
-    // vista, porque un producto que castiga usar el botón atrás no es un producto.
+    // El botón atrás puede devolver una pantalla ya superada desde la caché del navegador: eso lo
+    // hace el navegador y no se le discute. Lo que no puede ocurrir es que repetir la acción desde
+    // ahí rompa, porque un producto que castiga usar el botón atrás no es un producto.
     await page.getByTestId('aprender-continuar').click();
-    await expect(page.getByTestId('fps-error')).toHaveCount(0);
+    await expect(page.getByTestId('accion-error')).toHaveCount(0);
     await expect(page).toHaveURL(/\/aprender\/2/);
     await page.goBack();
     await page.getByTestId('aprender-continuar').click();
-    await expect(page.getByTestId('fps-error')).toHaveCount(0);
-    // Avanza al paso real, que sigue siendo la segunda unidad: ni repite ni retrocede.
+    await expect(page.getByTestId('accion-error')).toHaveCount(0);
     await expect(page).toHaveURL(/\/aprender\/2/);
 
-    // Desde la pantalla real, el recorrido continúa con normalidad.
+    // Terminar, y comprobar que una sesión cerrada no reanuda.
     await page.reload();
     await page.getByTestId('aprender-continuar').click();
-    await expect(page).toHaveURL(/\/comprobar\/3/);
-
-    // Terminar y volver: una sesión terminada no reanuda.
-    for (const paso of [3, 4, 5]) {
-      await expect(page).toHaveURL(new RegExp(`/comprobar/${paso}`));
-      await page.getByTestId('confianza-2').click();
-      await page.getByTestId('comprobar').click();
-      await expect(page.getByTestId('feedback')).toBeVisible();
-      await page.getByTestId('feedback-siguiente').click();
-    }
     await expect(page).toHaveURL(/\/fin/);
-    await page.getByTestId('fin-cerrar').click();
-    await expect(page.getByTestId('fin-titulo')).toHaveText('Sesión terminada');
-
-    await page.goto('/comprobar/3');
+    await page.goto('/aprender/1');
     await expect(page).toHaveURL(/\/hoy/);
-    await expect(page.getByTestId('hoy-primaria')).toHaveText('Empezar la sesión');
   });
 
   test('el ordinal de otra persona resuelve dentro de la sesión propia', async ({ page }) => {
     // Primera aprendiz: deja una sesión abierta en su paso 1.
-    await registerAndOnboard(page, 'fps-a');
+    await registerAndOnboard(page, 'p4b-a');
     await page.getByTestId('hoy-primaria').click();
     await expect(page).toHaveURL(/\/aprender\/1/);
     const suyo = await page.getByTestId('aprender-titulo').innerText();
@@ -323,7 +402,7 @@ test.describe('First Product Slice · lo que no se puede forzar desde el navegad
     await page.goto('/cuenta');
     await page.getByTestId('signout-button').click();
     await expect(page.getByTestId('signout-button')).toHaveCount(0);
-    await registerAndOnboard(page, 'fps-b');
+    await registerAndOnboard(page, 'p4b-b');
 
     // Sin sesión abierta todavía, el ordinal ajeno no abre nada.
     await page.goto('/aprender/1');

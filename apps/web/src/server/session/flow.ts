@@ -75,12 +75,40 @@ export async function prepareStep(
   }
 }
 
-/** Recarga el estado, deriva el paso, lo prepara y devuelve su ruta. */
+/**
+ * Recarga el estado, deriva el paso, lo prepara y devuelve su ruta.
+ *
+ * **UX-INV-18 · el cierre ocurre aquí, dentro de una acción.** Cuando el paso derivado es el final,
+ * esta función cierra la sesión antes de devolver `/fin`. Esa es la corrección de **FPS-OBS-03**:
+ * antes había dos finales, una pantalla que pedía cerrar y luego el resumen.
+ *
+ * El cierre **no puede** hacerlo la pantalla de `/fin` al renderizarse, aunque sería más corto:
+ * `SESSION_COMPLETED` es un evento, y **ningún render emite evidencia** (UX-INV-16). Aquí sí, porque
+ * esto lo ejecuta la acción que la persona acaba de pulsar —la que en el último paso se llama
+ * «Terminar la sesión»—, y eso es un acto explícito.
+ *
+ * Idempotente: el identificador se deriva de la sesión, de modo que un doble toque produce el mismo
+ * evento y el servidor devuelve el segundo como repetición.
+ */
 export async function advanceToCurrentStep(supabase: SupabaseClient): Promise<string> {
   const session = await findOpenSession(supabase);
   if (!session) return '/hoy';
   const state = await loadSessionState(supabase, session);
   const step = deriveStep(state);
-  if (step.kind !== 'end') await prepareStep(supabase, session.id, step.item);
+  if (step.kind !== 'end') {
+    await prepareStep(supabase, session.id, step.item);
+    return pathForStep(step);
+  }
+  // Una sesión que nunca arrancó no tiene final que cerrar: no se le fabrica uno.
+  if (session.status !== 'PLANNED') {
+    await appendEvent(
+      supabase,
+      buildEnvelope({
+        eventId: derivedEventId(`complete:${session.id}`),
+        type: 'SESSION_COMPLETED',
+        sessionId: session.id,
+      }),
+    );
+  }
   return pathForStep(step);
 }

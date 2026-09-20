@@ -111,7 +111,9 @@ async function registerAndOnboard(
   await page
     .getByTestId('pack-select')
     .selectOption({ label: `fixture: pack sintético p31e2e${test.info().workerIndex}` });
-  await page.getByTestId('daily-minutes-input').fill('30');
+  // Phase 4B · §I.1 · sin zona declarada no existe «hoy» y el Planner se niega.
+  await page.getByTestId('timezone-select').selectOption('Europe/Madrid');
+  await page.getByTestId('daily-minutes-input').fill('60');
   await page.getByTestId('onboarding-submit').click();
   await expect(page.getByTestId('onboarding-completado')).toBeVisible();
   await page.getByTestId('onboarding-ir-a-hoy').click();
@@ -123,8 +125,9 @@ test.beforeAll(async () => {
   const env = readTestEnv();
   const admin = adminClient(env);
   pack = await buildSyntheticPack(admin, `p31e2e${test.info().workerIndex}`);
-  await publishLearningUnit(admin, pack, 0, 'p31-uno');
-  await publishLearningUnit(admin, pack, 1, 'p31-dos');
+  // ADR-013 · la frontera de ingestión exige la duración de una versión de unidad.
+  await publishLearningUnit(admin, pack, 0, 'p31-uno', { minutes: 5 });
+  await publishLearningUnit(admin, pack, 1, 'p31-dos', { minutes: 5 });
 });
 
 test.afterAll(async () => {
@@ -171,13 +174,33 @@ test.describe('Phase 3.1 · el Learning Engine corre en la aplicación real', ()
     );
     expect(Number(conceptsBefore[0]?.n)).toBe(0);
 
-    // --------------------------------------------------------------- ruta A
+    /*
+     * --------------------------------------------------------------- ruta A
+     *
+     * **Phase 4B · el plan del primer día es solo APRENDER.** Con granularidad híbrida (P4-D3) un
+     * concepto `NEW` recibe APRENDER, nunca APRENDER + COMPROBAR, así que para llegar a responder
+     * hay que leer primero y **pasar el día**: los conceptos leídos hoy cuentan como trabajados hoy
+     * y quedan excluidos (§E.5).
+     *
+     * El paso del día se simula retrasando dos días los `completed_at` de los ítems completados.
+     * Es **estado de sesión**, no evidencia: ningún evento ni intento se toca, de modo que lo que
+     * el motor plegó sigue exactamente igual.
+     */
     await page.getByTestId('hoy-primaria').click();
     await expect(page).toHaveURL(/\/aprender\/1/);
     await page.getByTestId('aprender-continuar').click();
     await expect(page).toHaveURL(/\/aprender\/2/);
     await page.getByTestId('aprender-continuar').click();
-    await expect(page).toHaveURL(/\/comprobar\/3/);
+    await expect(page).toHaveURL(/\/fin/);
+
+    query(
+      `update public.session_items si set completed_at = si.completed_at - interval '2 days'
+         where si.status = 'COMPLETED' and si.user_id = ${sqlText(userId)}::uuid`,
+    );
+
+    await page.goto('/hoy');
+    await page.getByTestId('hoy-primaria').click();
+    await expect(page).toHaveURL(/\/comprobar\/1/);
     await page.getByTestId('opcion-A').click();
     await page.getByTestId('confianza-3').click();
     await page.getByTestId('comprobar').click();
@@ -260,10 +283,13 @@ test.describe('Phase 3.1 · el Learning Engine corre en la aplicación real', ()
     expect(stale.consumed).toBeLessThan(stale.max);
 
     // La persona vuelve a HOY. HOY dice lo mismo que en phase-3-v1.0 …
+    // La persona vuelve a HOY. Lo que HOY muestra es ahora la decisión del Planner —el marcador
+    // provisional de «sesión fija» desapareció con la selección fija (P4-G34)—, y lo que esta
+    // prueba vigila sigue siendo lo mismo: que **volver no cambia lo que HOY dice**, y que el
+    // servidor recupera la proyección atrasada después de responder.
     await page.goto('/hoy');
     await expect(page.getByTestId('hoy-titulo')).toHaveText('Hoy');
-    await expect(page.getByTestId('hoy-continuar')).toContainText('Te quedaste aquí');
-    await expect(page.getByTestId('hoy-provisional')).toContainText('Sesión fija');
+    await expect(page.getByTestId('hoy-retomar')).toContainText('Te quedaste');
 
     // … y el servidor, después de responder, recupera la proyección.
     const afterB = await waitForProjection(userId, 'ruta B');

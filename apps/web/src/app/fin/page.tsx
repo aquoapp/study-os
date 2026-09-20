@@ -1,17 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import { FpsActionButton } from '../_components/fps/fps-action-button';
-import {
-  FpsActions,
-  FpsHeading,
-  FpsNote,
-  FpsSummary,
-  FpsSurface,
-  FpsShell,
-} from '../_components/fps/fps-shell';
-import { completeSessionAction } from '../actions/fps';
 import { getVerifiedIdentity } from '../../server/auth/identity';
-import { createSupabaseServerClient } from '../../server/supabase/server-client';
 import {
   deriveStep,
   findLatestSession,
@@ -20,21 +9,44 @@ import {
   pathForStep,
   summarize,
 } from '../../server/fps/session';
+import { createSupabaseServerClient } from '../../server/supabase/server-client';
+import {
+  ActionTitle,
+  Actions,
+  DecisionSurface,
+  PageTitle,
+  ProductShell,
+  Secondary,
+  SystemVoice,
+  Wordmark,
+  productStyles,
+} from '../_components/product/shell';
 
-export const metadata = { title: 'Sesión terminada · Study OS' };
+export const metadata = { title: 'Sesión cerrada · Study OS' };
 
 /**
- * FIN · `docs/FPS_SCREEN_CONTRACT.md` §5 · REQ-F12 (parcialmente satisfecho).
+ * S16 · **Sesión cerrada** · `docs/PRODUCT_UX_CONTRACT.md` §E, §O, §L.
  *
  * Comunica **consecuencia, no celebración** (Master §22, EC-017): sin confeti, sin trofeo, sin
- * puntuación, sin racha, sin insignia. Lo que se muestra son hechos contados a partir de la
- * evidencia del propio aprendiz, nunca porcentajes proyectados (INV-111).
+ * puntuación, sin racha, sin insignia, sin proyección y sin promesa de mañana. Lo que se muestra
+ * son hechos contados a partir de la evidencia del propio aprendiz, nunca porcentajes proyectados
+ * (INV-111). «Errores reparados» y «próximo repaso» **no se fabrican**: exigirían un programador de
+ * repasos que no existe, y afirmarlos sería la mentira que EC-012 prohíbe.
  *
- * De la sustitución que pide C-06 a se entrega lo que la evidencia sostiene. «Errores
- * reparados» y «próximo repaso» **no se fabrican**: exigen un bucle de reparación y un
- * programador que no existen, y afirmarlos sería precisamente la mentira que EC-012 prohíbe.
+ * ---------------------------------------------------------------------------
+ * **Dos correcciones de Phase 4B, las dos por autoridad aceptada**
  *
- * Una sesión terminada es terminal: nunca se reanuda. Desde aquí solo se vuelve a Hoy.
+ * **UX-INV-18 · desaparece la pantalla previa al cierre.** Había dos finales: una pantalla «Ya casi
+ * está» que pedía cerrar, y luego el resumen. Era el defecto **FPS-OBS-03**, registrado y sin
+ * corregir desde el First Product Slice, y §O lo cierra: `/fin` queda «simplificada», alcanzable
+ * **solo** para una sesión ya cerrada. Al completar el último paso, **la acción** cierra la sesión y
+ * aterriza aquí; el cierre no lo hace esta pantalla, porque un render no emite evidencia.
+ *
+ * **El cierre ya no dice que no hay plan.** Decía «Todavía no hay un plan que decida lo siguiente:
+ * la planificación llega más adelante», que era cierto en el FPS y es **falso** desde que el
+ * Planner decide. Lo que lo sustituye no promete nada de mañana: dice que lo hecho cuenta, y que
+ * HOY es donde se ve lo siguiente cuando lo haya.
+ * ---------------------------------------------------------------------------
  */
 export default async function FinPage() {
   const identity = await getVerifiedIdentity();
@@ -48,27 +60,18 @@ export default async function FinPage() {
     const openState = await loadSessionState(supabase, open);
     const step = deriveStep(openState);
     if (step.kind !== 'end') redirect(pathForStep(step));
-    if (open.status !== 'PLANNED') {
-      const summary = await summarize(supabase, openState);
-      return (
-        <FpsShell>
-          <FpsHeading title="Ya casi está" testId="fin-titulo" />
-          <FpsSurface label="Resumen de la sesión">
-            <p>Has terminado todos los pasos de esta sesión.</p>
-            <FpsSummary rows={rowsFor(summary)} />
-          </FpsSurface>
-          <FpsActions>
-            <FpsActionButton
-              action={completeSessionAction}
-              pendingLabel="Cerrando…"
-              testId="fin-cerrar"
-            >
-              Terminar la sesión
-            </FpsActionButton>
-          </FpsActions>
-        </FpsShell>
-      );
-    }
+    /*
+     * UX-INV-18 · aquí **no se cierra nada**, y la tentación de hacerlo es justo el error.
+     *
+     * Cerrar la sesión al renderizar esta página habría hecho desaparecer la pantalla previa con
+     * dos líneas, pero `SESSION_COMPLETED` es un evento y **ningún render emite evidencia**
+     * (UX-INV-16). El cierre vive en `advanceToCurrentStep`, que lo ejecuta la acción que la
+     * persona pulsa en el último paso.
+     *
+     * Llegar aquí con una sesión abierta y sin pasos pendientes significa, entonces, que alguien
+     * escribió la URL a mano antes de pulsar. No se le cierra la sesión por haber navegado: vuelve
+     * a HOY, que ofrecerá continuar.
+     */
     redirect('/hoy');
   }
 
@@ -79,21 +82,32 @@ export default async function FinPage() {
   const summary = await summarize(supabase, state);
 
   return (
-    <FpsShell>
-      <FpsHeading title="Sesión terminada" testId="fin-titulo" />
-      <FpsSurface label="Resumen de la sesión">
-        <FpsSummary rows={rowsFor(summary)} />
-      </FpsSurface>
-      <FpsNote testId="fin-cierre">
-        Esto es lo que hiciste hoy. Todavía no hay un plan que decida lo siguiente: la planificación
-        llega más adelante.
-      </FpsNote>
-      <FpsActions>
-        <a className="so-action" href="/hoy" data-testid="fin-volver">
-          Volver a Hoy
-        </a>
-      </FpsActions>
-    </FpsShell>
+    <ProductShell testId="fin">
+      <Wordmark />
+      <SystemVoice>Sesión cerrada</SystemVoice>
+      <PageTitle testId="fin-titulo">Sesión terminada</PageTitle>
+
+      <DecisionSurface testId="fin-resumen">
+        <ActionTitle>Esto es lo que hiciste.</ActionTitle>
+        <dl className={productStyles.measure} data-testid="resumen">
+          {rowsFor(summary).map((row) => (
+            <div key={row.label}>
+              <dt className={productStyles.systemVoice}>{row.label}</dt>
+              <dd className={`${productStyles.numeric} ${productStyles.measure}`}>{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <Secondary testId="fin-cierre">
+          Lo que hiciste cuenta. Cuando vuelvas a Hoy verás qué toca, si toca algo.
+        </Secondary>
+        <Actions>
+          {/* Una navegación es un enlace. No se disfraza de acción para tener estado ocupado. */}
+          <a className="so-action" href="/hoy" data-testid="fin-volver">
+            Volver a Hoy
+          </a>
+        </Actions>
+      </DecisionSurface>
+    </ProductShell>
   );
 }
 

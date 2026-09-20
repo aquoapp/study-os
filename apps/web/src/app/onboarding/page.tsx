@@ -87,11 +87,22 @@ export default async function OnboardingPage() {
               border: '1px dashed var(--so-color-slate)',
             }}
           >
-            <h2 style={{ marginTop: 0 }}>Tu primer plan</h2>
-            <p data-testid="plan-provisional-aviso">
-              <strong>Provisional.</strong> Todavía no hay un plan calculado: la planificación
-              adaptativa llega en una fase posterior. Por ahora esto solo confirma lo que has
-              indicado.
+            {/*
+             * **Phase 4B · este aviso dejó de ser cierto y se corrige.**
+             *
+             * Decía «Todavía no hay un plan calculado: la planificación adaptativa llega en una
+             * fase posterior». Era exacto mientras el Planner no existía, y es **falso** desde que
+             * decide. Dejarlo sería el mismo defecto que EC-012 prohíbe, solo al revés: negar una
+             * capacidad que sí existe en lugar de prometer una que no.
+             *
+             * Lo que lo sustituye no promete nada que el sistema no pueda cumplir. No dice cuánto
+             * habrá, ni qué habrá, ni que haya algo: dice **dónde** se ve, y que sale de lo que
+             * acaba de declarar. Si hoy no toca nada, HOY lo dirá con verdad.
+             */}
+            <h2 style={{ marginTop: 0 }}>Lo siguiente</h2>
+            <p data-testid="plan-siguiente-aviso">
+              Con lo que has indicado, en <strong>Hoy</strong> verás qué te toca y cuánto dura. Si
+              hoy no toca nada, también te lo dirá.
             </p>
           </section>
 

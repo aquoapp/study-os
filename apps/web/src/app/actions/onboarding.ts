@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { requireVerifiedIdentity } from '../../server/auth/identity';
-import { setAvailability } from '../../server/planner/availability';
+import { setAvailability, setTimezone } from '../../server/planner/availability';
 import { createSupabaseServerClient } from '../../server/supabase/server-client';
 
 /**
@@ -53,6 +53,24 @@ export async function completeOnboardingAction(
   for (const day of DAYS) {
     const minutes = readMinutes(formData, `availability_${day}`);
     if (minutes !== null && minutes > 0) availability[day] = minutes;
+  }
+
+  /*
+   * Phase 4B · §I.1 · §O · la **zona horaria declarada**.
+   *
+   * Sin ella no existe «hoy» y el Planner se niega a inventarlo, de modo que terminar el
+   * onboarding sin declararla dejaría a la persona en un estado que no puede hacer nada.
+   *
+   * UX-INV-21 · la aporta ella, con una selección explícita. Aquí no se deduce del servidor, ni de
+   * la IP, ni del navegador, y **no se rellena con UTC**: si no llega, se pide.
+   */
+  const timezone = formData.get('timezone');
+  if (typeof timezone !== 'string' || timezone.trim() === '') {
+    return { error: 'Elige en qué zona horaria estudias.', ok: false };
+  }
+  const declared = await setTimezone(identity.userId, timezone.trim());
+  if (declared.kind !== 'SAVED') {
+    return { error: 'Esa zona horaria no es válida. Elige otra de la lista.', ok: false };
   }
 
   const packId = formData.get('exam_pack_id');
