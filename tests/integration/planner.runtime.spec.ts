@@ -396,7 +396,20 @@ describe('primera ejecución · persistencia, auditoría y reproducción', () =>
       planned_minutes: 15,
       item_count: 3,
       planner_version: 'planner-v1',
-      planner_config_version: 'v1',
+      /*
+       * **`v2` desde Phase 4B**, y el cambio de literal es el punto, no un detalle.
+       *
+       * La migración 24 promueve una versión nueva de `planner_config` porque P4-D2 necesita una
+       * clave que `v1` no tiene —la estimación gobernada del paso COMPROBAR— y porque el
+       * vocabulario de razones gana `NO_DURATION_METADATA`. `v1` **no se edita**: pasa a
+       * `SUPERSEDED` y se conserva, porque las ejecuciones de Phase 4A la nombran y reescribirla
+       * cambiaría lo que aquellas decisiones dicen haber usado.
+       *
+       * Que la ejecución registre **qué versión de configuración la produjo** es justo lo que hace
+       * que la duración no sea una constante mágica: vive en una fila con autor, motivo, promotor,
+       * fecha y evidencia de promoción.
+       */
+      planner_config_version: 'v2',
       consumed: 0,
       duration_provenance: 'FIXTURE',
       timezone: 'Europe/Madrid',
