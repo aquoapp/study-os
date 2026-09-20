@@ -322,6 +322,11 @@ export async function publishLearningUnit(
   pack: SyntheticPack,
   conceptIndex: number,
   label: string,
+  /**
+   * ADR-013 · los minutos declarados de la versión. Es **autoría de fixture**, no una constante de
+   * runtime: quien escribe la prueba decide qué duración quiere para el caso que está montando.
+   */
+  options: { readonly minutes?: number } = {},
 ): Promise<{ unitId: string; versionId: string }> {
   const conceptId = pack.conceptIds[conceptIndex];
   if (!conceptId) throw new Error('concepto inexistente');
@@ -338,7 +343,7 @@ export async function publishLearningUnit(
     source_version_id: pack.sourceVersionId,
     // ADR-013 · P4-D2 · la frontera de ingestión exige la duración de una versión de unidad, y
     // no la rellena por su cuenta. Es un minuto de fixture, nunca una constante de runtime.
-    estimated_minutes: 5,
+    estimated_minutes: options.minutes ?? 5,
   });
   return { unitId, versionId };
 }
