@@ -88,10 +88,7 @@ async function currentRun(learner: Learner): Promise<string> {
 
 /** Nueva ejecución distinta de la actual: cambia la disponibilidad declarada. */
 async function supersedingRun(learner: Learner, minutes: number): Promise<string> {
-  const update = await learner.client
-    .from('learner_settings')
-    .update({ default_daily_minutes: minutes })
-    .eq('user_id', learner.id);
+  const update = await setAvailabilityFor(learner, minutes, {});
   if (update.error) throw new Error(update.error.message);
   return currentRun(learner);
 }
@@ -111,10 +108,7 @@ beforeAll(async () => {
       .update({ timezone: 'Europe/Madrid' })
       .eq('id', learner.id);
     if (tz.error) throw new Error(tz.error.message);
-    const settings = await learner.client
-      .from('learner_settings')
-      .update({ weekly_availability_json: {}, default_daily_minutes: 40 })
-      .eq('user_id', learner.id);
+    const settings = await setAvailabilityFor(learner, 40, {});
     if (settings.error) throw new Error(settings.error.message);
   }
 }, 600_000);
@@ -133,6 +127,29 @@ afterAll(async () => {
     expect(Number(residue[0]?.n)).toBe(0);
   }
 }, 300_000);
+
+/**
+ * La disponibilidad declarada, por **la función de servidor** · R-8.
+ *
+ * La escritura directa sobre `learner_settings` desde el token del aprendiz está revocada desde
+ * Phase 4B: el estado canónico y su declaración duradera (`AVAILABILITY_CHANGED`) tienen que nacer
+ * juntos. Estas pruebas no comprobaban esa vía, la usaban para mover el presupuesto; ahora usan la
+ * misma que usa el producto.
+ */
+async function setAvailabilityFor(
+  learner: Learner,
+  defaultDailyMinutes: number,
+  weekly: Record<string, number>,
+): Promise<{ error: { message: string } | null }> {
+  const { error } = await admin.rpc('set_availability', {
+    p_user: learner.id,
+    p_default_daily_minutes: defaultDailyMinutes,
+    p_weekly: weekly,
+    p_diagnostic_preference: null,
+    p_reduced_motion: null,
+  });
+  return { error: error ? { message: error.message } : null };
+}
 
 describe('P4-G10 · los diez casos', () => {
   it('1 · sin sesión abierta, crear una sesión funciona', async () => {

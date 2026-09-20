@@ -244,10 +244,7 @@ beforeAll(async () => {
   bruno = await createLearner(env, 'p4a-bruno', pack);
   // Presupuesto determinista: sin entradas semanales manda el valor por defecto (§I.2).
   for (const learner of [ana, bruno]) {
-    const reset = await learner.client
-      .from('learner_settings')
-      .update({ weekly_availability_json: {}, default_daily_minutes: 40 })
-      .eq('user_id', learner.id);
+    const reset = await setAvailabilityFor(learner, 40, {});
     if (reset.error) throw new Error(reset.error.message);
   }
 }, 600_000);
@@ -269,6 +266,29 @@ afterAll(async () => {
     expect(Number(residue[0]?.n)).toBe(0);
   }
 }, 300_000);
+
+/**
+ * La disponibilidad declarada, por **la función de servidor** · R-8.
+ *
+ * La escritura directa sobre `learner_settings` desde el token del aprendiz está revocada desde
+ * Phase 4B: el estado canónico y su declaración duradera (`AVAILABILITY_CHANGED`) tienen que nacer
+ * juntos. Estas pruebas no comprobaban esa vía, la usaban para mover el presupuesto; ahora usan la
+ * misma que usa el producto.
+ */
+async function setAvailabilityFor(
+  learner: Learner,
+  defaultDailyMinutes: number,
+  weekly: Record<string, number>,
+): Promise<{ error: { message: string } | null }> {
+  const { error } = await admin.rpc('set_availability', {
+    p_user: learner.id,
+    p_default_daily_minutes: defaultDailyMinutes,
+    p_weekly: weekly,
+    p_diagnostic_preference: null,
+    p_reduced_motion: null,
+  });
+  return { error: error ? { message: error.message } : null };
+}
 
 describe('§I.1 · la zona horaria se declara, no se deduce', () => {
   it('sin zona declarada no hay «hoy» y no se escribe nada', async () => {
@@ -667,10 +687,7 @@ describe('§I.2 · §L · P4-G1 · P4-G3 · presupuesto', () => {
     const [pastBefore] = query<Record<string, unknown>>(
       `select to_jsonb(r) as row from public.planner_runs r where r.id = '${firstRunId}'`,
     );
-    const update = await ana.client
-      .from('learner_settings')
-      .update({ default_daily_minutes: 8 })
-      .eq('user_id', ana.id);
+    const update = await setAvailabilityFor(ana, 8, {});
     expect(update.error).toBeNull();
     const run = asRun(await request(ana));
     const [row] = query<{ budget_minutes: number; budget_source: string }>(
@@ -699,10 +716,7 @@ describe('§I.2 · §L · P4-G1 · P4-G3 · presupuesto', () => {
     const key = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][
       (new Date(`${day!.plan_day}T00:00:00Z`).getUTCDay() + 6) % 7
     ]!;
-    const update = await ana.client
-      .from('learner_settings')
-      .update({ weekly_availability_json: { [key]: 0 } })
-      .eq('user_id', ana.id);
+    const update = await setAvailabilityFor(ana, 40, { [key]: 0 });
     expect(update.error).toBeNull();
     const run = asRun(await request(ana));
     expect(run.outcome).toBe('ZERO_TIME');
@@ -729,10 +743,7 @@ describe('§I.2 · §L · P4-G1 · P4-G3 · presupuesto', () => {
 
 describe('§P · un destino retirado o una ejecución sustituida no arrancan', () => {
   it('una ejecución sustituida no arranca', async () => {
-    const reset = await ana.client
-      .from('learner_settings')
-      .update({ weekly_availability_json: {}, default_daily_minutes: 40 })
-      .eq('user_id', ana.id);
+    const reset = await setAvailabilityFor(ana, 40, {});
     expect(reset.error).toBeNull();
     const [old] = query<{ id: string }>(
       `select id::text from public.planner_runs r where user_id = '${ana.id}' and outcome = 'PLANNED'

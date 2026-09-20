@@ -212,6 +212,7 @@ describe('APRENDER · la versión presentada queda vinculada', () => {
       body: 'fixture: cuerpo sintético posterior.',
       provenance_class: 'GENERATED',
       source_version_id: pack.sourceVersionId,
+      estimated_minutes: 5,
     });
     await reject(
       ana,

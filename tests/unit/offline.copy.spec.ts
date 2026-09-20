@@ -56,7 +56,10 @@ const USER_FACING_SOURCES = [
   // razón que las del FPS, y con un riesgo mayor: son las superficies donde el Planner decide, y
   // donde una frase de más convertiría una recomendación en una afirmación sobre la persona
   // (jerarquía de verdad §F, T4 solo puede aflorar como acción más razón).
+  'apps/web/src/app/ajustes/page.tsx',
+  'apps/web/src/app/hoy/replanificar/page.tsx',
   'apps/web/src/app/_components/product/shell.tsx',
+  'apps/web/src/app/_components/product/availability-form.tsx',
   'apps/web/src/app/_components/product/primary-action.tsx',
   'apps/web/src/app/_components/product/today-time.tsx',
   'apps/web/src/app/_components/fps/fps-shell.tsx',

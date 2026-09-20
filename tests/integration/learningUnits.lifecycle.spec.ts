@@ -134,6 +134,7 @@ describe('el contenido publicado es inmutable y se corrige por supersesión (SD-
       body: 'fixture: cuerpo corregido, sin contenido real.',
       provenance_class: 'GENERATED',
       source_version_id: pack.sourceVersionId,
+      estimated_minutes: 5,
     });
     const chain = one<{
       first_superseded_by: string;
@@ -194,6 +195,7 @@ describe('el contenido publicado es inmutable y se corrige por supersesión (SD-
       provenance_class: 'GENERATED',
       source_version_id: pack.sourceVersionId,
       status: 'DRAFT',
+      estimated_minutes: 5,
     });
     const onDraft = attack(
       `update public.learning_unit_versions set provenance_class = 'OFFICIAL' where id = '${draft}';`,
@@ -216,6 +218,7 @@ describe('el contenido publicado es inmutable y se corrige por supersesión (SD-
       body: 'fixture: cuerpo sin fuente oficial.',
       provenance_class: 'OFFICIAL',
       source_version_id: pack.sourceVersionId,
+      estimated_minutes: 5,
     });
     expect(await validate(admin, staged)).toBe('QUARANTINE');
     const reason = one<{ reason: string }>(
@@ -232,10 +235,40 @@ describe('el contenido publicado es inmutable y se corrige por supersesión (SD-
       provenance_class: 'GENERATED',
       source_version_id: pack.sourceVersionId,
       correct_option: 'A',
+      estimated_minutes: 5,
     });
     expect(await validate(admin, staged)).toBe('REJECTED');
   });
 
+  it('ADR-013 · una versión sin estimated_minutes se rechaza: la duración no se rellena', async () => {
+    // P4-G26 · la ausencia se previene **hacia delante** en la frontera de ingestión. Exigirla
+    // aquí no rellena nada hacia atrás: las filas publicadas sin duración siguen sin ella y se
+    // excluyen con NO_DURATION_METADATA, que es la condición estructural veraz.
+    const staged = await stage(admin, 'learning_unit_version', {
+      learning_unit_id: unitId,
+      title: 'fixture: unidad sin duracion declarada',
+      body: 'fixture: cuerpo.',
+      provenance_class: 'GENERATED',
+      source_version_id: pack.sourceVersionId,
+    });
+    expect(await validate(admin, staged)).toBe('REJECTED');
+    const reason = one<{ reason: string }>(
+      `select reason from ingest.staged_items where id = '${staged}'`,
+    );
+    expect(reason.reason).toContain('ADR-013');
+  });
+
+  it('ADR-013 · una duración fuera de rango se rechaza', async () => {
+    const staged = await stage(admin, 'learning_unit_version', {
+      learning_unit_id: unitId,
+      title: 'fixture: unidad con duracion imposible',
+      body: 'fixture: cuerpo.',
+      provenance_class: 'GENERATED',
+      source_version_id: pack.sourceVersionId,
+      estimated_minutes: 0,
+    });
+    expect(await validate(admin, staged)).toBe('REJECTED');
+  });
   it('título o cuerpo vacíos se rechazan', async () => {
     const staged = await stage(admin, 'learning_unit_version', {
       learning_unit_id: unitId,
@@ -243,6 +276,7 @@ describe('el contenido publicado es inmutable y se corrige por supersesión (SD-
       body: 'fixture: cuerpo.',
       provenance_class: 'GENERATED',
       source_version_id: pack.sourceVersionId,
+      estimated_minutes: 5,
     });
     expect(await validate(admin, staged)).toBe('REJECTED');
   });
@@ -272,6 +306,7 @@ describe('lectura de cliente: lo publicado sí, lo demás no', () => {
       provenance_class: 'GENERATED',
       source_version_id: pack.sourceVersionId,
       status: 'DRAFT',
+      estimated_minutes: 5,
     });
     const visible = await ana.client.from('learning_unit_versions').select('id').eq('id', draft);
     expect(visible.error).toBeNull();

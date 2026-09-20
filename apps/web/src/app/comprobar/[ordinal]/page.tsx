@@ -1,15 +1,15 @@
 import { redirect } from 'next/navigation';
 
-import { FpsActionButton } from '../../_components/fps/fps-action-button';
 import { FpsAnswerForm } from '../../_components/fps/fps-answer-form';
 import { FpsFeedback } from '../../_components/fps/fps-feedback';
+import { FpsSurface, FpsSectionTitle } from '../../_components/fps/fps-shell';
+import { PrimaryAction } from '../../_components/product/primary-action';
 import {
-  FpsActions,
-  FpsHeading,
-  FpsSurface,
-  FpsShell,
-  FpsSectionTitle,
-} from '../../_components/fps/fps-shell';
+  ActionHeader,
+  Actions,
+  ProductShell,
+  productStyles,
+} from '../../_components/product/shell';
 import {
   interruptSessionAction,
   recordConfidenceAction,
@@ -21,6 +21,7 @@ import { recoverOutcome } from '../../../server/fps/events';
 import { getVerifiedIdentity } from '../../../server/auth/identity';
 import { createSupabaseServerClient } from '../../../server/supabase/server-client';
 import { loadConfidenceScale, loadQuestionContent } from '../../../server/fps/content';
+import { NATURE_LABEL, loadActionPlacements, phaseLabel } from '../../../server/session/actions';
 import {
   deriveStep,
   findOpenSession,
@@ -73,7 +74,19 @@ export default async function ComprobarPage({
   const question = await loadQuestionContent(supabase, step.item);
   if (!question) redirect('/hoy');
   const scale = await loadConfidenceScale(supabase);
-  const total = state.items.length;
+
+  // UX-INV-24 · la posición visible es la de la **acción**, obtenida de la agrupación
+  // autoritativa del Planner; nunca el ordinal de ruta ni el recuento de ítems.
+  const placements = await loadActionPlacements(session);
+  const placement = placements?.get(step.item.sort_order) ?? null;
+  const header = placement ? (
+    <ActionHeader
+      nature={NATURE_LABEL[placement.nature]}
+      position={placement.position}
+      total={placement.total}
+      phase={phaseLabel(placement)}
+    />
+  ) : null;
 
   if (step.kind === 'feedback') {
     const result = await recoverOutcome(supabase, submittedEventFor(state, step.item.id));
@@ -89,34 +102,36 @@ export default async function ComprobarPage({
     );
 
     return (
-      <FpsShell>
-        <FpsHeading kicker={`Paso ${step.ordinal} de ${total}`} title="Corrección" />
-        <FpsSurface label="Pregunta">
-          <FpsSectionTitle>{question.stem}</FpsSectionTitle>
-        </FpsSurface>
-        <FpsFeedback
-          outcome={{
-            answerKind: outcome.answer_kind,
-            isCorrect: outcome.is_correct,
-            selectedOptionId: outcome.selected_option_id,
-            correctOptionId: outcome.correct_option_id,
-            explanation: outcome.explanation,
-            confidenceValue: outcome.confidence_value,
-          }}
-          options={question.options}
-          confidenceLabel={confidenceLabel}
-          reference={question.reference}
-        />
-        <FpsActions>
-          <FpsActionButton
-            action={viewFeedbackAction.bind(null, step.item.id)}
-            pendingLabel="Guardando…"
-            testId="feedback-siguiente"
-          >
-            {isLast ? 'Terminar la sesión' : 'Siguiente'}
-          </FpsActionButton>
-        </FpsActions>
-      </FpsShell>
+      <ProductShell testId="correccion">
+        {header}
+        <div className={productStyles.readingSurface}>
+          <FpsSurface label="Pregunta">
+            <FpsSectionTitle>{question.stem}</FpsSectionTitle>
+          </FpsSurface>
+          <FpsFeedback
+            outcome={{
+              answerKind: outcome.answer_kind,
+              isCorrect: outcome.is_correct,
+              selectedOptionId: outcome.selected_option_id,
+              correctOptionId: outcome.correct_option_id,
+              explanation: outcome.explanation,
+              confidenceValue: outcome.confidence_value,
+            }}
+            options={question.options}
+            confidenceLabel={confidenceLabel}
+            reference={question.reference}
+          />
+          <Actions>
+            <PrimaryAction
+              action={viewFeedbackAction.bind(null, step.item.id)}
+              pendingLabel="Guardando…"
+              testId="feedback-siguiente"
+            >
+              {isLast ? 'Terminar la sesión' : 'Siguiente'}
+            </PrimaryAction>
+          </Actions>
+        </div>
+      </ProductShell>
     );
   }
 
@@ -125,35 +140,37 @@ export default async function ComprobarPage({
   const confidence = lastConfidenceFor(state, step.item.id);
 
   return (
-    <FpsShell>
-      <FpsHeading kicker={`Paso ${step.ordinal} de ${total}`} title="Comprobar" />
-      <FpsSurface label="Pregunta" testId="comprobar-enunciado">
-        <FpsSectionTitle>{question.stem}</FpsSectionTitle>
-        <FpsAnswerForm
-          options={question.options}
-          levels={levels}
-          initialSelectedOptionId={selected}
-          initialConfidence={confidence}
-          onSelect={selectAnswerAction.bind(null, step.item.id, question.representationId)}
-          onConfidence={recordConfidenceAction.bind(null, step.item.id, scale?.version ?? 'v1')}
-          onSubmit={submitAnswerAction.bind(
-            null,
-            step.item.id,
-            question.representationId,
-            scale?.version ?? 'v1',
-          )}
-        />
-      </FpsSurface>
-      <FpsActions>
-        <FpsActionButton
-          action={interruptSessionAction}
-          pendingLabel="Guardando…"
-          variant="text"
-          testId="dejarlo"
-        >
-          Dejarlo por ahora
-        </FpsActionButton>
-      </FpsActions>
-    </FpsShell>
+    <ProductShell testId="comprobar">
+      {header}
+      <div className={productStyles.readingSurface}>
+        <FpsSurface label="Pregunta" testId="comprobar-enunciado">
+          <FpsSectionTitle>{question.stem}</FpsSectionTitle>
+          <FpsAnswerForm
+            options={question.options}
+            levels={levels}
+            initialSelectedOptionId={selected}
+            initialConfidence={confidence}
+            onSelect={selectAnswerAction.bind(null, step.item.id, question.representationId)}
+            onConfidence={recordConfidenceAction.bind(null, step.item.id, scale?.version ?? 'v1')}
+            onSubmit={submitAnswerAction.bind(
+              null,
+              step.item.id,
+              question.representationId,
+              scale?.version ?? 'v1',
+            )}
+          />
+        </FpsSurface>
+        <Actions>
+          <PrimaryAction
+            action={interruptSessionAction}
+            pendingLabel="Guardando…"
+            variant="secondary"
+            testId="dejarlo"
+          >
+            Dejarlo por ahora
+          </PrimaryAction>
+        </Actions>
+      </div>
+    </ProductShell>
   );
 }

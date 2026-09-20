@@ -181,7 +181,7 @@ export function ActionHeader({
   readonly nature: string;
   readonly position: number;
   readonly total: number;
-  readonly phase?: string;
+  readonly phase?: string | undefined;
 }) {
   return (
     <div className={styles.actionHeader} data-testid="cabecera-accion">

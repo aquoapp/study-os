@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { LearningEventEnvelope, LearningEventType } from '@study-os/domain';
 
 import { publish, type SyntheticPack } from './phase1a-fixtures';
-import { createTestUser, type TestEnv, type TestUser } from './supabase-test-env';
+import { adminClient, createTestUser, type TestEnv, type TestUser } from './supabase-test-env';
 
 /**
  * Fixtures de Phase 2 · aprendices sintéticos sobre packs GENERATED.
@@ -38,17 +38,26 @@ export async function rpc<T = Record<string, unknown>>(
   return { data: (data as T | null) ?? null, error: error ? { ...error } : null };
 }
 
-/** Crea usuario + ajustes + objetivo ACTIVE sobre el pack + dispositivo, por las rutas de cliente. */
+/**
+ * Crea usuario + ajustes + objetivo ACTIVE sobre el pack + dispositivo.
+ *
+ * **Phase 4B · R-8.** La disponibilidad ya no se inserta con el token del aprendiz: esa vía está
+ * revocada, porque el estado canónico y su declaración duradera tienen que nacer juntos. El
+ * fixture usa **la misma función de servidor que usa el producto**, que es lo que hace que la
+ * prueba pruebe el camino real y no uno paralelo que ya no existe.
+ */
 export async function createLearner(
   env: TestEnv,
   label: string,
   pack: SyntheticPack,
 ): Promise<Learner> {
   const user = await createTestUser(env, label);
-  const settings = await user.client.from('learner_settings').insert({
-    user_id: user.id,
-    default_daily_minutes: 40,
-    weekly_availability_json: { mon: 40, wed: 40 },
+  const settings = await adminClient(env).rpc('set_availability', {
+    p_user: user.id,
+    p_default_daily_minutes: 40,
+    p_weekly: { mon: 40, wed: 40 },
+    p_diagnostic_preference: null,
+    p_reduced_motion: null,
   });
   if (settings.error) throw new Error(`learner_settings: ${settings.error.message}`);
   const goal = await user.client
@@ -327,6 +336,9 @@ export async function publishLearningUnit(
     body: 'fixture: cuerpo sintético de una unidad de aprendizaje, sin contenido real.',
     provenance_class: 'GENERATED',
     source_version_id: pack.sourceVersionId,
+    // ADR-013 · P4-D2 · la frontera de ingestión exige la duración de una versión de unidad, y
+    // no la rellena por su cuenta. Es un minuto de fixture, nunca una constante de runtime.
+    estimated_minutes: 5,
   });
   return { unitId, versionId };
 }

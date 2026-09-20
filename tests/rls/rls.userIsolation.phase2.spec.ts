@@ -294,43 +294,127 @@ describe('la evidencia y las sesiones no se escriben por vía directa', () => {
   }
 });
 
-describe('las preferencias del aprendiz se escriben solas y solo las propias', () => {
-  it('Alice actualiza su fila de preferencias', async () => {
+/**
+ * **Phase 4B · R-8 · esta batería cambia de sentido, y a propósito.**
+ *
+ * Hasta Phase 3 comprobaba que la persona escribía su propia fila de preferencias y solo la suya.
+ * Eso deja de ser cierto: la escritura directa está **revocada**, porque el estado canónico y su
+ * declaración duradera (`AVAILABILITY_CHANGED`) tienen que nacer juntos, y con la vía directa
+ * abierta el estado podía cambiar sin su declaración.
+ *
+ * Lo que se conserva íntegro es lo que la batería protegía de verdad: **el aislamiento**. Nadie
+ * lee ni escribe la fila de otra persona, y cambiar la disponibilidad **no borra evidencia**
+ * (REQ-C03). Lo que cambia es por qué camino se escribe.
+ */
+describe('las preferencias del aprendiz: se leen solas y se escriben solo por servidor', () => {
+  it('R-8 · la persona ya NO puede escribir su fila directamente', async () => {
     const { error } = await alice.client
       .from('learner_settings')
       .update({ default_daily_minutes: 45 })
       .eq('user_id', alice.id);
+    expect(error, 'la escritura directa debería estar revocada').not.toBeNull();
+  });
+
+  it('la persona sigue leyendo su propia fila, y solo la suya', async () => {
+    const mine = await alice.client.from('learner_settings').select('user_id');
+    expect(mine.error).toBeNull();
+    expect(mine.data?.length).toBe(1);
+    expect((mine.data?.[0] as { user_id: string }).user_id).toBe(alice.id);
+  });
+
+  it('la vía de servidor escribe, y emite su declaración duradera', async () => {
+    const { error } = await admin.rpc('set_availability', {
+      p_user: alice.id,
+      p_default_daily_minutes: 45,
+      p_weekly: {},
+      p_diagnostic_preference: null,
+      p_reduced_motion: null,
+    });
     expect(error).toBeNull();
     const { data } = await alice.client
       .from('learner_settings')
       .select('default_daily_minutes')
       .single();
     expect(data?.default_daily_minutes).toBe(45);
+    // Estado y historia coinciden: ese es el punto entero de R-8.
+    const declared = await alice.client
+      .from('learning_events')
+      .select('event_id')
+      .eq('event_type', 'AVAILABILITY_CHANGED');
+    expect(declared.error).toBeNull();
+    expect((declared.data?.length ?? 0) > 0).toBe(true);
   });
 
   it('cambiar la disponibilidad no borra evidencia (REQ-C03)', async () => {
     const before = await alice.client.from('learning_events').select('event_id');
-    const { error } = await alice.client
-      .from('learner_settings')
-      .update({ weekly_availability_json: { mon: 90, tue: 30 }, default_daily_minutes: 60 })
-      .eq('user_id', alice.id);
+    const { error } = await admin.rpc('set_availability', {
+      p_user: alice.id,
+      p_default_daily_minutes: 60,
+      p_weekly: { mon: 90, tue: 30 },
+      p_diagnostic_preference: null,
+      p_reduced_motion: null,
+    });
     expect(error).toBeNull();
     const after = await alice.client.from('learning_events').select('event_id');
-    expect(after.data?.length).toBe(before.data?.length);
-    expect((after.data?.length ?? 0) > 0).toBe(true);
+    // La declaración **añade** su propio evento; lo que importa es que no borra ninguno.
+    expect((after.data?.length ?? 0) >= (before.data?.length ?? 0)).toBe(true);
+    expect((before.data?.length ?? 0) > 0).toBe(true);
   });
 
   it('una disponibilidad malformada se rechaza sin tocar la fila', async () => {
-    const { error } = await alice.client
-      .from('learner_settings')
-      .update({ weekly_availability_json: { lunes: 30 } })
-      .eq('user_id', alice.id);
+    const { error } = await admin.rpc('set_availability', {
+      p_user: alice.id,
+      p_default_daily_minutes: 60,
+      p_weekly: { lunes: 30 },
+      p_diagnostic_preference: null,
+      p_reduced_motion: null,
+    });
     expect(error).not.toBeNull();
     const { data } = await alice.client
       .from('learner_settings')
       .select('default_daily_minutes')
       .single();
     expect(data?.default_daily_minutes).toBe(60);
+  });
+
+  it('INV-118 · un cliente no puede emitir TODAY_OVERRIDE_SET por la RPC abierta', async () => {
+    // Sin este rechazo, en cuanto el tipo gana contrato de campos un cliente autenticado podría
+    // crear la declaración en la historia **sin** fila canónica: historia y estado en desacuerdo,
+    // que es justo lo que «tabla + evento» existe para evitar.
+    const { error } = await alice.client.rpc('append_learning_event', {
+      p_event: {
+        event_id: randomUUID(),
+        event_type: 'TODAY_OVERRIDE_SET',
+        schema_version: 1,
+        client_created_at: new Date().toISOString(),
+        payload: { plan_day: '2026-09-20', minutes: 30 },
+      },
+    });
+    expect(error, 'un cliente no puede emitir un evento solo-servidor').not.toBeNull();
+    expect(error?.message).toContain('SERVER_ONLY_EVENT_TYPE');
+  });
+
+  it('INV-118 · tampoco AVAILABILITY_CHANGED', async () => {
+    const { error } = await alice.client.rpc('append_learning_event', {
+      p_event: {
+        event_id: randomUUID(),
+        event_type: 'AVAILABILITY_CHANGED',
+        schema_version: 1,
+        client_created_at: new Date().toISOString(),
+        payload: { default_daily_minutes: 30, weekly_availability_json: {} },
+      },
+    });
+    expect(error).not.toBeNull();
+    expect(error?.message).toContain('SERVER_ONLY_EVENT_TYPE');
+  });
+
+  it('P4B-D3 · la persona lee su override del día y no puede escribirlo', async () => {
+    const write = await alice.client
+      .from('learner_day_overrides')
+      .insert({ user_id: alice.id, plan_day: '2026-09-20', minutes: 15 });
+    expect(write.error, 'el override no se escribe desde el cliente').not.toBeNull();
+    const read = await alice.client.from('learner_day_overrides').select('user_id');
+    expect(read.error).toBeNull();
   });
 
   it('un segundo objetivo ACTIVE del mismo aprendiz se rechaza (CDEM §8)', async () => {
