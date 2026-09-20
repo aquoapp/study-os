@@ -18,7 +18,7 @@
  * exige como P0, y corregirlas aquí significaría alterar valores congelados, que es
  * lo que EC-019 prohíbe. Quedó registrado como `SD-019`.
  *
- * **La opción A está autorizada por decisión humana y aplicada.** Acota el uso sin
+ * **La opción A se autorizó para Phase 0 y se aplicó.** Acotaba el uso sin
  * tocar ningún color: `teal` y `amber` no llevan texto normal; `slate` solo como
  * texto sobre `surface`; sobre `canvas`, `ink` o el texto dentro de una superficie
  * válida. Bajo esas restricciones, **todo texto renderizado alcanza el contraste que
@@ -29,22 +29,37 @@
  * quedan **satisfechos para Phase 0 bajo las restricciones de la opción A**, y no
  * bloqueados.
  *
- * Lo que sigue abierto es distinto y no es un requisito de Phase 0: **elegir entre
- * la opción B —oscurecer `teal` y `amber`— y la C —modificar §14—** para que la
- * paleta pueda usarse sin restricciones. Es una decisión **diferida**, con plazo
- * antes de Phase 5, cuando lleguen las 18 familias de componentes de §16. Diferido
- * no es bloqueado: nada de Phase 0 espera a esa decisión.
+ * ---------------------------------------------------------------------------
+ * SD-019 · cerrada el 2026-09-20 con la opción C
+ *
+ * Lo que quedaba abierto —elegir entre la opción B, oscurecer `teal` y `amber`, y
+ * la C, aclarar §14— lo resolvió Ana en la resolución final de Product UX · Wave 3
+ * (VIS-D5). **Opción C:** ningún valor de color congelado se mueve y §14 se aclara
+ * por cambio de especificación versionado: **AA aplica al texto**, y los colores
+ * que no admiten un emparejamiento de texto accesible en la paleta congelada son,
+ * **en esos contextos**, colores de indicador, de superficie o de acento.
+ *
+ * El suelo de WCAG **no se debilita**. Lo que cambia es qué cuenta como texto, no
+ * cuánto contraste exige el texto. Las restricciones siguen siendo exactamente las
+ * mismas —y una más, medida en esta ronda, **AA-1**: `magenta` sobre `canvas` da
+ * 4.47:1 y nunca es texto normal ahí—, solo que ahora son **la norma** y no el
+ * precio temporal de una decisión pendiente.
+ *
+ * Este fichero y `tokens.ts` decían hasta hoy que B y C seguían diferidas «antes de
+ * Phase 5». Era cierto cuando se escribió y dejó de serlo el 2026-09-20; el desfase
+ * se registró como **OBS-4B-03** y se corrige aquí, **con su prueba, en el mismo
+ * acto**, en el primer acto de implementación autorizado de Phase 4B.
  * ---------------------------------------------------------------------------
  */
 
 /**
- * `SATISFIED_UNDER_SD019_A` · satisfecho bajo las restricciones de la opción A.
+ * `SATISFIED_UNDER_SD019_C` · satisfecho bajo la norma de la opción C.
  *
- * No es `COMPLETE`: la contradicción entre §2 y §14 sigue viva y la paleta sigue
- * sin poder usarse entera. Tampoco es `BLOCKED`: el criterio de aceptación de
- * REQ-A06 se cumple y está verificado en el navegador.
+ * Ya no es «bajo restricciones provisionales»: las restricciones son la
+ * especificación aclarada. Tampoco es `COMPLETE`, porque las 18 familias de
+ * componentes de §16 siguen sin existir y ese trabajo es de Phase 5 en adelante.
  */
-export const DESIGN_SYSTEM_STATUS = 'SATISFIED_UNDER_SD019_A' as const;
+export const DESIGN_SYSTEM_STATUS = 'SATISFIED_UNDER_SD019_C' as const;
 
 /** Documento gobernante y su verificación. */
 export const DESIGN_SYSTEM_SOURCE = {
@@ -54,10 +69,9 @@ export const DESIGN_SYSTEM_SOURCE = {
   verifiedAs: 'PDF 1.4 · 11 páginas · texto con fuentes incrustadas · 0 imágenes',
   /** Pasos y requisitos que este estado satisface para Phase 0. */
   satisfies: ['P0-S7', 'REQ-A06'],
-  decision: 'SD-019 opción A · autorizada para Phase 0',
-  /** Decisión diferida. No condiciona ningún entregable de Phase 0. */
-  deferred: 'SD-019 · elegir entre B (oscurecer teal y amber) y C (modificar §14)',
-  deferredDeadline: 'antes de Phase 5',
+  decision: 'SD-019 opción C · aceptada el 2026-09-20 · AA aplica al texto',
+  decisionRecordedIn:
+    'docs/SPEC_DIFF_LOG.md · SD-019 · aceptación · docs/PRODUCT_UX_CONTRACT.md §R',
   trackedIn: 'docs/GOVERNING_DOCUMENTS.md',
 } as const;
 
@@ -98,27 +112,37 @@ export const DESIGN_SYSTEM_COVERAGE = {
     'control del fixture: la misma auditoría no encuentra nada en una página correcta',
   ],
   /**
-   * Restricciones bajo las que se satisface REQ-A06.
+   * Restricciones de la opción C. **Ya no son provisionales: son la norma.**
    *
-   * No son deuda oculta: son el contenido de la opción A, y las hace cumplir la
-   * prueba de accesibilidad renderizada en cada ejecución.
+   * Las cuatro están medidas, ninguna inventada, y las hace cumplir la prueba de
+   * accesibilidad renderizada en cada ejecución.
    */
   constraints: [
     'teal y amber no llevan texto normal encima · onDark da 3.95 y 4.42, por debajo de 4.5',
     'slate solo como texto sobre surface · sobre canvas da 4.31',
+    'magenta nunca como texto normal sobre canvas · da 4.47 (AA-1); sobre surface da 4.87',
     'sobre canvas, el texto usa ink, o va dentro de una superficie válida',
   ],
   /**
-   * Diferido. Ningún entregable de Phase 0 lo espera.
+   * Restricción de **profundidad**, no de contraste de texto.
    *
-   * Con las 18 familias de componentes de §16 la restricción empieza a estorbar, y
-   * ahí sí hay que haber elegido. Antes, no.
+   * `surface` y `canvas` se separan solo 1.09:1: la paleta congelada no da
+   * profundidad tonal, así que la hacen el espacio, la escala, la tipografía, un
+   * borde óptico y una luz de suelo, y la sombra se reserva a las superposiciones
+   * (PRODUCT_UX_CONTRACT §S.7). Queda escrito aquí para que no vuelva a leerse
+   * como una excepción de contraste, que no lo es.
+   */
+  depthConstraint: 'surface/canvas se separan 1.09:1 · la profundidad no la da el tono',
+  /**
+   * Diferido. Ningún entregable en curso lo espera.
+   *
+   * SD-019 salió de esta lista el 2026-09-20 al aceptarse la opción C, y la familia
+   * tipográfica salió al ratificarse IBM Plex Sans (VIS-D2, VIS-D3).
    */
   deferred: [
-    'SD-019 · elegir entre B (oscurecer teal y amber) y C (modificar §14) · antes de Phase 5',
     'SD-008 · el propio §6 dice «Four/five semantic levels» para la escala de confianza',
     'tema oscuro: el documento no lo especifica y no se inventa',
-    'familia tipográfica concreta: §2 da dirección, no nombre',
+    'marca / logotipo externo definitivo · diferido y no bloqueante (PRODUCT_UX_CONTRACT §S.12)',
     'las 18 familias de componentes de §16, que corresponden a Phase 5 en adelante',
   ],
 } as const;

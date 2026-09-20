@@ -70,7 +70,9 @@
       "planner_context",
       "engine_planner_snapshot",
       "create_planner_run",
-      "start_planned_session"
+      "start_planned_session",
+      "set_today_override",
+      "set_availability"
     ],
     "anchors": {
       "grade_attempt": "INV-101 · la corrección ocurre en servidor y no devuelve la clave",
@@ -96,8 +98,29 @@
       "planner_context": "Planner Contract §C · entradas autoritativas en una sola lectura; la identidad la verifica el servidor (INV-116)",
       "engine_planner_snapshot": "Planner Contract §W.1 · P4-D6 · estado categórico y last_negative_position, nunca el vector; sin exponer engine",
       "create_planner_run": "Planner Contract §U.3 · §U.1 · INV-113 · persistencia autoritativa con revalidación en la misma transacción",
-      "start_planned_session": "Planner Contract §U.6 · §V · arranque idempotente por ejecución; una sola sesión abierta por persona"
+      "start_planned_session": "Planner Contract §U.6 · §V · arranque idempotente por ejecución; una sola sesión abierta por persona",
+      "set_today_override": "P4B-D3 · override del día: estado canónico más evento, día derivado en servidor desde la zona declarada (SD-023)",
+      "set_availability": "R-8 · disponibilidad declarada: estado canónico más AVAILABILITY_CHANGED, con el evento autoritativo de servidor"
     }
+  },
+  "serverOnlyEventTypes": {
+    "$comment": [
+      "INV-118 · tipos de evento cuya autoridad de producción es el SERVIDOR.",
+      "",
+      "`public.append_learning_event` es un envoltorio delgado que reenvía cualquier tipo cuyo",
+      "`event_field_types` no sea nulo, y está concedido a `authenticated`. En cuanto un tipo",
+      "tiene contrato de campos, un cliente podría emitirlo directamente y crear una declaración",
+      "en la historia SIN fila canónica correspondiente: historia y estado en desacuerdo, que es",
+      "justo lo que «tabla + evento» existe para evitar.",
+      "",
+      "El repositorio ya distinguía `rpcs` de `clientInvokableRpcs`. Esta es la misma distinción",
+      "para tipos de evento. `ingest.event_type_is_server_only` espeja esta lista y una prueba",
+      "compara las dos para que no deriven.",
+      "",
+      "Ampliarla o reducirla es un cambio de frontera de autoridad: exige la misma revisión que",
+      "INV-113 (EC-019)."
+    ],
+    "names": ["TODAY_OVERRIDE_SET", "AVAILABILITY_CHANGED"]
   },
   "readOnlyRpcs": {
     "$comment": [

@@ -178,16 +178,31 @@ export const SEMANTIC_ROLES = {
  * no textuales —indicadores, bordes, iconografía, texto grande— para que la
  * limitación sea explícita y no se descubra en una auditoría de accesibilidad.
  *
- * La contradicción entre §2 (paleta) y §14 (AA como P0) está registrada como **SD-019**.
- * La **opción A** está autorizada y aplicada: bajo sus restricciones el contraste de todo
- * texto renderizado se verifica en el navegador, que es el criterio de aceptación de
- * REQ-A06. Ese requisito **no está bloqueado**. Lo que queda es elegir entre las opciones
- * B y C para poder usar la paleta sin restricciones, y eso está **diferido con plazo antes
- * de Phase 5**, cuando existan los componentes de §16 que lo necesitan.
+ * La contradicción entre §2 (paleta) y §14 (AA como P0) se registró como **SD-019** y quedó
+ * **cerrada el 2026-09-20 con la opción C**: ningún valor congelado se mueve y §14 se aclara por
+ * cambio de especificación versionado —**AA aplica al texto**—, de modo que un color que no
+ * admite un emparejamiento de texto accesible es, **en ese contexto**, color de indicador, de
+ * superficie o de acento. El suelo de WCAG **no se debilita**: lo que cambia es qué es texto, no
+ * cuánto contraste exige el texto.
  */
 export const NON_TEXT_BACKGROUNDS = ['teal', 'amber'] as const;
 
 export type NonTextBackground = (typeof NON_TEXT_BACKGROUNDS)[number];
+
+/**
+ * Colores que **no** pueden usarse como texto normal **sobre `canvas`**, medidos.
+ *
+ * `slate` da 4.31:1 y `magenta` **4.47:1** (AA-1, hallazgo de Wave 3). Sobre `surface` los dos
+ * pasan: 4.70 y 4.87. La restricción es del par, no del color, y por eso vive aquí y no en
+ * `NON_TEXT_BACKGROUNDS`, que habla de fondos.
+ *
+ * AA-1 **no crea contradicción**: el repositorio ya trataba `magenta` sobre `canvas` como
+ * indicador de 3:1 en `CONTRAST_REQUIREMENTS`. Esta constante lo **escribe** en vez de dejarlo
+ * implícito.
+ */
+export const NON_TEXT_FOREGROUNDS_ON_CANVAS = ['slate', 'magenta'] as const;
+
+export type NonTextForegroundOnCanvas = (typeof NON_TEXT_FOREGROUNDS_ON_CANVAS)[number];
 
 /** Movimiento, en milisegundos. §13. */
 export const MOTION = {

@@ -186,15 +186,29 @@ describe('Phase 4A · lo aceptado sigue aceptado y lo diferido sigue diferido', 
     expect(code).not.toMatch(/where \(status in \([^)]*\)\s+and planner_run_id/);
   });
 
-  it('P4-D2 sigue diferida, P4-G2 conserva su partición y P4-G18 es de Phase 4B', () => {
+  it('el cuerpo v1.4 conserva su redacción sobre P4-D2, ya superseded', () => {
+    // **Retirada parcial por autorización · P4-G36.** P4-D2 quedó resuelta el 2026-09-20
+    // (ADR-013), de modo que la guarda ya no puede afirmar que sigue diferida.
+    //
+    // Lo que sí sigue vigilando, y es lo que la congelación protege: el cuerpo v1.4 del contrato
+    // **no se reescribe**. La frase original permanece literalmente dentro de su nota de
+    // supersesión, como ADR-003, ADR-007, ADR-008 y ADR-011 conservaron las suyas.
     expect(flat(contract)).toContain('P4-D2 está deliberadamente diferida');
-    expect(read('packages/planner-engine/src/types.ts')).toContain(
-      "export const DURATION_PROVENANCES = ['FIXTURE'] as const;",
-    );
+    expect(contract).toContain('SUPERSESIÓN PARCIAL');
+    expect(flat(contract)).toContain('P4-D2');
+    // El checkpoint de Phase 4A es historia y no se edita.
     expect(checkpoint).toContain(
       '**CONTRATO DE DOMINIO PROBADO · CAPTURA DE PRODUCTO DIFERIDA A 4B**',
     );
     expect(checkpoint).toContain('P4-G18 pertenece a Phase 4B');
+  });
+
+  it('la resolución de P4-D2 está registrada donde la gobernanza la pone', () => {
+    // Lo que sustituye a la guarda retirada: la duración de producción existe **porque** hay una
+    // decisión que la autoriza, con propietario normativo nombrado.
+    expect(read('architecture/ADR-013-operational-duration-authority.md')).toContain('ACCEPTED');
+    expect(read('docs/PHASE_4B_PREAUTHORIZATION.md')).toContain('P4-D2');
+    expect(read('docs/SPEC_DIFF_LOG.md')).toContain('SD-033');
   });
 
   it('la congelación no autoriza Phase 4B ni expone el esquema del motor', () => {

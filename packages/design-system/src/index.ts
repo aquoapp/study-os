@@ -23,6 +23,7 @@ export {
   LAYOUT,
   MOTION,
   NON_TEXT_BACKGROUNDS,
+  NON_TEXT_FOREGROUNDS_ON_CANVAS,
   RADIUS,
   SEMANTIC_ROLES,
   SPACING,
@@ -33,6 +34,7 @@ export {
   type ColorToken,
   type ContrastRequirement,
   type NonTextBackground,
+  type NonTextForegroundOnCanvas,
   type RadiusToken,
   type SpacingToken,
 } from './tokens';

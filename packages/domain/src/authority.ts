@@ -42,6 +42,22 @@ export const SERVER_AUTHORITATIVE_RPCS: readonly string[] = registry.rpcs.names;
  */
 export const CLIENT_INVOKABLE_RPCS: readonly string[] = registry.clientInvokableRpcs.names;
 
+/**
+ * INV-118 · tipos de evento cuya autoridad de producción es el **servidor**.
+ *
+ * `public.append_learning_event` reenvía cualquier tipo con contrato de campos y está concedido a
+ * `authenticated`: sin esta lista, en cuanto un tipo gana contrato un cliente podría crear la
+ * declaración en la historia **sin** la fila canónica correspondiente. La misma distinción que ya
+ * existía entre `rpcs` y `clientInvokableRpcs`, ahora para tipos de evento.
+ *
+ * `ingest.event_type_is_server_only` espeja esta lista y una prueba compara ambas.
+ */
+export const SERVER_ONLY_EVENT_TYPES: readonly string[] = registry.serverOnlyEventTypes.names;
+
+export function isServerOnlyEventType(value: string): boolean {
+  return SERVER_ONLY_EVENT_TYPES.includes(value);
+}
+
 export type ServerAuthoritativeProjection = string;
 
 export function isServerAuthoritativeProjection(value: string): boolean {

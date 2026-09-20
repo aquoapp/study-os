@@ -32,6 +32,17 @@ const migration = readFileSync(
   'utf8',
 );
 
+/**
+ * El enum de tipos vive en la migración 18 y no se mueve. Los **esquemas de campos**, en cambio,
+ * los redefine la última migración que reemite `ingest.event_field_types`: compararlos contra la
+ * 18 comprobaría una definición que la base ya no tiene, que es precisamente la deriva que este
+ * fichero existe para impedir. Phase 4B da contrato a `TODAY_OVERRIDE_SET` (P4B-D3 §5.1).
+ */
+const schemaMigration = readFileSync(
+  join(REPO_ROOT, 'supabase/migrations/00000000000024_phase4b_product_integration.sql'),
+  'utf8',
+);
+
 function sqlEnumLabels(): string[] {
   const start = migration.indexOf('create type public.learning_event_type as enum (');
   const end = migration.indexOf(');', start);
@@ -40,7 +51,9 @@ function sqlEnumLabels(): string[] {
 
 function sqlSchemas(): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const match of migration.matchAll(/when '([A-Z_]+)' then '(\{"scope"[^']*\})'::jsonb/g)) {
+  for (const match of schemaMigration.matchAll(
+    /when '([A-Z_]+)' then '(\{"scope"[^']*\})'::jsonb/g,
+  )) {
     out[match[1] ?? ''] = JSON.parse(match[2] ?? '{}');
   }
   return out;

@@ -36,6 +36,26 @@ import { REPO_ROOT } from './lib/run-guard';
 const read = (relative: string) => readFileSync(join(REPO_ROOT, relative), 'utf8');
 const flat = (text: string) => text.replace(/\s+/g, ' ');
 
+/**
+ * La frontera congelada de Phase 4A.
+ *
+ * Varias de estas guardas eran de **alcance negativo**: afirmaban que algo de Phase 4B todavía no
+ * existía. La Phase 4B Build Authorization las retira, y P4-G36 exige que se retiren **por
+ * autorización y nunca en silencio**. La forma de hacerlo sin perder lo que protegían es acotarlas
+ * a esta frontera: dentro de ella nada cambia, y lo que Phase 4B añade queda vigilado por las
+ * guardas nuevas que las sustituyen, nombradas en el mismo bloque.
+ */
+const PHASE_4A_LAST_MIGRATION = '00000000000023';
+const PHASE_4B_MIGRATION = '00000000000024_phase4b_product_integration.sql';
+
+const allMigrations = (): string[] =>
+  readdirSync(join(REPO_ROOT, 'supabase/migrations'))
+    .filter((file) => file.endsWith('.sql'))
+    .sort();
+
+const migrationsUpTo = (prefix: string): string[] =>
+  allMigrations().filter((file) => file.slice(0, 14) <= prefix);
+
 const CONTRACT = 'docs/PLANNER_CONTRACT.md';
 const ADR = 'architecture/ADR-012-planner-decision-authority.md';
 const AUTHORIZATION = 'docs/PHASE_4A_GOVERNANCE_AUTHORIZATION.md';
@@ -210,25 +230,38 @@ describe('Phase 4A · P4-D2 sigue diferida y no deja constantes detrás', () => 
     expect(flattened).toContain('FPS-OBS-04 **no** queda cerrada');
   });
 
-  it('ninguna migración ni paquete introduce metadatos ni valores de duración', () => {
-    const migrations = readdirSync(join(REPO_ROOT, 'supabase/migrations')).filter((f) =>
-      f.endsWith('.sql'),
-    );
-    for (const file of migrations) {
+  it('ninguna migración de Phase 4A introduce metadatos ni valores de duración', () => {
+    // **Retirada parcial por autorización · P4-G36.** P4-D2 quedó resuelta el 2026-09-20
+    // (ADR-013) y la Phase 4B Build Authorization autoriza la duración. La guarda no se
+    // debilita: se acota a la frontera congelada de Phase 4A, que sigue sin duración alguna.
+    // Migración 24 en adelante sí la tiene, y con procedencia declarada.
+    for (const file of migrationsUpTo(PHASE_4A_LAST_MIGRATION)) {
       const sql = read(`supabase/migrations/${file}`);
       expect(sql, `${file} introduce duración estimada`).not.toMatch(
         /estimated_minutes|duration_minutes|default_item_minutes/i,
       );
     }
-    // Desde el BUILD el paquete existe; lo que no puede contener es una duración de runtime.
+    // El paquete sigue sin **ninguna duración de runtime**: eso no lo retira ninguna
+    // autorización. La duración entra siempre como dato, nunca como constante de código.
     const source = readdirSync(join(REPO_ROOT, 'packages/planner-engine/src'))
       .map((file) => read(`packages/planner-engine/src/${file}`))
       .join('\n');
     // `default_daily_minutes` es una declaración de la persona (§I.2), no una duración.
     expect(source).not.toMatch(/const\s+DEFAULT_[A-Z_]*MINUTES/);
     expect(source).not.toMatch(/estimated_minutes|duration_minutes|minutesPerItem|MINUTES_PER/i);
-    // La única procedencia de duración que admite el tipo es la de fixture.
-    expect(source).toContain("export const DURATION_PROVENANCES = ['FIXTURE'] as const;");
+  });
+
+  it('la duración de producción tiene procedencia declarada y cerrada', () => {
+    // Lo que sustituye a la guarda retirada: no «no hay duración», sino «toda duración
+    // declara de dónde viene», y el vocabulario de procedencia sigue siendo cerrado.
+    const types = read('packages/planner-engine/src/types.ts');
+    expect(types).toContain(
+      "export const DURATION_PROVENANCES = ['FIXTURE', 'HYBRID_V1'] as const",
+    );
+    // `FIXTURE` no desaparece: las ejecuciones de prueba siguen siendo distinguibles.
+    expect(types).toContain('FIXTURE');
+    // Y ninguna procedencia aprendida o adaptativa entra en v1 (DEF-11, §D).
+    expect(types).not.toMatch(/'LEARNED'|'ADAPTIVE'|'PREDICTED'|'PERSONALIZED'/);
   });
 });
 
@@ -362,12 +395,13 @@ describe('Phase 4A · el BUILD construye solo lo autorizado', () => {
   ];
   const PLANNER_MIGRATION = '00000000000023_planner_domain.sql';
 
-  it('el sustrato del Planner solo aparece en su migración autorizada', () => {
-    const migrations = readdirSync(join(REPO_ROOT, 'supabase/migrations')).filter((f) =>
-      f.endsWith('.sql'),
-    );
-    for (const file of migrations) {
-      if (file === PLANNER_MIGRATION) continue;
+  it('el sustrato del Planner solo aparece en sus migraciones autorizadas', () => {
+    // **Retirada parcial por autorización · P4-G36.** La migración 24 reemite funciones del
+    // Planner porque P4B-D2 y Q-3 las enmiendan. Sigue prohibido que el sustrato aparezca en
+    // cualquier otra: la guarda nombra las autorizadas, no deja de mirar.
+    const AUTHORIZED = [PLANNER_MIGRATION, PHASE_4B_MIGRATION];
+    for (const file of allMigrations()) {
+      if (AUTHORIZED.includes(file)) continue;
       const sql = read(`supabase/migrations/${file}`)
         .replace(/--[^\n]*/g, '')
         .toLowerCase();
@@ -377,11 +411,11 @@ describe('Phase 4A · el BUILD construye solo lo autorizado', () => {
     }
   });
 
-  it('ninguna migración crea almacenamiento del override del día: es de Phase 4B', () => {
-    const migrations = readdirSync(join(REPO_ROOT, 'supabase/migrations')).filter((f) =>
-      f.endsWith('.sql'),
-    );
-    for (const file of migrations) {
+  it('el almacenamiento del override del día no existe antes de Phase 4B', () => {
+    // **Retirada parcial por autorización · P4-G36.** P4B-D3 lo autoriza y la migración 24 lo
+    // crea. Lo que la guarda sigue impidiendo es que aparezca **antes**, dentro de la frontera
+    // congelada, donde estaría sin decisión que lo respalde.
+    for (const file of migrationsUpTo(PHASE_4A_LAST_MIGRATION)) {
       const sql = read(`supabase/migrations/${file}`)
         .replace(/--[^\n]*/g, '')
         .toLowerCase();
@@ -391,6 +425,22 @@ describe('Phase 4A · el BUILD construye solo lo autorizado', () => {
         /learner_today_overrides|create\s+table\s+(if\s+not\s+exists\s+)?[a-z_.]*override|add\s+column\s+(if\s+not\s+exists\s+)?[a-z_]*override/,
       );
     }
+  });
+
+  it('el override que Phase 4B crea es una declaración, no una proyección', () => {
+    // Lo que sustituye a la guarda retirada. INV-113 no cambia: la tabla del override **no**
+    // entra en `projections` del registro de autoridad, porque no es una proyección
+    // autoritativa; su camino de escritura es solo de servidor por integridad.
+    const registry = JSON.parse(read('packages/domain/src/authority-registry.json')) as {
+      projections: { tables: string[] };
+      clientInvokableRpcs: { names: string[] };
+    };
+    expect(registry.projections.tables).not.toContain('learner_day_overrides');
+    // Y la superficie de RPC invocable por cliente sigue siendo exactamente dos (P4-G29).
+    expect(registry.clientInvokableRpcs.names).toEqual([
+      'append_learning_event',
+      'create_study_session',
+    ]);
   });
 
   it('la superficie de RPC invocable por el cliente sigue siendo exactamente dos', () => {
