@@ -45,7 +45,8 @@
     "secret-scan:no-build": "node tools/guards/secret-scan.mjs",
     "guard:private-schemas": "node tools/guards/private-schema-grant-guard.mjs",
     "db:roundtrip": "node tools/db-roundtrip.mjs",
-    "seed:preview": "node tools/seed-preview-corpus.mjs"
+    "seed:preview": "node tools/seed-preview-corpus.mjs",
+    "readout": "node tools/validation-readout.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

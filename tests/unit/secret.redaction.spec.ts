@@ -121,6 +121,10 @@ describe('D-25 · los secretos viajan por el entorno y nunca se imprimen', () =>
       'tools/db.mjs',
       'tools/guards/schema-drift.mjs',
       'tools/supabase-cli.mjs',
+      // Phase 4B · el readout de validación consulta STAGING de solo lectura. Entra aquí tras
+      // revisión y **no** reimplementa la redacción: pasa por el ejecutor compartido, que es lo
+      // que cerró D-25 cuando una credencial acabó impresa por el camino de error del CLI.
+      'tools/validation-readout.mjs',
     ]);
     // El ejecutor compartido separa los valores de `--db-url` y los redacta en toda salida.
     const executor = read('tools/supabase-cli.mjs');
