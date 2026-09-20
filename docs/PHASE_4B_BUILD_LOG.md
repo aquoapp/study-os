@@ -29,7 +29,7 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | --- | --- |
 | Rama | `phase/4b-product-integration` |
 | Base | `852a9c99e4eb60c3debee0f2e3fd215d2cceb735` (`main`, PR #22 integrado) |
-| HEAD | `1e55d6d` |
+| HEAD | `55a2e11` |
 | Último commit verde conocido | `5c256aa` · verde en typecheck, lint, format, 1227 unitarias, guardas y secret-scan. Las suites con base de datos las valida CI |
 | Árbol local | limpio |
 | STAGING | **sin mutar** por Phase 4B |
@@ -46,25 +46,68 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | 1 | Migración 24 · esquema y fronteras (§11 completa, más R-8) | **HECHO** | `65e2499` |
 | 2 | Dominio, registro de autoridad y cierre de OBS-4B-03 | **HECHO** | `b4a2472` |
 | 3 | Runtime del Planner, HOY real y sistema visual L2 | **HECHO** | `5c256aa` |
-| 4 | Superficies de sesión con cabecera de acción · /ajustes · /hoy/replanificar | pendiente | — |
-| 5 | Corpus sintético de Preview | pendiente | — |
-| 6 | Telemetría y readout de validación | pendiente | — |
-| 7 | Endurecimiento de Preview y pruebas | pendiente | — |
+| 4 | Superficies de sesión, /ajustes, replanificar, tipografía | **HECHO** | `8344172` |
+| 5 | Corpus sintético de Preview | **HECHO** | `6a567b7` |
+| 6 | Readout de validación de producto | **HECHO** | `228087d` |
+| 7 | Puertas duras contra la frontera real | **HECHO** | `55a2e11` |
+| 8 | STAGING migrado y corpus sembrado | **BLOQUEADO** · espera CI verde | — |
+| 9 | Recorrido humano en Preview (P4-G18) | **BLOQUEADO** · espera OBS-3.1-01 | — |
 
 ---
 
 ## 3 · Tarea siguiente exacta
 
-Bloque 4 · las tres superficies de sesión con cabecera de acción (UX-INV-17, UX-INV-24),
-`/ajustes` (S12) y `/hoy/replanificar` (S21).
+1. **Esperar el job «Base de datos» de CI** sobre `55a2e11`. Es la prueba desde cero, el
+   roundtrip y las suites de integración, RLS y E2E. Docker no está instalado en la máquina de
+   desarrollo, de modo que CI **es** la prueba local: su stack es el mismo.
+2. Con ese job en verde, **migrar STAGING** y sembrar el corpus. Solo entonces, y no antes:
+
+   ```bash
+   node --env-file=.env.staging.local tools/db.mjs push
+   node --env-file=.env.staging.local tools/seed-preview-corpus.mjs
+   ```
+
+   Eso pone en verde el job de deriva de esquema, que **falla a propósito** mientras STAGING esté
+   por detrás del repositorio.
+3. Pedir a Ana la única acción humana que queda (§4) y, al confirmarla, provocar un redespliegue
+   de Preview para que el runtime la recoja.
+4. Recorrido humano de Ana sobre el Preview (P4-G18) y checkpoint.
 
 ---
 
 ## 4 · Acciones humanas pendientes
 
-| Id | Acción | Estado |
-| --- | --- | --- |
-| OBS-3.1-01 | Credencial de rol de servicio en el entorno Preview de Vercel | **sin evaluar todavía** |
+### OBS-3.1-01 · la credencial de rol de servicio del entorno Preview
+
+**Investigado antes de preguntar, como exige la autorización §24. Estos son los hechos:**
+
+| Pregunta | Respuesta verificada |
+| --- | --- |
+| ¿La necesita el runtime de Preview? | **Sí, y sin ella el bucle de Phase 4B no funciona.** `tryCreatePlannerClient` y el cliente del motor leen `readServerConfig()`, que la exige. Sin ella `requestPlanForUser` devuelve `SKIPPED · SIN_CONFIGURACION_DE_SERVIDOR`, y HOY muestra `CANNOT_PLAN`: no hay plan, no hay sesión y no hay evidencia. |
+| Alcance exacto | **Solo `Preview`.** No `Production`, que sigue sin desplegarse. |
+| Nombre exacto de la variable | **`SUPABASE_SERVICE_ROLE_KEY`**, declarada en `packages/config/src/server-env-keys.ts`. |
+| ¿Puede configurarla un conector autorizado **sin exponer el valor**? | **No.** Se consultó el proyecto de Vercel: la variable **no existe en ningún entorno**; solo están las tres públicas, en `Production` y en `Preview`. No hay ningún valor que reapuntar de un entorno a otro, que habría sido la única vía de configurarla sin manejar el secreto. Crearla exige aportarlo, y eso significaría que un agente maneje una clave de rol de servicio: EC-010 y §7 lo prohíben. |
+| ¿Configurarla provoca un redespliegue? | **No automáticamente.** Vercel aplica las variables a los despliegues **nuevos**; el Preview ya desplegado conserva el entorno con el que se construyó. Hace falta un redespliegue después, y lo puedo provocar yo. |
+| ¿Hay alguna alternativa que no debilite la arquitectura? | **No, y las tres que existen la debilitan.** Exponer `engine` o `ingest` al Data API rompería ADR-011. Hacer el Planner invocable por el cliente rompería §U.4 e INV-113. La clave anónima no atraviesa RLS y no puede hacerlo. **Ninguna se implementa.** |
+
+**La acción, y es solo una:** en el panel de Vercel del proyecto `study-os`, añadir la variable
+`SUPABASE_SERVICE_ROLE_KEY` con alcance **Preview**, y como valor la clave `service_role` de
+**STAGING** — la que ya está en `.env.staging.local`.
+
+**Lo que no se hace:** no se pega el valor en la conversación ni en el repositorio; no se usa la
+clave de PRODUCTION; y no se añade al alcance `Production`.
+
+**Cómo se confirma:** basta con decir «hecho». La comprobación real es que HOY deje de mostrar
+«No hemos podido preparar tu plan» y muestre una acción, lo que además demuestra que el runtime la
+está leyendo de verdad y no solo que existe la variable.
+
+### OBS-4B-04 · `CANNOT_PLAN` no es observable
+
+Registrada, **no resuelta**. Los otros tres estados vacíos son resultados persistidos de una
+ejecución; `CANNOT_PLAN` significa que **no se escribió ninguna**, así que por construcción no hay
+fila que contar. Registrarlo exigiría un tipo de evento nuevo en la taxonomía del CDEM, que esta
+fase no autoriza. Si el recorrido humano lo encuentra a menudo, esa observación es la que abre la
+decisión.
 
 ---
 
