@@ -52,6 +52,13 @@ const USER_FACING_SOURCES = [
   'apps/web/src/app/aprender/[ordinal]/page.tsx',
   'apps/web/src/app/comprobar/[ordinal]/page.tsx',
   'apps/web/src/app/fin/page.tsx',
+  // Phase 4B · la capa de producto del sistema visual L2. Entra en esta vigilancia por la misma
+  // razón que las del FPS, y con un riesgo mayor: son las superficies donde el Planner decide, y
+  // donde una frase de más convertiría una recomendación en una afirmación sobre la persona
+  // (jerarquía de verdad §F, T4 solo puede aflorar como acción más razón).
+  'apps/web/src/app/_components/product/shell.tsx',
+  'apps/web/src/app/_components/product/primary-action.tsx',
+  'apps/web/src/app/_components/product/today-time.tsx',
   'apps/web/src/app/_components/fps/fps-shell.tsx',
   'apps/web/src/app/_components/fps/fps-action-button.tsx',
   'apps/web/src/app/_components/fps/fps-answer-form.tsx',

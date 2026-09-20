@@ -6,6 +6,7 @@ import {
   PLANNER_VERSION,
   canonicalDecision,
   canonicalInput,
+  eligibleActionMinutes,
   inputHash,
   plan,
   type BudgetSource,
@@ -37,10 +38,12 @@ import { tryCreatePlannerClient } from './admin';
  *
  * La identidad que recibe este módulo tiene que venir ya verificada en servidor (INV-116).
  *
- * **Duración · P4-D2 diferida.** La duración de cada candidato es **entrada** (§I.3) y su origen
- * no está decidido. Por eso no hay ninguna fuente de producción: sin una fuente inyectada, el
- * Planner responde `DURATION_SOURCE_UNDECIDED` y **no escribe nada**. Las pruebas inyectan una
- * fuente de fixture; ninguna duración de fixture es una constante de runtime.
+ * **Duración · P4-D2 resuelta el 2026-09-20 (ADR-013).** La duración de cada candidato sigue
+ * siendo **entrada** del contrato (§I.3), y ahora su origen está autorizado y partido por tipo de
+ * paso: la unidad trae metadato de autoría fijado a su versión exacta, y la pregunta una
+ * estimación gobernada en `planner_config`. `hybridDurationSource` es esa fuente y se construye
+ * desde el contexto, no desde ninguna constante de este módulo. Las pruebas pueden seguir
+ * inyectando una fuente de fixture, distinguible por su procedencia.
  */
 
 export const PLANNER_RPC = {
@@ -50,21 +53,72 @@ export const PLANNER_RPC = {
   startSession: 'start_planned_session',
 } as const;
 
-/** Destinos cuya duración se pide. */
+/**
+ * Destinos cuya duración se pide.
+ *
+ * **Reclavado por versión (P4-D2 §2.4).** Antes se indexaba por identidad de unidad; la decisión
+ * exige fijación a la **versión exacta**, porque una duración pertenece a un contenido concreto y
+ * no a la unidad que lo contiene. `planner_context` ya devuelve esa identidad.
+ */
 export interface DurationTargets {
-  readonly learningUnitIds: readonly string[];
+  readonly learningUnitVersionIds: readonly string[];
   readonly questionIds: readonly string[];
 }
 
 /**
  * Fuente de duración. Es **entrada del contrato** (§I.3): quien la inyecta responde de su
- * procedencia, y en Phase 4A la única admitida es `FIXTURE`.
+ * procedencia.
+ *
+ * `null` en una unidad significa **metadato ausente**, no cero: el motor puro lo traduce a la
+ * exclusión `NO_DURATION_METADATA` y nunca lo rellena (ADR-013 §2.5).
  */
 export interface DurationSource {
   readonly provenance: DurationProvenance;
   minutesFor(targets: DurationTargets): {
-    readonly units: ReadonlyMap<string, number>;
+    readonly units: ReadonlyMap<string, number | null>;
     readonly questions: ReadonlyMap<string, number>;
+  };
+}
+
+/**
+ * La fuente de producción que P4-D2 autoriza · **`HYBRID_V1`** · ADR-013.
+ *
+ * Partida por tipo de paso, exactamente como la decisión la parte:
+ *
+ *   - **unidad**: metadato de autoría versionado, leído de la versión exacta que el Planner va a
+ *     seleccionar. Estimación operativa de planificación, no un hecho de ciencia del aprendizaje
+ *     ni una predicción sobre esta persona;
+ *   - **pregunta**: estimación gobernada, determinista e **independiente de la persona**, idéntica
+ *     para toda pregunta en v1, leída de la `planner_config` `ACTIVE`. No usa historial,
+ *     `response_ms`, confianza, dificultad inferida ni rendimiento de la pregunta.
+ *
+ * No hay ninguna constante de duración en este módulo: los dos valores vienen de datos con
+ * procedencia. Si la configuración activa no declara la estimación de paso, no se planifica y se
+ * dice por qué; no se elige un número.
+ */
+export function hybridDurationSource(context: {
+  readonly checkStepMinutes: number;
+  readonly units: ReadonlyArray<{
+    readonly learningUnitVersionId: string;
+    readonly estimatedMinutes: number | null;
+  }>;
+}): DurationSource {
+  const units = new Map<string, number | null>(
+    context.units.map((unit) => [
+      unit.learningUnitVersionId,
+      unit.estimatedMinutes === null || unit.estimatedMinutes === undefined
+        ? null
+        : Number(unit.estimatedMinutes),
+    ]),
+  );
+  return {
+    provenance: 'HYBRID_V1',
+    minutesFor: (targets) => ({
+      units: new Map(
+        targets.learningUnitVersionIds.map((id) => [id, units.has(id) ? units.get(id)! : null]),
+      ),
+      questions: new Map(targets.questionIds.map((id) => [id, context.checkStepMinutes])),
+    }),
   };
 }
 
@@ -76,6 +130,15 @@ export type PlannerRequestOutcome =
       readonly outcome: PlanOutcome;
       readonly decision: PlanDecision;
       readonly inputHash: string;
+      /** §I.2 · el presupuesto con el que se decidió, tal y como la persona lo declaró. */
+      readonly budgetMinutes: number;
+      /**
+       * P4B-D1 · minutos de cada acción elegible que **no cupo**.
+       *
+       * Derivado de la misma entrada, nunca persistido: ampliar `PlanDecision` cambiaría el texto
+       * canónico de toda ejecución pasada al reproducirla (P4-G4). Vacío cuando todo cupo.
+       */
+      readonly shortestOverBudgetMinutes: readonly number[];
     }
   /** §N · la sesión abierta gana: no se crea ninguna ejecución. */
   | { readonly kind: 'RESUME_REQUIRED' }
@@ -84,8 +147,13 @@ export type PlannerRequestOutcome =
   | { readonly kind: 'NO_ACTIVE_GOAL' }
   /** §I.2 · sin declaraciones de disponibilidad no hay presupuesto, y no se inventa. */
   | { readonly kind: 'SETTINGS_REQUIRED' }
-  /** P4-D2 · sin fuente de duración decidida no se planifica. */
-  | { readonly kind: 'DURATION_SOURCE_UNDECIDED' }
+  /**
+   * ADR-013 · la configuración activa no declara la estimación de paso.
+   *
+   * No se elige un número: sin la autoridad que la gobierna, esa duración no existe. Sustituye a
+   * `DURATION_SOURCE_UNDECIDED`, que nombraba una decisión pendiente y ya no lo está.
+   */
+  | { readonly kind: 'DURATION_POLICY_MISSING' }
   /** §M · el motor está atrasado y la puesta al día bloqueante no lo dejó al día. */
   | { readonly kind: 'PLAN_UNAVAILABLE_ENGINE'; readonly reason: string }
   /** Revalidación perdida varias veces seguidas: no se escribe nada. */
@@ -111,12 +179,16 @@ interface PlannerContext {
   readonly budget: { readonly minutes: number; readonly source: BudgetSource } | null;
   readonly openSession: boolean;
   readonly plannerConfigVersion: string | null;
+  /** ADR-013 §2.2 · estimación gobernada del paso COMPROBAR, de la configuración `ACTIVE`. */
+  readonly checkStepMinutes: number | null;
   readonly concepts: readonly ContextConcept[];
   readonly units: ReadonlyArray<{
     readonly learningUnitId: string;
     readonly conceptId: string;
     readonly learningUnitVersionId: string;
     readonly sourceExcluded: boolean;
+    /** ADR-013 §2.1 · fijada a la versión exacta. `null` es dato, no cero. */
+    readonly estimatedMinutes: number | null;
   }>;
   readonly questions: ReadonlyArray<{
     readonly questionId: string;
@@ -217,13 +289,19 @@ function buildInput(
   durations: DurationSource,
 ): PlannerInput {
   const minutes = durations.minutesFor({
-    learningUnitIds: context.units.map((u) => u.learningUnitId),
+    learningUnitVersionIds: context.units.map((u) => u.learningUnitVersionId),
     questionIds: context.questions.map((q) => q.questionId),
   });
   const need = (map: ReadonlyMap<string, number>, id: string): number => {
     const value = map.get(id);
     if (value === undefined) throw new Error(`la fuente de duración no cubre ${id}`);
     return value;
+  };
+  // La ausencia es una respuesta válida de la fuente; lo que no es válido es que no responda.
+  const unitMinutes = (id: string): number | null => {
+    const map = minutes.units;
+    if (!map.has(id)) throw new Error(`la fuente de duración no cubre ${id}`);
+    return map.get(id) ?? null;
   };
   const state = new Map(engine.concepts.map((c) => [c.conceptId, c]));
   const done = new Set(context.completedToday);
@@ -254,7 +332,7 @@ function buildInput(
           learningUnitId: u.learningUnitId,
           learningUnitVersionId: u.learningUnitVersionId,
           sourceExcluded: u.sourceExcluded,
-          minutes: need(minutes.units, u.learningUnitId),
+          minutes: unitMinutes(u.learningUnitVersionId),
         })),
       questions: context.questions
         .filter((q) => q.conceptId === c.conceptId)
@@ -328,6 +406,21 @@ function payloadOf(
   };
 }
 
+/**
+ * Minutos de las acciones elegibles que no cupieron (§E · `OVER_BUDGET`, §J).
+ *
+ * P4B-D1 autoriza a la interfaz a comunicar con verdad la estimación de la acción elegible más
+ * corta. Esa verdad se deriva de la misma decisión que acaba de producirse, con las mismas
+ * reglas; **no se consulta ninguna fuente de duración aparte** y no se persiste nada nuevo.
+ */
+function overBudgetMinutesOf(input: PlannerInput, decision: PlanDecision): readonly number[] {
+  const eligible = eligibleActionMinutes(input);
+  return decision.candidates
+    .filter((candidate) => candidate.exclusion === 'OVER_BUDGET')
+    .map((candidate) => eligible.get(candidate.conceptId))
+    .filter((minutes): minutes is number => typeof minutes === 'number');
+}
+
 const MAX_ATTEMPTS = 3;
 
 /**
@@ -357,7 +450,20 @@ export async function requestPlanForUser(
     if (!context.budget) return { kind: 'SETTINGS_REQUIRED' };
     if (!context.plannerConfigVersion)
       return { kind: 'SKIPPED', reason: 'SIN_CONFIGURACION_ACTIVA' };
-    if (!options.durations) return { kind: 'DURATION_SOURCE_UNDECIDED' };
+
+    // P4-D2 · la duración ya tiene fuente de producción. Las pruebas pueden inyectar una de
+    // fixture; en ausencia de inyección, la de producción es la híbrida de ADR-013, construida
+    // **desde el contexto** y no desde ninguna constante de este módulo.
+    let durations = options.durations;
+    if (!durations) {
+      if (context.checkStepMinutes === null || context.checkStepMinutes === undefined) {
+        return { kind: 'DURATION_POLICY_MISSING' };
+      }
+      durations = hybridDurationSource({
+        checkStepMinutes: Number(context.checkStepMinutes),
+        units: context.units,
+      });
+    }
 
     const activeConfig = await readActiveEngineConfig(client);
     if (!activeConfig)
@@ -386,7 +492,7 @@ export async function requestPlanForUser(
       if (!tuple) return { kind: 'PLAN_UNAVAILABLE_ENGINE', reason: 'SIGUE_ATRASADO' };
     }
 
-    const input = buildInput(userId, context, engine, tuple, options.durations);
+    const input = buildInput(userId, context, engine, tuple, durations);
     const decision = plan(input);
     const hash = await inputHash(input);
 
@@ -411,6 +517,8 @@ export async function requestPlanForUser(
       outcome: decision.outcome,
       decision,
       inputHash: hash,
+      budgetMinutes: input.budget.minutes,
+      shortestOverBudgetMinutes: overBudgetMinutesOf(input, decision),
     };
   }
   return { kind: 'CONTENTION' };

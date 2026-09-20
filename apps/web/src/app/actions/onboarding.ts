@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { requireVerifiedIdentity } from '../../server/auth/identity';
+import { setAvailability } from '../../server/planner/availability';
 import { createSupabaseServerClient } from '../../server/supabase/server-client';
 
 /**
@@ -13,9 +14,12 @@ import { createSupabaseServerClient } from '../../server/supabase/server-client'
  * First Product Sight, que no están autorizados.
  *
  * La identidad la decide el servidor (INV-116, Manifest §14): el `user_id` sale de
- * `requireVerifiedIdentity`, nunca del formulario. La escritura va con el token del propio
- * aprendiz, de modo que la política RLS —`user_id = auth.uid()` en `USING` y en
- * `WITH CHECK`— es quien autoriza la fila, no este código.
+ * `requireVerifiedIdentity`, nunca del formulario. El objetivo se escribe con el token del propio
+ * aprendiz, de modo que la política RLS —`user_id = auth.uid()` en `USING` y en `WITH CHECK`— es
+ * quien autoriza la fila, no este código.
+ *
+ * **Phase 4B · R-8.** La disponibilidad ya no: pasa por `public.set_availability`, que escribe el
+ * estado canónico y emite `AVAILABILITY_CHANGED` en la misma transacción.
  */
 
 export interface OnboardingActionState {
@@ -60,17 +64,26 @@ export async function completeOnboardingAction(
   const targetDate = formData.get('target_date');
   const diagnostic = formData.get('diagnostic_preference');
 
-  const settings = await supabase.from('learner_settings').upsert(
-    {
-      user_id: identity.userId,
-      default_daily_minutes: dailyMinutes,
-      weekly_availability_json: availability,
-      diagnostic_preference: diagnostic === 'TAKE' || diagnostic === 'SKIP' ? diagnostic : null,
-    },
-    { onConflict: 'user_id' },
-  );
+  /*
+   * **R-8 · Phase 4B.** La disponibilidad ya no se escribe directamente sobre la tabla.
+   *
+   * Hasta hoy esta acción hacía un `upsert` con el token de la persona, y `AVAILABILITY_CHANGED`
+   * existía con contrato de campos pero **no lo emitía nadie**: el estado canónico cambiaba sin su
+   * declaración duradera. Ahora las dos cosas nacen juntas dentro de `public.set_availability`, en
+   * la misma transacción, y el evento es autoritativo de servidor (INV-118).
+   *
+   * Esto **no** convierte la disponibilidad en evidencia de aprendizaje: es una declaración
+   * duradera de la persona (T1), y el Learning Engine no la mira.
+   */
+  const settings = await setAvailability(identity.userId, {
+    defaultDailyMinutes: dailyMinutes,
+    weekly: availability,
+    diagnosticPreference: diagnostic === 'TAKE' || diagnostic === 'SKIP' ? diagnostic : null,
+  });
   // El mensaje del proveedor no se propaga tal cual: puede describir restricciones internas.
-  if (settings.error) return { error: 'No se pudieron guardar tus preferencias.', ok: false };
+  if (settings.kind !== 'SAVED') {
+    return { error: 'No se pudieron guardar tus preferencias.', ok: false };
+  }
 
   const existing = await supabase
     .from('learner_exam_goals')

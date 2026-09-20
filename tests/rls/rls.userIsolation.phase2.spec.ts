@@ -82,8 +82,8 @@ const serverOnlyTables = new Set(
 /** Duraciones de fixture para sembrar el Planner: datos de prueba (P4-D2 diferida). */
 const FIXTURE_DURATIONS: DurationSource = {
   provenance: 'FIXTURE',
-  minutesFor: ({ learningUnitIds, questionIds }) => ({
-    units: new Map(learningUnitIds.map((id) => [id, 5])),
+  minutesFor: ({ learningUnitVersionIds, questionIds }) => ({
+    units: new Map(learningUnitVersionIds.map((id: string) => [id, 5])),
     questions: new Map(questionIds.map((id) => [id, 3])),
   }),
 };

@@ -71,8 +71,8 @@ const unitVersionIds: string[] = [];
 /** Duraciones de fixture: datos de prueba, jamás constantes de runtime (§I.3). */
 const FIXTURE: DurationSource = {
   provenance: 'FIXTURE',
-  minutesFor: ({ learningUnitIds, questionIds }) => ({
-    units: new Map(learningUnitIds.map((id) => [id, 5])),
+  minutesFor: ({ learningUnitVersionIds, questionIds }) => ({
+    units: new Map(learningUnitVersionIds.map((id: string) => [id, 5])),
     questions: new Map(questionIds.map((id) => [id, 3])),
   }),
 };

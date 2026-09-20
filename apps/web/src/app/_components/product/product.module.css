@@ -1,0 +1,488 @@
+/* ---------------------------------------------------------------------------
+ * STUDY OS · sistema visual de producto · L2 · SYSTEM INTELLIGENCE
+ *
+ * `docs/PRODUCT_UX_CONTRACT.md` §S. Dirección aceptada el 2026-09-20 (VIS-D1).
+ *
+ * La identidad **no** la produce la paleta, el logotipo ni el cromo de panel. La produce la
+ * gramática combinada de: espina del sistema · superficie de decisión anclada · voces
+ * tipográficas diferenciadas · actividad adaptativa temporal · transformación y recomposición ·
+ * retirada durante el aprendizaje (§S.1).
+ *
+ * Las tres reglas que este fichero no puede romper:
+ *
+ *   1. **AS-2 · solo activo** (§S.4). El teal significa exactamente una cosa: *STUDY OS está
+ *      actuando o adaptándose*. En reposo **no permanece**. Nunca significa correcto, bueno,
+ *      progreso, dominio, validez, preparación ni completitud.
+ *   2. **Temporalidad** (§S.5). Ninguna señal de sistema persiste para que la interfaz parezca
+ *      tecnológica. Sin animación ambiental, sin pulso en reposo, sin bucle decorativo, sin
+ *      pensamiento de IA fingido. La señal de recomposición recorre **una sola vez** y descansa.
+ *   3. **Retirada en LEER** (§S.9). Durante el aprendizaje enfocado el contenido domina: sin teal
+ *      activo, sin teatro adaptativo, sin tarjetas añadidas.
+ *
+ * La frontera, enunciada (§S.13): STUDY OS deja de ser Calm Intelligence en cuanto una señal del
+ * sistema (a) permanece cuando el sistema no hace nada, (b) ocupa espacio que pertenece a la
+ * lectura, o (c) empieza a medir algo.
+ *
+ * Contraste · SD-019 **opción C** con **AA-1**: ningún valor congelado se mueve; AA aplica al
+ * texto. `slate` es texto solo sobre `surface`; `magenta` nunca es texto normal sobre `canvas`;
+ * nada de texto sobre `teal` ni sobre `amber`.
+ * --------------------------------------------------------------------------- */
+
+/* --- Escala tipográfica · §S.11 · una sola familia -------------------------------------- */
+
+.page {
+  /* §S.11 · 12 px **no se usa**. El mínimo es la micro-etiqueta de 13. */
+  --voice-micro: 13px;
+  --voice-secondary: 15px;
+  --voice-option: 16px;
+  --voice-stem: 17px;
+  --voice-reading: 17px;
+  --voice-action-title: 23px;
+  --voice-page-title: 30px;
+
+  /* §S.7 · la profundidad no la da el tono: canvas y surface se separan solo 1.09:1. */
+  --spine-width: 1px;
+  --spine-rest: var(--so-color-slate);
+
+  position: relative;
+  min-height: 100dvh;
+  padding: var(--so-space-xl) var(--so-space-lg) var(--so-space-3xl);
+}
+
+@media (min-width: 900px) {
+  .page {
+    /* §Q · presencia en escritorio: el objeto de producto no puede leerse como una aplicación
+       de tamaño móvil flotando dentro de un monitor grande. Crece la escala y el aire, **no**
+       la medida de lectura. */
+    --voice-page-title: 40px;
+    --voice-action-title: 28px;
+    --voice-reading: 18px;
+    padding: var(--so-space-3xl) var(--so-space-2xl) var(--so-space-4xl);
+  }
+}
+
+/* --- Voces · §S.11 · la distinción indica AUTORÍA, no jerarquía de valor ----------------- */
+
+/* Voz de sistema: versal, 13 px, tracking .14em, 600. Fecha, naturaleza y posición de la
+   acción, estado del sistema. Nunca monoespaciada: §S.11 lo prohíbe explícitamente. */
+.systemVoice {
+  font-size: var(--voice-micro);
+  font-weight: var(--so-weight-semibold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: var(--so-leading-snug);
+  color: var(--so-color-ink);
+}
+
+/* Voz de aprendizaje: caja normal, sin tracking artificial, ritmo de lectura. */
+.learningVoice {
+  font-weight: var(--so-weight-regular);
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: var(--so-leading-reading);
+}
+
+/* §S.11 · numerales tabulares en toda duración, recuento y posición. */
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- L0,5 · luz ambiental · §S.7 -------------------------------------------------------- */
+
+/* Lavado radial detrás de la superficie dominante. No es un gradiente decorativo amplio: es la
+   única forma de dar suelo cuando la paleta no da profundidad tonal. */
+.page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 60% at 50% 0%,
+    rgb(255 253 249 / 70%) 0%,
+    rgb(255 253 249 / 0%) 60%
+  );
+}
+
+/* --- La espina del sistema · §S.2 ------------------------------------------------------- */
+
+/* Ancla estructural persistente. **En reposo es neutra.** No es métrica, ni raíl de progreso,
+   ni navegación, ni stepper: no mide nada y no cuenta nada. */
+.spine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--so-space-lg);
+  width: var(--spine-width);
+  background: var(--spine-rest);
+  opacity: 0.45;
+}
+
+@media (min-width: 900px) {
+  .spine {
+    left: var(--so-space-2xl);
+  }
+}
+
+/* --- L1 · la superficie de decisión anclada · §S.3 -------------------------------------- */
+
+/* **Una por pantalla.** Lado izquierdo unido estructuralmente a la espina, radio conservado a la
+   derecha. Su significado es estructural: *este objeto lo produjo y lo sostiene STUDY OS*.
+   No se generaliza: solo la superficie de decisión dominante la lleva. */
+.anchored {
+  position: relative;
+  margin-left: var(--so-space-lg);
+  padding: var(--so-space-xl);
+  background: linear-gradient(180deg, var(--so-color-surface) 0%, rgb(255 253 249 / 88%) 100%);
+  /* §S.7 · **sin borde**: borde óptico superior de 1 px y hairline inferior. */
+  border: 0;
+  border-top: 1px solid rgb(255 255 255 / 90%);
+  border-bottom: 1px solid rgb(102 117 124 / 18%);
+  border-radius: 0 var(--so-radius-hero) var(--so-radius-hero) 0;
+}
+
+@media (min-width: 900px) {
+  .anchored {
+    margin-left: var(--so-space-2xl);
+    padding: var(--so-space-2xl);
+    /* El objeto dominante ocupa el espacio disponible sin convertirse en un panel: crece hasta
+       una anchura de objeto, no hasta el ancho del monitor. */
+    max-width: 720px;
+  }
+}
+
+/* Contenido dentro de la superficie: aquí `slate` sí es texto legible (4.70 sobre surface). */
+.anchored .secondary,
+.panel .secondary {
+  color: var(--so-color-slate);
+  font-size: var(--voice-secondary);
+  line-height: var(--so-leading-normal);
+}
+
+/* Superficie neutra, no dominante: para lo que no es la decisión del sistema. */
+.panel {
+  background: var(--so-color-surface);
+  border-top: 1px solid rgb(255 255 255 / 90%);
+  border-bottom: 1px solid rgb(102 117 124 / 18%);
+  border-radius: var(--so-radius-card);
+  padding: var(--so-space-lg);
+}
+
+/* --- Títulos ---------------------------------------------------------------------------- */
+
+.pageTitle {
+  font-size: var(--voice-page-title);
+  font-weight: var(--so-weight-semibold);
+  line-height: var(--so-leading-tight);
+  letter-spacing: -0.015em;
+  margin: 0 0 var(--so-space-sm);
+  color: var(--so-color-ink);
+}
+
+.actionTitle {
+  font-size: var(--voice-action-title);
+  font-weight: var(--so-weight-medium);
+  line-height: var(--so-leading-snug);
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--so-space-md);
+  color: var(--so-color-ink);
+}
+
+/* --- Medida de lectura · §Q · UX-INV-13 ------------------------------------------------- */
+
+/* 45–70 caracteres, a **ambas** anchuras. El texto no se ensancha en escritorio. */
+.measure {
+  max-width: 62ch;
+}
+
+.reading {
+  max-width: 62ch;
+  font-size: var(--voice-reading);
+  line-height: var(--so-leading-reading);
+}
+
+.stem {
+  max-width: 62ch;
+  font-size: var(--voice-stem);
+  line-height: var(--so-leading-normal);
+}
+
+/* --- Acciones · UX-INV-1 · exactamente una primaria por estado, y cero en S6, S7 y S8 ---- */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--so-space-md);
+  margin-top: var(--so-space-xl);
+}
+
+.primary,
+.secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--so-touch-target-min);
+  min-width: var(--so-touch-target-min);
+  padding: 0 var(--so-space-xl);
+  border-radius: var(--so-radius-control);
+  font-size: var(--voice-option);
+  font-weight: var(--so-weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* `navy` con `onDark` encima: 13.07 sobre canvas y sobradamente AA como par. */
+.primary {
+  background: var(--so-color-navy);
+  color: var(--so-color-on-dark);
+  border: 1px solid var(--so-color-navy);
+}
+
+.primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.secondary-action {
+  background: transparent;
+  color: var(--so-color-navy);
+  border: 1px solid var(--so-color-slate);
+}
+
+/* --- Actividad adaptativa · AS-2 · §S.4 · §S.6 ------------------------------------------ */
+
+/* El teal se hace perceptible **solo mientras STUDY OS computa, recompone o se adapta de
+   verdad**. `data-adapting` lo pone la interacción que realmente dispara esa operación, y se
+   retira al llegar la decisión nueva. En reposo el atributo no existe y no hay teal. */
+.page[data-adapting='true'] .spine {
+  background: var(--so-color-teal);
+  opacity: 1;
+  animation: spineActivity var(--so-motion-replan-max) ease-out 1;
+}
+
+/* Recorre **una sola vez** y descansa. `animation-iteration-count: 1` no es un detalle: un
+   bucle convertiría la señal en ambiental, que es lo que §S.5 prohíbe. */
+@keyframes spineActivity {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Ranura reservada para la retroalimentación computacional (§S.6): existe siempre, de modo que
+   nada se reajusta cuando aparece el texto. Sin porcentajes y sin mensajes rotatorios. */
+.activitySlot {
+  min-height: calc(var(--voice-micro) * var(--so-leading-snug));
+  margin-bottom: var(--so-space-sm);
+  color: var(--so-color-ink);
+}
+
+/* §S.6 · el contenido de la persona **permanece legible**: la decisión anterior no se atenúa.
+   Atenuarla al 55 % deja `ink` en 3.61:1 y `slate` en 2.12:1 · medido y descartado. Además la
+   interacción afirma justo eso: el sistema sostiene tu decisión actual hasta tener la siguiente. */
+
+/* --- L2 · superposición · §S.7 · la única sombra del sistema ---------------------------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  background: rgb(23 38 45 / 32%);
+  z-index: 50;
+}
+
+@media (min-width: 900px) {
+  .overlay {
+    place-items: center;
+  }
+}
+
+.sheet {
+  width: min(560px, 100%);
+  background: var(--so-color-surface);
+  border-radius: var(--so-radius-hero) var(--so-radius-hero) 0 0;
+  box-shadow: 0 -8px 32px rgb(23 38 45 / 18%);
+  padding: var(--so-space-xl);
+}
+
+@media (min-width: 900px) {
+  .sheet {
+    border-radius: var(--so-radius-hero);
+    box-shadow: 0 12px 48px rgb(23 38 45 / 22%);
+  }
+}
+
+/* --- Control de tiempo · §H · UX-INV-22 ------------------------------------------------- */
+
+/* Abre **sin preselección**: ningún valor por defecto cuyo significado sea que la persona
+   debería tener más tiempo. El cero es un valor legítimo y se presenta como los demás. */
+.timeChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--so-space-md);
+  margin: var(--so-space-lg) 0;
+}
+
+.timeChoice {
+  min-height: var(--so-touch-target-min);
+  min-width: var(--so-touch-target-min);
+  padding: 0 var(--so-space-lg);
+  border-radius: var(--so-radius-control);
+  border: 1px solid var(--so-color-slate);
+  background: var(--so-color-surface);
+  color: var(--so-color-ink);
+  font-size: var(--voice-option);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.timeChoice[aria-pressed='true'] {
+  border-color: var(--so-color-navy);
+  border-width: 2px;
+  font-weight: var(--so-weight-semibold);
+}
+
+/* --- Opciones de respuesta · §Q · columna única, nunca en fila -------------------------- */
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--so-space-md);
+  margin: var(--so-space-lg) 0;
+  max-width: 62ch;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--so-space-md);
+  min-height: var(--so-touch-target-min);
+  padding: var(--so-space-md) var(--so-space-lg);
+  border: 1px solid var(--so-color-slate);
+  border-radius: var(--so-radius-control);
+  background: var(--so-color-surface);
+  font-size: var(--voice-option);
+  line-height: var(--so-leading-normal);
+  cursor: pointer;
+}
+
+/* INV-103 · UX-INV-4 · **ninguna señal de corrección antes del envío**. La selección cambia el
+   grosor y el color del borde, que no significan acierto: significan «esta es tu elección». */
+.option:has(input:checked) {
+  border-color: var(--so-color-navy);
+  border-width: 2px;
+}
+
+/* --- Resultado · UX-INV-11 · el color nunca es portador único --------------------------- */
+
+/* Forma del disco + forma del icono + **palabra**. Quitar el color no quita el significado. */
+.outcome {
+  display: flex;
+  align-items: center;
+  gap: var(--so-space-md);
+  margin-bottom: var(--so-space-lg);
+}
+
+.outcomeMark {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--so-radius-full);
+  color: var(--so-color-on-dark);
+  font-size: var(--voice-option);
+  flex: 0 0 auto;
+}
+
+.outcomeCorrect {
+  background: var(--so-color-forest);
+}
+
+.outcomeIncorrect {
+  background: var(--so-color-brick);
+}
+
+/* En blanco no es un fallo: es la ausencia de respuesta, y se dice así. */
+.outcomeBlank {
+  background: var(--so-color-slate);
+}
+
+.outcomeWord {
+  font-size: var(--voice-action-title);
+  font-weight: var(--so-weight-medium);
+  color: var(--so-color-ink);
+}
+
+/* --- LEER · §S.9 · retirada ------------------------------------------------------------- */
+
+/* El estado de control de contención visual. Sin teal activo, sin campo de sistema innecesario,
+   sin tarjetas por párrafo. Queda solo la traza estructural neutra de la espina, que es lo que
+   da continuidad entre rutas sin degradar la medida ni la atención. */
+.readingSurface {
+  margin-left: var(--so-space-lg);
+  padding: var(--so-space-xl) var(--so-space-xl) var(--so-space-2xl);
+  max-width: 62ch;
+}
+
+@media (min-width: 900px) {
+  .readingSurface {
+    margin-left: var(--so-space-2xl);
+    /* §Q · **no se ensancha LEER**, ni siquiera cuando sobra sitio. */
+    padding: var(--so-space-2xl) var(--so-space-2xl) var(--so-space-3xl);
+  }
+}
+
+.readingSurface p {
+  font-size: var(--voice-reading);
+  line-height: var(--so-leading-reading);
+  margin: 0 0 var(--so-space-lg);
+}
+
+/* --- Wordmark de producto v1 · W1 · §S.12 ---------------------------------------------- */
+
+/* Tracking óptico: STUDY más cerrado, intervalo medido, OS algo más cerrado. Solo CSS, sin
+   activo. **No** codifica la espina del sistema (W6 no se selecciona) y permanece lo bastante
+   callado para que HOY y la acción actual dominen. */
+.wordmark {
+  font-size: var(--voice-micro);
+  font-weight: var(--so-weight-semibold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--so-color-slate);
+  margin: 0;
+}
+
+.wordmark .wordmarkGap {
+  letter-spacing: 0.22em;
+}
+
+.wordmark .wordmarkOs {
+  letter-spacing: 0.06em;
+}
+
+/* --- Cabecera de acción · UX-INV-17 · UX-INV-24 ----------------------------------------- */
+
+/* Los dos pasos de una acción de dos pasos llevan cabecera **idéntica** y muestran la **misma**
+   posición. Una acción de un solo paso no muestra indicador de fase. */
+.actionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--so-space-md);
+  align-items: baseline;
+  margin-bottom: var(--so-space-lg);
+}
+
+/* --- Movimiento · §S.8 · UX-INV-15 ------------------------------------------------------ */
+
+/* El equivalente sin movimiento es obligatorio y el movimiento **nunca** es necesario para
+   entender el estado autoritativo. Con `prefers-reduced-motion` la señal de actividad sigue
+   siendo perceptible porque el cambio de color es el portador, no la animación. */
+@media (prefers-reduced-motion: reduce) {
+  .page[data-adapting='true'] .spine {
+    animation: none;
+  }
+}

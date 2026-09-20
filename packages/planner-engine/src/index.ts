@@ -17,6 +17,7 @@ export {
   byLastNegative,
   bySyllabus,
   compareCodePoints,
+  eligibleActionMinutes,
   isExclusionReason,
   plan,
 } from './plan';

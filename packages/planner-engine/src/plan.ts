@@ -349,6 +349,31 @@ export function plan(input: PlannerInput): PlanDecision {
   return finish(actions.length === 0 ? 'NOTHING_FITS' : 'PLANNED');
 }
 
+/**
+ * Minutos de la acción de cada candidato **elegible**, por concepto.
+ *
+ * Deriva de la misma entrada y con las mismas reglas que `plan`, y existe para que
+ * `NOTHING_FITS` pueda decir con verdad cuánto dura la acción elegible más corta (P4B-D1), que el
+ * contrato de producto autoriza a comunicar.
+ *
+ * **No entra en `PlanDecision` a propósito.** La decisión es lo que se serializa, se guarda y se
+ * reproduce byte a byte (P4-G4): ampliar su forma cambiaría el texto canónico de toda ejecución
+ * pasada al reproducirla. Esto es una **derivación**, no un hecho persistido, y por eso vive
+ * aparte y no se guarda en ninguna parte.
+ */
+export function eligibleActionMinutes(input: PlannerInput): ReadonlyMap<string, number> {
+  const out = new Map<string, number>();
+  for (const concept of input.concepts) {
+    if (baseExclusion(concept)) continue;
+    const need = needOf(concept);
+    const kind = actionKindOf(need);
+    if (!kind) continue;
+    const resolved = resolveAction(concept, kind);
+    if (resolved.ok) out.set(concept.conceptId, resolved.minutes);
+  }
+  return out;
+}
+
 function auditOf(
   input: PlannerInput,
   exclusions: ReadonlyMap<string, ExclusionReason>,

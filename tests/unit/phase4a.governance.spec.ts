@@ -460,7 +460,17 @@ describe('Phase 4A · el BUILD construye solo lo autorizado', () => {
    * servidor existe, pero **ninguna ruta** lo consume: la selección visible sigue siendo
    * `fps-fixed-v1` durante toda Phase 4A (P4-G15). HOY consumiendo el plan es Phase 4B.
    */
-  it('ninguna ruta de la aplicación consume el Planner: cero cambio visible', () => {
+  it('el Planner ya es la selección visible, y nada más lo consume', () => {
+    /*
+     * **Retirada por autorización · P4-G36 · P4-G34.**
+     *
+     * En Phase 4A esta guarda decía «ninguna ruta consume el Planner: cero cambio visible», y era
+     * su afirmación central: el BUILD construyó la frontera sin exponerla. La Phase 4B Build
+     * Authorization la invierte a propósito, y lo que la sustituye es su contraria exacta.
+     *
+     * Lo que ahora se vigila es que la sustitución sea **completa**: el Planner es la selección, y
+     * `fps-fixed-v1` deja de ser alcanzable desde cualquier camino de aprendiz (UX-INV-9).
+     */
     const hits = execFileSync(
       'node',
       [
@@ -474,12 +484,31 @@ describe('Phase 4A · el BUILD construye solo lo autorizado', () => {
       ],
       { encoding: 'utf8' },
     ).trim();
-    expect(hits, 'una ruta consume el Planner').toBe('');
-    expect(readdirSync(join(REPO_ROOT, 'apps/web/src/server/planner')).sort()).toEqual([
-      'admin.ts',
-      'run.ts',
-      'start.ts',
-    ]);
+    expect(hits, 'ninguna ruta consume el Planner').not.toBe('');
+    expect(hits).toContain('hoy');
+  });
+
+  it('`fps-fixed-v1` no es alcanzable desde ningún camino de aprendiz · P4-G34', () => {
+    // La selección fija sale del producto. Lo que **no** sale es la historia: las sesiones
+    // `FPS_FIXED` ya registradas y su evidencia siguen siendo legibles y válidas, y por eso el
+    // literal puede seguir existiendo en el dominio y en las pruebas, pero no en una ruta.
+    const hits = execFileSync(
+      'node',
+      [
+        '-e',
+        `const {readdirSync,readFileSync,statSync}=require('fs');const {join}=require('path');` +
+          `let out=[];const walk=(d)=>{for(const e of readdirSync(d)){const p=join(d,e);` +
+          `if(statSync(p).isDirectory())walk(p);` +
+          // El sujeto de la guarda es la **alcanzabilidad**, y un comentario no se alcanza: el
+          // registro documental de qué se retiró tiene que poder nombrar lo retirado. Se comparan
+          // líneas de código, con los comentarios fuera, igual que hace `offline.copy.spec`.
+          `else if(/\\.(ts|tsx)$/.test(e)&&/fps-fixed-v1|selectFixedSessionItems/.test(readFileSync(p,'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'')))out.push(p);}};` +
+          `walk(process.argv[1]);console.log(out.join('\\n'));`,
+        join(REPO_ROOT, 'apps/web/src/app'),
+      ],
+      { encoding: 'utf8' },
+    ).trim();
+    expect(hits, `una ruta sigue alcanzando la selección fija: ${hits}`).toBe('');
   });
 });
 
