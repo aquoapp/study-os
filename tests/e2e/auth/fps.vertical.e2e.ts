@@ -261,7 +261,8 @@ test.describe('Phase 4B · el bucle real del producto', () => {
       `update public.session_items si set completed_at = si.completed_at - interval '2 days'
          where si.status = 'COMPLETED' and si.user_id = (
            select id from auth.users where email = '${email}'
-         )`,
+         )
+         returning si.id`,
     );
 
     await page.goto('/hoy');

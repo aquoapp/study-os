@@ -205,7 +205,8 @@ test.describe('Phase 3.1 · el Learning Engine corre en la aplicación real', ()
 
     query(
       `update public.session_items si set completed_at = si.completed_at - interval '2 days'
-         where si.status = 'COMPLETED' and si.user_id = ${sqlText(userId)}::uuid`,
+         where si.status = 'COMPLETED' and si.user_id = ${sqlText(userId)}::uuid
+         returning si.id`,
     );
 
     await page.goto('/hoy');
