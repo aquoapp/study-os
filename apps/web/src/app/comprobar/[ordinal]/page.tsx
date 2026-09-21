@@ -140,7 +140,7 @@ export default async function ComprobarPage({
   const confidence = lastConfidenceFor(state, step.item.id);
 
   return (
-    <ProductShell testId="comprobar">
+    <ProductShell testId="comprobar-pantalla">
       {header}
       <div className={productStyles.readingSurface}>
         <FpsSurface label="Pregunta" testId="comprobar-enunciado">
