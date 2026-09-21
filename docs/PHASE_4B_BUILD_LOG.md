@@ -32,7 +32,7 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | HEAD | `7da5377` |
 | Último commit verde conocido | **`7da5377` · CI completo en verde** (árbol `e00853d398faa2440a5872911a94745eac513084`): typecheck, lint, format, 1241 unitarias, guardas, secret-scan, db:roundtrip, integración 696/696, RLS 218/218, E2E 36/36. La deriva de esquema falla solo porque STAGING va por detrás |
 | Árbol local | limpio |
-| STAGING | **sin mutar** por Phase 4B |
+| STAGING | **Migrado a 24** (25 migraciones en el ledger) el 2026-09-21 con `tools/db.mjs push` por el pooler de sesión `aws-1-eu-west-1`; catálogo verificado. **Corpus `preview-4b-fundamentos` sembrado**: 8 conceptos, 7 unidades con duración, 18 preguntas, todo GENERATED |
 | Preview | despliegue automático de Vercel por rama; sin configuración nueva |
 | Credencial de servicio de Preview | **Configurada por Ana** · `SUPABASE_SERVICE_ROLE_KEY`, tipo sensitive, alcance solo Preview (verificado sin leer el valor) |
 
@@ -202,3 +202,9 @@ escribe ejecución.
 CI en verde sobre `7da5377`. Lo que la última ronda encontró, y dos eran defectos de producto reales: la cabecera de acción no se pintaba nunca (`findOpenSession` no seleccionaba `planner_run_id`), y dos textos en `slate` sobre canvas a 4.31:1 (wordmark y superficie de decisión con fondo semitransparente). Lo midieron los E2E con la auditoría renderizada.
 
 **Siguiente:** `STUDY_OS_DESTRUCTIVE_AUTHORIZATION=staging:db-push node --env-file=.env.staging.local tools/db.mjs push`, verificación del catálogo, `tools/seed-preview-corpus.mjs`, redespliegue de Preview.
+
+### 2026-09-21 · STAGING migrado y corpus sembrado
+
+La URL directa `db.<ref>` es solo IPv6 y no resuelve desde la máquina de desarrollo; se usó el pooler en modo sesión, **`aws-1`** (el `aws-0` no conoce el tenant), derivado en memoria de las credenciales existentes sin imprimirlas. Verificado después: ledger en 24, `planner_config` v1 SUPERSEDED y v2 ACTIVE, RLS forzado en `learner_day_overrides`, ninguna concesión de cliente en las nuevas vías de escritura, esquemas privados intactos.
+
+**Aviso de uso:** el pack antiguo `demo-estudio-eficaz` se publicó antes de la migración 24 y sus unidades no tienen duración: con él el Planner excluye todo por `NO_DURATION_METADATA` y HOY dice con verdad que no hay nada que recomendar. Para probar hay que elegir el pack de Preview.
