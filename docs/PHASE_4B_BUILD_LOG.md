@@ -29,12 +29,12 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | --- | --- |
 | Rama | `phase/4b-product-integration` |
 | Base | `852a9c99e4eb60c3debee0f2e3fd215d2cceb735` (`main`, PR #22 integrado) |
-| HEAD | `8a639b6` |
-| Último commit verde conocido | `8a639b6` en los checks sin base de datos (typecheck, lint, format, 1241 unitarias, seis guardas, secret-scan). **Las suites con base de datos y los E2E están en CI sobre este mismo commit; ver §5.** |
+| HEAD | `7da5377` |
+| Último commit verde conocido | **`7da5377` · CI completo en verde** (árbol `e00853d398faa2440a5872911a94745eac513084`): typecheck, lint, format, 1241 unitarias, guardas, secret-scan, db:roundtrip, integración 696/696, RLS 218/218, E2E 36/36. La deriva de esquema falla solo porque STAGING va por detrás |
 | Árbol local | limpio |
 | STAGING | **sin mutar** por Phase 4B |
 | Preview | despliegue automático de Vercel por rama; sin configuración nueva |
-| Credencial de servicio de Preview | **OBS-3.1-01 · sin configurar** |
+| Credencial de servicio de Preview | **Configurada por Ana** · `SUPABASE_SERVICE_ROLE_KEY`, tipo sensitive, alcance solo Preview (verificado sin leer el valor) |
 
 ---
 
@@ -196,3 +196,9 @@ estado de sesión, no evidencia, y ningún evento se toca.
 
 **OBS-4B-04 registrada:** `CANNOT_PLAN` no deja rastro consultable, porque por construcción no
 escribe ejecución.
+
+### 2026-09-21 · verde completo
+
+CI en verde sobre `7da5377`. Lo que la última ronda encontró, y dos eran defectos de producto reales: la cabecera de acción no se pintaba nunca (`findOpenSession` no seleccionaba `planner_run_id`), y dos textos en `slate` sobre canvas a 4.31:1 (wordmark y superficie de decisión con fondo semitransparente). Lo midieron los E2E con la auditoría renderizada.
+
+**Siguiente:** `STUDY_OS_DESTRUCTIVE_AUTHORIZATION=staging:db-push node --env-file=.env.staging.local tools/db.mjs push`, verificación del catálogo, `tools/seed-preview-corpus.mjs`, redespliegue de Preview.
