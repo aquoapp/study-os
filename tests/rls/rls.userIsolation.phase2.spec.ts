@@ -139,7 +139,29 @@ beforeAll(async () => {
   await seedPlanner(bob);
   await seedEverything(alice);
   await seedEverything(bob);
+  await seedDayOverride(alice);
+  await seedDayOverride(bob);
 }, 300_000);
+
+/**
+ * Siembra la declaración del tiempo de hoy · P4B-D3.
+ *
+ * La batería está **dirigida por el catálogo**: toda tabla de `public` con `user_id` que la persona
+ * pueda leer tiene que tener filas propias, porque sin filas el aislamiento no prueba nada. Esa es
+ * justamente su virtud —una tabla nueva queda cubierta sin que nadie se acuerde de añadirla—, y por
+ * eso `learner_day_overrides` la hizo fallar en cuanto existió, que es el comportamiento correcto.
+ *
+ * Se siembra por **la única vía de escritura**, `set_today_override`, con el rol de servicio: el
+ * cliente no puede escribirla, y eso mismo lo comprueba un caso propio más abajo. Así la fila
+ * existe, es real, y el aislamiento se prueba sobre algo que el producto habría creado igual.
+ */
+async function seedDayOverride(learner: Learner): Promise<void> {
+  const { error } = await admin.rpc('set_today_override', {
+    p_user: learner.id,
+    p_minutes: 30,
+  });
+  if (error) throw new Error(`set_today_override: ${error.message}`);
+}
 
 afterAll(async () => {
   for (const learner of [alice, bob]) if (learner) await deleteTestUser(env, learner.id);
@@ -147,7 +169,7 @@ afterAll(async () => {
 }, 120_000);
 
 describe('el catálogo aporta las tablas con propietario', () => {
-  it('están las nueve de Phase 2 y el perfil queda fuera (su clave es id, no user_id)', () => {
+  it('están las de Phase 2 y 4B, y el perfil queda fuera (su clave es id, no user_id)', () => {
     for (const expected of [
       'learner_settings',
       'learner_exam_goals',
@@ -158,10 +180,12 @@ describe('el catálogo aporta las tablas con propietario', () => {
       'session_items',
       'learning_events',
       'question_attempts',
+      // Phase 4B · P4B-D3 · la declaración del tiempo de un día concreto.
+      'learner_day_overrides',
     ]) {
       expect(ownedTables, `falta ${expected}`).toContain(expected);
     }
-    expect(ownedTables.length).toBeGreaterThanOrEqual(9);
+    expect(ownedTables.length).toBeGreaterThanOrEqual(10);
   });
 });
 
