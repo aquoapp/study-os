@@ -33,8 +33,8 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | Último commit verde conocido | **`7da5377` · CI completo en verde** (árbol `e00853d398faa2440a5872911a94745eac513084`): typecheck, lint, format, 1241 unitarias, guardas, secret-scan, db:roundtrip, integración 696/696, RLS 218/218, E2E 36/36. La deriva de esquema falla solo porque STAGING va por detrás |
 | Árbol local | limpio |
 | STAGING | **Migrado a 24** (25 migraciones en el ledger) el 2026-09-21 con `tools/db.mjs push` por el pooler de sesión `aws-1-eu-west-1`; catálogo verificado. **Corpus `preview-4b-fundamentos` sembrado**: 8 conceptos, 7 unidades con duración, 18 preguntas, todo GENERATED |
-| Preview | despliegue automático de Vercel por rama; sin configuración nueva |
-| Credencial de servicio de Preview | **Configurada por Ana** · `SUPABASE_SERVICE_ROLE_KEY`, tipo sensitive, alcance solo Preview (verificado sin leer el valor) |
+| Preview | Desplegado `dpl_7MYQCtSoounhCJhxCiaFiP3f9noA` (Preview, READY) sobre `16d4df3` · `study-hsmbwr0fv-study-os6.vercel.app`. **HOY autenticado da 500**: la clave de servicio de Preview es una JWT **heredada** y STAGING tiene las claves heredadas desactivadas |
+| Credencial de servicio de Preview | **Valor incorrecto.** Existe con alcance solo Preview, pero es la `service_role` heredada (JWT). Debe ser la **secret key** de STAGING (`sb_secret_…`), la misma de `.env.staging.local` |
 
 ---
 
@@ -208,3 +208,9 @@ CI en verde sobre `7da5377`. Lo que la última ronda encontró, y dos eran defec
 La URL directa `db.<ref>` es solo IPv6 y no resuelve desde la máquina de desarrollo; se usó el pooler en modo sesión, **`aws-1`** (el `aws-0` no conoce el tenant), derivado en memoria de las credenciales existentes sin imprimirlas. Verificado después: ledger en 24, `planner_config` v1 SUPERSEDED y v2 ACTIVE, RLS forzado en `learner_day_overrides`, ninguna concesión de cliente en las nuevas vías de escritura, esquemas privados intactos.
 
 **Aviso de uso:** el pack antiguo `demo-estudio-eficaz` se publicó antes de la migración 24 y sus unidades no tienen duración: con él el Planner excluye todo por `NO_DURATION_METADATA` y HOY dice con verdad que no hay nada que recomendar. Para probar hay que elegir el pack de Preview.
+
+### 2026-09-21 · smoke test en Preview
+
+Sin autenticar, `/hoy` redirige a `/entrar` ✔. Con una cuenta sintética creada y borrada por la API de administración, HOY responde **500**. Logs de Vercel: `contexto del Planner: Legacy API keys are disabled`. La identidad sí se verificó —la petición llegó al Planner—, así que la clave anónima funciona; falla solo la de servicio. En local funciona porque `.env.staging.local` usa las claves nuevas (`sb_secret_` / `sb_publishable_`). No hay fuga: ninguna `sb_secret_` en el bundle de cliente.
+
+**Continuación exacta:** cuando Ana sustituya el valor, provocar un redespliegue de Preview (un commit en la rama basta) y volver a ejecutar el smoke test (`scratchpad/smoke.mjs`, copiado a `test-results/`, con `SHARE_TOKEN` de `get_access_to_vercel_url`).
