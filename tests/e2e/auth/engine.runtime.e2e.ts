@@ -163,12 +163,22 @@ test.describe('Phase 3.1 · el Learning Engine corre en la aplicación real', ()
   }) => {
     const { email, userId } = await registerAndOnboard(page, 'p31');
 
-    // Antes de estudiar no hay estado de concepto: nada que el servidor deba inventar. La visita
-    // a HOY tras el onboarding ya ha pasado por la ruta B: sobre un stream vacío, como mucho deja
-    // un watermark en 0 y ninguna fila de concepto.
+    /*
+     * Antes de estudiar no hay estado de concepto: nada que el servidor deba inventar.
+     *
+     * **Phase 4B · R-8.** El stream ya **no** está vacío tras el onboarding: la disponibilidad
+     * declarada emite `AVAILABILITY_CHANGED`, que ocupa la posición 1. Es una declaración de la
+     * persona, no evidencia de aprendizaje, y el motor no la pliega en ningún concepto. Lo que esta
+     * prueba vigila se conserva intacto: **ninguna fila de concepto** antes de estudiar. El
+     * watermark puede estar sin crear, en 0 o ya al día en 1, según si la ruta B pasó por él.
+     */
     const initial = watermarkState(userId);
-    expect(initial.max).toBe(0);
-    expect([null, 0]).toContain(initial.consumed);
+    expect(initial.max).toBe(1);
+    const declared = query<{ event_type: string }>(
+      `select event_type::text from public.learning_events where user_id = ${sqlText(userId)}::uuid`,
+    );
+    expect(declared.map((row) => row.event_type)).toEqual(['AVAILABILITY_CHANGED']);
+    expect([null, 0, 1]).toContain(initial.consumed);
     const conceptsBefore = query<{ n: number }>(
       `select count(*)::int as n from engine.concept_mastery where user_id = ${sqlText(userId)}::uuid`,
     );

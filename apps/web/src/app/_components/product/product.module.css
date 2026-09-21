@@ -132,7 +132,12 @@
   position: relative;
   margin-left: var(--so-space-lg);
   padding: var(--so-space-xl);
-  background: linear-gradient(180deg, var(--so-color-surface) 0%, rgb(255 253 249 / 88%) 100%);
+  /* SD-019 opción C · UX-INV-11 · el fondo es **sólido**. La primera versión llevaba un gradiente
+     que terminaba al 88 % de opacidad: el canvas se transparentaba, el texto secundario quedaba de
+     hecho sobre canvas y `slate` daba 4.31:1. Lo midió la auditoría renderizada. El Hi-Fi no
+     invalida nunca una regla de accesibilidad, así que la profundidad la siguen haciendo el
+     espacio, el borde óptico y la luz de suelo, no el tono. */
+  background: var(--so-color-surface);
   /* §S.7 · **sin borde**: borde óptico superior de 1 px y hairline inferior. */
   border: 0;
   border-top: 1px solid rgb(255 255 255 / 90%);
@@ -452,7 +457,9 @@
   font-weight: var(--so-weight-semibold);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--so-color-slate);
+  /* UX-INV-11 · el wordmark vive sobre canvas, donde `slate` da 4.31:1: es `ink`. Sigue callado
+     por escala y peso, que es lo que §S.12 pide, no por un contraste insuficiente. */
+  color: var(--so-color-ink);
   margin: 0;
 }
 
