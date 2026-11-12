@@ -33,8 +33,8 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | Último commit verde conocido | **`7da5377` · CI completo en verde** (árbol `e00853d398faa2440a5872911a94745eac513084`): typecheck, lint, format, 1241 unitarias, guardas, secret-scan, db:roundtrip, integración 696/696, RLS 218/218, E2E 36/36. La deriva de esquema falla solo porque STAGING va por detrás |
 | Árbol local | limpio |
 | STAGING | **Migrado a 24** (25 migraciones en el ledger) el 2026-09-21 con `tools/db.mjs push` por el pooler de sesión `aws-1-eu-west-1`; catálogo verificado. **Corpus `preview-4b-fundamentos` sembrado**: 8 conceptos, 7 unidades con duración, 18 preguntas, todo GENERATED |
-| Preview | Desplegado `dpl_7MYQCtSoounhCJhxCiaFiP3f9noA` (Preview, READY) sobre `16d4df3` · `study-hsmbwr0fv-study-os6.vercel.app`. **HOY autenticado da 500**: la clave de servicio de Preview es una JWT **heredada** y STAGING tiene las claves heredadas desactivadas |
-| Credencial de servicio de Preview | **Correcta.** Ana sustituyó el valor por la secret key `sb_secret_` de STAGING el 2026-11-12; sigue sensitive y con alcance solo Preview, y Production sin tocar |
+| Preview | Desplegado `dpl_8C3t3yQU22dhuhN9X61LvascvG3j` (Preview, READY) sobre `a058fab` · `study-j4kx114om-study-os6.vercel.app`. **HOY autenticado sigue dando 500**: `Legacy API keys are disabled` |
+| Credencial de servicio de Preview | **Sin cambiar.** La API de Vercel da `updatedAt = 2026-09-21T07:43:42Z`: la edición del 2026-11-12 no se guardó. El valor sigue siendo la JWT heredada |
 
 ---
 
@@ -214,3 +214,11 @@ La URL directa `db.<ref>` es solo IPv6 y no resuelve desde la máquina de desarr
 Sin autenticar, `/hoy` redirige a `/entrar` ✔. Con una cuenta sintética creada y borrada por la API de administración, HOY responde **500**. Logs de Vercel: `contexto del Planner: Legacy API keys are disabled`. La identidad sí se verificó —la petición llegó al Planner—, así que la clave anónima funciona; falla solo la de servicio. En local funciona porque `.env.staging.local` usa las claves nuevas (`sb_secret_` / `sb_publishable_`). No hay fuga: ninguna `sb_secret_` en el bundle de cliente.
 
 **Continuación exacta:** cuando Ana sustituya el valor, provocar un redespliegue de Preview (un commit en la rama basta) y volver a ejecutar el smoke test (`scratchpad/smoke.mjs`, copiado a `test-results/`, con `SHARE_TOKEN` de `get_access_to_vercel_url`).
+
+### 2026-11-12 · STAGING despausado y segundo intento de Preview
+
+**STAGING estaba `INACTIVE`**: Supabase pausó el proyecto tras ~2 meses sin uso, y el primer intento de smoke falló con `fetch failed` antes de la primera llamada. Restaurado con el conector oficial (`restore_project`, sin coste, solo STAGING). Verificado después: migración 24 intacta, `planner_config` v1 SUPERSEDED y v2 ACTIVE, corpus completo (8 conceptos, 7 unidades con duración, 18 preguntas).
+
+**La credencial de Preview no cambió.** La API de Vercel da `updatedAt = 2026-09-21T07:43:42Z` para `SUPABASE_SERVICE_ROLE_KEY`, anterior al despliegue de hoy (14:47:58Z): la edición no llegó a guardarse. El runtime sigue rechazando con `Legacy API keys are disabled`, de modo que el valor es todavía la `service_role` heredada.
+
+**Continuación exacta:** cuando el `updatedAt` de esa variable sea posterior, provocar un redespliegue (un commit en la rama basta) y volver a ejecutar el smoke test, que ya cubre el bucle completo.
