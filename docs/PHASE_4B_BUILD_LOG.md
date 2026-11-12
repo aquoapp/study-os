@@ -33,7 +33,7 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | Último commit verde conocido | **`7da5377` · CI completo en verde** (árbol `e00853d398faa2440a5872911a94745eac513084`): typecheck, lint, format, 1241 unitarias, guardas, secret-scan, db:roundtrip, integración 696/696, RLS 218/218, E2E 36/36. La deriva de esquema falla solo porque STAGING va por detrás |
 | Árbol local | limpio |
 | STAGING | **Migrado a 24** (25 migraciones en el ledger) el 2026-09-21 con `tools/db.mjs push` por el pooler de sesión `aws-1-eu-west-1`; catálogo verificado. **Corpus `preview-4b-fundamentos` sembrado**: 8 conceptos, 7 unidades con duración, 18 preguntas, todo GENERATED |
-| Preview | **Funcional.** `dpl_6DHNUf8XMRK6hBKkXbA7KpD6cYHT` (commit `9abdc4b`), `READY` en 86 s, alias `study-os-git-phase-4b-product-integration-study-os6.vercel.app`. **Smoke completo de Phase 4B: 45 pasos, todos en OK** |
+| Preview | **Funcional.** `dpl_ssqTxL2cUMqwFX3ceNofyfoNXCpG` (commit `92e97f0`), `READY` en 87 s, URL `study-2rii8ehkx-study-os6.vercel.app`, alias `study-os-git-phase-4b-product-integration-study-os6.vercel.app`. **Smoke completo de Phase 4B: 45 pasos, todos en OK** |
 | Credencial de servicio de Preview | **Corregida.** `SUPABASE_SERVICE_ROLE_KEY` existe (id `7GH5THmlKE1oeEkL`), Sensitive, `target: ["preview"]`, editada `2026-11-12T15:50:33Z`. La variable mal nombrada `service_role_key` (que además estaba en Production) fue eliminada. Production no contiene ninguna credencial de STAGING |
 
 ---
