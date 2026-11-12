@@ -33,7 +33,7 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | Último commit verde conocido | **`7da5377` · CI completo en verde** (árbol `e00853d398faa2440a5872911a94745eac513084`): typecheck, lint, format, 1241 unitarias, guardas, secret-scan, db:roundtrip, integración 696/696, RLS 218/218, E2E 36/36. La deriva de esquema falla solo porque STAGING va por detrás |
 | Árbol local | limpio |
 | STAGING | **Migrado a 24** (25 migraciones en el ledger) el 2026-09-21 con `tools/db.mjs push` por el pooler de sesión `aws-1-eu-west-1`; catálogo verificado. **Corpus `preview-4b-fundamentos` sembrado**: 8 conceptos, 7 unidades con duración, 18 preguntas, todo GENERATED |
-| Preview | **Funcional.** `dpl_ssqTxL2cUMqwFX3ceNofyfoNXCpG` (commit `92e97f0`), `READY` en 87 s, URL `study-2rii8ehkx-study-os6.vercel.app`, alias `study-os-git-phase-4b-product-integration-study-os6.vercel.app`. **Smoke completo de Phase 4B: 45 pasos, todos en OK** |
+| Preview | **Funcional y navegable.** `dpl_PLtrT6rfxFcwphu5fTxkqnx4PQj4` (commit `aa21cf3`), URL `study-a6xnjrkpo-study-os6.vercel.app`. **Smoke completo: 45 pasos, todos en OK**, y el camino de una cuenta nueva verificado en navegador real sin teclear ninguna ruta, hasta HOY con plan (5 acciones · 26 min) |
 | Credencial de servicio de Preview | **Corregida.** `SUPABASE_SERVICE_ROLE_KEY` existe (id `7GH5THmlKE1oeEkL`), Sensitive, `target: ["preview"]`, editada `2026-11-12T15:50:33Z`. La variable mal nombrada `service_role_key` (que además estaba en Production) fue eliminada. Production no contiene ninguna credencial de STAGING |
 
 ---
@@ -279,3 +279,65 @@ frontera real. La ruta A la cierra el recorrido humano, no esta suite.
 Todavía no existe contenido, ni motores, ni espacios de estudio». Es el mismo defecto que el
 aviso de onboarding corrigió en esta fase, al revés: negar una capacidad que sí existe. No
 bloquea el recorrido y **no se corrige sin autorización**.
+
+### 2026-11-12 · el walkthrough humano se bloqueó, y OBS-4B-S1 era causal
+
+Ana creó una cuenta y quedó atrapada en «Mi cuenta»: ninguna navegación llevaba al onboarding
+ni a HOY. **El smoke en verde y el producto inalcanzable, a la vez.**
+
+**Causa raíz · tres eslabones, todos de navegación.** Ninguno es de Planner, de motor, de
+esquema ni de contrato académico.
+
+1. **El destino de la entrada era de Phase 0.** `signUpAction`, `signInAction` y el proxy
+   mandaban a `/cuenta`, que era el único destino autenticado que existía cuando se escribieron
+   y que nunca se revisó al aparecer `/hoy`. El Product UX Contract §O dice «ENTRADA └─ HOY ·
+   único destino» y sitúa `/cuenta` **fuera del vertical**. La implementación contradecía al
+   contrato aprobado.
+2. **La portada era la otra mitad del callejón.** Su única navegación autenticada era «Ir a mi
+   cuenta». **OBS-4B-S1 no era una observación aparte: era causal.** Se corrige, y el copy que
+   negaba el producto desaparece con ella.
+3. **`/ajustes` no tenía vuelta a HOY.** Y una cuenta nueva pasa por ahí **a la fuerza**: el
+   Planner resuelve la zona horaria **antes** que el objetivo, de modo que S3 manda a `/ajustes`
+   antes que a ningún otro sitio. Declarabas la zona y te quedabas sin salida salvo el botón
+   atrás. `/fin` y la confirmación de replanificar ya tenían la suya; esta se quedó sin ella.
+
+**Por qué ninguna prueba lo vio, que es lo que importa.** Todas las E2E abrían `/onboarding`
+**tecleando la ruta**. La suite ejercitaba las pantallas y nunca el grafo que las une, así que
+1241 unitarias, 36 E2E y 45 pasos de smoke podían estar en verde con el producto inalcanzable.
+Es la lección de D-26 un nivel más arriba: entonces una ruta de runtime sin llamador, ahora una
+ruta de navegación sin recorrido. Se añade un caso que va de la portada a HOY **sin escribir
+ninguna ruta salvo la portada**; si vuelve a aparecer un callejón, falla ahí.
+
+**Ficheros.** `apps/web/src/app/actions/auth.ts`, `apps/web/src/proxy.ts`,
+`apps/web/src/app/page.tsx`, `apps/web/src/app/cuenta/page.tsx`,
+`apps/web/src/app/ajustes/page.tsx`, y cinco de pruebas.
+
+**`engine.runtime` pasa a `test.slow()`, y está medido.** En el árbol **anterior** ese caso
+tardaba 56,7 s y 56,2 s contra un límite de 60 s: el margen era de tres segundos. Al pasar la
+entrada por HOY, el alta resuelve un plan y ese margen desaparece. No se acelera el sondeo ni se
+afloja ninguna aserción: se corrige un límite que estaba calibrado al segundo contra una
+duración ajena a la prueba.
+
+**OBS-4B-S3 · el selector de examen mostraba los packs de fixture.** Las suites que agotaron el
+tiempo no llegaron a su purga y dejaron siete `fixture: pack sintético …` en el selector de
+onboarding, delante del pack de Preview. Se purgaron **uno a uno, por identificador**, tras
+comprobar que los siete eran del día y que ninguno tenía objetivos asociados; la FK `RESTRICT`
+habría impedido borrar contenido que la evidencia de alguien todavía resuelve. STAGING queda con
+dos packs, las dos cuentas de Ana y ninguna cuenta sintética.
+
+**Verificación del recorrido, en navegador real.** Portada → «Crear cuenta» → alta → **HOY**
+(pide la zona) → «Elegir mi zona horaria» → `/ajustes` → confirmar → «Volver a Hoy» → **HOY**
+(pide el examen) → «Elegir examen» → `/onboarding` → guardar → «Empezar a estudiar» → **HOY con
+plan**: «5 ACCIONES · 26 MIN · HOY TIENES 30 MIN · Aprender · 5 min · Esto es nuevo para ti».
+Ninguna ruta tecleada. La cuenta sintética se borró al terminar.
+
+**Lo que estas comprobaciones no cierran.** La **ruta A** del motor —`after()` dentro de la
+server action— sigue sin ejercerse por el smoke, que envía por RPC. La cierra el recorrido
+humano al responder una pregunta desde la interfaz, y sigue pendiente.
+
+**Estado de los controles.** typecheck, lint, format, las seis guardas y `secret-scan` en verde;
+1241 unitarias; 70 E2E estáticas; **38 E2E de auth, todas en OK**; RLS 218/218. La integración
+da fallos **no deterministas** (8 en una ejecución, 17 en otra, con conjuntos distintos) cuyo
+mensaje es `canceling statement due to statement timeout`: es saturación de STAGING bajo carga
+concurrente, no regresión. Ejecutados en aislamiento, `engine.projection` y `planner.runtime`
+pasan 43/43. Ningún fichero de esquema, dominio o servidor de Planner o motor se ha tocado.
