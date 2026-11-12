@@ -33,7 +33,7 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | Último commit verde conocido | **`7da5377` · CI completo en verde** (árbol `e00853d398faa2440a5872911a94745eac513084`): typecheck, lint, format, 1241 unitarias, guardas, secret-scan, db:roundtrip, integración 696/696, RLS 218/218, E2E 36/36. La deriva de esquema falla solo porque STAGING va por detrás |
 | Árbol local | limpio |
 | STAGING | **Migrado a 24** (25 migraciones en el ledger) el 2026-09-21 con `tools/db.mjs push` por el pooler de sesión `aws-1-eu-west-1`; catálogo verificado. **Corpus `preview-4b-fundamentos` sembrado**: 8 conceptos, 7 unidades con duración, 18 preguntas, todo GENERATED |
-| Preview | Redespliegue en marcha para recoger la credencial corregida |
+| Preview | **Funcional.** `dpl_6DHNUf8XMRK6hBKkXbA7KpD6cYHT` (commit `9abdc4b`), `READY` en 86 s, alias `study-os-git-phase-4b-product-integration-study-os6.vercel.app`. **Smoke completo de Phase 4B: 45 pasos, todos en OK** |
 | Credencial de servicio de Preview | **Corregida.** `SUPABASE_SERVICE_ROLE_KEY` existe (id `7GH5THmlKE1oeEkL`), Sensitive, `target: ["preview"]`, editada `2026-11-12T15:50:33Z`. La variable mal nombrada `service_role_key` (que además estaba en Production) fue eliminada. Production no contiene ninguna credencial de STAGING |
 
 ---
@@ -238,3 +238,44 @@ existe, y los únicos valores de Production siguen siendo los tres `NEXT_PUBLIC_
 
 Lección operativa: **el nombre de una variable de entorno es parte del contrato**, y una
 credencial adscrita al entorno equivocado es un defecto de seguridad aunque nadie la consuma.
+
+### 2026-11-12 · Preview funcional · smoke completo de Phase 4B en verde
+
+El despliegue `dpl_6DHNUf8XMRK6hBKkXbA7KpD6cYHT` quedó `READY` en 86 segundos. El bucle de
+espera que lo vigilaba no terminó nunca por un defecto propio: esperaba `200|401|307|404` y la
+raíz devuelve **302**. El estado real se obtuvo de la API, no del bucle.
+
+**Smoke completo: 45 pasos, todos en OK.** Cubre onboarding por los caminos reales, HOY con plan
+del Planner (`PLANNED · HYBRID_V1 · config v2`), reutilización de la ejecución en un render
+repetido, INV-117, APRENDER con evidencia, FIN, proyección `EXPOSED` del motor, sucesora de
+P4B-D2, día 2 con COMPROBAR, INV-103 antes del envío, INV-102, corrección devuelta por el
+servidor (INV-101), pliegue de la evidencia nueva, override de disponibilidad a cero y vuelta,
+y las comprobaciones de seguridad: `anon` no lee `planner_runs`, INV-118 rechaza
+`TODAY_OVERRIDE_SET` emitido por cliente, `/hoy` sin sesión no sirve contenido y la clave de
+servicio no aparece en el DOM.
+
+Tres correcciones **del arnés**, ninguna del producto:
+
+1. **El arnés escribía evidencia por el Data API.** `permission denied for table session_items`.
+   El catálogo lo confirma: `service_role` tiene **solo `SELECT`** sobre `session_items`,
+   `study_sessions` y `learning_events`. La frontera de Phase 2 está cerrada y el fallo era la
+   prueba de que funciona. El único atajo legítimo del arnés es mover el reloj, y eso se hace
+   ahora por SQL directo con el CLI fijado.
+2. **La conexión directa no resuelve.** `db.<ref>.supabase.co` publica solo `AAAA`, y una máquina
+   sin IPv6 da `getaddrinfo ENOTFOUND`. El arnés reescribe la URL hacia el pooler de sesión
+   (`aws-1-eu-west-1`) sin leer ni imprimir la contraseña. **Afecta también a
+   `tests/support/sql.ts`**, que lee `SUPABASE_DB_URL` tal cual: queda como OBS-4B-S2.
+3. **Una aserción más fuerte que el contrato.** El arnés exigía que la sesión de día 2 fuera toda
+   de preguntas. La composición real es **5 preguntas y 1 lectura**, que es exactamente P4-D1:
+   garantía existencial de reparación en la cabeza, continuidad de cobertura en el resto.
+
+**Lo que este smoke no prueba, y hay que decirlo.** El envío de respuesta va por RPC, así que la
+**ruta A del motor —`after()` dentro de la server action— no tiene llamador aquí**: lo que se
+ejerce es la ruta B de Phase 3.1, el motor al volver a HOY. Es la misma lección de D-26, y se
+aplica a sí misma: una ruta solo está probada cuando una prueba ejecuta el módulo real contra la
+frontera real. La ruta A la cierra el recorrido humano, no esta suite.
+
+**OBS-4B-S1 · la portada niega lo que ya existe.** `/` sigue anunciando «Phase 0 · Foundation ·
+Todavía no existe contenido, ni motores, ni espacios de estudio». Es el mismo defecto que el
+aviso de onboarding corrigió en esta fase, al revés: negar una capacidad que sí existe. No
+bloquea el recorrido y **no se corrige sin autorización**.
