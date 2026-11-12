@@ -108,8 +108,10 @@ async function registerAndOnboard(page: Page, label: string): Promise<void> {
   await page.getByTestId('email-input').fill(email);
   await page.getByTestId('password-input').fill(PASSWORD);
   await page.getByTestId('signup-form').getByRole('button').click();
-  await expect(page).toHaveURL(/\/cuenta/);
+  await expect(page).toHaveURL(/\/hoy/);
 
+  // Setup: la ruta se abre directamente. Que exista camino navegable desde la portada hasta
+  // HOY y el onboarding lo prueba `onboarding.minimal.e2e`, en un caso dedicado.
   await page.goto('/onboarding');
   await page
     .getByTestId('pack-select')

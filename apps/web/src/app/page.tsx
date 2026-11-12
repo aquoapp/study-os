@@ -3,11 +3,26 @@ import Link from 'next/link';
 import { getVerifiedIdentity } from '../server/auth/identity';
 
 /**
- * Página raíz.
+ * Página raíz · entrada a la aplicación.
  *
- * No es una pantalla de producto: es la superficie mínima que prueba que la
- * aplicación arranca (gate P0-G1 · `app.boot.e2e`). HOY y el resto de espacios
- * primarios se construyen en Phase 5.
+ * No es un espacio de producto: HOY lo es. Esta pantalla solo decide **por dónde se entra**.
+ *
+ * ---------------------------------------------------------------------------
+ * Phase 4B · por qué cambia
+ *
+ * Decía «Phase 0 · Foundation» y «Todavía no existe contenido, ni motores, ni espacios de
+ * estudio», y su única navegación autenticada era «Ir a mi cuenta». Las tres cosas eran
+ * ciertas en Phase 0 y son falsas desde que existen el corpus, el Learning Engine, el Planner
+ * y el vertical de estudio.
+ *
+ * No era solo una falsedad: era **la mitad del bloqueo**. `/cuenta` no enlaza a ninguna parte
+ * y `/onboarding` solo se alcanza desde HOY, de modo que la portada dejaba a una cuenta nueva
+ * sin ningún camino navegable hacia el producto.
+ *
+ * Es el mismo defecto que EC-012 prohíbe, al revés: negar una capacidad que sí existe. Lo que
+ * lo sustituye no promete nada —ni cuánto, ni qué, ni que haya algo hoy—: dice qué hace el
+ * sistema y por dónde se entra.
+ * ---------------------------------------------------------------------------
  */
 export default async function HomePage() {
   const identity = await getVerifiedIdentity();
@@ -18,21 +33,18 @@ export default async function HomePage() {
         Study OS
       </h1>
 
-      <p data-testid="phase-marker">Phase 0 · Foundation</p>
-
       {/* SD-019 opción A · el texto secundario vive sobre `surface`, no sobre `canvas`. */}
       <div className="so-panel">
         <p className="so-text-secondary" style={{ margin: 0 }}>
-          Fundación de repositorio, entornos, migraciones, esqueleto de autenticación y tokens del
-          Design System. Todavía no existe contenido, ni motores, ni espacios de estudio.
+          Cada día decide qué te toca a partir de lo que ya has estudiado. Si hoy no toca nada,
+          también te lo dice.
         </p>
       </div>
 
       {identity ? (
         <p data-testid="session-state" data-authenticated="true">
-          Sesión verificada en servidor.{' '}
-          <Link className="so-action" href="/cuenta">
-            Ir a mi cuenta
+          <Link className="so-action" href="/hoy" data-testid="raiz-ir-a-hoy">
+            Ir a Hoy
           </Link>
         </p>
       ) : (
@@ -45,6 +57,14 @@ export default async function HomePage() {
           </Link>
         </p>
       )}
+
+      {identity ? (
+        <p style={{ marginTop: 24 }}>
+          <Link href="/cuenta" data-testid="raiz-mi-cuenta">
+            Mi cuenta
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

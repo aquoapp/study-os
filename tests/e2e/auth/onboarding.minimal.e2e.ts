@@ -83,8 +83,12 @@ test.describe('onboarding mínimo · REQ-C01', () => {
     await page.getByTestId('email-input').fill(email);
     await page.getByTestId('password-input').fill(PASSWORD);
     await page.getByTestId('signup-form').getByRole('button').click();
-    await expect(page).toHaveURL(/\/cuenta/);
+    await expect(page).toHaveURL(/\/hoy/);
 
+    // Este caso prueba el **formulario**, así que abre la ruta directamente. Que exista camino
+    // navegable hasta aquí lo prueba «desde la portada, una cuenta nueva llega a HOY sin teclear
+    // ninguna ruta», al final de este fichero: el defecto que lo hacía falta era justamente que
+    // nadie comprobaba el grafo.
     await page.goto('/onboarding');
     const form = page.getByTestId('onboarding-form');
     await expect(form).toBeVisible();
@@ -136,8 +140,12 @@ test.describe('onboarding mínimo · REQ-C01', () => {
     await page.getByTestId('email-input').fill(email);
     await page.getByTestId('password-input').fill(PASSWORD);
     await page.getByTestId('signup-form').getByRole('button').click();
-    await expect(page).toHaveURL(/\/cuenta/);
+    await expect(page).toHaveURL(/\/hoy/);
 
+    // Este caso prueba el **formulario**, así que abre la ruta directamente. Que exista camino
+    // navegable hasta aquí lo prueba «desde la portada, una cuenta nueva llega a HOY sin teclear
+    // ninguna ruta», al final de este fichero: el defecto que lo hacía falta era justamente que
+    // nadie comprobaba el grafo.
     await page.goto('/onboarding');
     await page.getByTestId('pack-select').selectOption({ index: 0 });
     await page.getByTestId('timezone-select').selectOption('Europe/Madrid');
@@ -150,5 +158,61 @@ test.describe('onboarding mínimo · REQ-C01', () => {
     await expect(page.getByTestId('onboarding-completado')).toBeVisible();
     await expect(page.getByTestId('resumen-minutos')).toHaveText('20');
     await expect(page.getByTestId('onboarding-form')).toHaveCount(0);
+  });
+
+  /**
+   * **Phase 4B · la prueba que faltaba.**
+   *
+   * Todas las pruebas de onboarding abrían `/onboarding` tecleando la ruta. Por eso la suite
+   * entera podía estar en verde mientras una cuenta nueva no tenía **ningún camino navegable**
+   * hasta el producto: se ejercitaban las pantallas, nunca el grafo que las une.
+   *
+   * Este caso no escribe ninguna ruta salvo la portada. Cada paso es un clic en algo que la
+   * persona ve. Si vuelve a aparecer un callejón, falla aquí.
+   */
+  test('desde la portada, una cuenta nueva llega a HOY sin teclear ninguna ruta', async ({
+    page,
+  }) => {
+    const email = uniqueEmail('onb-navegable');
+
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Crear cuenta' }).click();
+    await expect(page).toHaveURL(/\/registro/);
+
+    await page.getByTestId('email-input').fill(email);
+    await page.getByTestId('password-input').fill(PASSWORD);
+    await page.getByTestId('signup-form').getByRole('button').click();
+
+    // La entrada desemboca en HOY (Product UX Contract §O), no en la superficie de identidad.
+    await expect(page).toHaveURL(/\/hoy/);
+
+    // S3 · HOY resuelve la zona horaria **antes** que el objetivo, así que lo primero que pide
+    // una cuenta nueva es la zona, y su primaria lleva a `/ajustes`.
+    await expect(page.getByTestId('hoy-zona-horaria')).toBeVisible();
+    await page.getByTestId('hoy-primaria').click();
+    await expect(page).toHaveURL(/\/ajustes/);
+
+    await page.getByTestId('ajustes-zona-select').selectOption('Europe/Madrid');
+    await page.getByTestId('ajustes-zona-guardar').click();
+    await expect(page.getByTestId('ajustes-zona-guardada')).toBeVisible();
+
+    // Y de `/ajustes` se vuelve a HOY por su propio enlace, sin el botón atrás del navegador.
+    await page.getByTestId('ajustes-volver-a-hoy').click();
+    await expect(page).toHaveURL(/\/hoy/);
+
+    // S2 · ahora sí falta el objetivo, y HOY abre la entrada al onboarding.
+    await expect(page.getByTestId('hoy-sin-objetivo')).toBeVisible();
+    await page.getByTestId('hoy-primaria').click();
+    await expect(page).toHaveURL(/\/onboarding/);
+
+    await page.getByTestId('pack-select').selectOption({ index: 0 });
+    await page.getByTestId('timezone-select').selectOption('Europe/Madrid');
+    await page.getByTestId('daily-minutes-input').fill('30');
+    await page.getByTestId('onboarding-submit').click();
+    await expect(page.getByTestId('onboarding-completado')).toBeVisible();
+
+    // Y el onboarding devuelve al vertical por su propio enlace.
+    await page.getByTestId('onboarding-ir-a-hoy').click();
+    await expect(page).toHaveURL(/\/hoy/);
   });
 });

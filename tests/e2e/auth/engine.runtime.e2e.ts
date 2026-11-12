@@ -105,8 +105,10 @@ async function registerAndOnboard(
   await page.getByTestId('email-input').fill(email);
   await page.getByTestId('password-input').fill(PASSWORD);
   await page.getByTestId('signup-form').getByRole('button').click();
-  await expect(page).toHaveURL(/\/cuenta/);
+  await expect(page).toHaveURL(/\/hoy/);
 
+  // Setup: la ruta se abre directamente. Que exista camino navegable desde la portada hasta
+  // HOY y el onboarding lo prueba `onboarding.minimal.e2e`, en un caso dedicado.
   await page.goto('/onboarding');
   await page
     .getByTestId('pack-select')
@@ -161,6 +163,18 @@ test.describe('Phase 3.1 · el Learning Engine corre en la aplicación real', ()
   test('ruta A tras responder y ruta B al volver a HOY, sin cambiar lo que HOY muestra', async ({
     page,
   }) => {
+    /*
+     * **Medido, no supuesto.** Este caso espera a que el motor pliegue la evidencia, con sondeo
+     * de hasta 40 s por diseño. Antes de la corrección de navegación de Phase 4B ya tardaba
+     * 56,7 s y 56,2 s contra un límite de 60 s: el margen era de tres segundos. Al pasar la
+     * entrada por HOY, el alta resuelve un plan y ese margen desaparece, de modo que bajo
+     * ejecución paralela el caso agotaba el tiempo —en aislamiento seguía pasando—.
+     *
+     * No se acelera el sondeo ni se afloja ninguna aserción: lo que se corrige es el límite,
+     * que estaba calibrado al segundo contra una duración que no depende de esta prueba.
+     */
+    test.slow();
+
     const { email, userId } = await registerAndOnboard(page, 'p31');
 
     /*

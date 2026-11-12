@@ -51,7 +51,11 @@ test.describe('auth.signup-login · REQ-A07 · INV-116', () => {
     await page.getByTestId('password-input').fill(PASSWORD);
     await page.getByTestId('submit-button').click();
 
-    await expect(page).toHaveURL(/\/cuenta/);
+    // Product UX Contract §O · la entrada desemboca en HOY, no en `/cuenta`.
+    await expect(page).toHaveURL(/\/hoy/);
+
+    // La superficie de identidad se visita aparte: es lo que prueba este caso.
+    await page.goto('/cuenta');
 
     // La identidad se muestra con el método que la verificó: getClaims o getUser.
     // Nunca «session».
@@ -81,7 +85,8 @@ test.describe('auth.signup-login · REQ-A07 · INV-116', () => {
     await page.getByTestId('password-input').fill(PASSWORD);
     await page.getByTestId('submit-button').click();
 
-    await expect(page).toHaveURL(/\/cuenta/);
+    await expect(page).toHaveURL(/\/hoy/);
+    await page.goto('/cuenta');
     await expect(page.getByTestId('user-id')).toHaveText(userId ?? '');
   });
 
@@ -108,10 +113,10 @@ test.describe('auth.signup-login · REQ-A07 · INV-116', () => {
     await page.getByTestId('email-input').fill(email);
     await page.getByTestId('password-input').fill(PASSWORD);
     await page.getByTestId('submit-button').click();
-    await expect(page).toHaveURL(/\/cuenta/);
+    await expect(page).toHaveURL(/\/hoy/);
 
     await page.goto('/entrar');
-    await expect(page).toHaveURL(/\/cuenta/);
+    await expect(page).toHaveURL(/\/hoy/);
   });
 
   test('INV-104 · una sola acción primaria por vista en el formulario', async ({ page }) => {

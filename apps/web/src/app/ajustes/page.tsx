@@ -75,6 +75,19 @@ export default async function AjustesPage() {
             ? `Tu día empieza y acaba según ${timezone}.`
             : 'Todavía no la has elegido. Sin ella no podemos saber cuándo empieza tu día.'}
         </Secondary>
+
+        {/*
+          Vuelta al único destino (§O). Una cuenta nueva llega aquí **obligada**: HOY resuelve la
+          zona horaria antes que el objetivo, de modo que S3 manda aquí antes que a ningún otro
+          sitio. Sin esta salida, declarar la zona dejaba a la persona sin camino de vuelta más
+          que el botón atrás del navegador. `/fin` y la confirmación de replanificar ya tenían la
+          suya; esta pantalla se quedó sin ella.
+        */}
+        <p style={{ marginTop: 'var(--so-space-lg)' }}>
+          <a className="so-action" href="/hoy" data-testid="ajustes-volver-a-hoy">
+            Volver a Hoy
+          </a>
+        </p>
       </div>
     </ProductShell>
   );

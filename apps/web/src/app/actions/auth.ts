@@ -11,6 +11,20 @@ import { createSupabaseServerClient } from '../../server/supabase/server-client'
  * decisiones de acceso viven en `requireVerifiedIdentity` (INV-116).
  *
  * REQ-A07 · esqueleto de auth con `profiles` 1:1
+ *
+ * ---------------------------------------------------------------------------
+ * Destino de la entrada · Product UX Contract §O
+ *
+ * «ENTRADA └─ HOY · único destino», y `/cuenta` es «superficie de identidad, fuera del
+ * vertical». Estas dos acciones mandaban a `/cuenta` porque en Phase 0 era el único destino
+ * autenticado que existía; nunca se revisaron al aparecer `/hoy`. El resultado era un
+ * callejón: `/cuenta` no enlaza a ninguna parte, `/onboarding` solo se alcanza desde HOY, y
+ * una cuenta nueva no tenía camino navegable hasta el producto.
+ *
+ * HOY resuelve por sí mismo el caso de onboarding incompleto: su acción primaria lleva a
+ * `/onboarding`. Por eso el destino correcto es HOY y no `/onboarding`: la entrada no decide
+ * en qué estado está la persona, lo decide HOY.
+ * ---------------------------------------------------------------------------
  */
 
 export interface AuthActionState {
@@ -39,7 +53,7 @@ export async function signUpAction(
   // y ocultar la causa real dificultaría el diagnóstico sin aportar seguridad.
   if (error) return { error: error.message };
 
-  redirect('/cuenta');
+  redirect('/hoy');
 }
 
 export async function signInAction(
@@ -54,7 +68,7 @@ export async function signInAction(
 
   if (error) return { error: error.message };
 
-  redirect('/cuenta');
+  redirect('/hoy');
 }
 
 export async function signOutAction(): Promise<void> {
