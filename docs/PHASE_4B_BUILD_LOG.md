@@ -341,3 +341,76 @@ da fallos **no deterministas** (8 en una ejecución, 17 en otra, con conjuntos d
 mensaje es `canceling statement due to statement timeout`: es saturación de STAGING bajo carga
 concurrente, no regresión. Ejecutados en aislamiento, `engine.projection` y `planner.runtime`
 pasan 43/43. Ningún fichero de esquema, dominio o servidor de Planner o motor se ha tocado.
+
+### 2026-11-12 · segundo bloqueo del walkthrough · `NO_DURATION_METADATA`
+
+El bloqueo de navegación quedó superado. El segundo bloqueo **no es un defecto de runtime**: HOY,
+el Planner y el motor hicieron exactamente lo que el contrato manda. Lo demuestra la auditoría
+del propio Planner, no una inferencia.
+
+**La cuenta.** El recorrido se hizo con la cuenta **de septiembre**, no con la creada hoy. Tiene
+un objetivo **`ACTIVE` desde el 2026-09-09 sobre `demo-estudio-eficaz`**, el pack del
+FPS: 3 conceptos, 2 unidades, 5 preguntas, ya recorrido entonces (2 sesiones, 63 eventos). Zona
+`Europe/Madrid` y disponibilidad quedaron declaradas hoy; antes faltaban, de ahí S3.
+
+**Por qué ganó S8 y no S2.** El orden de precondiciones es zona → objetivo → presupuesto. Su
+objetivo **existe**, así que `NO_ACTIVE_GOAL` no podía dispararse: la precedencia funcionó.
+Declarada la zona, el Planner corrió y devolvió `RUN{NOTHING_ELIGIBLE}` → **S8**.
+
+**Por qué nada fue elegible.** `planner_run_audit` del run de hoy (`plan_day` 2026-11-12,
+presupuesto 20 min, `consumed_position` 63) registra la exclusión concepto a concepto:
+
+| Estado | Exclusión registrada |
+| --- | --- |
+| `EVIDENCE_POSITIVE` | `POSITIVE_NO_REVIEW_POLICY` · correcto: no es elegible en v1 y no se recicla |
+| `EVIDENCE_CONFLICTING` | **`NO_DURATION_METADATA`** |
+| `EVIDENCE_CONFLICTING` | **`NO_DURATION_METADATA`** |
+
+Los dos conceptos **sí eran reparables** —`EVIDENCE_CONFLICTING` lo es por contrato, con
+`REAPRENDER + COMPROBAR` atómico— y cada uno tenía su unidad publicada y dos preguntas sin
+responder. Se excluyeron porque su unidad llega con `minutes: null`: ADR-013 §2.5 excluye con
+razón propia lo que no tiene duración, en lugar de inventarse un número.
+
+**El dato de fondo.** Ninguna unidad del pack de septiembre tiene duración declarada:
+
+| Pack | Versiones de unidad | Con duración |
+| --- | --- | --- |
+| `demo-estudio-eficaz` | 2 | **0** |
+| `preview-4b-fundamentos` | 7 | **7** |
+
+El pack del FPS se sembró antes de que la duración fuese exigible (P4-D2 se resolvió el
+2026-11-12 con ADR-013) y nunca se le añadió. **Diferencia con la cuenta sintética:** aquélla
+eligió `preview-4b-fundamentos`, con duraciones y contenido sin tocar, y obtuvo plan.
+Clasificación: **datos de contenido parciales** sobre un objetivo legado, no bug de precedencia,
+no onboarding mal marcado, no CTA ausente en HOY.
+
+**OBS-4B-H01 · no hay camino de recuperación, y no se puede inventar.** Desde S8 no se puede
+ofrecer nada: el Product UX Contract da a S8 «primaria **ninguna**, secundaria **ninguna**», y
+UX-INV-8 dice que **S8 no presenta ninguna acción contextual**. El cambio de objetivo tampoco
+existe en ninguna otra superficie, y §O no define ninguna donde pudiera vivir. A la vez,
+`/onboarding` **afirma** «Tu objetivo y tu disponibilidad están guardados. Puedes cambiarlos
+cuando quieras» sin ofrecer cómo: eso sí es EC-012. Construir esa superficie es diseño nuevo,
+así que queda **`BLOCKED_DECISION`**: tres salidas posibles, ninguna aplicada.
+
+1. **Dar duración al pack legado por supersesión** (SD-021 por analogía; el contenido publicado
+   no se edita). Devuelve a la cuenta de septiembre un plan de reparación real con sus dos
+   conceptos. Corrige contenido, no producto.
+2. **Definir dónde se cambia de objetivo** y construirlo. Es la salida completa y la única que
+   cierra la afirmación falsa de `/onboarding`, pero es diseño que §O no cubre.
+3. **No hacer nada en la cuenta de septiembre** y continuar el walkthrough con la cuenta que Ana
+   creó hoy, que está limpia y puede elegir `preview-4b-fundamentos`.
+
+Para desbloquear hoy basta la 3, que no toca ni un dato ni una línea. **Recomendada**, dejando 1
+y 2 como decisión aparte.
+
+**OBS-4B-HVIS-01** · la línea vertical del sistema aparece pegada o superpuesta al bloque de
+identidad en el viewport del walkthrough. Registrada, **sin corregir**: no es causal de nada de
+lo anterior. Revisión visual posterior.
+
+**OBS-4B-HUX-01** · en `/ajustes`, tras guardar, la continuación es «Volver a Hoy». Es el enlace
+que se añadió hoy para que la pantalla dejara de ser un callejón. Queda **registrada para
+revisión contra el Product UX Contract**, sin cambiarla por preferencia.
+
+**Nada que desplegar.** Ningún cambio de runtime: el Preview vigente sigue siendo
+`study-a6xnjrkpo-study-os6.vercel.app` (`aa21cf3`). La cuenta de Ana, su objetivo y sus 63
+eventos quedan **intactos**: este diagnóstico fue de solo lectura.
