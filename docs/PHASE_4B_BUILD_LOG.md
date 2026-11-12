@@ -34,7 +34,7 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | Árbol local | limpio |
 | STAGING | **Migrado a 24** (25 migraciones en el ledger) el 2026-09-21 con `tools/db.mjs push` por el pooler de sesión `aws-1-eu-west-1`; catálogo verificado. **Corpus `preview-4b-fundamentos` sembrado**: 8 conceptos, 7 unidades con duración, 18 preguntas, todo GENERATED |
 | Preview | Desplegado `dpl_7MYQCtSoounhCJhxCiaFiP3f9noA` (Preview, READY) sobre `16d4df3` · `study-hsmbwr0fv-study-os6.vercel.app`. **HOY autenticado da 500**: la clave de servicio de Preview es una JWT **heredada** y STAGING tiene las claves heredadas desactivadas |
-| Credencial de servicio de Preview | **Valor incorrecto.** Existe con alcance solo Preview, pero es la `service_role` heredada (JWT). Debe ser la **secret key** de STAGING (`sb_secret_…`), la misma de `.env.staging.local` |
+| Credencial de servicio de Preview | **Correcta.** Ana sustituyó el valor por la secret key `sb_secret_` de STAGING el 2026-11-12; sigue sensitive y con alcance solo Preview, y Production sin tocar |
 
 ---
 
