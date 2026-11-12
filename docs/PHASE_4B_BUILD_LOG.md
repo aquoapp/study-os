@@ -33,8 +33,8 @@ STAGING solo se muta tras revisión de migración y pruebas en verde. PRODUCTION
 | Último commit verde conocido | **`7da5377` · CI completo en verde** (árbol `e00853d398faa2440a5872911a94745eac513084`): typecheck, lint, format, 1241 unitarias, guardas, secret-scan, db:roundtrip, integración 696/696, RLS 218/218, E2E 36/36. La deriva de esquema falla solo porque STAGING va por detrás |
 | Árbol local | limpio |
 | STAGING | **Migrado a 24** (25 migraciones en el ledger) el 2026-09-21 con `tools/db.mjs push` por el pooler de sesión `aws-1-eu-west-1`; catálogo verificado. **Corpus `preview-4b-fundamentos` sembrado**: 8 conceptos, 7 unidades con duración, 18 preguntas, todo GENERATED |
-| Preview | Desplegado `dpl_8C3t3yQU22dhuhN9X61LvascvG3j` (Preview, READY) sobre `a058fab` · `study-j4kx114om-study-os6.vercel.app`. **HOY autenticado sigue dando 500**: `Legacy API keys are disabled` |
-| Credencial de servicio de Preview | **Sin cambiar.** La API de Vercel da `updatedAt = 2026-09-21T07:43:42Z`: la edición del 2026-11-12 no se guardó. El valor sigue siendo la JWT heredada |
+| Preview | Redespliegue en marcha para recoger la credencial corregida |
+| Credencial de servicio de Preview | **Corregida.** `SUPABASE_SERVICE_ROLE_KEY` existe (id `7GH5THmlKE1oeEkL`), Sensitive, `target: ["preview"]`, editada `2026-11-12T15:50:33Z`. La variable mal nombrada `service_role_key` (que además estaba en Production) fue eliminada. Production no contiene ninguna credencial de STAGING |
 
 ---
 
@@ -222,3 +222,19 @@ Sin autenticar, `/hoy` redirige a `/entrar` ✔. Con una cuenta sintética cread
 **La credencial de Preview no cambió.** La API de Vercel da `updatedAt = 2026-09-21T07:43:42Z` para `SUPABASE_SERVICE_ROLE_KEY`, anterior al despliegue de hoy (14:47:58Z): la edición no llegó a guardarse. El runtime sigue rechazando con `Legacy API keys are disabled`, de modo que el valor es todavía la `service_role` heredada.
 
 **Continuación exacta:** cuando el `updatedAt` de esa variable sea posterior, provocar un redespliegue (un commit en la rama basta) y volver a ejecutar el smoke test, que ya cubre el bucle completo.
+
+### 2026-11-12 · la credencial de Preview, corregida al tercer intento
+
+La primera edición no se guardó. La segunda creó la variable con el nombre `service_role_key`
+y adscrita a **Production**, borrando la única que el runtime sabe leer: el contrato canónico es
+`SUPABASE_SERVICE_ROLE_KEY` y lo fijan `packages/config/src/server.ts`,
+`server-env-keys.ts`, `serviceRoleMarkers` del registro de autoridad y tres guardas bloqueantes.
+No se renombró nada en el código: habría sido una enmienda de EC-010, no un ajuste de
+configuración.
+
+Estado verificado en la API de Vercel, sin leer ningún valor (las variables Sensitive devuelven
+`value: ""` también al conector): la variable correcta existe solo en Preview, la incorrecta ya no
+existe, y los únicos valores de Production siguen siendo los tres `NEXT_PUBLIC_*` de septiembre.
+
+Lección operativa: **el nombre de una variable de entorno es parte del contrato**, y una
+credencial adscrita al entorno equivocado es un defecto de seguridad aunque nadie la consuma.
