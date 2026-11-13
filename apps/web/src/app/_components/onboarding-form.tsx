@@ -130,14 +130,20 @@ export function OnboardingForm({ action, packs }: OnboardingFormProps) {
         <input type="date" name="target_date" data-testid="target-date-input" style={fieldStyle} />
       </label>
 
-      <label style={{ display: 'grid', gap: 4 }}>
-        <span>Diagnóstico inicial</span>
-        <select name="diagnostic_preference" data-testid="diagnostic-select" style={fieldStyle}>
-          <option value="TAKE">Quiero hacerlo</option>
-          <option value="SKIP">Prefiero saltarlo</option>
-        </select>
-      </label>
-
+      {/*
+       * **OBS-4B-H05 · el control de «Diagnóstico inicial» se retira.**
+       *
+       * Ofrecía «Quiero hacerlo / Prefiero saltarlo» y las dos opciones producían exactamente el
+       * mismo recorrido: el diagnóstico está **fuera de alcance en v1** por el contrato del
+       * Planner («Diagnóstico como entrada · `diagnostic_run_id` no se escribe nunca»), y el
+       * Product UX Contract no define ninguna superficie para él. Preguntar por una elección cuyo
+       * efecto no existe es lo que EC-012 prohíbe, igual que prometer una capacidad ausente.
+       *
+       * Se retira **solo la pregunta**. La columna `learner_settings.diagnostic_preference`, el
+       * parámetro de `set_availability`, la tabla `diagnostic_runs` y la exclusión del motor
+       * (H-P3-10) quedan intactos: cuando el diagnóstico se construya, la semántica le espera sin
+       * cambios y ninguna evidencia histórica se reinterpreta.
+       */}
       {state.error ? (
         <p
           role="alert"

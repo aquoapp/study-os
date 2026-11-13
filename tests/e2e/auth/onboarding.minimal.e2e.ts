@@ -93,6 +93,16 @@ test.describe('onboarding mínimo · REQ-C01', () => {
     const form = page.getByTestId('onboarding-form');
     await expect(form).toBeVisible();
 
+    /*
+     * **OBS-4B-H05 · decisión de gobernanza del 2026-11-13.** El diagnóstico está fuera de alcance
+     * en v1, así que el onboarding **no ofrece elegirlo**: sus dos respuestas producían el mismo
+     * recorrido y preguntarlo prometía un efecto inexistente (EC-012). Esta aserción fija la
+     * retirada: si el control vuelve sin que exista el diagnóstico, este caso falla.
+     */
+    await expect(page.getByTestId('diagnostic-select')).toHaveCount(0);
+    await expect(form).not.toContainText(/diagn/i);
+    await expect(page.locator('main')).not.toContainText(/diagn/i);
+
     // El pack sintético publicado aparece como opción: nada se inventa si no hay contenido.
     const select = page.getByTestId('pack-select');
     await expect(select).toBeVisible();
@@ -105,7 +115,6 @@ test.describe('onboarding mínimo · REQ-C01', () => {
     await page.getByTestId('availability-mon').fill('60');
     await page.getByTestId('availability-wed').fill('30');
     await page.getByTestId('target-date-input').fill('2027-06-01');
-    await page.getByTestId('diagnostic-select').selectOption('SKIP');
     await page.getByTestId('onboarding-submit').click();
 
     // Primera vista: confirma lo acordado y NO promete un plan que no existe (EC-012).

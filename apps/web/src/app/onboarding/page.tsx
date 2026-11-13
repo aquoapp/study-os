@@ -10,10 +10,12 @@ export const metadata = { title: 'Empezar · Study OS' };
 /**
  * Onboarding mínimo de Phase 2 · REQ-C01 · gate P2-G7.
  *
- * «Llega al primer plan sin ajustes avanzados»: objetivo, disponibilidad y diagnóstico
- * opcional, y después una primera vista de lo acordado. Esa vista es **provisional y lo
- * dice**: en Phase 2 no existe Planner (Phase 4) ni motor (Phase 3), y prometer un plan
- * calculado sería exactamente lo que EC-012 y el Onboarding & Edge States Spec prohíben.
+ * «Llega al primer plan sin ajustes avanzados»: objetivo, zona horaria y disponibilidad, y
+ * después una primera vista de lo acordado.
+ *
+ * **OBS-4B-H05 · ya no se pregunta por el diagnóstico.** La pregunta existía desde Phase 2 y sus
+ * dos respuestas producían el mismo recorrido, porque el diagnóstico está fuera de alcance en v1.
+ * Se retira la elección, no la infraestructura.
  *
  * Esto no es la superficie de producto de Phase 5 ni el First Product Sight: no hay HOY,
  * APRENDER, ENTRENAR, PROGRESO ni PLAN, y no se presenta ninguna sesión de estudio.
@@ -41,7 +43,7 @@ export default async function OnboardingPage() {
 
   const settings = await supabase
     .from('learner_settings')
-    .select('default_daily_minutes, weekly_availability_json, diagnostic_preference')
+    .select('default_daily_minutes, weekly_availability_json')
     .maybeSingle();
   const goal = await supabase
     .from('learner_exam_goals')
@@ -118,10 +120,8 @@ export default async function OnboardingPage() {
         </section>
       ) : (
         <>
-          <p>
-            Tres datos y empezamos: qué examen preparas, cuánto tiempo tienes y si quieres hacer un
-            diagnóstico inicial.
-          </p>
+          {/* OBS-4B-H05 · el diagnóstico sale también del texto: no se ofrece lo que no existe. */}
+          <p>Dos datos y empezamos: qué examen preparas y cuánto tiempo tienes.</p>
           <OnboardingForm action={completeOnboardingAction} packs={packs} />
         </>
       )}

@@ -80,7 +80,6 @@ export async function completeOnboardingAction(
 
   const startingLevel = formData.get('starting_level');
   const targetDate = formData.get('target_date');
-  const diagnostic = formData.get('diagnostic_preference');
 
   /*
    * **R-8 · Phase 4B.** La disponibilidad ya no se escribe directamente sobre la tabla.
@@ -93,10 +92,17 @@ export async function completeOnboardingAction(
    * Esto **no** convierte la disponibilidad en evidencia de aprendizaje: es una declaración
    * duradera de la persona (T1), y el Learning Engine no la mira.
    */
+  /*
+   * **OBS-4B-H05.** El onboarding ya no pregunta por el diagnóstico, así que no declara ninguna
+   * preferencia: se pasa `null`, que es lo que la columna admite y lo que tenía cualquiera que no
+   * hubiera respondido. El parámetro de `set_availability` **no se toca** —la infraestructura
+   * sobrevive intacta para cuando el diagnóstico exista—, y lo ya guardado por quien respondió
+   * antes se conserva sin reinterpretar.
+   */
   const settings = await setAvailability(identity.userId, {
     defaultDailyMinutes: dailyMinutes,
     weekly: availability,
-    diagnosticPreference: diagnostic === 'TAKE' || diagnostic === 'SKIP' ? diagnostic : null,
+    diagnosticPreference: null,
   });
   // El mensaje del proveedor no se propaga tal cual: puede describir restricciones internas.
   if (settings.kind !== 'SAVED') {
