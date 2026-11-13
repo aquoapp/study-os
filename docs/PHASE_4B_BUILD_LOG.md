@@ -588,3 +588,50 @@ Queda como confirmación del contrato, no como deuda.
 
 **Observaciones vivas al cierre:** OBS-4B-HVIS-01, OBS-4B-HUX-01, OBS-4B-H02, OBS-4B-H04 y
 OBS-4B-H05. Ningún defecto contractual. Ningún blocker.
+
+### 2026-11-13 · OBS-4B-H05 resuelta por gobernanza · candidato de aceptación final
+
+**Decisión.** El diagnóstico inicial **no se implementa en Phase 4B** y sigue fuera de alcance.
+Mientras `TAKE` y `SKIP` produzcan el mismo recorrido, el onboarding **no debe ofrecer la
+elección**. Se retira la pregunta, no la capacidad futura.
+
+**Diff funcional**, cuatro ficheros, 41 líneas añadidas y 20 retiradas, casi todo comentario:
+
+| Fichero | Cambio |
+| --- | --- |
+| `_components/onboarding-form.tsx` | fuera el `<select name="diagnostic_preference">` y sus dos opciones |
+| `actions/onboarding.ts` | deja de leer el campo del formulario; pasa `diagnosticPreference: null` |
+| `onboarding/page.tsx` | «Tres datos… y si quieres hacer un diagnóstico inicial» → «**Dos datos y empezamos: qué examen preparas y cuánto tiempo tienes**»; la columna sale de la proyección que no la usaba |
+| `tests/e2e/auth/onboarding.minimal.e2e.ts` | fija la retirada: el control no existe y la pantalla no menciona el diagnóstico |
+
+**Lo que no se toca, y es lo que importa.** `learner_settings.diagnostic_preference`, el parámetro
+`p_diagnostic_preference` de `set_availability`, la tabla `diagnostic_runs` y la exclusión del
+motor (H-P3-10) quedan **intactos**. Ni esquema, ni migraciones, ni Planner, ni Learning Engine,
+ni corpus, ni semántica de evidencia.
+
+**Ningún dato histórico se reinterpreta, y está comprobado.** La RPC resuelve
+`coalesce(p_diagnostic_preference, valor_guardado)`, de modo que pasar `null` **conserva** lo que
+declaró quien respondió antes. Verificado en STAGING: las dos cuentas anteriores siguen con
+`TAKE` y sus 63 y 49 eventos intactos; la cuenta creada después de la retirada nace con `null`.
+
+**Controles.** typecheck, lint, format, las seis guardas y `secret-scan` en verde. **1241**
+unitarias, **70** E2E estáticas, **38** E2E de auth, **218** RLS. Smoke completo de Phase 4B
+contra el candidato: **45 pasos, todos en OK**.
+
+**Recorrido humano reverificado en navegador real** sobre el candidato, con cuenta sintética y sin
+teclear rutas: portada → crear cuenta → HOY → zona en `/ajustes` → volver a HOY → onboarding **sin
+el control de diagnóstico** → HOY con plan (5 acciones · 26 min). El formulario conserva pack,
+zona, minutos, los siete días y la fecha objetivo. La cuenta sintética se borró al terminar.
+
+**El walkthrough humano anterior sigue siendo evidencia válida.** La retirada no toca ninguna de
+las rutas que ejercitó —Planner, motor, evidencia, sesiones, HOY— y las dos cuentas humanas
+conservan su estado íntegro. Lo único que cambia es si el onboarding hace una pregunta cuyo efecto
+no existía.
+
+**Candidato de aceptación final:** `7c08e8a`, desplegado como
+`study-3ir2gtoyn-study-os6.vercel.app`. STAGING en migración 24, dos packs, ninguna cuenta
+sintética. PRODUCTION sin tocar.
+
+**Deuda viva:** OBS-4B-HVIS-01, OBS-4B-HUX-01, OBS-4B-H02 y OBS-4B-H04, ninguna bloqueante y
+ninguna corregida en esta ronda. OBS-4B-H03 permanece retirada. OBS-4B-H05 queda **cerrada** por
+esta decisión, sin implementar el diagnóstico.
