@@ -414,3 +414,90 @@ revisión contra el Product UX Contract**, sin cambiarla por preferencia.
 **Nada que desplegar.** Ningún cambio de runtime: el Preview vigente sigue siendo
 `study-a6xnjrkpo-study-os6.vercel.app` (`aa21cf3`). La cuenta de Ana, su objetivo y sus 63
 eventos quedan **intactos**: este diagnóstico fue de solo lectura.
+
+### 2026-11-13 · reconciliación del LEARN + CHECK humanos · todo cuadra
+
+Walkthrough humano sobre `preview-4b-fundamentos`, dos días reales, sin manipular el reloj.
+Reconciliación **de solo lectura**: no se tocó un dato. Los conceptos se nombran C1…C8, sin
+identificadores.
+
+**Secuencia reconstruida.** Cinco ejecuciones del Planner, tres sesiones, 43 eventos.
+
+| Día | Run | Resultado | Presupuesto | Sesión |
+| --- | --- | --- | --- | --- |
+| 12 | 1 | `PLANNED` 6 acciones · 36 min | 40 (jueves) | 6 unidades, 2 completadas · interrumpida |
+| 12 | 2 | `PLANNED` 5 acciones · 39 min | 40 | 5 unidades, 5 completadas |
+| 12 | 3 | `NOTHING_ELIGIBLE` | 40 | — |
+| 13 | 4 | `PLANNED` 6 acciones · 18 min | 20 (viernes) | **6 preguntas, 6 completadas** |
+| 13 | 5 | `PLANNED` 1 acción · 3 min | 20 | sin arrancar |
+
+El presupuesto cambia 40 → 20 porque la disponibilidad declarada tiene jueves 40 y viernes 20,
+con `budget_source = WEEKLY_ENTRY`. El `plan_day` avanza solo, derivado de `Europe/Madrid`.
+
+**Ruta A · demostrada, no inferida.** `engine.mastery_history` registra **un pliegue
+`INCREMENTAL` por cada envío**, entre 1,8 y 2,8 s después, y antes de volver a HOY:
+
+| `ANSWER_SUBMITTED` | pliegue hasta | Δ |
+| --- | --- | --- |
+| 11:01:41,59 → 21 | 11:01:44,39 · `17→21` | +2,8 s |
+| 11:03:46,67 → 25 | 11:03:49,52 · `21→25` | +2,8 s |
+| 11:04:56,94 → 29 | 11:04:59,35 · `25→29` | +2,4 s |
+| 11:05:31,22 → 33 | 11:05:32,99 · `29→33` | +1,8 s |
+| 11:06:11,44 → 37 | 11:06:13,25 · `33→37` | +1,8 s |
+| 11:06:47,07 → 41 | 11:06:49,71 · `37→41` | +2,6 s |
+
+Eso es `after()` dentro de la server action, seis veces. **La ruta A queda ejercitada y D-26
+cerrado también por el camino humano.** El séptimo pliegue, `41→43`, ocurre a las 11:07:23,58 —
+21 s después del cierre de sesión y 0,67 s antes de la quinta ejecución del Planner—: es la
+**ruta B**, al volver a HOY. Watermark final **43**, igual al último evento: sin atraso.
+
+**Pliegue por concepto.** Seis preguntas, seis conceptos distintos, sin atribución cruzada. En
+los cinco fallos `last_negative_position` coincide exactamente con la posición del envío.
+
+| Concepto | Resultado · confianza | Estado | `last_negative_position` |
+| --- | --- | --- | --- |
+| C1 | incorrecta · 4 | `EVIDENCE_NEGATIVE` | 21 |
+| C2 | incorrecta · 3 | `EVIDENCE_NEGATIVE` | 25 |
+| C3 | **correcta** · 2 | `EVIDENCE_POSITIVE` | — |
+| C4 | incorrecta · 4 | `EVIDENCE_NEGATIVE` | 33 |
+| C5 | incorrecta · 3 | `EVIDENCE_NEGATIVE` | 37 |
+| C6 | incorrecta · 4 | `EVIDENCE_NEGATIVE` | 41 |
+| C7 | leído, nunca comprobado | `EXPOSED` | — |
+| C8 | — | `NEW` · sin unidad publicada | — |
+
+La confianza viaja a su celda del vector (`incorrect[4]`, `incorrect[3]`, `correct[2]`), con
+`temporalAnomalyCount` 0 y `unratedCount` 0. Ninguna puntuación numérica: solo el vector y el
+estado categórico.
+
+**Integridad.** 6 intentos y 6 items: ningún item con más de un intento, `attempt_number` 1 en
+todos. 43 eventos, posición máxima 43, 43 posiciones distintas: **stream contiguo, sin huecos ni
+duplicados**, ningún `payload_hash` repetido. Cero intentos sin confianza, cero sin clave de
+respuesta fijada, **cero discrepancias entre la representación presentada y la del intento**.
+`CONFIDENCE_RECORDED` precede a `ANSWER_SUBMITTED` en los seis (INV-102), y la corrección la
+fija el servidor en `graded_at`, entre 0,07 y 0,28 s después del envío (INV-101).
+
+**Por qué HOY ofrece ahora 1 acción · COMPROBAR · 3 min.** La auditoría del quinto run lo dice
+concepto a concepto: los seis trabajados hoy salen por **`COMPLETED_TODAY`**, C8 por
+`NO_PUBLISHED_UNIT`, y **C7 queda sin exclusión**. El ítem planificado es `CHECK` con
+`composition_reason = COVERAGE`, sobre una pregunta **que nunca se ha respondido**. Es el
+concepto que se leyó ayer y no se comprobó hoy: **comportamiento correcto y pregunta distinta
+pendiente**, no repetición ni defecto de consumo.
+
+**Y por qué el día 1 terminó en `NOTHING_ELIGIBLE`.** La auditoría de aquel run: siete conceptos
+`EXPOSED` excluidos por `COMPLETED_TODAY` y uno `NEW` por `NO_PUBLISHED_UNIT`. Al cambiar el día
+esa exclusión decae y los mismos conceptos pasan a ser elegibles para comprobar. **El cambio
+natural de `plan_day` explica legítimamente la aparición del CHECK**, sin tocar el reloj.
+
+**Ningún defecto encontrado.** Tres observaciones menores, ninguna causal:
+
+- **OBS-4B-H02** · el pack de Preview tiene 8 conceptos y 7 unidades: C8 no tiene unidad
+  publicada y por tanto **nunca será planificable**. Es `NO_PUBLISHED_UNIT` funcionando
+  (OBS-4A-B1), pero el corpus sembrado deja un concepto inalcanzable.
+- **OBS-4B-H03** · `question_attempts.response_ms` llega nulo: el cliente no lo envía. No afecta
+  a ninguna invariante y el Planner no lo usa por diseño; es un hueco de telemetría.
+- **OBS-4B-H04** · `learning_events.engine_processed_at` queda nulo: la autoridad de avance es
+  `projection_watermarks` (ADR-008), así que el campo no se rellena. Coherente con el diseño, pero
+  invita a leerlo como atraso cuando no lo hay.
+
+Siguen abiertas **OBS-4B-HVIS-01** (línea del sistema junto al bloque de identidad) y
+**OBS-4B-HUX-01** (continuación desde `/ajustes`), **sin corregir**.
