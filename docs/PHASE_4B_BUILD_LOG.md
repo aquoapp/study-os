@@ -501,3 +501,90 @@ natural de `plan_day` explica legítimamente la aparición del CHECK**, sin toca
 
 Siguen abiertas **OBS-4B-HVIS-01** (línea del sistema junto al bloque de identidad) y
 **OBS-4B-HUX-01** (continuación desde `/ajustes`), **sin corregir**.
+
+### 2026-11-13 · cierre del día 2 · reconciliación incremental y checkpoint longitudinal
+
+El walkthrough humano de dos días **se completó**. Reconciliación de solo lectura del séptimo
+CHECK y cierre global. Ningún dato tocado, ningún cambio de runtime, ningún identificador aquí.
+
+**Séptimo CHECK · C7.** Sesión arrancada desde el plan pendiente, un solo ítem, `attempt_number`
+1, **correcta**, confianza 3, representación evaluada idéntica a la presentada, clave fijada,
+evento vinculado, `diagnostic_run_id` nulo, corregido por el servidor 0,25 s después del envío.
+Atribuido a C7 y solo a C7. La pregunta no se había respondido nunca.
+
+**Ruta A para C7, demostrada por sí misma.** `ANSWER_SUBMITTED` en la posición 47 a las
+11:22:30,76; pliegue `INCREMENTAL 43→47` a las **11:22:33,58**, **+2,8 s**, y **antes** del cierre
+de sesión (11:22:42) y de volver a HOY (11:23:05). No es inferencia desde los seis anteriores.
+El pliegue siguiente, `47→49` a las 11:23:05,32 —0,5 s antes de la sexta ejecución del Planner—
+es la **ruta B** al volver a HOY, y cubre `FEEDBACK_VIEWED` y `SESSION_COMPLETED`.
+
+**Estado final del motor · watermark 49 para los siete conceptos con evidencia.**
+
+| Concepto | Estado | Celda de confianza | `last_negative_position` |
+| --- | --- | --- | --- |
+| C1 | `EVIDENCE_NEGATIVE` | `incorrect[4]` | 21 |
+| C2 | `EVIDENCE_NEGATIVE` | `incorrect[3]` | 25 |
+| C3 | `EVIDENCE_POSITIVE` | `correct[2]` | — |
+| C4 | `EVIDENCE_NEGATIVE` | `incorrect[4]` | 33 |
+| C5 | `EVIDENCE_NEGATIVE` | `incorrect[3]` | 37 |
+| C6 | `EVIDENCE_NEGATIVE` | `incorrect[4]` | 41 |
+| **C7** | **`EXPOSED` → `EVIDENCE_POSITIVE`** | **`correct[3]`** | — |
+| C8 | `NEW` · sin unidad publicada | — | — |
+
+`SINGLE_OBSERVATION` en los siete, `temporalAnomalyCount` 0. Ninguna puntuación numérica.
+
+**`NOTHING_ELIGIBLE` final, auditado concepto a concepto.** Los **siete** conceptos con evidencia
+salen por `COMPLETED_TODAY`; C8 por `NO_PUBLISHED_UNIT`. **No queda ningún `EXPOSED` pendiente**:
+C7 era el último y ahora tiene evidencia. Es el resultado contractual correcto, y es agotamiento
+del día, no del temario.
+
+**Integridad acumulada.** 7 intentos para 7 ítems de pregunta, ningún ítem con más de uno; 49
+eventos, posición máxima 49, 49 posiciones distintas —**stream contiguo 1→49**—; ningún
+`payload_hash` repetido; cero confianzas perdidas; cero discrepancias de representación; cero
+intentos de diagnóstico; 14 ítems completados, que son los 2+5+6+1 reales.
+
+**Reconciliación longitudinal.**
+
+| Tramo | Veredicto |
+| --- | --- |
+| Día 1 · onboarding con objetivo, disponibilidad y zona | **PASS** |
+| Día 1 · Planner produce LEARN dentro de presupuesto | **PASS** |
+| Día 1 · interrupción y conservación del progreso | **PASS** |
+| Día 1 · reanudación y replanificación con sucesora | **PASS** |
+| Día 1 · LEARN completado, 5 unidades | **PASS** |
+| Día 1 · `NOTHING_ELIGIBLE` por `COMPLETED_TODAY` | **PASS** |
+| Día 2 · cambio natural de `plan_day` y presupuesto por día | **PASS** |
+| Día 2 · seis CHECK, exactitud y confianza reales | **PASS** |
+| Día 2 · ruta A, seis pliegues | **PASS** |
+| Día 2 · ruta B al volver a HOY | **PASS** |
+| Día 2 · acción pendiente sobre C7 por cobertura | **PASS** |
+| Día 2 · séptimo CHECK y su ruta A | **PASS** |
+| Día 2 · `NOTHING_ELIGIBLE` final | **PASS** |
+| INV-101 · corrección de servidor | **PASS** |
+| INV-102 · confianza antes del envío | **PASS** |
+| INV-117 · lo presentado es lo planificado | **PASS** |
+| Corpus de Preview | **OBSERVATION** · OBS-4B-H02 |
+| Diagnóstico inicial | **OBSERVATION** · OBS-4B-H05, elevada |
+
+**OBS-4B-H05 · «Diagnóstico inicial» · feature diferida con copy que promete.** La preferencia se
+persiste correctamente, y la fontanería existe: el motor sabe excluir los intentos de diagnóstico
+del estado autoritativo y contarlos aparte (H-P3-10). Lo que no existe es la experiencia, y **eso
+está declarado**: el contrato del Planner lista «Diagnóstico como entrada · `diagnostic_run_id` no
+se escribe nunca» entre lo que queda fuera de v1, y el Product UX Contract no define ninguna
+superficie de diagnóstico. Ninguna tabla se escribe: `diagnostic_runs` existe desde Phase 2 y no
+tiene ningún camino de escritura.
+
+El problema no es la ausencia, que es correcta, sino el **copy**: el onboarding ofrece «Diagnóstico
+inicial → **Quiero hacerlo**» y después no ocurre nada ni se dice que llegará más tarde. Elegir
+`TAKE` y elegir `SKIP` producen hoy exactamente el mismo recorrido. Es el mismo principio de
+EC-012 que ya obligó a corregir el aviso del onboarding en esta fase, al revés: ofrecer una
+elección cuyo efecto no existe. **Queda elevada como decisión de producto y no se corrige**:
+cambiar el texto, ocultar el campo o implementar el diagnóstico son tres decisiones distintas y
+ninguna es mía.
+
+**OBS-4B-H03 se reclasifica.** `response_ms` nulo **no es un hueco**: el contrato del Planner lo
+declara expresamente entre lo que no entra —«velocidad de respuesta (`response_ms` no se envía)»—.
+Queda como confirmación del contrato, no como deuda.
+
+**Observaciones vivas al cierre:** OBS-4B-HVIS-01, OBS-4B-HUX-01, OBS-4B-H02, OBS-4B-H04 y
+OBS-4B-H05. Ningún defecto contractual. Ningún blocker.
