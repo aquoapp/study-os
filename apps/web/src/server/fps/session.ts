@@ -19,6 +19,12 @@ export interface SessionRow {
   readonly started_at: string | null;
   readonly completed_at: string | null;
   readonly resume_cursor_json: Record<string, unknown> | null;
+  /**
+   * La ejecución del Planner que originó la sesión, o `null` en las `FPS_FIXED` históricas. Sin
+   * ella la agrupación de acciones no se puede resolver, y la cabecera de acción (UX-INV-24) no
+   * se pintaría nunca: fue un defecto real, y lo encontró el E2E.
+   */
+  readonly planner_run_id: string | null;
 }
 
 export interface ItemRow {
@@ -75,7 +81,9 @@ const OPEN_STATUSES = ['PLANNED', 'ACTIVE', 'INTERRUPTED'] as const;
 export async function findOpenSession(supabase: SupabaseClient): Promise<SessionRow | null> {
   const { data, error } = await supabase
     .from('study_sessions')
-    .select('id, status, session_type, started_at, completed_at, resume_cursor_json')
+    .select(
+      'id, status, session_type, started_at, completed_at, resume_cursor_json, planner_run_id',
+    )
     .in('status', OPEN_STATUSES)
     .order('created_at', { ascending: false })
     .limit(1);
@@ -87,7 +95,9 @@ export async function findOpenSession(supabase: SupabaseClient): Promise<Session
 export async function findLatestSession(supabase: SupabaseClient): Promise<SessionRow | null> {
   const { data, error } = await supabase
     .from('study_sessions')
-    .select('id, status, session_type, started_at, completed_at, resume_cursor_json')
+    .select(
+      'id, status, session_type, started_at, completed_at, resume_cursor_json, planner_run_id',
+    )
     .order('created_at', { ascending: false })
     .limit(1);
   if (error) throw new Error(`última sesión: ${error.message}`);

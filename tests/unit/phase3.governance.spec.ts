@@ -547,12 +547,16 @@ describe('aterrizaje de gobernanza · nada de Phase 3 ha llegado al runtime', ()
       '00000000000020_engine_core.sql',
       '00000000000021_engine_invocation_boundary.sql',
     ]);
+    // Cada fase posterior amplía esta lista **con su autorización**, nunca por acumulación
+    // silenciosa: una migración que no esté nombrada aquí hace fallar la prueba.
     const PHASE_4A_AUTHORIZED = [
       '00000000000022_engine_last_negative_position.sql',
       '00000000000023_planner_domain.sql',
     ];
+    const PHASE_4B_AUTHORIZED = ['00000000000024_phase4b_product_integration.sql'];
+    const AUTHORIZED = [...PHASE_4A_AUTHORIZED, ...PHASE_4B_AUTHORIZED];
     for (const later of sorted.filter((name) => name.slice(0, 14) > '00000000000021')) {
-      expect(PHASE_4A_AUTHORIZED, `migración no autorizada: ${later}`).toContain(later);
+      expect(AUTHORIZED, `migración no autorizada: ${later}`).toContain(later);
     }
   });
 

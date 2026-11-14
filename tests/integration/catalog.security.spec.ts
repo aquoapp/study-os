@@ -69,11 +69,41 @@ const OWNED_TABLES = new Set(
  */
 const AUTHENTICATED_WRITE_ALLOWLIST: Record<string, string[]> = {
   profiles: ['SELECT', 'UPDATE'],
-  learner_settings: ['INSERT', 'SELECT', 'UPDATE'],
+  /*
+   * **Estrechado el 2026-09-20 · Phase 4B · R-8.**
+   *
+   * `learner_settings` **pierde** INSERT y UPDATE de cliente y queda en solo lectura. La
+   * disponibilidad declarada pasa a escribirse por `public.set_availability`, que cambia el
+   * estado canónico y emite `AVAILABILITY_CHANGED` en la misma transacción. Con la escritura
+   * directa abierta, el estado canónico podía cambiar **sin** su declaración duradera, que es
+   * exactamente el desacuerdo entre historia y estado que R-8 cierra.
+   *
+   * Esta lista se estrecha; no se amplía. Un INSERT que reapareciera aquí sería una regresión.
+   */
+  learner_settings: ['SELECT'],
   learner_exam_goals: ['INSERT', 'SELECT', 'UPDATE'],
   devices: ['INSERT', 'SELECT', 'UPDATE'],
   diagnostic_runs: ['INSERT', 'SELECT', 'UPDATE'],
 };
+
+/**
+ * Tablas de Phase 4B que la persona **lee** y **no escribe** (P4B-D3).
+ *
+ * `learner_day_overrides` guarda una declaración suya, y aun así su escritura es solo de
+ * servidor: la fila canónica y el evento `TODAY_OVERRIDE_SET` tienen que nacer juntos, y eso solo
+ * lo garantiza una función. No es una proyección (INV-113 no cambia): es integridad.
+ */
+const PHASE_4B_READ_ONLY_FOR_CLIENT = new Set(['learner_day_overrides']);
+
+/**
+ * Tablas sobre las que el rol de servicio escribe **sin** ser contenido canónico.
+ *
+ * Phase 4B las añade porque sus funciones `SECURITY DEFINER` las escriben: `set_availability`
+ * sobre `learner_settings` y `set_today_override` sobre `learner_day_overrides`. Siguen sin ser
+ * evidencia: los eventos y los intentos los sigue escribiendo la frontera de ingestión y nadie
+ * más, ni siquiera una herramienta con la clave de servicio.
+ */
+const SERVICE_ROLE_DECLARATION_TABLES = new Set(['learner_settings', 'learner_day_overrides']);
 
 /**
  * Funciones de `public` que un rol de cliente puede ejecutar.
@@ -101,6 +131,9 @@ function expectedPrivileges(schema: string, table: string, role: string): string
     // en columnas seguras (concesión de columna, no de tabla), y la configuración y la auditoría
     // no tienen ninguna concesión de cliente.
     if (PLANNER_SERVER_TABLES.has(table)) return [];
+    // Phase 4B (2026-09-20) · P4B-D3: la persona lee su declaración del día; escribirla es del
+    // servidor, para que la fila canónica y su evento nazcan juntos.
+    if (PHASE_4B_READ_ONLY_FOR_CLIENT.has(table)) return ['SELECT'];
     return AUTHENTICATED_WRITE_ALLOWLIST[table] ?? ['SELECT'];
   }
   if (role === 'service_role') {
@@ -123,6 +156,16 @@ function expectedPrivileges(schema: string, table: string, role: string): string
      * incremental y el rebuild y el gate duro de EC-006 se volvería inestable.
      */
     if (table === 'question_concepts') return ['SELECT'];
+    /*
+     * **Phase 4B · 2026-09-20 · P4B-D3 y R-8.**
+     *
+     * Las dos tablas de declaraciones de tiempo ganan INSERT y UPDATE del rol de servicio, porque
+     * las escriben `set_today_override` y `set_availability`. **No ganan DELETE**: una declaración
+     * no se borra, se sustituye. Y esto no abre ninguna vía de fabricación de evidencia: la
+     * disponibilidad y el tiempo de hoy son declaraciones de la persona, no evidencia de
+     * aprendizaje, y la evidencia sigue escribiéndose solo por la frontera de ingestión.
+     */
+    if (SERVICE_ROLE_DECLARATION_TABLES.has(table)) return ['INSERT', 'SELECT', 'UPDATE'];
     return CANONICAL_CONTENT_TABLES.has(table) || table === 'profiles'
       ? ['DELETE', 'INSERT', 'SELECT', 'UPDATE']
       : ['SELECT'];
@@ -196,12 +239,14 @@ describe('toda tabla de public, content e ingest tiene RLS habilitado y forzado'
       'public.planner_runs',
       'public.planner_items',
       'public.planner_run_audit',
+      // Phase 4B · migración 24 · P4B-D3 · la declaración del tiempo de un día concreto.
+      'public.learner_day_overrides',
     ]) {
       expect(names, `falta ${expected}`).toContain(expected);
     }
     // 23 de Phase 1A + 12 de Phase 2 en `public` + 2 contadores + 2 tablas de atribución
-    // + 4 del Planner (Phase 4A).
-    expect(names).toHaveLength(43);
+    // + 4 del Planner (Phase 4A) + 1 del override del día (Phase 4B).
+    expect(names).toHaveLength(44);
   });
 
   for (const row of tables) {
@@ -339,7 +384,9 @@ describe('matriz rol × privilegio derivada del catálogo (SI-1A-4)', () => {
     const fuera = [
       ...new Set(columns.filter((row) => row.table !== 'profiles').map((row) => row.table)),
     ].sort();
-    expect(fuera).toEqual(['devices', 'diagnostic_runs', 'learner_exam_goals', 'learner_settings']);
+    // Phase 4B retira `learner_settings` de esta lista: su escritura pasó a ser de servidor
+    // (R-8). La lista se **acorta**, y que volviera a alargarse sería la regresión.
+    expect(fuera).toEqual(['devices', 'diagnostic_runs', 'learner_exam_goals']);
   });
 
   it('los privilegios por defecto de postgres en public no conceden nada a ningún rol de la API', () => {

@@ -101,7 +101,8 @@ body {
   margin: 0;
   background: var(--so-color-canvas);
   color: var(--so-color-ink);
-  font-family: var(--so-font-ui);
+  /* VIS-D2 · IBM Plex Sans cuando el layout la inyecta; si no, la pila del sistema. */
+  font-family: var(--so-font-product, var(--so-font-ui));
   font-size: var(--so-text-body-min);
   line-height: var(--so-leading-normal);
   -webkit-font-smoothing: antialiased;

@@ -83,32 +83,58 @@ test.describe('onboarding mínimo · REQ-C01', () => {
     await page.getByTestId('email-input').fill(email);
     await page.getByTestId('password-input').fill(PASSWORD);
     await page.getByTestId('signup-form').getByRole('button').click();
-    await expect(page).toHaveURL(/\/cuenta/);
+    await expect(page).toHaveURL(/\/hoy/);
 
+    // Este caso prueba el **formulario**, así que abre la ruta directamente. Que exista camino
+    // navegable hasta aquí lo prueba «desde la portada, una cuenta nueva llega a HOY sin teclear
+    // ninguna ruta», al final de este fichero: el defecto que lo hacía falta era justamente que
+    // nadie comprobaba el grafo.
     await page.goto('/onboarding');
     const form = page.getByTestId('onboarding-form');
     await expect(form).toBeVisible();
+
+    /*
+     * **OBS-4B-H05 · decisión de gobernanza del 2026-11-13.** El diagnóstico está fuera de alcance
+     * en v1, así que el onboarding **no ofrece elegirlo**: sus dos respuestas producían el mismo
+     * recorrido y preguntarlo prometía un efecto inexistente (EC-012). Esta aserción fija la
+     * retirada: si el control vuelve sin que exista el diagnóstico, este caso falla.
+     */
+    await expect(page.getByTestId('diagnostic-select')).toHaveCount(0);
+    await expect(form).not.toContainText(/diagn/i);
+    await expect(page.locator('main')).not.toContainText(/diagn/i);
 
     // El pack sintético publicado aparece como opción: nada se inventa si no hay contenido.
     const select = page.getByTestId('pack-select');
     await expect(select).toBeVisible();
     await select.selectOption({ label: `fixture: pack sintético e2e${test.info().workerIndex}` });
 
+    // Phase 4B · §O · el onboarding gana la zona horaria, y es obligatoria: sin ella no existe
+    // «hoy» (§I.1) y terminar sin declararla dejaría a la persona en un estado que no hace nada.
+    await page.getByTestId('timezone-select').selectOption('Europe/Madrid');
     await page.getByTestId('daily-minutes-input').fill('45');
     await page.getByTestId('availability-mon').fill('60');
     await page.getByTestId('availability-wed').fill('30');
     await page.getByTestId('target-date-input').fill('2027-06-01');
-    await page.getByTestId('diagnostic-select').selectOption('SKIP');
     await page.getByTestId('onboarding-submit').click();
 
     // Primera vista: confirma lo acordado y NO promete un plan que no existe (EC-012).
     await expect(page.getByTestId('onboarding-completado')).toBeVisible();
     await expect(page.getByTestId('resumen-minutos')).toHaveText('45');
     await expect(page.getByTestId('resumen-fecha')).toHaveText('2027-06-01');
-    const aviso = page.getByTestId('plan-provisional-aviso');
+    /*
+     * **Invertida por autorización.** Este caso comprobaba que el onboarding **no** prometiera un
+     * plan, porque no existía. Existe desde Phase 4B, y seguir afirmando que no sería la misma
+     * falsedad de EC-012 al revés: negar una capacidad real.
+     *
+     * Lo que se comprueba ahora es que dice **dónde** se ve y que no promete nada que el sistema no
+     * pueda cumplir: ni cuánto, ni qué, ni que haya algo.
+     */
+    const aviso = page.getByTestId('plan-siguiente-aviso');
     await expect(aviso).toBeVisible();
-    await expect(aviso).toContainText('Provisional');
-    await expect(aviso).toContainText('no hay un plan calculado');
+    await expect(aviso).toContainText('Hoy');
+    await expect(aviso).not.toContainText('no hay un plan calculado');
+    const texto = await aviso.innerText();
+    expect(texto).not.toMatch(/garantiz|siempre tendrás|te prometemos|cada día tendrás/i);
 
     // Y no aparece ninguna superficie de producto de Phase 5 ni del First Product Sight.
     for (const espacio of ['HOY', 'APRENDER', 'ENTRENAR', 'PROGRESO', 'PLAN']) {
@@ -123,10 +149,15 @@ test.describe('onboarding mínimo · REQ-C01', () => {
     await page.getByTestId('email-input').fill(email);
     await page.getByTestId('password-input').fill(PASSWORD);
     await page.getByTestId('signup-form').getByRole('button').click();
-    await expect(page).toHaveURL(/\/cuenta/);
+    await expect(page).toHaveURL(/\/hoy/);
 
+    // Este caso prueba el **formulario**, así que abre la ruta directamente. Que exista camino
+    // navegable hasta aquí lo prueba «desde la portada, una cuenta nueva llega a HOY sin teclear
+    // ninguna ruta», al final de este fichero: el defecto que lo hacía falta era justamente que
+    // nadie comprobaba el grafo.
     await page.goto('/onboarding');
     await page.getByTestId('pack-select').selectOption({ index: 0 });
+    await page.getByTestId('timezone-select').selectOption('Europe/Madrid');
     await page.getByTestId('daily-minutes-input').fill('20');
     await page.getByTestId('onboarding-submit').click();
     await expect(page.getByTestId('onboarding-completado')).toBeVisible();
@@ -136,5 +167,61 @@ test.describe('onboarding mínimo · REQ-C01', () => {
     await expect(page.getByTestId('onboarding-completado')).toBeVisible();
     await expect(page.getByTestId('resumen-minutos')).toHaveText('20');
     await expect(page.getByTestId('onboarding-form')).toHaveCount(0);
+  });
+
+  /**
+   * **Phase 4B · la prueba que faltaba.**
+   *
+   * Todas las pruebas de onboarding abrían `/onboarding` tecleando la ruta. Por eso la suite
+   * entera podía estar en verde mientras una cuenta nueva no tenía **ningún camino navegable**
+   * hasta el producto: se ejercitaban las pantallas, nunca el grafo que las une.
+   *
+   * Este caso no escribe ninguna ruta salvo la portada. Cada paso es un clic en algo que la
+   * persona ve. Si vuelve a aparecer un callejón, falla aquí.
+   */
+  test('desde la portada, una cuenta nueva llega a HOY sin teclear ninguna ruta', async ({
+    page,
+  }) => {
+    const email = uniqueEmail('onb-navegable');
+
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Crear cuenta' }).click();
+    await expect(page).toHaveURL(/\/registro/);
+
+    await page.getByTestId('email-input').fill(email);
+    await page.getByTestId('password-input').fill(PASSWORD);
+    await page.getByTestId('signup-form').getByRole('button').click();
+
+    // La entrada desemboca en HOY (Product UX Contract §O), no en la superficie de identidad.
+    await expect(page).toHaveURL(/\/hoy/);
+
+    // S3 · HOY resuelve la zona horaria **antes** que el objetivo, así que lo primero que pide
+    // una cuenta nueva es la zona, y su primaria lleva a `/ajustes`.
+    await expect(page.getByTestId('hoy-zona-horaria')).toBeVisible();
+    await page.getByTestId('hoy-primaria').click();
+    await expect(page).toHaveURL(/\/ajustes/);
+
+    await page.getByTestId('ajustes-zona-select').selectOption('Europe/Madrid');
+    await page.getByTestId('ajustes-zona-guardar').click();
+    await expect(page.getByTestId('ajustes-zona-guardada')).toBeVisible();
+
+    // Y de `/ajustes` se vuelve a HOY por su propio enlace, sin el botón atrás del navegador.
+    await page.getByTestId('ajustes-volver-a-hoy').click();
+    await expect(page).toHaveURL(/\/hoy/);
+
+    // S2 · ahora sí falta el objetivo, y HOY abre la entrada al onboarding.
+    await expect(page.getByTestId('hoy-sin-objetivo')).toBeVisible();
+    await page.getByTestId('hoy-primaria').click();
+    await expect(page).toHaveURL(/\/onboarding/);
+
+    await page.getByTestId('pack-select').selectOption({ index: 0 });
+    await page.getByTestId('timezone-select').selectOption('Europe/Madrid');
+    await page.getByTestId('daily-minutes-input').fill('30');
+    await page.getByTestId('onboarding-submit').click();
+    await expect(page.getByTestId('onboarding-completado')).toBeVisible();
+
+    // Y el onboarding devuelve al vertical por su propio enlace.
+    await page.getByTestId('onboarding-ir-a-hoy').click();
+    await expect(page).toHaveURL(/\/hoy/);
   });
 });

@@ -120,6 +120,17 @@ export const EVENT_SCHEMAS_V1: Readonly<Partial<Record<LearningEventType, EventS
     required: { default_daily_minutes: 'integer', weekly_availability_json: 'object' },
     optional: {},
   },
+  /**
+   * P4B-D3 §5.1 · espeja `AVAILABILITY_CHANGED`, único precedente aceptado para una declaración
+   * de tiempo. Ámbito `user`: la frontera ya rechaza un evento de ámbito `user` que traiga sesión
+   * o ítem. El día lo deriva el servidor desde la zona declarada; el cliente nunca lo nombra, y
+   * por INV-118 tampoco puede emitir este tipo.
+   */
+  TODAY_OVERRIDE_SET: {
+    scope: 'user',
+    required: { plan_day: 'string', minutes: 'integer' },
+    optional: {},
+  },
 };
 
 export const PHASE_2_ACCEPTED_EVENT_TYPES = Object.keys(

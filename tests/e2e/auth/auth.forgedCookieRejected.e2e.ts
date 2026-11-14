@@ -49,7 +49,9 @@ test.describe('auth.forgedCookieRejected · INV-116', () => {
     await page.getByTestId('email-input').fill(uniqueEmail('forge'));
     await page.getByTestId('password-input').fill(PASSWORD);
     await page.getByTestId('submit-button').click();
-    await expect(page).toHaveURL(/\/cuenta/);
+    // La entrada desemboca en HOY (Product UX Contract §O); la identidad se lee en `/cuenta`.
+    await expect(page).toHaveURL(/\/hoy/);
+    await page.goto('/cuenta');
 
     const legitimateUserId = (await page.getByTestId('user-id').textContent())?.trim();
     expect(legitimateUserId).toBeTruthy();

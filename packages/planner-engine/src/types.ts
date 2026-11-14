@@ -34,10 +34,19 @@ export const BUDGET_SOURCES = ['TODAY_OVERRIDE', 'WEEKLY_ENTRY', 'DEFAULT_DAILY'
 export type BudgetSource = (typeof BUDGET_SOURCES)[number];
 
 /**
- * Procedencia de la duración. **Solo `FIXTURE` en Phase 4A**: P4-D2 está diferida y ninguna
- * duración de producción existe. El tipo no admite otro valor a propósito.
+ * Procedencia de la duración.
+ *
+ * `FIXTURE` se conserva para que las ejecuciones de prueba sigan siendo expresables y
+ * distinguibles de las de producción. **`HYBRID_V1`** es la procedencia de producción que P4-D2
+ * autoriza (ADR-013): minutos de unidad desde el metadato de autoría **fijado a la versión exacta**
+ * que el Planner selecciona, y minutos de pregunta desde la `planner_config` de la versión
+ * registrada. Ninguna reproducción consulta jamás una fuente de duración: la entrada canónica ya
+ * lleva los minutos de cada candidato, de modo que toda ejecución pasada sigue siendo byte a byte
+ * reproducible (P4-G4).
+ *
+ * Una fuente aprendida o adaptativa sería aditiva y **no está autorizada** (DEF-11, §D).
  */
-export const DURATION_PROVENANCES = ['FIXTURE'] as const;
+export const DURATION_PROVENANCES = ['FIXTURE', 'HYBRID_V1'] as const;
 export type DurationProvenance = (typeof DURATION_PROVENANCES)[number];
 
 /** Días de la semana de `weekly_availability_json`, en orden ISO (1 = lunes). */
@@ -50,8 +59,14 @@ export interface UnitCandidate {
   readonly learningUnitVersionId: string;
   /** INV-109 · la fuente de la versión está desactualizada o bloqueada. */
   readonly sourceExcluded: boolean;
-  /** Minutos declarados. Entrada del contrato (§I.3). */
-  readonly minutes: number;
+  /**
+   * Minutos declarados. Entrada del contrato (§I.3), con la procedencia que P4-D2 autoriza.
+   *
+   * **`null` es dato, no hueco.** Una versión publicada sin metadato de duración es una condición
+   * estructural veraz: no se rellena en silencio, y el candidato queda excluido con
+   * `NO_DURATION_METADATA` (ADR-013 §2.5).
+   */
+  readonly minutes: number | null;
 }
 
 /**
@@ -146,6 +161,13 @@ export const EXCLUSION_REASONS = [
   'COMPLETED_TODAY',
   'POSITIVE_NO_REVIEW_POLICY',
   'OVER_BUDGET',
+  /**
+   * ADR-013 §2.5 · la versión publicada no declara duración. Razón **propia**: reutilizar
+   * `NO_PUBLISHED_UNIT` confundiría dos causas distintas y degradaría la explicabilidad que §R
+   * exige. La ejecución continúa con el resto: §E excluye candidatos, no aborta planes.
+   * **Nunca es superficie de aprendiz.**
+   */
+  'NO_DURATION_METADATA',
 ] as const;
 export type ExclusionReason = (typeof EXCLUSION_REASONS)[number];
 

@@ -21,7 +21,6 @@ import {
 import {
   accept,
   createLearner,
-  envelope,
   eventFor,
   itemEvent,
   presentAndAnswer,
@@ -71,8 +70,8 @@ const unitVersionIds: string[] = [];
 /** Duraciones de fixture: datos de prueba, jamás constantes de runtime (§I.3). */
 const FIXTURE: DurationSource = {
   provenance: 'FIXTURE',
-  minutesFor: ({ learningUnitIds, questionIds }) => ({
-    units: new Map(learningUnitIds.map((id) => [id, 5])),
+  minutesFor: ({ learningUnitVersionIds, questionIds }) => ({
+    units: new Map(learningUnitVersionIds.map((id: string) => [id, 5])),
     questions: new Map(questionIds.map((id) => [id, 3])),
   }),
 };
@@ -244,10 +243,7 @@ beforeAll(async () => {
   bruno = await createLearner(env, 'p4a-bruno', pack);
   // Presupuesto determinista: sin entradas semanales manda el valor por defecto (§I.2).
   for (const learner of [ana, bruno]) {
-    const reset = await learner.client
-      .from('learner_settings')
-      .update({ weekly_availability_json: {}, default_daily_minutes: 40 })
-      .eq('user_id', learner.id);
+    const reset = await setAvailabilityFor(learner, 40, {});
     if (reset.error) throw new Error(reset.error.message);
   }
 }, 600_000);
@@ -269,6 +265,51 @@ afterAll(async () => {
     expect(Number(residue[0]?.n)).toBe(0);
   }
 }, 300_000);
+
+/**
+ * Mueve el presupuesto declarado · R-8.
+ *
+ * La escritura directa desde el token del aprendiz está revocada desde Phase 4B, así que esto va
+ * con el rol de servicio. Y va **sobre la tabla**, no por `set_availability`, a propósito: esa
+ * función emite `AVAILABILITY_CHANGED`, y un evento más adelanta el stream del aprendiz, deja la
+ * proyección del motor atrasada y obliga a una puesta al día en medio de pruebas que cuentan
+ * ejecuciones y posiciones. Estas pruebas no comprueban el camino de declaración —lo hacen
+ * `rls.userIsolation.phase2` y `phase4b.hardGates`—: lo que necesitan es mover el presupuesto.
+ */
+async function setAvailabilityFor(
+  learner: Learner,
+  defaultDailyMinutes: number,
+  weekly: Record<string, number>,
+): Promise<{ error: { message: string } | null }> {
+  const { error } = await admin
+    .from('learner_settings')
+    .update({ default_daily_minutes: defaultDailyMinutes, weekly_availability_json: weekly })
+    .eq('user_id', learner.id);
+  return { error: error ? { message: error.message } : null };
+}
+
+/**
+ * Avanza el stream del aprendiz **sin cambiar su presupuesto** · INV-118.
+ *
+ * Varios casos de abajo necesitan «evidencia nueva» para atrasar la tupla del motor, y usaban
+ * `AVAILABILITY_CHANGED` emitido como cliente porque era el evento más barato de construir. Desde
+ * Phase 4B ese tipo es **solo de servidor** (INV-118) y un cliente ya no puede emitirlo: es la
+ * protección que impide que la historia diga algo distinto del estado.
+ *
+ * Así que ahora se emite por donde se emite de verdad, `set_availability`, **con los mismos valores
+ * que ya tenía**. El stream avanza —que es lo que el caso necesita— y el presupuesto no se mueve,
+ * de modo que la entrada canónica solo cambia por lo que el caso quiere que cambie.
+ */
+async function advanceStream(learner: Learner): Promise<void> {
+  const { error } = await admin.rpc('set_availability', {
+    p_user: learner.id,
+    p_default_daily_minutes: 40,
+    p_weekly: {},
+    p_diagnostic_preference: null,
+    p_reduced_motion: null,
+  });
+  if (error) throw new Error(`avance de stream: ${error.message}`);
+}
 
 describe('§I.1 · la zona horaria se declara, no se deduce', () => {
   it('sin zona declarada no hay «hoy» y no se escribe nada', async () => {
@@ -307,13 +348,22 @@ describe('§I.1 · la zona horaria se declara, no se deduce', () => {
   });
 });
 
-describe('P4-D2 · sin fuente de duración no se planifica', () => {
-  it('el módulo real responde DURATION_SOURCE_UNDECIDED y no escribe ninguna ejecución', async () => {
-    const outcome = await requestPlanForUser(ana.id, { client: admin });
-    expect(outcome.kind).toBe('DURATION_SOURCE_UNDECIDED');
-    expect(runCount(ana.id)).toBe(0);
-  });
-});
+/*
+ * **Retirada por autorización · P4-G36 · y no sustituida aquí, a propósito.**
+ *
+ * Esta suite tenía un caso que afirmaba que sin fuente de duración inyectada el módulo responde
+ * `DURATION_SOURCE_UNDECIDED` y no escribe nada. Era cierto mientras P4-D2 estaba diferida, y dejó
+ * de serlo el 2026-09-20 (ADR-013).
+ *
+ * Su sustituta **no vive aquí**. El primer intento fue ponerla en este mismo sitio, y se descubrió
+ * que pedir un plan con la fuente de producción **escribe una ejecución**, y que esta suite cuenta
+ * ejecuciones: los casos siguientes afirman que hay exactamente una, que pedir otra vez la
+ * reutiliza y que la persona lee una sola fila. Un caso nuevo que escribe al principio los rompe
+ * todos sin que ninguno haya dejado de ser cierto.
+ *
+ * La propiedad se comprueba en `phase4b.hardGates.spec`, sobre un aprendiz propio y sin secuencia
+ * compartida, que es donde una prueba que escribe no molesta a nadie.
+ */
 
 let firstRunId = '';
 
@@ -346,7 +396,20 @@ describe('primera ejecución · persistencia, auditoría y reproducción', () =>
       planned_minutes: 15,
       item_count: 3,
       planner_version: 'planner-v1',
-      planner_config_version: 'v1',
+      /*
+       * **`v2` desde Phase 4B**, y el cambio de literal es el punto, no un detalle.
+       *
+       * La migración 24 promueve una versión nueva de `planner_config` porque P4-D2 necesita una
+       * clave que `v1` no tiene —la estimación gobernada del paso COMPROBAR— y porque el
+       * vocabulario de razones gana `NO_DURATION_METADATA`. `v1` **no se edita**: pasa a
+       * `SUPERSEDED` y se conserva, porque las ejecuciones de Phase 4A la nombran y reescribirla
+       * cambiaría lo que aquellas decisiones dicen haber usado.
+       *
+       * Que la ejecución registre **qué versión de configuración la produjo** es justo lo que hace
+       * que la duración no sea una constante mágica: vive en una fila con autor, motivo, promotor,
+       * fecha y evidencia de promoción.
+       */
+      planner_config_version: 'v2',
       consumed: 0,
       duration_provenance: 'FIXTURE',
       timezone: 'Europe/Madrid',
@@ -483,12 +546,18 @@ describe('§U.6 · §N · P4-G10 · arranque, reanudación y una sola sesión ab
       `select status::text from public.study_sessions where id = '${sessionId}'`,
     );
     expect(status[0]?.status).toBe('COMPLETED');
-    // Idempotente también después: la misma ejecución devuelve la misma sesión.
-    expect(await startPlannedSession(ana.id, firstRunId, { client: admin })).toMatchObject({
-      kind: 'STARTED',
-      sessionId,
-      reused: true,
-    });
+    /*
+     * **Invertido por autorización · P4B-D2 · B2-a.**
+     *
+     * Aquí se afirmaba que la idempotencia por ejecución vale «también después» de cerrar la
+     * sesión. La decisión lo enmienda: una sesión terminal significa que la ejecución está
+     * **consumida**, y devolver una sesión muerta dejaría a la persona atrapada en un plan que ya
+     * terminó. La idempotencia sigue valiendo mientras la sesión está abierta, que es cuando sirve
+     * de algo, y eso lo comprueba el caso 8 de `session.oneOpenPerLearner`.
+     */
+    expect((await startPlannedSession(ana.id, firstRunId, { client: admin })).kind).toBe(
+      'RUN_ALREADY_CONSUMED',
+    );
   });
 });
 
@@ -641,13 +710,7 @@ describe('§U.1 · TOCTOU · la entrada se revalida en la transacción que escri
       beforePersist: async () => {
         if (injected) return;
         injected = true;
-        await accept(
-          ana,
-          envelope(ana, 'AVAILABILITY_CHANGED', {
-            default_daily_minutes: 40,
-            weekly_availability_json: {},
-          }),
-        );
+        await advanceStream(ana);
       },
     });
     const run = asRun(outcome);
@@ -667,10 +730,7 @@ describe('§I.2 · §L · P4-G1 · P4-G3 · presupuesto', () => {
     const [pastBefore] = query<Record<string, unknown>>(
       `select to_jsonb(r) as row from public.planner_runs r where r.id = '${firstRunId}'`,
     );
-    const update = await ana.client
-      .from('learner_settings')
-      .update({ default_daily_minutes: 8 })
-      .eq('user_id', ana.id);
+    const update = await setAvailabilityFor(ana, 8, {});
     expect(update.error).toBeNull();
     const run = asRun(await request(ana));
     const [row] = query<{ budget_minutes: number; budget_source: string }>(
@@ -699,10 +759,7 @@ describe('§I.2 · §L · P4-G1 · P4-G3 · presupuesto', () => {
     const key = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][
       (new Date(`${day!.plan_day}T00:00:00Z`).getUTCDay() + 6) % 7
     ]!;
-    const update = await ana.client
-      .from('learner_settings')
-      .update({ weekly_availability_json: { [key]: 0 } })
-      .eq('user_id', ana.id);
+    const update = await setAvailabilityFor(ana, 40, { [key]: 0 });
     expect(update.error).toBeNull();
     const run = asRun(await request(ana));
     expect(run.outcome).toBe('ZERO_TIME');
@@ -729,10 +786,7 @@ describe('§I.2 · §L · P4-G1 · P4-G3 · presupuesto', () => {
 
 describe('§P · un destino retirado o una ejecución sustituida no arrancan', () => {
   it('una ejecución sustituida no arranca', async () => {
-    const reset = await ana.client
-      .from('learner_settings')
-      .update({ weekly_availability_json: {}, default_daily_minutes: 40 })
-      .eq('user_id', ana.id);
+    const reset = await setAvailabilityFor(ana, 40, {});
     expect(reset.error).toBeNull();
     const [old] = query<{ id: string }>(
       `select id::text from public.planner_runs r where user_id = '${ana.id}' and outcome = 'PLANNED'
@@ -747,13 +801,7 @@ describe('§P · un destino retirado o una ejecución sustituida no arrancan', (
 
   it('una ejecución atrasada por evidencia nueva no arranca: RUN_STALE', async () => {
     const run = asRun(await request(ana));
-    await accept(
-      ana,
-      envelope(ana, 'AVAILABILITY_CHANGED', {
-        default_daily_minutes: 40,
-        weekly_availability_json: {},
-      }),
-    );
+    await advanceStream(ana);
     expect((await startPlannedSession(ana.id, run.runId, { client: admin })).kind).toBe(
       'RUN_STALE',
     );

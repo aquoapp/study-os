@@ -53,8 +53,8 @@ let max: Learner;
 
 const FIXTURE: DurationSource = {
   provenance: 'FIXTURE',
-  minutesFor: ({ learningUnitIds, questionIds }) => ({
-    units: new Map(learningUnitIds.map((id) => [id, 5])),
+  minutesFor: ({ learningUnitVersionIds, questionIds }) => ({
+    units: new Map(learningUnitVersionIds.map((id: string) => [id, 5])),
     questions: new Map(questionIds.map((id) => [id, 3])),
   }),
 };
@@ -88,10 +88,7 @@ async function currentRun(learner: Learner): Promise<string> {
 
 /** Nueva ejecución distinta de la actual: cambia la disponibilidad declarada. */
 async function supersedingRun(learner: Learner, minutes: number): Promise<string> {
-  const update = await learner.client
-    .from('learner_settings')
-    .update({ default_daily_minutes: minutes })
-    .eq('user_id', learner.id);
+  const update = await setAvailabilityFor(learner, minutes, {});
   if (update.error) throw new Error(update.error.message);
   return currentRun(learner);
 }
@@ -111,10 +108,7 @@ beforeAll(async () => {
       .update({ timezone: 'Europe/Madrid' })
       .eq('id', learner.id);
     if (tz.error) throw new Error(tz.error.message);
-    const settings = await learner.client
-      .from('learner_settings')
-      .update({ weekly_availability_json: {}, default_daily_minutes: 40 })
-      .eq('user_id', learner.id);
+    const settings = await setAvailabilityFor(learner, 40, {});
     if (settings.error) throw new Error(settings.error.message);
   }
 }, 600_000);
@@ -133,6 +127,49 @@ afterAll(async () => {
     expect(Number(residue[0]?.n)).toBe(0);
   }
 }, 300_000);
+
+/**
+ * Mueve el presupuesto declarado · R-8.
+ *
+ * La escritura directa desde el token del aprendiz está revocada desde Phase 4B, así que esto va
+ * con el rol de servicio. Y va **sobre la tabla**, no por `set_availability`, a propósito: esa
+ * función emite `AVAILABILITY_CHANGED`, y un evento más adelanta el stream del aprendiz, deja la
+ * proyección del motor atrasada y obliga a una puesta al día en medio de pruebas que cuentan
+ * ejecuciones y posiciones. Estas pruebas no comprueban el camino de declaración —lo hacen
+ * `rls.userIsolation.phase2` y `phase4b.hardGates`—: lo que necesitan es mover el presupuesto.
+ */
+async function setAvailabilityFor(
+  learner: Learner,
+  defaultDailyMinutes: number,
+  weekly: Record<string, number>,
+): Promise<{ error: { message: string } | null }> {
+  const { error } = await admin
+    .from('learner_settings')
+    .update({ default_daily_minutes: defaultDailyMinutes, weekly_availability_json: weekly })
+    .eq('user_id', learner.id);
+  return { error: error ? { message: error.message } : null };
+}
+
+/**
+ * Un rechazo que **preserva** la unicidad de sesión abierta, bajo concurrencia real.
+ *
+ * La restricción es una exclusión **diferida**, así que se comprueba al confirmar. Con varias
+ * transacciones peleándose por la misma fila, PostgreSQL puede resolver el conflicto de dos
+ * maneras: nombrando la restricción violada, o detectando un abrazo mortal y eligiendo una víctima.
+ * Las dos revierten, las dos preservan la invariante, y cuál toca no lo decide el producto.
+ *
+ * Lo que **no** se relaja es la invariante: el caso sigue afirmando que queda exactamente una
+ * sesión abierta. Esto solo admite las dos formas del rechazo en vez de una, que es lo que la base
+ * de datos de verdad puede devolver.
+ */
+function assertPreservesUniqueness(message: string | undefined): void {
+  const text = message ?? '';
+  const nombrada = text.includes(EXCLUSION);
+  const abrazoMortal = /deadlock detected/i.test(text);
+  if (!nombrada && !abrazoMortal) {
+    throw new Error(`rechazo que no preserva la unicidad de sesión abierta: ${text}`);
+  }
+}
 
 describe('P4-G10 · los diez casos', () => {
   it('1 · sin sesión abierta, crear una sesión funciona', async () => {
@@ -213,7 +250,18 @@ describe('P4-G10 · los diez casos', () => {
     expect(openCount(lia)).toBe(1);
   });
 
-  it('8 · arrancar dos veces la misma ejecución devuelve la misma sesión, también tras cerrarla', async () => {
+  /*
+   * **Invertida por autorización · P4B-D2 · B2-a.**
+   *
+   * Hasta Phase 4A, arrancar dos veces la misma ejecución devolvía la misma sesión **también tras
+   * cerrarla**, y eso era la idempotencia por ejecución de §U.6. La decisión la enmienda: una
+   * sesión terminal significa que la ejecución está **consumida**, y devolver una sesión muerta
+   * dejaría a la persona atrapada en un plan que ya terminó.
+   *
+   * La idempotencia **no desaparece**: sigue valiendo mientras la sesión está abierta, que es
+   * cuando sirve de algo. Lo que cambia es el caso terminal, y su rechazo tiene nombre propio.
+   */
+  it('8 · devuelve la misma sesión mientras está abierta; tras cerrarla, RUN_ALREADY_CONSUMED', async () => {
     await closeOpenSessions(lia);
     const run = await supersedingRun(lia, 35);
     const first = await startPlannedSession(lia.id, run, { client: admin });
@@ -225,7 +273,8 @@ describe('P4-G10 · los diez casos', () => {
     }
     await closeOpenSessions(lia);
     const closed = await startPlannedSession(lia.id, run, { client: admin });
-    expect(closed).toMatchObject({ kind: 'STARTED', reused: true });
+    expect(closed.kind).toBe('RUN_ALREADY_CONSUMED');
+    // Y no atrapa: no queda ninguna sesión abierta, así que pedir plan escribirá una sucesora.
     expect(openCount(lia)).toBe(0);
   });
 
@@ -235,8 +284,9 @@ describe('P4-G10 · los diez casos', () => {
     const creates = await Promise.all(Array.from({ length: 5 }, () => fpsCreate(lia)));
     expect(creates.filter((r) => r.error === null)).toHaveLength(1);
     for (const r of creates.filter((x) => x.error !== null)) {
-      expect(r.error?.message).toContain(EXCLUSION);
+      assertPreservesUniqueness(r.error?.message);
     }
+    // La invariante, intacta: **exactamente una** sesión abierta.
     expect(openCount(lia)).toBe(1);
 
     // Planificada contra ajena al Planner, a la vez.

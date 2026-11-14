@@ -15,7 +15,7 @@
 
 import { spawnSync } from 'node:child_process';
 
-import { assertPinnedCli, launchArgs, REPO_ROOT } from './supabase-cli.mjs';
+import { assertPinnedCli, launchArgs, REPO_ROOT, runSupabase } from './supabase-cli.mjs';
 import {
   AUTHORIZATION_ENV_VAR,
   assertDestructiveOperationAllowed,
@@ -29,7 +29,25 @@ const COMMANDS = {
   diff: { args: ['db', 'diff'], destructive: null, localOnly: false },
   // `--local` no es un valor por defecto: es parte del comando y no se puede quitar.
   reset: { args: ['db', 'reset', '--local'], destructive: 'db-reset', localOnly: true },
+  /**
+   * Aplica a una base **remota** las migraciones del repositorio · Phase 4B.
+   *
+   * Tres cosas que lo distinguen de los demás comandos, y las tres son deliberadas:
+   *
+   *   1. **la cadena de conexión no se escribe en la invocación.** La lee este script del entorno y
+   *      la pasa al CLI por su cuenta. Escribirla en la línea de comandos la dejaría en el
+   *      historial del shell y en cualquier transcripción;
+   *   2. **la salida se redacta.** Va por `runSupabase`, no por `stdio: 'inherit'`, porque el
+   *      camino de error del CLI es exactamente por donde se escapó una credencial en D-25;
+   *   3. **exige autorización explícita** como el reset. Aplicar esquema a una base remota no borra
+   *      datos, pero cambia la autoridad del esquema de un entorno entero, y EC-011 dice que eso lo
+   *      gobiernan las migraciones del repositorio **con** aprobación, no de paso.
+   */
+  push: { args: ['db', 'push'], destructive: 'db-push', localOnly: false, redact: true },
 };
+
+/** PRODUCTION no se muta, y tampoco se intenta: la comprobación es del ref, no de la etiqueta. */
+const PRODUCTION_REF = 'nzcgufeycvehczroryoe';
 
 /**
  * Banderas que redirigen la operación fuera de la instancia local.
@@ -125,6 +143,35 @@ if (command.destructive) {
 
 const { pinned, installed } = assertPinnedCli();
 console.error(`CLI de Supabase ${installed} (fijado ${pinned})`);
+
+if (command.redact) {
+  /*
+   * El destino sale del entorno, nunca de la invocación. Así la cadena no aparece en el historial
+   * del shell ni en ninguna transcripción, y `runSupabase` la redacta de toda salida, incluida la
+   * de error, que es la lección de D-25.
+   */
+  const dbUrl = process.env['SUPABASE_DB_URL'];
+  if (!dbUrl) {
+    console.error('✘ SUPABASE_DB_URL no está definida: sin destino no se aplica nada.');
+    console.error('');
+    console.error('  Inyéctala con: node --env-file=.env.staging.local tools/db.mjs push');
+    process.exit(1);
+  }
+  if (dbUrl.includes(PRODUCTION_REF)) {
+    console.error('✘ la cadena apunta a PRODUCTION. Esta operación no se ejecuta ahí.');
+    process.exit(1);
+  }
+  try {
+    const output = runSupabase([...command.args, '--db-url', dbUrl, ...extra]);
+    if (output.trim() !== '') console.log(output.trimEnd());
+    console.error('✔ migraciones aplicadas');
+    process.exit(0);
+  } catch (error) {
+    // El mensaje ya viene redactado por `runSupabase`: se imprime tal cual.
+    console.error(`✘ ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
+}
 
 const run = spawnSync(process.execPath, launchArgs([...command.args, ...extra]), {
   cwd: REPO_ROOT,

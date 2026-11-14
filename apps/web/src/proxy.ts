@@ -101,9 +101,11 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Product UX Contract §O · «ENTRADA └─ HOY · único destino». Mandaba a `/cuenta`, que el
+  // propio contrato sitúa fuera del vertical y que no enlaza a ninguna parte.
   if (userId && isAuthRoute(pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = '/cuenta';
+    url.pathname = '/hoy';
     url.search = '';
     return NextResponse.redirect(url);
   }

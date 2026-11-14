@@ -19,7 +19,12 @@ test.describe('app.boot · gate P0-G1', () => {
 
     expect(response?.status()).toBe(200);
     await expect(page.getByTestId('app-root')).toBeVisible();
-    await expect(page.getByTestId('phase-marker')).toHaveText('Phase 0 · Foundation');
+    /*
+     * El marcador de fase desaparece: anunciaba «Phase 0 · Foundation» mucho después de que
+     * dejara de ser cierto, y esta aserción lo **congelaba**. Un gate de arranque comprueba que
+     * la aplicación monta; qué fase es no es asunto de la portada.
+     */
+    await expect(page.getByTestId('phase-marker')).toHaveCount(0);
     expect(consoleErrors, `errores de consola: ${consoleErrors.join(' | ')}`).toEqual([]);
   });
 

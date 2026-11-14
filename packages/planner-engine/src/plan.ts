@@ -115,7 +115,9 @@ export function assertPlannerInput(input: PlannerInput): void {
       throw new PlannerInputError(`patrón activo sin evidencia negativa en ${concept.conceptId}`);
     }
     for (const unit of concept.units) {
-      if (!isMinutes(unit.minutes)) {
+      // ADR-013 §2.5 · la ausencia es dato y se excluye con razón propia; un número presente
+      // sigue teniendo que ser un número de minutos válido.
+      if (unit.minutes !== null && !isMinutes(unit.minutes)) {
         throw new PlannerInputError(`duración inválida en la unidad ${unit.learningUnitId}`);
       }
     }
@@ -201,8 +203,13 @@ function resolveAction(concept: PlannerConcept, kind: ActionKind): Resolution {
 
   if (kind === 'LEARN' || kind === 'RELEARN_CHECK') {
     if (concept.units.length === 0) return { ok: false, reason: 'NO_PUBLISHED_UNIT' };
-    const unit = firstUnit(concept.units.filter((candidate) => !candidate.sourceExcluded));
-    if (!unit) return { ok: false, reason: 'SOURCE_STATUS_EXCLUDED' };
+    const available = concept.units.filter((candidate) => !candidate.sourceExcluded);
+    if (available.length === 0) return { ok: false, reason: 'SOURCE_STATUS_EXCLUDED' };
+    // ADR-013 §2.5 · una versión sin duración declarada no es un destino planificable, igual que
+    // una con la fuente excluida. **No se rellena** con ningún valor: si ninguna la declara, el
+    // candidato se excluye con su razón propia y la ejecución sigue con el resto.
+    const unit = firstUnit(available.filter((candidate) => candidate.minutes !== null));
+    if (!unit || unit.minutes === null) return { ok: false, reason: 'NO_DURATION_METADATA' };
     steps.push({
       step: 'LEARN',
       itemType: 'LEARNING_UNIT',
@@ -340,6 +347,31 @@ export function plan(input: PlannerInput): PlanDecision {
   }
 
   return finish(actions.length === 0 ? 'NOTHING_FITS' : 'PLANNED');
+}
+
+/**
+ * Minutos de la acción de cada candidato **elegible**, por concepto.
+ *
+ * Deriva de la misma entrada y con las mismas reglas que `plan`, y existe para que
+ * `NOTHING_FITS` pueda decir con verdad cuánto dura la acción elegible más corta (P4B-D1), que el
+ * contrato de producto autoriza a comunicar.
+ *
+ * **No entra en `PlanDecision` a propósito.** La decisión es lo que se serializa, se guarda y se
+ * reproduce byte a byte (P4-G4): ampliar su forma cambiaría el texto canónico de toda ejecución
+ * pasada al reproducirla. Esto es una **derivación**, no un hecho persistido, y por eso vive
+ * aparte y no se guarda en ninguna parte.
+ */
+export function eligibleActionMinutes(input: PlannerInput): ReadonlyMap<string, number> {
+  const out = new Map<string, number>();
+  for (const concept of input.concepts) {
+    if (baseExclusion(concept)) continue;
+    const need = needOf(concept);
+    const kind = actionKindOf(need);
+    if (!kind) continue;
+    const resolved = resolveAction(concept, kind);
+    if (resolved.ok) out.set(concept.conceptId, resolved.minutes);
+  }
+  return out;
 }
 
 function auditOf(

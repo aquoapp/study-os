@@ -166,6 +166,10 @@ describe('la superficie de producto es exactamente el vertical del FPS', () => {
       .sort();
     const permitidas = [
       'actions',
+      // Phase 4B · docs/PRODUCT_UX_CONTRACT.md §O autoriza exactamente una ruta más: /ajustes
+      // (S12), la disponibilidad habitual y la zona horaria. **No es el espacio PLAN**, que es de
+      // Phase 7. La lista se amplía por autorización y con nombre, nunca por acumulación.
+      'ajustes',
       'aprender',
       'comprobar',
       'cuenta',

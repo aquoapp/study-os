@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { requireVerifiedIdentity } from '../../server/auth/identity';
+import { setAvailability, setTimezone } from '../../server/planner/availability';
 import { createSupabaseServerClient } from '../../server/supabase/server-client';
 
 /**
@@ -13,9 +14,12 @@ import { createSupabaseServerClient } from '../../server/supabase/server-client'
  * First Product Sight, que no están autorizados.
  *
  * La identidad la decide el servidor (INV-116, Manifest §14): el `user_id` sale de
- * `requireVerifiedIdentity`, nunca del formulario. La escritura va con el token del propio
- * aprendiz, de modo que la política RLS —`user_id = auth.uid()` en `USING` y en
- * `WITH CHECK`— es quien autoriza la fila, no este código.
+ * `requireVerifiedIdentity`, nunca del formulario. El objetivo se escribe con el token del propio
+ * aprendiz, de modo que la política RLS —`user_id = auth.uid()` en `USING` y en `WITH CHECK`— es
+ * quien autoriza la fila, no este código.
+ *
+ * **Phase 4B · R-8.** La disponibilidad ya no: pasa por `public.set_availability`, que escribe el
+ * estado canónico y emite `AVAILABILITY_CHANGED` en la misma transacción.
  */
 
 export interface OnboardingActionState {
@@ -51,6 +55,24 @@ export async function completeOnboardingAction(
     if (minutes !== null && minutes > 0) availability[day] = minutes;
   }
 
+  /*
+   * Phase 4B · §I.1 · §O · la **zona horaria declarada**.
+   *
+   * Sin ella no existe «hoy» y el Planner se niega a inventarlo, de modo que terminar el
+   * onboarding sin declararla dejaría a la persona en un estado que no puede hacer nada.
+   *
+   * UX-INV-21 · la aporta ella, con una selección explícita. Aquí no se deduce del servidor, ni de
+   * la IP, ni del navegador, y **no se rellena con UTC**: si no llega, se pide.
+   */
+  const timezone = formData.get('timezone');
+  if (typeof timezone !== 'string' || timezone.trim() === '') {
+    return { error: 'Elige en qué zona horaria estudias.', ok: false };
+  }
+  const declared = await setTimezone(identity.userId, timezone.trim());
+  if (declared.kind !== 'SAVED') {
+    return { error: 'Esa zona horaria no es válida. Elige otra de la lista.', ok: false };
+  }
+
   const packId = formData.get('exam_pack_id');
   if (typeof packId !== 'string' || packId.trim() === '') {
     return { error: 'Elige el examen que quieres preparar.', ok: false };
@@ -58,19 +80,34 @@ export async function completeOnboardingAction(
 
   const startingLevel = formData.get('starting_level');
   const targetDate = formData.get('target_date');
-  const diagnostic = formData.get('diagnostic_preference');
 
-  const settings = await supabase.from('learner_settings').upsert(
-    {
-      user_id: identity.userId,
-      default_daily_minutes: dailyMinutes,
-      weekly_availability_json: availability,
-      diagnostic_preference: diagnostic === 'TAKE' || diagnostic === 'SKIP' ? diagnostic : null,
-    },
-    { onConflict: 'user_id' },
-  );
+  /*
+   * **R-8 · Phase 4B.** La disponibilidad ya no se escribe directamente sobre la tabla.
+   *
+   * Hasta hoy esta acción hacía un `upsert` con el token de la persona, y `AVAILABILITY_CHANGED`
+   * existía con contrato de campos pero **no lo emitía nadie**: el estado canónico cambiaba sin su
+   * declaración duradera. Ahora las dos cosas nacen juntas dentro de `public.set_availability`, en
+   * la misma transacción, y el evento es autoritativo de servidor (INV-118).
+   *
+   * Esto **no** convierte la disponibilidad en evidencia de aprendizaje: es una declaración
+   * duradera de la persona (T1), y el Learning Engine no la mira.
+   */
+  /*
+   * **OBS-4B-H05.** El onboarding ya no pregunta por el diagnóstico, así que no declara ninguna
+   * preferencia: se pasa `null`, que es lo que la columna admite y lo que tenía cualquiera que no
+   * hubiera respondido. El parámetro de `set_availability` **no se toca** —la infraestructura
+   * sobrevive intacta para cuando el diagnóstico exista—, y lo ya guardado por quien respondió
+   * antes se conserva sin reinterpretar.
+   */
+  const settings = await setAvailability(identity.userId, {
+    defaultDailyMinutes: dailyMinutes,
+    weekly: availability,
+    diagnosticPreference: null,
+  });
   // El mensaje del proveedor no se propaga tal cual: puede describir restricciones internas.
-  if (settings.error) return { error: 'No se pudieron guardar tus preferencias.', ok: false };
+  if (settings.kind !== 'SAVED') {
+    return { error: 'No se pudieron guardar tus preferencias.', ok: false };
+  }
 
   const existing = await supabase
     .from('learner_exam_goals')

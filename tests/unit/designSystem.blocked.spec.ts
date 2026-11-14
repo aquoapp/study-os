@@ -29,16 +29,23 @@ import { REPO_ROOT } from './lib/run-guard';
  * `governingDocuments.registry.spec`.
  *
  * ---------------------------------------------------------------------------
- * Y el estado cambió de BLOCKED a satisfecho bajo restricciones
+ * El estado pasó por dos correcciones, y esta es la segunda
  *
- * La opción A de SD-019 está autorizada y aplicada. Bajo sus restricciones, todo
- * texto renderizado alcanza el contraste que WCAG le exige, y eso se mide en el
- * navegador. Ese es el criterio de aceptación de REQ-A06, así que declararlo
- * bloqueado era describir mal el estado: lo que queda abierto —elegir entre B y
- * C— no condiciona ningún entregable de Phase 0.
+ * Primero dejó de ser `BLOCKED`: la opción A de SD-019 se autorizó y se aplicó, y
+ * bajo sus restricciones todo texto renderizado alcanzaba el contraste exigido,
+ * medido en el navegador. Ese es el criterio de aceptación de REQ-A06.
  *
- * Estas pruebas vigilan las dos formas de equivocarse: declarar el paso completo
- * sin restricciones, y seguir declarándolo bloqueado cuando ya no lo está.
+ * Después, el 2026-09-20, Ana cerró SD-019 con la **opción C**: ningún valor
+ * congelado se mueve y §14 se aclara —**AA aplica al texto**—, de modo que las
+ * restricciones dejan de ser el precio de una decisión pendiente y pasan a ser la
+ * norma. Con una más, **AA-1**: `magenta` sobre `canvas` mide 4.47.
+ *
+ * El código tardó en seguir a la autoridad, y ese desfase se registró como
+ * **OBS-4B-03**. Esta prueba se mueve **con** el código, en el mismo acto.
+ *
+ * Vigila ahora tres formas de equivocarse: declarar el paso completo sin
+ * restricciones, seguir declarándolo bloqueado cuando no lo está, y seguir
+ * describiendo C como diferida cuando ya está aceptada.
  * ---------------------------------------------------------------------------
  */
 
@@ -56,22 +63,32 @@ describe('procedencia de los tokens', () => {
   });
 });
 
-describe('P0-S7 y REQ-A06 · satisfechos bajo la opción A', () => {
+describe('P0-S7 y REQ-A06 · satisfechos bajo la norma de la opción C', () => {
   it('el estado declarado no es BLOCKED ni COMPLETE', () => {
-    expect(DESIGN_SYSTEM_STATUS).toBe('SATISFIED_UNDER_SD019_A');
+    expect(DESIGN_SYSTEM_STATUS).toBe('SATISFIED_UNDER_SD019_C');
     expect(isDesignSystemBlocked()).toBe(false);
   });
 
   it('nombra qué satisface y bajo qué decisión', () => {
     expect([...DESIGN_SYSTEM_SOURCE.satisfies]).toEqual(['P0-S7', 'REQ-A06']);
-    expect(DESIGN_SYSTEM_SOURCE.decision).toBe('SD-019 opción A · autorizada para Phase 0');
+    expect(DESIGN_SYSTEM_SOURCE.decision).toBe(
+      'SD-019 opción C · aceptada el 2026-09-20 · AA aplica al texto',
+    );
   });
 
-  it('las restricciones de la opción A están escritas, no implícitas', () => {
+  it('las cuatro restricciones de la opción C están escritas y medidas', () => {
     const constraints = [...DESIGN_SYSTEM_COVERAGE.constraints].join(' ');
     expect(constraints).toContain('teal y amber no llevan texto normal');
     expect(constraints).toContain('slate solo como texto sobre surface');
-    expect(DESIGN_SYSTEM_COVERAGE.constraints.length).toBeGreaterThanOrEqual(3);
+    // AA-1 · hallazgo de Wave 3, medido al construir el sistema visual.
+    expect(constraints).toContain('magenta nunca como texto normal sobre canvas');
+    expect(constraints).toContain('4.47');
+    expect(DESIGN_SYSTEM_COVERAGE.constraints.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('la separación surface/canvas es restricción de profundidad, no de contraste', () => {
+    expect(DESIGN_SYSTEM_COVERAGE.depthConstraint).toContain('1.09');
+    expect(DESIGN_SYSTEM_COVERAGE.depthConstraint).toContain('profundidad');
   });
 
   it('separa lo verificado, las restricciones y lo diferido', () => {
@@ -112,13 +129,44 @@ describe('P0-S7 y REQ-A06 · satisfechos bajo la opción A', () => {
   });
 });
 
-describe('SD-019 · B y C quedan diferidas, no bloquean', () => {
-  it('elegir entre B y C sigue abierto, con plazo antes de Phase 5', () => {
+describe('SD-019 · cerrada con la opción C · OBS-4B-03', () => {
+  it('SD-019 ya no figura como decisión diferida', () => {
     const deferred = [...DESIGN_SYSTEM_COVERAGE.deferred].join(' ');
-    expect(deferred).toContain('elegir entre B');
-    expect(deferred).toContain('antes de Phase 5');
-    expect(DESIGN_SYSTEM_SOURCE.deferredDeadline).toBe('antes de Phase 5');
+    expect(deferred).not.toContain('SD-019');
+    expect(deferred).not.toContain('elegir entre B');
+    expect(Object.keys(DESIGN_SYSTEM_SOURCE)).not.toContain('deferredDeadline');
+  });
+
+  it('la familia tipográfica dejó de estar diferida al ratificarse IBM Plex Sans', () => {
+    const deferred = [...DESIGN_SYSTEM_COVERAGE.deferred].join(' ');
+    expect(deferred).not.toContain('familia tipográfica concreta');
+  });
+
+  it('quedan decisiones diferidas, pero ninguna de ellas es SD-019', () => {
+    // El estado sigue siendo «no COMPLETE»: SD-008, el tema oscuro, la marca
+    // externa y las 18 familias de §16 siguen abiertas. Cerrar SD-019 no las cierra.
     expect(hasDeferredDesignDecision()).toBe(true);
+    expect(DESIGN_SYSTEM_COVERAGE.deferred.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('ni el código ni los tokens siguen diciendo que C está diferida', () => {
+    // Esta es exactamente la deuda que OBS-4B-03 registró: la autoridad cambió el
+    // 2026-09-20 y el código seguía describiendo el estado anterior.
+    const status = read('packages/design-system/src/status.ts');
+    const tokens = read('packages/design-system/src/tokens.ts');
+    for (const source of [status, tokens]) {
+      expect(source).not.toContain('C (modificar §14)');
+      expect(source).not.toContain('diferido con plazo antes');
+    }
+    expect(status).toContain('opción C');
+    expect(tokens).toContain('opción C');
+  });
+
+  it('AA-1 está escrita como restricción de par, no de color', () => {
+    const tokens = read('packages/design-system/src/tokens.ts');
+    expect(tokens).toContain('NON_TEXT_FOREGROUNDS_ON_CANVAS');
+    expect(tokens).toContain('4.47');
+    expect(tokens).toContain('AA-1');
   });
 
   it('lo diferido no aparece como bloqueo de Phase 0', () => {
@@ -128,10 +176,14 @@ describe('SD-019 · B y C quedan diferidas, no bloquean', () => {
     expect(Object.keys(DESIGN_SYSTEM_SOURCE)).not.toContain('blockedBy');
   });
 
-  it('SD-019 está registrado en el SPEC_DIFF_LOG con la opción autorizada', () => {
+  it('SD-019 está registrado en el SPEC_DIFF_LOG con su aceptación', () => {
     const log = read('docs/SPEC_DIFF_LOG.md');
     expect(log).toContain('SD-019');
+    // La entrada original con la opción A sigue ahí: el registro no reescribe historia.
     expect(log).toContain('opción A');
+    // Y la aceptación de la opción C, con AA-1, la corrige por adenda.
+    expect(log).toContain('opción C');
+    expect(log).toContain('AA-1');
   });
 
   it('el checkpoint no declara P0-S7 ni REQ-A06 bloqueados', () => {

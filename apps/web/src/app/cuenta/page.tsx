@@ -62,6 +62,18 @@ export default async function AccountPage() {
         </dl>
       )}
 
+      {/*
+        Salida de vuelta al vertical. `/cuenta` sigue estando fuera del vertical (Product UX
+        Contract §O) y no gana ninguna capacidad: solo deja de ser un callejón. Sin este enlace,
+        cualquiera que llegue aquí se queda sin camino salvo cerrar sesión, que es exactamente
+        el bloqueo que se está corrigiendo.
+      */}
+      <p style={{ marginTop: 24 }}>
+        <a className="so-action" href="/hoy" data-testid="cuenta-volver-a-hoy">
+          Volver a Hoy
+        </a>
+      </p>
+
       <form action={signOutAction}>
         <button
           type="submit"

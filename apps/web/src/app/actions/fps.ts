@@ -2,13 +2,6 @@
 
 import { redirect } from 'next/navigation';
 
-import {
-  FPS_SESSION_TYPE,
-  selectFixedSessionItems,
-  type PublishedQuestion,
-  type PublishedUnit,
-} from '@study-os/domain';
-
 import { requireVerifiedIdentity } from '../../server/auth/identity';
 import { createSupabaseServerClient } from '../../server/supabase/server-client';
 import {
@@ -19,15 +12,8 @@ import {
   EventRejected,
   newEventId,
 } from '../../server/fps/events';
-import {
-  deriveStep,
-  findOpenSession,
-  loadSessionState,
-  pathForStep,
-  submittedEventFor,
-  type ItemRow,
-} from '../../server/fps/session';
-import { loadQuestionContent, loadUnitContent } from '../../server/fps/content';
+import { findOpenSession, loadSessionState, submittedEventFor } from '../../server/fps/session';
+import { advanceToCurrentStep } from '../../server/session/flow';
 import { scheduleProjection } from '../../server/engine/schedule';
 
 /**
@@ -81,160 +67,21 @@ async function context() {
  * a emitirse. El identificador se deriva del ítem, de modo que dos peticiones simultáneas
  * producen el mismo evento y el servidor devuelve la segunda como repetición.
  */
-async function prepareStep(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  sessionId: string,
-  item: ItemRow,
-): Promise<void> {
-  if (item.item_type === 'LEARNING_UNIT') {
-    if (item.presented_learning_unit_version_id) return;
-    const unit = await loadUnitContent(supabase, item);
-    if (!unit) return;
-    await appendEvent(
-      supabase,
-      buildEnvelope({
-        eventId: derivedEventId(`view:${item.id}`),
-        type: 'LEARNING_UNIT_VIEWED',
-        sessionId,
-        itemId: item.id,
-        payload: { learning_unit_version_id: unit.versionId },
-      }),
-    );
-    return;
-  }
-  if (item.item_type === 'QUESTION') {
-    if (item.presented_representation_id) return;
-    const question = await loadQuestionContent(supabase, item);
-    if (!question) return;
-    await appendEvent(
-      supabase,
-      buildEnvelope({
-        eventId: derivedEventId(`present:${item.id}`),
-        type: 'QUESTION_PRESENTED',
-        sessionId,
-        itemId: item.id,
-        payload: { question_representation_id: question.representationId },
-      }),
-    );
-  }
-}
-
-/** Recarga el estado, deriva el paso, lo prepara y devuelve su ruta. */
-async function advance(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-): Promise<string> {
-  const session = await findOpenSession(supabase);
-  if (!session) return '/hoy';
-  const state = await loadSessionState(supabase, session);
-  const step = deriveStep(state);
-  if (step.kind !== 'end') await prepareStep(supabase, session.id, step.item);
-  return pathForStep(step);
-}
-
 // ---------------------------------------------------------------------------------------
-// HOY
+// La selección fija se retira · P4-G34 · UX-INV-9
 // ---------------------------------------------------------------------------------------
-
-export async function startOrResumeSessionAction(): Promise<FpsActionState> {
-  let destination = '/hoy';
-  try {
-    const { supabase } = await context();
-    let session = await findOpenSession(supabase);
-
-    if (!session) {
-      const goal = await supabase
-        .from('learner_exam_goals')
-        .select('id, exam_pack_id')
-        .eq('status', 'ACTIVE')
-        .maybeSingle();
-      if (goal.error) return { error: GENERIC_ERROR };
-      const row = goal.data as { id: string; exam_pack_id: string } | null;
-      if (!row) redirect('/onboarding');
-
-      const units = await supabase
-        .from('learning_units')
-        .select('id, concept_id')
-        .eq('exam_pack_id', row.exam_pack_id)
-        .eq('status', 'PUBLISHED');
-      const questions = await supabase
-        .from('canonical_questions')
-        .select('id')
-        .eq('exam_pack_id', row.exam_pack_id)
-        .eq('status', 'PUBLISHED');
-      if (units.error || questions.error) return { error: GENERIC_ERROR };
-
-      const conceptKeys = await loadConceptKeys(
-        supabase,
-        (units.data ?? []).map((unit) => (unit as { concept_id: string }).concept_id),
-      );
-      const publishedUnits: PublishedUnit[] = (units.data ?? []).map((unit) => {
-        const typed = unit as { id: string; concept_id: string };
-        return { id: typed.id, conceptKey: conceptKeys.get(typed.concept_id) ?? typed.concept_id };
-      });
-      const publishedQuestions: PublishedQuestion[] = (questions.data ?? []).map((question) => ({
-        id: (question as { id: string }).id,
-      }));
-
-      const items = selectFixedSessionItems(publishedUnits, publishedQuestions);
-      if (items.length === 0) {
-        return { error: 'Todavía no hay contenido disponible para este examen.' };
-      }
-
-      const created = await supabase.rpc('create_study_session', {
-        p_goal_id: row.id,
-        p_session_type: FPS_SESSION_TYPE,
-        p_planned_minutes: null,
-        p_items: items,
-      });
-      // P4-G10 · EC-019 · la base impone una sola sesión abierta por persona. Si otra petición
-      // (un doble toque, otra pestaña) abrió una en el mismo instante, esta pierde al confirmar
-      // y lo correcto es continuar la que ganó, que es lo que HOY ofrece siempre.
-      const lostRace = created.error?.message.includes('study_sessions_one_open_per_user');
-      if (created.error && !lostRace) {
-        return { error: humanMessage(rejection(created.error.message)) };
-      }
-      session = await findOpenSession(supabase);
-      if (!session) return { error: GENERIC_ERROR };
-    }
-
-    if (session.status === 'PLANNED') {
-      await appendEvent(
-        supabase,
-        buildEnvelope({
-          eventId: derivedEventId(`start:${session.id}`),
-          type: 'SESSION_STARTED',
-          sessionId: session.id,
-        }),
-      );
-    } else if (session.status === 'INTERRUPTED') {
-      await appendEvent(
-        supabase,
-        buildEnvelope({ eventId: newEventId(), type: 'SESSION_RESUMED', sessionId: session.id }),
-      );
-    }
-
-    destination = await advance(supabase);
-  } catch (error) {
-    if (isRedirect(error)) throw error;
-    return { error: messageFor(error) };
-  }
-  redirect(destination);
-}
-
-async function loadConceptKeys(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  conceptIds: readonly string[],
-): Promise<Map<string, string>> {
-  const unique = [...new Set(conceptIds)];
-  if (unique.length === 0) return new Map();
-  const { data } = await supabase.from('concepts').select('id, concept_key').in('id', unique);
-  return new Map(
-    ((data ?? []) as Array<{ id: string; concept_key: string }>).map((row) => [
-      row.id,
-      row.concept_key,
-    ]),
-  );
-}
+//
+// `startOrResumeSessionAction` creaba la sesión con `selectFixedSessionItems` y el marcador
+// `FPS_FIXED`: la misma selección para todo el mundo. La sustituye `startTodayAction` en
+// `actions/planner.ts`, que arranca una ejecución real del Planner. La selección fija deja de
+// ser alcanzable desde cualquier camino de aprendiz.
+//
+// Lo que **no** desaparece: las sesiones `FPS_FIXED` ya registradas y su evidencia siguen
+// siendo legibles y válidas. No se reescribe historia.
+//
+// `prepareStep` y `advance` se extrajeron a `server/session/flow.ts` sin cambio de
+// comportamiento: nunca fueron específicos del FPS y ahora los usan los dos orígenes, de modo
+// que no existe una segunda máquina de estados paralela.
 
 // ---------------------------------------------------------------------------------------
 // Interrupción
@@ -287,7 +134,7 @@ export async function completeUnitAction(itemId: string): Promise<FpsActionState
         }),
       );
     }
-    destination = await advance(supabase);
+    destination = await advanceToCurrentStep(supabase);
   } catch (error) {
     if (isRedirect(error)) throw error;
     return { error: messageFor(error) };
@@ -415,7 +262,7 @@ export async function submitAnswerAction(
     scheduleProjection(identity.userId);
 
     const ordinal = state.items.find((item) => item.id === itemId)?.sort_order;
-    destination = ordinal ? `/comprobar/${ordinal}` : await advance(supabase);
+    destination = ordinal ? `/comprobar/${ordinal}` : await advanceToCurrentStep(supabase);
   } catch (error) {
     if (isRedirect(error)) throw error;
     return { error: messageFor(error) };
@@ -445,7 +292,7 @@ export async function viewFeedbackAction(itemId: string): Promise<FpsActionState
         }),
       );
     }
-    destination = await advance(supabase);
+    destination = await advanceToCurrentStep(supabase);
   } catch (error) {
     if (isRedirect(error)) throw error;
     return { error: messageFor(error) };
@@ -479,11 +326,6 @@ export async function completeSessionAction(): Promise<FpsActionState> {
 }
 
 // ---------------------------------------------------------------------------------------
-
-function rejection(message: string): string {
-  const match = /STUDY_OS_(?:EVENT|SESSION) · ([A-Z_]+)/.exec(message);
-  return match?.[1] ?? 'UNKNOWN';
-}
 
 /** `redirect()` lanza para interrumpir el render: nunca se trata como error de producto. */
 function isRedirect(error: unknown): boolean {
