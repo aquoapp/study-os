@@ -246,9 +246,75 @@ export async function createTestUser(env: TestEnv, label: string): Promise<TestU
   return { id: data.user.id, email, password, client };
 }
 
+/** Lo mínimo que el borrado necesita. Existe para poder probarlo contra un doble. */
+export interface UserEraser {
+  deleteUser(userId: string): Promise<{ error: { message: string } | null }>;
+}
+
+/** Intentos de borrado antes de rendirse. Un fallo transitorio no debe ensuciar la base. */
+export const ERASE_ATTEMPTS = 3;
+
+/**
+ * Borra un usuario de prueba, y **falla si no lo consigue**.
+ *
+ * ---------------------------------------------------------------------------
+ * Por qué esto importa tanto para una función de tres líneas
+ *
+ * La versión original era `await admin.auth.admin.deleteUser(userId)` **sin mirar el
+ * resultado**. Un borrado fallido volvía en silencio, el `afterAll` seguía hasta `purgePack`,
+ * y el síntoma aparecía lejos de la causa.
+ *
+ * Que ese síntoma sea exactamente el observado no es una conjetura, es una implicación:
+ * `ingest.purge_generated_pack` borra `content.answer_key_versions` pero **no**
+ * `question_attempts`, y los intentos solo desaparecen en cascada al borrar a su dueño. Por
+ * tanto «la purga choca con `question_attempts_answer_key_version_id_fkey`» equivale a «quedó
+ * un intento», y eso equivale a «un usuario con intentos sobrevivió al teardown». La FK hacía
+ * bien su trabajo; lo que faltaba era que alguien dijera qué había fallado de verdad.
+ *
+ * Dos cosas, entonces. **Nunca callar**: un error se propaga. Y **no depender de que una sola
+ * llamada salga bien**: bajo la carga de 34 ficheros contra el mismo proyecto, una llamada
+ * puede fallar de forma transitoria, así que se reintenta y se comprueba el resultado.
+ *
+ * Es la misma lección que el teardown global de los E2E ya tenía escrita —una limpieza que
+ * avisa y sigue produce suites en verde con cuentas huérfanas—. Aquí ni siquiera avisaba.
+ * ---------------------------------------------------------------------------
+ */
+export async function eraseTestUser(
+  eraser: UserEraser,
+  userId: string,
+  attempts: number = ERASE_ATTEMPTS,
+): Promise<void> {
+  let last = '';
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    let message: string;
+    try {
+      const { error } = await eraser.deleteUser(userId);
+      if (!error) return;
+      message = error.message;
+    } catch (thrown) {
+      // Un fallo de transporte llega como excepción, no como `error`. Cuenta igual.
+      message = thrown instanceof Error ? thrown.message : String(thrown);
+    }
+    last = message;
+  }
+  throw new Error(
+    `No se pudo borrar el usuario de prueba ${userId} tras ${attempts} intento(s): ${last}. ` +
+      'La limpieza no continúa: dejar el usuario haría fallar la purga del pack por su clave de ' +
+      'respuesta, y el error apuntaría al sitio equivocado.',
+  );
+}
+
 export async function deleteTestUser(env: TestEnv, userId: string): Promise<void> {
   const admin = adminClient(env);
-  await admin.auth.admin.deleteUser(userId);
+  const eraser: UserEraser = {
+    async deleteUser(id) {
+      const { error } = await admin.auth.admin.deleteUser(id);
+      // `message` está tipado como opcional: un error sin texto sigue siendo un error, y
+      // perderlo por falta de mensaje nos devolvería al silencio que esto corrige.
+      return { error: error ? { message: error.message ?? 'error sin mensaje' } : null };
+    },
+  };
+  await eraseTestUser(eraser, userId);
 }
 
 /** Páginas que se listan como máximo. Un tope de seguridad, no un límite real. */
