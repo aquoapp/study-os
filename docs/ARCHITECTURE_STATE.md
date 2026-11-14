@@ -892,3 +892,54 @@ BUILD de Phase 4B · esquema · migraciones · dependencias · mutación de STAG
 credenciales · el prerrequisito OBS-3.1-01 · Phase 1B · corpus oficial · readiness · PRODUCTION ·
 infraestructura de pago · AQUO · y la identidad externa de marca, que queda diferida y **no
 bloquea** Phase 4B.
+
+## 19. Phase 4B · Product Integration · FROZEN · PASS WITH DEBT · 2026-11-14
+
+**PHASE 4B · FROZEN · PASS WITH DEBT.** Aceptada por Ana el 2026-11-14 tras un walkthrough humano
+longitudinal de **dos días reales**, sin manipulación del reloj y sin rutas tecleadas. Candidato
+funcional aceptado `7c08e8a0eab56fd1ff83ad49c4fff89add85fdca`; integrada por el PR #23 (merge
+`f7886a76aa903619ee8e07a0e89fa26e95909bd7`, árbol `0def22e9a81c1415bb000130f1102866e864a6fc`) y
+etiquetada con el tag anotado `phase-4b-v1.0` (objeto
+`8231dd1c96b4c4748fbfcde3ab060bcc809fe9e8`). Los subárboles `apps`, `packages`, `supabase` y
+`tools` del merge son **byte a byte idénticos** a los del candidato; solo `tests` difiere, por el
+correctivo de arnés autorizado el mismo día. Detalle completo en
+[`docs/PHASE_4B_CHECKPOINT.md`](PHASE_4B_CHECKPOINT.md).
+
+**Qué cambia de verdad.** HOY deja de mostrar una selección fija y **consume el plan real del
+Planner**, con su presupuesto y su razón. El vertical queda navegable de punta a punta para una
+cuenta nueva, y el Learning Engine pliega la evidencia por sus dos rutas. **Sin migraciones
+nuevas**: Phase 4B vive entera dentro de la frontera de esquema ya congelada.
+
+**Las dos rutas del motor quedan demostradas por interacción humana**, no por inferencia: un
+pliegue `INCREMENTAL` por cada uno de los siete envíos, entre 1,8 y 2,8 s después de cada uno y
+antes de volver a HOY —eso es `after()` dentro de la server action—, y un pliegue posterior al
+volver a HOY que cubre el final de la sesión. Watermark final 49, stream contiguo 1→49, siete
+intentos para siete ítems sin duplicados y sin atribución cruzada.
+
+**Tres defectos de navegación corregidos durante la fase**, todos heredados de Phase 0: la entrada
+desembocaba en `/cuenta`, la portada solo enlazaba allí y `/ajustes` no tenía vuelta. Ninguna
+prueba lo había visto porque **todas abrían `/onboarding` tecleando la ruta**: la suite ejercitaba
+las pantallas y nunca el grafo que las une. Es la lección de D-26 un nivel más arriba, y ahora hay
+un caso que recorre el grafo sin escribir ninguna ruta.
+
+**OBS-4B-H05 · el onboarding ya no ofrece un diagnóstico que no existe.** `TAKE` y `SKIP` producían
+el mismo recorrido, porque el diagnóstico está fuera de alcance en v1 por el contrato del Planner.
+Por decisión de gobernanza se retira la pregunta y **no la infraestructura**: la columna, el
+parámetro de `set_availability`, `diagnostic_runs` y la exclusión del motor (H-P3-10) quedan
+intactos, y el `coalesce` de la RPC conserva lo que declaró quien respondió antes.
+
+**Correctivo de arnés (`fdaeb3e`), autorizado y demostrado.** El gate de base de datos fallaba
+desde el 12 de noviembre con una colisión de FK en `purge_generated_pack`. La causa no era la
+purga: `ingest.purge_generated_pack` borra `content.answer_key_versions` pero **no**
+`question_attempts`, que solo caen en cascada con su dueño, de modo que esa colisión equivale a
+«un usuario con intentos sobrevivió al teardown». Sobrevivía porque `deleteTestUser` ignoraba el
+error de borrado. Corregido con propagación y reintento, más seis casos de regresión contra un
+doble; **cinco ejecuciones consecutivas del gate con `test:integration` en verde**.
+
+**Deuda viva:** OBS-4B-HVIS-01, OBS-4B-HUX-01, OBS-4B-H02, OBS-4B-H04 y **OBS-4B-CI-01** (el build
+de `test:e2e:auth` falla de forma intermitente en CI al resolver `next/font/google`; vive en
+`apps/` y queda fuera de lo autorizado para esta congelación). OBS-4B-H03 retirada y OBS-4B-H05
+cerrada. Heredadas sin cambio: D-13, D-18, D-20, D-22, D-23, WATCH-P2-1 y OBS-3.1-01.
+
+**Lo que sigue sin autorizar:** Phase 5, Phase 1B, corpus oficial, readiness, Release, PRODUCTION,
+Vercel Production y AQUO.
