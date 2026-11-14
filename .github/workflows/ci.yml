@@ -333,6 +333,14 @@ jobs:
       - name: Instalar Chromium
         run: npx playwright install --with-deps chromium
 
+      # La prueba de frontera instala el corpus de verdad, así que deja el mundo usado. La
+      # campaña exige un mundo recién creado: §3 verifica el corpus **antes** de que el Actor
+      # empiece, y reinstalarlo sobre uno ya instalado falla, que es lo correcto.
+      - name: Mundo efímero desde cero · antes de la campaña
+        env:
+          NEXT_PUBLIC_ENVIRONMENT: local
+        run: npm run db:reset
+
       # La campaña no falla por un FAIL contractual: un FAIL es su resultado, no su error.
       # El veredicto se lee del informe, que es el artefacto citable.
       - name: Campaña · ejecución 1
