@@ -133,6 +133,14 @@ export interface RunnerResult {
   /** Qué decidió HOY al final. Se registra aunque no cierre el día. */
   readonly todayTerminalState: TodayTerminalState;
   readonly visits: number;
+  /**
+   * Desviaciones del escenario pre-registrado · §13.
+   *
+   * Un paso que no se pudo dar tal y como estaba descrito **no se silencia** y tampoco aborta
+   * la campaña cuando el escenario puede seguir sin él. Se registra, y el informe lo dice: una
+   * ejecución que se desvió y no lo cuenta vale menos que una que abortó.
+   */
+  readonly deviations: readonly string[];
 }
 
 /** Cuánto se espera a que el producto reaccione a una pulsación que navega. */
@@ -205,19 +213,26 @@ async function register(context: RunnerContext): Promise<void> {
 }
 
 /** Declara zona horaria y disponibilidad en `/ajustes`, que es donde el producto las pide. */
-async function declareAvailability(context: RunnerContext): Promise<void> {
+async function declareAvailability(context: RunnerContext, deviations: string[]): Promise<void> {
   const { page } = context;
   await page.goto(`${context.baseUrl}/ajustes`);
   if (await page.isVisible('[data-testid="ajustes-zona-select"]')) {
     await page.selectOption('[data-testid="ajustes-zona-select"]', AVAILABILITY_INPUT.timezone);
     await clickAndAdvance(page, '[data-testid="ajustes-zona-guardar"]');
+  } else {
+    deviations.push('/ajustes no ofreció el selector de zona horaria a una cuenta nueva');
   }
-  if (await page.isVisible('[data-testid="ajustes-habitual"]')) {
+  // `ajustes-habitual` es el **panel**, no el campo: rellenarlo lanzaría y dejaría toda la
+  // ejecución inválida. El campo del tiempo habitual es `ajustes-defecto`; el panel sirve de
+  // sonda de visibilidad, que es para lo que un aprendiz lo usa: ver si está ahí.
+  if (await page.isVisible('[data-testid="ajustes-defecto"]')) {
     await page.fill(
-      '[data-testid="ajustes-habitual"]',
+      '[data-testid="ajustes-defecto"]',
       String(AVAILABILITY_INPUT.defaultDailyMinutes),
     );
     await clickAndAdvance(page, '[data-testid="ajustes-guardar"]');
+  } else {
+    deviations.push('/ajustes no ofreció el campo de tiempo habitual a una cuenta nueva');
   }
 }
 
@@ -383,8 +398,20 @@ export async function runScenario(context: RunnerContext): Promise<RunnerResult>
   let log = emptyActorLog();
   let visits = 0;
 
+  const deviations: string[] = [];
   await register(context);
-  await declareAvailability(context);
+  // El paso 2 es preparación y es **redundante** con el onboarding, que pide zona horaria y
+  // minutos y los exige. Si no se puede dar, se registra como desviación y el escenario sigue:
+  // abortar aquí tiraría una campaña entera por un paso que el producto ya cubre después.
+  try {
+    await declareAvailability(context, deviations);
+  } catch (error) {
+    deviations.push(
+      `no se pudo declarar la disponibilidad en /ajustes: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
   await chooseGoal(context);
 
   while (visits < MAX_SCREEN_VISITS) {
@@ -428,6 +455,7 @@ export async function runScenario(context: RunnerContext): Promise<RunnerResult>
         finalPath: path,
         todayTerminalState,
         visits,
+        deviations,
       };
     }
     await clickAndAdvance(page, '[data-testid="hoy-primaria"]');
@@ -442,6 +470,7 @@ export async function runScenario(context: RunnerContext): Promise<RunnerResult>
         finalPath: pathOf(page),
         todayTerminalState: 'NOT_REACHED',
         visits,
+        deviations,
       };
     }
   }

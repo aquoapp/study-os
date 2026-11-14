@@ -160,6 +160,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
   let abortReason: string | null = null;
   let scenarioCompleted = false;
   let todayTerminalState: string = 'NOT_REACHED';
+  let deviations: readonly string[] = [];
   let log: ActorLog = emptyActorLog();
 
   try {
@@ -174,6 +175,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
     log = result.log;
     scenarioCompleted = result.completed;
     todayTerminalState = result.todayTerminalState;
+    deviations = result.deviations;
   } catch (error) {
     abortReason =
       error instanceof ScenarioAborted
@@ -339,6 +341,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
     summary,
     abortReason,
     notes,
+    deviations,
     teardownVerified: false,
     observationComplete,
     scenarioCompleted,

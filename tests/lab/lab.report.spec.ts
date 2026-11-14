@@ -87,6 +87,7 @@ function outcomeOf(
     summary,
     abortReason: null,
     notes: [],
+    deviations: [],
     teardownVerified: true,
     observationComplete: true,
     scenarioCompleted: true,
@@ -179,6 +180,27 @@ describe('el informe humano dice lo mismo, sin un número nuevo', () => {
     expect(report).toContain('NOT_ACTIVE');
     expect(report).toContain('no son evaluativas');
     expect(report).toContain('- una nota');
+  });
+
+  it('las desviaciones tienen sección propia, y «ninguna» se dice explícitamente', () => {
+    const sin = humanReport(outcomeOf([evaluation('P-01', 'PASS')]));
+    expect(sin).toContain('## Desviaciones del escenario');
+    expect(sin).toContain('Ninguna.');
+
+    const con = humanReport(
+      outcomeOf([evaluation('P-01', 'PASS')], {
+        deviations: ['/ajustes no ofreció el campo de tiempo habitual a una cuenta nueva'],
+      }),
+    );
+    expect(con).toContain('- /ajustes no ofreció el campo de tiempo habitual');
+    expect(con).not.toContain('Ninguna.');
+  });
+
+  it('el informe de máquina también las lleva', () => {
+    const parsed = JSON.parse(
+      machineReport(outcomeOf([evaluation('P-01', 'PASS')], { deviations: ['una desviación'] })),
+    ) as { run: { deviations: string[] } };
+    expect(parsed.run.deviations).toEqual(['una desviación']);
   });
 
   it('no afirma nada sobre eficacia pedagógica, y lo dice', () => {

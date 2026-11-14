@@ -128,13 +128,13 @@ const HAPPY: readonly PageScript[] = [
     visible: [
       '[data-testid="ajustes-zona-select"]',
       '[data-testid="ajustes-zona-guardar"]',
-      '[data-testid="ajustes-habitual"]',
+      '[data-testid="ajustes-defecto"]',
       '[data-testid="ajustes-guardar"]',
     ],
   },
   {
     path: '/ajustes',
-    visible: ['[data-testid="ajustes-habitual"]', '[data-testid="ajustes-guardar"]'],
+    visible: ['[data-testid="ajustes-defecto"]', '[data-testid="ajustes-guardar"]'],
   },
   { path: '/ajustes', visible: [] },
   {
@@ -194,7 +194,7 @@ describe('el recorrido pasa por superficies reales', () => {
     const { context, page } = contextFor(HAPPY);
     await runScenario(context);
     expect(page.selects).toContainEqual(['[data-testid="ajustes-zona-select"]', 'Europe/Madrid']);
-    expect(page.fills).toContainEqual(['[data-testid="ajustes-habitual"]', '30']);
+    expect(page.fills).toContainEqual(['[data-testid="ajustes-defecto"]', '30']);
   });
 
   it('elige el objetivo por el nombre visible del pack, no por su identificador', async () => {

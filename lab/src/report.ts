@@ -42,6 +42,8 @@ export interface CampaignOutcome {
   readonly abortReason: string | null;
   /** Observaciones de producto, no evaluativas. El Observer sigue NOT_ACTIVE. */
   readonly notes: readonly string[];
+  /** §13 · desviaciones del escenario pre-registrado. Vacío significa ninguna, no «sin mirar». */
+  readonly deviations: readonly string[];
   readonly teardownVerified: boolean;
   readonly observationComplete: boolean;
   readonly scenarioCompleted: boolean;
@@ -93,6 +95,7 @@ export function machineReport(outcome: CampaignOutcome): string {
         verdict: outcome.verdict,
         abortReason: outcome.abortReason,
         scenarioCompleted: outcome.scenarioCompleted,
+        deviations: outcome.deviations,
         observationComplete: outcome.observationComplete,
         teardownVerified: outcome.teardownVerified,
       },
@@ -174,6 +177,13 @@ export function humanReport(outcome: CampaignOutcome): string {
       `| ${evaluation.propertyId} | ${evaluation.record.contract} | ` +
         `${evaluation.record.coverage} | ${evaluation.record.humanReview} | ${evaluation.rationale} |`,
     );
+  }
+
+  lines.push('', '## Desviaciones del escenario', '');
+  if (outcome.deviations.length === 0) {
+    lines.push('Ninguna.');
+  } else {
+    for (const deviation of outcome.deviations) lines.push(`- ${deviation}`);
   }
 
   lines.push(
