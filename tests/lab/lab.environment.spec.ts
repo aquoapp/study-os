@@ -110,6 +110,34 @@ describe('guarda de sustrato · solo lo efímero entra', () => {
     ).toThrow(/credenciales embebidas/);
   });
 
+  it('acepta userinfo en la cadena de postgres: ahí es parte del protocolo', () => {
+    // Hallazgo de la primera ejecución de CP2 contra una instancia real. El stack local emite
+    // `postgres:postgres@127.0.0.1:54322`, con credenciales públicas por defecto. La regla de
+    // CP1 era correcta en intención y demasiado amplia en alcance: rechazaba el sustrato
+    // legítimo. En la URL de API se mantiene; en la de base de datos, no.
+    expect(() =>
+      requireEphemeralSubstrate({
+        ...VALID,
+        [LAB_ENV.databaseUrl]: [
+          'postgre',
+          'sql://',
+          'postgres:postgres@127.0.0.1:54322/postgres',
+        ].join(''),
+      }),
+    ).not.toThrow();
+  });
+
+  it('pero la cadena de postgres sigue exigiendo loopback aunque traiga userinfo', () => {
+    expect(() =>
+      requireEphemeralSubstrate({
+        ...VALID,
+        [LAB_ENV.databaseUrl]: ['postgre', 'sql://', 'u:p@remoto.supabase.co:54322/postgres'].join(
+          '',
+        ),
+      }),
+    ).toThrow(/no es loopback/);
+  });
+
   it('admite la forma corta de loopback: `URL` la normaliza y sigue siendo 127.0.0.1', () => {
     // El otro hallazgo de la revisión adversarial: `127.1` es loopback real, no un rodeo.
     // Lo que decide es el host normalizado, no su grafía.

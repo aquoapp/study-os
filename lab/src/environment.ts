@@ -76,16 +76,25 @@ function parseUrl(raw: string, label: string): URL {
 /**
  * Una URL es del sustrato efímero si su host es loopback y su puerto el declarado.
  *
- * **Sin userinfo.** `http://algo@127.0.0.1:54321` apunta de verdad al loopback —`algo` es
- * usuario, no destino—, así que no es una fuga; pero una URL con userinfo puede transportar
- * credenciales y se lee mal de un vistazo. Como el sustrato nunca la necesita, se rechaza: una
- * guarda que exige mirar dos veces para entender a dónde apunta no es una buena guarda.
+ * **Userinfo: depende de qué URL.** En la URL de API, `http://algo@127.0.0.1:54321` apunta de
+ * verdad al loopback —`algo` es usuario, no destino—, así que no es una fuga, pero oscurece la
+ * lectura y el sustrato no lo necesita: se rechaza. En una **cadena de postgres**, en cambio,
+ * el userinfo es la forma estándar de nombrar al usuario, y el stack local del CLI la emite así
+ * con credenciales públicas por defecto. Prohibirlo ahí rechazaría el sustrato legítimo.
+ *
+ * Esta distinción la descubrió la primera ejecución de CP2 contra una instancia real: la regla
+ * de CP1 era correcta en su intención y demasiado amplia en su alcance.
  *
  * Las formas cortas (`127.1`) sí se admiten: `URL` las normaliza a `127.0.0.1` y son loopback
  * real. Lo que decide es el host normalizado, no su grafía.
  */
-function assertLoopback(url: URL, label: string, expectedPort: number): void {
-  if (url.username !== '' || url.password !== '') {
+function assertLoopback(
+  url: URL,
+  label: string,
+  expectedPort: number,
+  { allowUserInfo = false }: { allowUserInfo?: boolean } = {},
+): void {
+  if (!allowUserInfo && (url.username !== '' || url.password !== '')) {
     throw new SubstrateRejected(
       `${label} lleva credenciales embebidas en la URL. El sustrato no las necesita y su ` +
         'presencia oscurece a dónde apunta la conexión.',
@@ -158,6 +167,9 @@ export function requireEphemeralSubstrate(env: SubstrateInput): EphemeralSubstra
     parseUrl(dbRaw as string, LAB_ENV.databaseUrl),
     LAB_ENV.databaseUrl,
     EPHEMERAL_DB_PORT,
+    // El userinfo es parte del protocolo en una cadena de postgres. Lo que protege aquí sigue
+    // siendo lo mismo: el host tiene que ser loopback y el puerto, el declarado.
+    { allowUserInfo: true },
   );
 
   return {
