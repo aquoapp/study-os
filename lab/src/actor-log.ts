@@ -60,6 +60,14 @@ export interface ResolvedTestimony {
   readonly resolved: boolean;
   /** Enunciados que el Actor vio y la observación no supo situar. */
   readonly unresolvedStems: readonly string[];
+  /**
+   * Enunciado visto → ítem de sesión, tal y como la observación lo situó.
+   *
+   * Lo necesita el ledger para enlazar cada acción **intentada** por el Actor con la acción
+   * **aceptada** por el producto. Sin este puente habría que fiarse del orden, y el orden no es
+   * evidencia.
+   */
+  readonly sessionItemByStem: ReadonlyMap<string, string>;
 }
 
 /**
@@ -90,7 +98,9 @@ export function resolveTestimony(
     submitsByItem: new Map(),
   };
 
-  if (rows === null) return { testimony: empty, resolved: false, unresolvedStems: [] };
+  if (rows === null) {
+    return { testimony: empty, resolved: false, unresolvedStems: [], sessionItemByStem: new Map() };
+  }
 
   const byStem = new Map<string, { sessionItemId: string; representationId: string }>();
   for (const row of rows) {
@@ -143,5 +153,8 @@ export function resolveTestimony(
     },
     resolved: unresolved.length === 0,
     unresolvedStems: unresolved,
+    sessionItemByStem: new Map(
+      [...byStem.entries()].map(([stem, resolved]) => [stem, resolved.sessionItemId]),
+    ),
   };
 }

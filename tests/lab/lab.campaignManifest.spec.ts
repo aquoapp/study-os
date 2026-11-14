@@ -98,11 +98,16 @@ describe('el manifiesto se niega a describir una campaña incoherente', () => {
   });
 });
 
-describe('la repetición autorizada (§16) es la misma campaña, no otra', () => {
-  it('conserva campaña e identidades y solo avanza el ordinal y el instante', () => {
+describe('la repetición autorizada (§16) comparte artefactos, no identificador', () => {
+  it('lleva un campaignId NUEVO: son dos campañas con los mismos artefactos', () => {
     const first = manifest();
     const second = repeatRun(first, '2026-11-14T22:00:00Z');
-    expect(second.campaignId).toBe(first.campaignId);
+    expect(second.campaignId).not.toBe(first.campaignId);
+  });
+
+  it('conserva las identidades y solo avanza el ordinal y el instante', () => {
+    const first = manifest();
+    const second = repeatRun(first, '2026-11-14T22:00:00Z');
     expect(second.runOrdinal).toBe(2);
     expect(second.startedAt).not.toBe(first.startedAt);
     for (const key of [

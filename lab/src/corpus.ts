@@ -27,7 +27,17 @@ import { createHash } from 'node:crypto';
 
 export const CORPUS_ID = 'lab-core';
 export const CORPUS_VERSION = '1.0.0';
-export const CORPUS_SLUG = `${CORPUS_ID}-${CORPUS_VERSION}`;
+/**
+ * Slug del pack en el producto.
+ *
+ * `exam_packs_slug_format` exige `^[a-z0-9]+(-[a-z0-9]+)*$` (migración 4): **sin puntos**. La
+ * primera versión de este slug era `lab-core-1.0.0` y el producto la rechazaba, con razón;
+ * nada lo detectó porque ninguna prueba instalaba el corpus.
+ *
+ * Los puntos de la versión se sustituyen por guiones. El slug **no entra** en
+ * `corpusContentHash`, de modo que la identidad congelada del corpus no cambia por esto.
+ */
+export const CORPUS_SLUG = `${CORPUS_ID}-${CORPUS_VERSION.replace(/\./g, '-')}`;
 
 export const OPTION_KEYS = ['A', 'B', 'C', 'D'] as const;
 

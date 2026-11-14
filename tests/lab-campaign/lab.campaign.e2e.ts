@@ -7,15 +7,19 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { emptyActorLog, resolveTestimony, type ActorLog } from '../../lab/src/actor-log';
 import { freezeCampaignManifest, type ExecutionMode } from '../../lab/src/campaign';
-import { corpusManifest, CORPUS_SLUG } from '../../lab/src/corpus';
+import { CORPUS_SLUG, corpusManifest } from '../../lab/src/corpus';
 import { harnessCredentials } from '../../lab/src/credentials';
 import { EPHEMERAL_SUBSTRATE, LAB_ENV, SUBSTRATE_ENV_VAR } from '../../lab/src/environment';
 import { readEvidenceSnapshot } from '../../lab/src/evidence';
 import { isSynthetic, syntheticIdentity } from '../../lab/src/harness';
 import { installLabCorpus, verifyInstalled } from '../../lab/src/ingest';
-import { emptyCampaign } from '../../lab/src/ledger';
-import { writeDurableLedger, type DurableLedger } from '../../lab/src/ledger-store';
-import { observe, type ObservationContext } from '../../lab/src/observation';
+import { buildCampaignRecord, routeProvenanceFor } from '../../lab/src/ledger-build';
+import {
+  LEDGER_SCHEMA_VERSION_CAMPAIGN,
+  writeDurableLedger,
+  type DurableLedger,
+} from '../../lab/src/ledger-store';
+import { observe, readBarrier, type ObservationContext } from '../../lab/src/observation';
 import { evaluate, summarize } from '../../lab/src/oracle';
 import { seal } from '../../lab/src/preregistration';
 import { PROFILE_ID, PROFILE_VERSION, profileManifest } from '../../lab/src/profile';
@@ -25,7 +29,8 @@ import {
   machineReport,
   type CampaignOutcome,
 } from '../../lab/src/report';
-import { runScenario, ScenarioAborted, type CampaignPage } from '../../lab/src/runner';
+import { attributeRoutes, readFolds, readSubmitMoments, summarizeRoutes } from '../../lab/src/route';
+import { ScenarioAborted, runScenario, type CampaignPage } from '../../lab/src/runner';
 import { scenarioManifest } from '../../lab/src/scenario';
 import { resolveSubstrate } from '../../lab/src/substrate';
 
@@ -36,11 +41,8 @@ import { resolveSubstrate } from '../../lab/src/substrate';
  * Esto es una prueba **del producto**
  *
  * Un aprendiz sintético, un escenario pre-registrado, una instancia efímera y un corpus
- * generado. Si aparece un incumplimiento, se registra y se clasifica; **no** se modifica STUDY
- * OS para que el escenario pase. La campaña se declara inconcluyente antes que ajustada.
- *
- * El escenario se recorre entero por superficies reales. El oráculo evalúa solo lo
- * pre-registrado. La evidencia queda en un ledger durable con su propia huella.
+ * generado. Si aparece un incumplimiento se registra y se clasifica; **no** se modifica STUDY OS
+ * para que el escenario pase. La campaña se declara inconcluyente antes que ajustada.
  * ---------------------------------------------------------------------------------------
  */
 
@@ -53,12 +55,13 @@ test.skip(
 );
 
 /** Una campaña recorre un día entero del producto: el tope por defecto no le llega. */
-test.setTimeout(10 * 60 * 1000);
+test.setTimeout(12 * 60 * 1000);
 
 const OUT = join(process.cwd(), 'test-results', 'lab-campaign');
 
 function head(): string {
-  if (process.env['GITHUB_SHA']) return process.env['GITHUB_SHA'].slice(0, 7);
+  const sha = process.env['GITHUB_SHA'];
+  if (sha) return sha.slice(0, 7);
   return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
 }
 
@@ -97,9 +100,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
 }) => {
   mkdirSync(OUT, { recursive: true });
 
-  // ---------------------------------------------------------------------------------------
   // §3 · mundo efímero verificado y corpus instalado por la frontera real.
-  // ---------------------------------------------------------------------------------------
   const { substrate, identity } = resolveSubstrate(process.env);
   expect(identity.kind).toBe(EPHEMERAL_SUBSTRATE);
 
@@ -120,14 +121,12 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
     questions: corpus.questionCount,
   });
 
-  // ---------------------------------------------------------------------------------------
   // §2 · manifiesto congelado antes de arrancar.
-  // ---------------------------------------------------------------------------------------
   const preregistration = seal(new Date().toISOString());
   const build = head();
   const manifest = freezeCampaignManifest({
-    // El laboratorio vive en este repositorio: los dos commits coinciden, y se registran
-    // por separado porque la arquitectura no garantiza que vayan a coincidir siempre.
+    // El laboratorio vive en este repositorio: los dos commits coinciden, y se registran por
+    // separado porque la arquitectura no garantiza que vayan a coincidir siempre.
     labBuild: build,
     studyOsBuild: build,
     identity,
@@ -135,12 +134,9 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
     executionMode: (process.env['LAB_EXECUTION_MODE'] as ExecutionMode) ?? 'ephemeral-ci',
     startedAt: new Date().toISOString(),
     runOrdinal: process.env['LAB_RUN_ORDINAL'] === '2' ? 2 : 1,
-    ...(process.env['LAB_CAMPAIGN_ID'] ? { campaignId: process.env['LAB_CAMPAIGN_ID'] } : {}),
   });
 
-  // ---------------------------------------------------------------------------------------
   // §4–6 · el Actor se da de alta por la interfaz y recorre el escenario.
-  // ---------------------------------------------------------------------------------------
   const synthetic = syntheticIdentity('mvp');
   expect(isSynthetic(synthetic.email)).toBe(true);
 
@@ -169,25 +165,26 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
       error instanceof ScenarioAborted
         ? error.reason
         : `fallo inesperado del recorrido: ${String(error)}`;
+    // Un aborto no borra lo ya recorrido: el diario parcial sigue siendo evidencia.
   }
 
-  // ---------------------------------------------------------------------------------------
-  // §9 · observación: el sujeto se resuelve observando, no desde el Actor.
-  // ---------------------------------------------------------------------------------------
+  // §9 · el sujeto se resuelve observando, no desde el Actor.
   const subjectRows = observe(
     observation,
     `select id::text as id from auth.users where email = '${synthetic.email}'`,
   );
   const subjectRef = typeof subjectRows?.[0]?.['id'] === 'string' ? subjectRows[0]['id'] : null;
-
   if (subjectRef === null) {
     abortReason ??= 'no se pudo resolver el sujeto sintético: sin sujeto no hay nada que observar';
   }
 
-  const conceptKeyById = new Map([...installed.conceptIds.entries()].map(([key, id]) => [id, key]));
+  // Barrera **antes** de observar el resto, para que la completitud no dependa de una lectura.
+  const barrierBefore = subjectRef === null ? null : readBarrier(observation, subjectRef);
 
+  const conceptKeyById = new Map(
+    [...installed.conceptIds.entries()].map(([key, id]) => [id, key]),
+  );
   const resolved = subjectRef === null ? null : resolveTestimony(observation, subjectRef, log);
-
   const snapshot =
     subjectRef === null || resolved === null
       ? null
@@ -199,13 +196,42 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
           structuralScarcityConcepts: [...corpus.structuralScarcityConcepts],
         });
 
-  // Una resolución parcial del testimonio hace la observación incompleta: no se oculta.
-  const observationComplete =
-    snapshot !== null && snapshot.observationComplete && (resolved?.resolved ?? false);
+  // Barrera **después**: si las dos lecturas no concuerdan, la proyección se movió mientras
+  // observábamos y la completitud no puede declararse.
+  const barrierAfter = subjectRef === null ? null : readBarrier(observation, subjectRef);
+  const barrierStable =
+    barrierBefore !== null &&
+    barrierAfter !== null &&
+    barrierBefore.maxPosition === barrierAfter.maxPosition &&
+    barrierBefore.consumedPosition === barrierAfter.consumedPosition &&
+    barrierBefore.pending === barrierAfter.pending;
 
-  // ---------------------------------------------------------------------------------------
+  const observationComplete =
+    snapshot !== null &&
+    snapshot.observationComplete &&
+    (resolved?.resolved ?? false) &&
+    barrierStable;
+
+  // §7–8 · procedencia de ruta. Inferida por tiempo: el producto no la registra.
+  const folds = subjectRef === null ? null : readFolds(observation, subjectRef);
+  const submitMoments = subjectRef === null ? null : readSubmitMoments(observation, subjectRef);
+  const returnsToToday = log.visits
+    .filter((visit) => visit.path === '/hoy')
+    .map((visit) => visit.visitedAt);
+  const routeEvidence =
+    folds === null || submitMoments === null
+      ? []
+      : attributeRoutes(
+          submitMoments.map((moment) => ({
+            ...moment,
+            returnedToTodayAt:
+              returnsToToday.find((at) => at > moment.serverReceivedAt) ?? null,
+          })),
+          folds,
+        );
+  const routes = summarizeRoutes(routeEvidence);
+
   // §10 · el oráculo evalúa solo lo pre-registrado.
-  // ---------------------------------------------------------------------------------------
   const evaluations =
     snapshot === null ? [] : evaluate({ ...snapshot, observationComplete }, preregistration);
   const summary = summarize(evaluations);
@@ -215,20 +241,21 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
       ? ('INVALID_RUN' as const)
       : ('VALID' as const);
 
-  // ---------------------------------------------------------------------------------------
-  // §11–12 · notas no evaluativas y ledger durable.
-  // ---------------------------------------------------------------------------------------
+  // §11 · notas no evaluativas. El Observer sigue NOT_ACTIVE.
   const notes: string[] = [
-    `visitas registradas por el Actor: ${log.visits.length}`,
-    `envíos del Actor: ${log.visits.filter((visit) => visit.submitted).length}`,
+    `visitas del Actor: ${log.visits.length} · envíos: ${log.visits.filter((v) => v.submitted).length}`,
     `escenario completado: ${scenarioCompleted ? 'sí' : 'no'}`,
+    `barrera estable entre lecturas: ${barrierStable ? 'sí' : 'no'}`,
+    `ruta inferida · A: ${routes.inferredRouteA} · B: ${routes.inferredRouteB} · ` +
+      `sin plegar: ${routes.notFolded} · no atribuible: ${routes.unattributable}`,
+    'el producto no registra qué ruta plegó: la atribución de ruta es inferencia temporal',
   ];
   if (resolved && !resolved.resolved) {
     notes.push(`enunciados vistos que la observación no situó: ${resolved.unresolvedStems.length}`);
   }
   if (snapshot) {
     notes.push(
-      `eventos observados: ${snapshot.events.length} · intentos: ${snapshot.attempts.length} · ` +
+      `eventos: ${snapshot.events.length} · intentos: ${snapshot.attempts.length} · ` +
         `ítems presentados: ${snapshot.presentedItems.length}`,
     );
     notes.push(
@@ -237,13 +264,16 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
     );
   }
 
+  // §12 · ledger completo.
   const runId = `run-${manifest.runOrdinal}`;
-  const ledgerPath = join(OUT, `${runId}.json`);
   const profile = profileManifest();
   const scenario = scenarioManifest();
+  const barrierReadings = [barrierBefore, barrierAfter].filter(
+    (reading): reading is NonNullable<typeof reading> => reading !== null,
+  );
 
   const ledger: DurableLedger = {
-    ledgerSchemaVersion: 'lab-ledger-1.0.0',
+    ledgerSchemaVersion: LEDGER_SCHEMA_VERSION_CAMPAIGN,
     campaignId: manifest.campaignId,
     runId,
     provenance: {
@@ -262,32 +292,34 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
       preregistrationDigest: preregistration.digest,
     },
     observerState: 'NOT_ACTIVE',
-    campaign: emptyCampaign(manifest.campaignId, 'LAB-ARCH-DF-001', {
-      appCommit: manifest.studyOsBuild,
-      engineVersion: 'concept-evidence-1.0.0',
-      plannerVersion: 'v1',
-      corpusVersion: corpus.corpusVersion,
-      configDigest: manifest.digest,
-      substrateIdentity: manifest.executionMode,
+    campaign: buildCampaignRecord({
+      manifest,
+      log,
+      attempts: snapshot?.attempts ?? [],
+      sessionItemByStem: resolved?.sessionItemByStem ?? new Map(),
+      barrierReadings,
+      evaluations,
+      subjectRef,
+      learnerId: `sl-${manifest.runOrdinal}`,
     }),
     operationalTimestamps: {
       startedAt: manifest.startedAt,
       writtenAt: new Date().toISOString(),
     },
-    // La destrucción del sustrato la ejecuta el job, después de recoger la evidencia.
+    // La destrucción del sustrato la ejecuta el job, **después** de recoger la evidencia (§14).
     teardown: null,
     artifacts: [
       { kind: 'corpus', sha256: corpus.contentHash },
       { kind: 'manifest', sha256: manifest.digest },
       { kind: 'preregistration', sha256: preregistration.digest },
     ],
+    runValidity,
+    routeProvenance: routeProvenanceFor(routeEvidence),
   };
 
-  const written = writeDurableLedger(ledger, ledgerPath);
+  const written = writeDurableLedger(ledger, join(OUT, `${runId}.json`));
 
-  // ---------------------------------------------------------------------------------------
   // §13 · informes. El generador redacta; no recalcula.
-  // ---------------------------------------------------------------------------------------
   const outcome: CampaignOutcome = {
     manifest,
     runValidity,
@@ -309,5 +341,5 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
   // La campaña **no falla** por un FAIL contractual: un FAIL es su resultado, no su error.
   // Lo que sí se exige es que haya quedado evidencia citable de lo ocurrido.
   expect(written.sha256).toHaveLength(64);
-  expect(outcome.verdict).toBeTruthy();
+  expect(ledger.campaign.scenarios[0]?.steps.length ?? 0).toBeGreaterThan(0);
 });

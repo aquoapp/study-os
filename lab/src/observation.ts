@@ -19,6 +19,8 @@
  */
 
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { dirname, join, resolve as resolvePath } from 'node:path';
 
 import type { ObserverCredentials } from './credentials';
 import type { SubstrateIdentity } from './substrate';
@@ -85,13 +87,33 @@ export interface ObservationContext {
   readonly runQuery?: (databaseUrl: string, statement: string) => string;
 }
 
+/**
+ * Localiza el CLI fijado del repositorio **sin `import.meta`**.
+ *
+ * Playwright transforma estas pruebas a CommonJS, donde `import.meta` es un error de sintaxis:
+ * usarlo dejaba el módulo sin cargar y la campaña «sin pruebas». Se resuelve subiendo desde el
+ * directorio de trabajo, que funciona igual en los dos sistemas de módulos.
+ */
+export function resolveLauncher(from: string = process.cwd()): string {
+  let current = resolvePath(from);
+  for (let depth = 0; depth < 8; depth += 1) {
+    const candidate = join(current, 'node_modules', 'supabase', 'dist', 'supabase.js');
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  throw new ObservationRefused(
+    'no se encuentra el CLI fijado del repositorio: sin él no hay observación posible',
+  );
+}
+
 /** Ejecuta la consulta con el CLI fijado del repositorio, que redacta la cadena en los errores. */
 function defaultRunQuery(databaseUrl: string, statement: string): string {
-  const launcher = new URL('../../node_modules/supabase/dist/supabase.js', import.meta.url);
   return execFileSync(
     process.execPath,
     [
-      launcher.pathname.replace(/^\//, ''),
+      resolveLauncher(),
       'db',
       'query',
       '--db-url',

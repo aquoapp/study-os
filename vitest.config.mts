@@ -112,6 +112,16 @@ export default defineConfig({
           testTimeout: 60_000,
         },
       },
+      {
+        // Sustrato de la **campaña** (CP4), separado del de CP2: el job de CP2 debe seguir
+        // ejecutando exactamente lo que se aceptó en CP2.
+        extends: true,
+        test: {
+          name: 'lab-campaign-substrate',
+          include: ['tests/lab-campaign-substrate/**/*.spec.ts'],
+          testTimeout: 120_000,
+        },
+      },
     ],
   },
 });

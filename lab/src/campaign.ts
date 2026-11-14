@@ -183,14 +183,23 @@ export function assertManifestUnmodified(manifest: CampaignManifest): void {
 /**
  * Manifiesto de la repetición autorizada (§16).
  *
- * Misma campaña, mismas identidades, `runOrdinal` 2. Cambiar cualquier hash aquí sería otra
- * campaña, no una repetición, y por eso se comprueba en vez de confiarse.
+ * **Nuevo `campaignId`**, mismos perfil, escenario, corpus, pre-registro y build de STUDY OS.
+ * Son dos campañas que comparten artefactos, no una campaña con dos ejecuciones: compartir el
+ * identificador haría que la evidencia de ambas se citara como una sola.
+ *
+ * Lo que debe coincidir se **comprueba** después de construir el manifiesto, en vez de confiarse
+ * a que los campos se hayan copiado bien.
  */
 export function repeatRun(first: CampaignManifest, startedAt: string): CampaignManifest {
   if (first.runOrdinal !== 1) {
     throw new CampaignManifestViolation('solo se repite la primera ejecución, y una sola vez');
   }
-  const body: Omit<CampaignManifest, 'digest'> = { ...first, startedAt, runOrdinal: 2 };
+  const body: Omit<CampaignManifest, 'digest'> = {
+    ...first,
+    campaignId: `camp-${randomUUID()}`,
+    startedAt,
+    runOrdinal: 2,
+  };
   const repeated = deepFreeze({
     ...body,
     digest: createHash('sha256').update(digestBody(body)).digest('hex'),
@@ -200,10 +209,17 @@ export function repeatRun(first: CampaignManifest, startedAt: string): CampaignM
     'scenarioHash',
     'corpusHash',
     'preregistrationDigest',
+    'studyOsBuild',
+    'labBuild',
   ] as const) {
     if (repeated[key] !== first[key]) {
-      throw new CampaignManifestViolation(`la repetición cambió «${key}»: no es la misma campaña`);
+      throw new CampaignManifestViolation(
+        `la repetición cambió «${key}»: §16 exige los mismos artefactos`,
+      );
     }
+  }
+  if (repeated.campaignId === first.campaignId) {
+    throw new CampaignManifestViolation('§16 exige un campaignId nuevo para la repetición');
   }
   return repeated;
 }

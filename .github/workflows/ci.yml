@@ -327,6 +327,9 @@ jobs:
           NEXT_PUBLIC_ENVIRONMENT: local
         run: npm run db:reset
 
+      - name: Lab · frontera de ingestión sobre la instancia efímera
+        run: npm run test:lab:campaign:substrate
+
       - name: Instalar Chromium
         run: npx playwright install --with-deps chromium
 
@@ -351,11 +354,10 @@ jobs:
           REPORT=test-results/lab-campaign/run-1.machine.json
           VALIDITY=$(jq -r '.run.validity' "$REPORT")
           FAILS=$(jq -r '.contract.fail' "$REPORT")
-          CAMPAIGN=$(jq -r '.campaign.campaignId' "$REPORT")
+          # §16 · la repetición lleva campaignId NUEVO: no se reutiliza el de la primera.
           echo "ejecución 1 · validez=$VALIDITY · fail=$FAILS"
           if [ "$VALIDITY" = "VALID" ] && [ "$FAILS" = "0" ]; then
             echo "repeat=yes" >> "$GITHUB_OUTPUT"
-            echo "campaign=$CAMPAIGN" >> "$GITHUB_OUTPUT"
           else
             echo "repeat=no" >> "$GITHUB_OUTPUT"
             echo "no se repite: la repetición solo está autorizada tras una ejecución válida sin FAIL"
@@ -375,7 +377,6 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.LAB_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ env.LAB_SUPABASE_SERVICE_ROLE_KEY }}
           LAB_RUN_ORDINAL: '2'
-          LAB_CAMPAIGN_ID: ${{ steps.repeat.outputs.campaign }}
         run: npm run test:lab:campaign
 
       - name: Veredicto de la ejecución 2

@@ -57,8 +57,36 @@ export interface DurableProvenance {
   readonly preregistrationDigest: string;
 }
 
+/**
+ * Versión del ledger de campaña · CP4.
+ *
+ * CP3 congeló `lab-ledger-1.0.0` sin campaña real. §12 exige además validez del run y
+ * procedencia de ruta, de modo que el esquema crece. El cambio es **aditivo** y por eso la
+ * versión sube en el menor: ampliar un esquema versionado sin decirlo dejaría dos ficheros
+ * distintos con la misma etiqueta, que es lo que una versión existe para evitar.
+ */
+export const LEDGER_SCHEMA_VERSION_CAMPAIGN = 'lab-ledger-1.1.0';
+
+export const ACCEPTED_LEDGER_SCHEMA_VERSIONS = [
+  LEDGER_SCHEMA_VERSION,
+  LEDGER_SCHEMA_VERSION_CAMPAIGN,
+] as const;
+export type LedgerSchemaVersion = (typeof ACCEPTED_LEDGER_SCHEMA_VERSIONS)[number];
+
+/** Procedencia de ruta por envío, tal y como el Observador la infirió. */
+export interface LedgerRouteProvenance {
+  readonly streamPosition: number;
+  readonly attribution: string;
+  readonly foldReason: string | null;
+  readonly foldedAt: string | null;
+  readonly latencySeconds: number | null;
+  readonly rationale: string;
+  /** Falso siempre en v1: el producto no registra qué ruta plegó. */
+  readonly recordedByProduct: false;
+}
+
 export interface DurableLedger {
-  readonly ledgerSchemaVersion: typeof LEDGER_SCHEMA_VERSION;
+  readonly ledgerSchemaVersion: LedgerSchemaVersion;
   readonly campaignId: string;
   readonly runId: string;
   readonly provenance: DurableProvenance;
@@ -70,6 +98,10 @@ export interface DurableLedger {
   };
   readonly teardown: { readonly destroyed: boolean; readonly at: string } | null;
   readonly artifacts: readonly { readonly kind: string; readonly sha256: string }[];
+  /** §12 · validez del run. Obligatoria desde `lab-ledger-1.1.0`. */
+  readonly runValidity?: 'VALID' | 'INVALID_RUN';
+  /** §12 · procedencia de ruta. Obligatoria desde `lab-ledger-1.1.0`, aunque esté vacía. */
+  readonly routeProvenance?: readonly LedgerRouteProvenance[];
 }
 
 /** Patrones que no pueden aparecer en un ledger escrito. */
@@ -134,10 +166,26 @@ export interface WriteResult {
  * dejaría el fichero con el secreto dentro aunque el proceso fallara a continuación.
  */
 export function writeDurableLedger(ledger: DurableLedger, path: string): WriteResult {
-  if (ledger.ledgerSchemaVersion !== LEDGER_SCHEMA_VERSION) {
+  if (
+    !(ACCEPTED_LEDGER_SCHEMA_VERSIONS as readonly string[]).includes(ledger.ledgerSchemaVersion)
+  ) {
     throw new LedgerPersistenceRefused(
       `versión de esquema desconocida: ${ledger.ledgerSchemaVersion}`,
     );
+  }
+
+  // Un ledger de campaña sin validez de run o sin procedencia de ruta no cumple §12. Se
+  // rechaza en vez de escribirse incompleto: un artefacto incompleto se cita igual que uno
+  // completo, y nadie nota la diferencia leyéndolo.
+  if (ledger.ledgerSchemaVersion === LEDGER_SCHEMA_VERSION_CAMPAIGN) {
+    if (ledger.runValidity === undefined) {
+      throw new LedgerPersistenceRefused('un ledger de campaña declara la validez del run');
+    }
+    if (ledger.routeProvenance === undefined) {
+      throw new LedgerPersistenceRefused(
+        'un ledger de campaña declara la procedencia de ruta, aunque sea una lista vacía',
+      );
+    }
   }
   const serialized = `${JSON.stringify(ledger, null, 2)}\n`;
   assertNoSecrets(serialized);
