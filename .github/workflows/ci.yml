@@ -42,6 +42,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # El test de frontera de alcance del Lab compara contra el commit baseline:
+        # con checkout superficial ese commit no existe y la comprobación se saltaría.
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -229,6 +233,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # El test de frontera de alcance del Lab compara contra el commit baseline:
+        # con checkout superficial ese commit no existe y la comprobación se saltaría.
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

@@ -64,7 +64,25 @@ describe('K · LAB TEMPORAL no se ha colado', () => {
   });
 });
 
-describe('L · CP1 no modifica el producto', () => {
+/**
+ * El baseline solo es alcanzable con historia completa. El checkout de CI es superficial, así
+ * que allí `git diff baseline...HEAD` falla con `Invalid symmetric difference expression`.
+ *
+ * Cuando no se puede comparar, el caso **no se declara aprobado**: se salta diciendo por qué. Un
+ * verde obtenido por no poder mirar sería exactamente lo que el modelo de veredicto prohíbe.
+ */
+const BASELINE = '578b99c2a0c57ac880c7a6975bfe8bcdbed25d34';
+
+function baselineReachable(): boolean {
+  try {
+    execFileSync('git', ['cat-file', '-e', `${BASELINE}^{commit}`], { cwd: REPO, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+describe.skipIf(!baselineReachable())('L · CP1 no modifica el producto', () => {
   /**
    * El laboratorio es un subsistema de test. Si CP1 hubiera tocado `apps/`, `packages/` o
    * `supabase/`, habría adquirido autoridad sobre STUDY OS, que es justo lo que no debe pasar.
@@ -72,8 +90,7 @@ describe('L · CP1 no modifica el producto', () => {
   const PRODUCT_PATHS = ['apps/', 'packages/', 'supabase/'];
 
   it('el diff contra el baseline no toca rutas productivas', () => {
-    const baseline = '578b99c2a0c57ac880c7a6975bfe8bcdbed25d34';
-    const changed = execFileSync('git', ['diff', '--name-only', `${baseline}...HEAD`], {
+    const changed = execFileSync('git', ['diff', '--name-only', `${BASELINE}...HEAD`], {
       cwd: REPO,
       encoding: 'utf8',
     })
@@ -88,8 +105,7 @@ describe('L · CP1 no modifica el producto', () => {
   });
 
   it('no se han añadido migraciones', () => {
-    const baseline = '578b99c2a0c57ac880c7a6975bfe8bcdbed25d34';
-    const changed = execFileSync('git', ['diff', '--name-only', `${baseline}...HEAD`], {
+    const changed = execFileSync('git', ['diff', '--name-only', `${BASELINE}...HEAD`], {
       cwd: REPO,
       encoding: 'utf8',
     });
