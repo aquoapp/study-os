@@ -391,6 +391,26 @@ jobs:
         if: steps.repeat.outputs.repeat == 'yes'
         run: cat test-results/lab-campaign/run-2.report.md
 
+      # §16 · se comparan **solo** propiedades de reproducibilidad permitidas: mismos perfil,
+      # escenario, corpus, pre-registro y build. NO se exige la misma trayectoria, porque el
+      # contrato no la exige y exigirla convertiría una variación legítima en un falso fallo.
+      - name: Reproducibilidad · comparar las dos ejecuciones
+        if: steps.repeat.outputs.repeat == 'yes'
+        run: |
+          A=test-results/lab-campaign/run-1.machine.json
+          B=test-results/lab-campaign/run-2.machine.json
+          for k in profile scenario corpus corpusHash preregistrationDigest labBuild studyOsBuild; do
+            VA=$(jq -r ".campaign.$k" "$A")
+            VB=$(jq -r ".campaign.$k" "$B")
+            if [ "$VA" != "$VB" ]; then
+              echo "§16 roto: $k difiere entre ejecuciones ($VA vs $VB)"; exit 1
+            fi
+            echo "$k igual: $VA"
+          done
+          IDA=$(jq -r .campaign.campaignId "$A"); IDB=$(jq -r .campaign.campaignId "$B")
+          if [ "$IDA" = "$IDB" ]; then echo "§16 exige campaignId nuevo en la repetición"; exit 1; fi
+          echo "campaignId distinto, como §16 exige: $IDA vs $IDB"
+
       - name: Teardown · destruir la instancia efímera
         if: always()
         run: npm run db:stop
