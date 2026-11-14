@@ -18,6 +18,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import {
   CONCEPTS,
+  CORPUS_PACK_NAME,
   CORPUS_SLUG,
   OPTION_KEYS,
   QUESTIONS,
@@ -91,7 +92,7 @@ export async function installLabCorpus(
 
   const packId = await emit('exam_pack', {
     slug: CORPUS_SLUG,
-    name: 'Laboratorio · corpus sintetico controlado',
+    name: CORPUS_PACK_NAME,
     short_name: 'Laboratorio',
     jurisdiction: 'lab',
   });

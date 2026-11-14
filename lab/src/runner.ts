@@ -68,8 +68,14 @@ export interface RunnerContext {
   readonly page: CampaignPage;
   readonly baseUrl: string;
   readonly identity: SyntheticIdentity;
-  /** Slug del pack del laboratorio, para elegir objetivo sin depender del orden del select. */
-  readonly packSlug: string;
+  /**
+   * Nombre visible del pack del laboratorio.
+   *
+   * Se elige por nombre y no por posición ni por identificador: el `value` de cada opción es el
+   * uuid del pack, que un aprendiz no conoce, y depender del orden del select haría que el
+   * escenario cambiara de objetivo al cambiar el catálogo.
+   */
+  readonly packLabel: string;
   /** Fecha objetivo que el onboarding exige. Entrada del escenario, no un resultado. */
   readonly targetDate: string;
   readonly now: () => string;
@@ -158,7 +164,10 @@ async function chooseGoal(context: RunnerContext): Promise<void> {
     // Objetivo ya declarado: el escenario no vuelve a declararlo.
     return;
   }
-  await page.selectOption('[data-testid="pack-select"]', context.packSlug);
+  await page.selectOption('[data-testid="pack-select"]', context.packLabel);
+  // La zona horaria es obligatoria en el onboarding: sin ella no existe «hoy» (§I.1) y el
+  // formulario no se envía. Es la misma que el perfil declara, no una elegida aquí.
+  await page.selectOption('[data-testid="timezone-select"]', AVAILABILITY_INPUT.timezone);
   await page.fill(
     '[data-testid="daily-minutes-input"]',
     String(AVAILABILITY_INPUT.defaultDailyMinutes),

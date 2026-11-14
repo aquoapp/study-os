@@ -105,7 +105,7 @@ function contextFor(script: readonly PageScript[]): { context: RunnerContext; pa
       page,
       baseUrl: 'http://127.0.0.1:3000',
       identity: IDENTITY,
-      packSlug: 'lab-core-1.0.0',
+      packLabel: 'Laboratorio · corpus sintetico controlado',
       targetDate: '2027-01-01',
       now: () => '2026-11-14T21:00:00Z',
     },
@@ -190,10 +190,19 @@ describe('el recorrido pasa por superficies reales', () => {
     expect(page.fills).toContainEqual(['[data-testid="ajustes-habitual"]', '30']);
   });
 
-  it('elige el objetivo por el slug del pack, no por la posición del select', async () => {
+  it('elige el objetivo por el nombre visible del pack, no por su identificador', async () => {
     const { context, page } = contextFor(HAPPY);
     await runScenario(context);
-    expect(page.selects).toContainEqual(['[data-testid="pack-select"]', 'lab-core-1.0.0']);
+    expect(page.selects).toContainEqual([
+      '[data-testid="pack-select"]',
+      'Laboratorio · corpus sintetico controlado',
+    ]);
+  });
+
+  it('declara la zona horaria en el onboarding, que la exige: sin ella no existe «hoy»', async () => {
+    const { context, page } = contextFor(HAPPY);
+    await runScenario(context);
+    expect(page.selects).toContainEqual(['[data-testid="timezone-select"]', 'Europe/Madrid']);
   });
 
   it('nunca invoca una RPC ni escribe estado: solo abre, rellena, elige y pulsa', async () => {

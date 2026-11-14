@@ -7,7 +7,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { emptyActorLog, resolveTestimony, type ActorLog } from '../../lab/src/actor-log';
 import { freezeCampaignManifest, type ExecutionMode } from '../../lab/src/campaign';
-import { CORPUS_SLUG, corpusManifest } from '../../lab/src/corpus';
+import { CORPUS_PACK_NAME, corpusManifest } from '../../lab/src/corpus';
 import { harnessCredentials } from '../../lab/src/credentials';
 import { EPHEMERAL_SUBSTRATE, LAB_ENV, SUBSTRATE_ENV_VAR } from '../../lab/src/environment';
 import { readEvidenceSnapshot } from '../../lab/src/evidence';
@@ -29,7 +29,12 @@ import {
   machineReport,
   type CampaignOutcome,
 } from '../../lab/src/report';
-import { attributeRoutes, readFolds, readSubmitMoments, summarizeRoutes } from '../../lab/src/route';
+import {
+  attributeRoutes,
+  readFolds,
+  readSubmitMoments,
+  summarizeRoutes,
+} from '../../lab/src/route';
 import { ScenarioAborted, runScenario, type CampaignPage } from '../../lab/src/runner';
 import { scenarioManifest } from '../../lab/src/scenario';
 import { resolveSubstrate } from '../../lab/src/substrate';
@@ -154,7 +159,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
       page: adapt(page),
       baseUrl: baseURL ?? '',
       identity: synthetic,
-      packSlug: CORPUS_SLUG,
+      packLabel: CORPUS_PACK_NAME,
       targetDate: '2027-06-01',
       now: () => new Date().toISOString(),
     });
@@ -181,9 +186,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
   // Barrera **antes** de observar el resto, para que la completitud no dependa de una lectura.
   const barrierBefore = subjectRef === null ? null : readBarrier(observation, subjectRef);
 
-  const conceptKeyById = new Map(
-    [...installed.conceptIds.entries()].map(([key, id]) => [id, key]),
-  );
+  const conceptKeyById = new Map([...installed.conceptIds.entries()].map(([key, id]) => [id, key]));
   const resolved = subjectRef === null ? null : resolveTestimony(observation, subjectRef, log);
   const snapshot =
     subjectRef === null || resolved === null
@@ -224,8 +227,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
       : attributeRoutes(
           submitMoments.map((moment) => ({
             ...moment,
-            returnedToTodayAt:
-              returnsToToday.find((at) => at > moment.serverReceivedAt) ?? null,
+            returnedToTodayAt: returnsToToday.find((at) => at > moment.serverReceivedAt) ?? null,
           })),
           folds,
         );

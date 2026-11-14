@@ -39,6 +39,16 @@ export const CORPUS_VERSION = '1.0.0';
  */
 export const CORPUS_SLUG = `${CORPUS_ID}-${CORPUS_VERSION.replace(/\./g, '-')}`;
 
+/**
+ * Nombre visible del pack.
+ *
+ * El onboarding ofrece los packs por **nombre**, no por slug: el `value` de cada opción es el
+ * uuid del pack. Un aprendiz elige por lo que lee, así que el runner selecciona por esta
+ * etiqueta. Vive aquí, junto al corpus, para que el instalador y el runner no puedan divergir:
+ * si cada uno llevara su literal, el día que uno cambiara el otro fallaría al elegir objetivo.
+ */
+export const CORPUS_PACK_NAME = 'Laboratorio · corpus sintetico controlado';
+
 export const OPTION_KEYS = ['A', 'B', 'C', 'D'] as const;
 
 export interface CorpusConcept {
