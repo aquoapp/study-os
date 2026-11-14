@@ -33,6 +33,15 @@ const webServer = webServerConfig();
 export default defineConfig({
   ...sharedConfig,
   testDir: './tests/lab-campaign',
+  /**
+   * Playwright **borra** su `outputDir` al arrancar cada ejecución.
+   *
+   * Por defecto es `test-results`, que es donde la campaña escribe su ledger y sus informes: la
+   * ejecución 2 de §16 habría destruido la evidencia de la ejecución 1 antes de poder
+   * compararlas, y la comparación habría fallado por un fichero inexistente en vez de por una
+   * diferencia real. La evidencia del laboratorio vive fuera de lo que Playwright administra.
+   */
+  outputDir: './test-results/lab-campaign-playwright',
   retries: 0,
   workers: 1,
   projects: [
