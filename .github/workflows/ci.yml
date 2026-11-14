@@ -387,6 +387,23 @@ jobs:
         if: always()
         run: npm run db:stop
 
+      # §14 · el teardown se **verifica**, no se da por hecho. Se comprueba después de
+      # capturar la evidencia: los artefactos del Lab sobreviven, la base experimental no.
+      - name: Teardown · verificar que la instancia efímera ya no responde
+        if: always()
+        run: |
+          mkdir -p test-results/lab-campaign
+          AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          if curl -sS -m 5 -o /dev/null http://127.0.0.1:54321/rest/v1/ 2>/dev/null; then
+            printf '{"teardownVerified": false, "checkedAt": "%s", "reason": "la API efímera sigue respondiendo tras el teardown"}\n' "$AT" \
+              > test-results/lab-campaign/teardown.json
+            cat test-results/lab-campaign/teardown.json
+            exit 1
+          fi
+          printf '{"teardownVerified": true, "checkedAt": "%s", "evidence": "la API efímera no responde en 127.0.0.1:54321"}\n' "$AT" \
+            > test-results/lab-campaign/teardown.json
+          cat test-results/lab-campaign/teardown.json
+
       # La evidencia se publica siempre: un run inválido es justamente el que hay que poder leer.
       - name: Publicar la evidencia de la campaña
         if: always()
