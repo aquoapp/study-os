@@ -11,6 +11,7 @@ export * from './corpus-install';
 export * from './credentials';
 export * from './environment';
 export * from './ledger';
+export * from './ingest';
 export * from './ledger-store';
 export * from './human-reference';
 export * from './preregistration';

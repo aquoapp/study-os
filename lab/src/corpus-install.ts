@@ -47,18 +47,34 @@ export interface PlannedPublication {
  *
  * Mismo corpus, mismo plan, mismo orden. Es lo que permite que la instalación sea comprobable
  * antes de ejecutarla y reproducible después.
+ *
+ * ---------------------------------------------------------------------------------------
+ * El plan está **atado a la frontera real**, no a lo que el laboratorio supuso
+ *
+ * La primera versión de este plan omitía `syllabus_block` y `topic` y publicaba las fuentes
+ * antes de los conceptos. La frontera de ingestión exige las dos cosas al contrario:
+ * `concept_version.topic_id` referencia un **topic**, que cuelga de un bloque (migración 13,
+ * `ingest.require_keys`). Un plan que no sobrevive a la frontera no es un plan: es una
+ * suposición con forma de plan.
+ *
+ * Por eso `installLabCorpus` devuelve la secuencia que publicó de verdad y la prueba de
+ * sustrato la compara con esta, contra una base de datos real. Si vuelven a divergir, falla
+ * ahí y no en la lectura de este comentario.
+ * ---------------------------------------------------------------------------------------
  */
 export function publicationPlan(): readonly PlannedPublication[] {
   const plan: PlannedPublication[] = [
     { kind: 'exam_pack', label: CORPUS_SLUG },
     { kind: 'exam_pack_version', label: `${CORPUS_SLUG}:v1` },
-    { kind: 'source', label: 'material sintético del laboratorio' },
-    { kind: 'source_version', label: 'v1' },
+    { kind: 'syllabus_block', label: 'L1' },
+    { kind: 'topic', label: 'L1.T1' },
   ];
   for (const concept of CONCEPTS) {
     plan.push({ kind: 'concept', label: concept.key });
     plan.push({ kind: 'concept_version', label: concept.key });
   }
+  plan.push({ kind: 'source', label: 'material sintético del laboratorio' });
+  plan.push({ kind: 'source_version', label: 'v1' });
   for (const unit of UNITS) {
     plan.push({ kind: 'learning_unit', label: unit.concept });
     plan.push({ kind: 'learning_unit_version', label: unit.title });
