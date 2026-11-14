@@ -118,6 +118,37 @@ function parseRows(output: string): ReadonlyArray<Record<string, unknown>> {
 }
 
 /**
+ * Ejecuta **una** observación y devuelve sus filas.
+ *
+ * Fail-closed por diseño: cualquier fallo devuelve `null`, no una lista vacía. Una lista vacía
+ * es un dato —«no hay filas»— y confundirla con «no se pudo leer» convertiría un fallo de
+ * lectura en una aserción negativa. Quien reciba `null` solo puede concluir `INCONCLUSIVE`.
+ *
+ * El error nunca se propaga con su texto: puede contener la cadena de conexión.
+ */
+export function observe(
+  context: ObservationContext,
+  statement: string,
+): ReadonlyArray<Record<string, unknown>> | null {
+  assertReadOnly(statement);
+  try {
+    const run = context.runQuery ?? defaultRunQuery;
+    const output = run(context.credentials.databaseUrl, statement);
+    // Sin array JSON en la salida no hubo lectura: `parseRows` devolvería `[]`, que es un dato.
+    const start = output.indexOf('[');
+    const end = output.lastIndexOf(']');
+    if (start < 0 || end <= start) return null;
+    try {
+      return JSON.parse(output.slice(start, end + 1)) as ReadonlyArray<Record<string, unknown>>;
+    } catch {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Lee la barrera de un sujeto.
  *
  * **Fail-closed**: cualquier fallo devuelve una lectura con posiciones nulas y `pending` nulo, que

@@ -11,6 +11,7 @@ export * from './corpus';
 export * from './corpus-install';
 export * from './credentials';
 export * from './environment';
+export * from './evidence';
 export * from './ledger';
 export * from './ingest';
 export * from './ledger-store';
