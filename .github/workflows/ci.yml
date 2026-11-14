@@ -212,3 +212,73 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.STAGING_DB_URL }}
         run: npm run schema-drift
+
+  # ---------------------------------------------------------------------------
+  # Synthetic Learner Lab · CP2 · sustrato efímero y fronteras de confianza.
+  #
+  # NO es un required check. Se introduce como evidencia del checkpoint; que bloquee
+  # algo es una decisión posterior, y solo cuando su estabilidad esté medida.
+  #
+  # Reutiliza la misma infraestructura que el job de base de datos —Supabase local del
+  # CLI fijado, migraciones desde cero, app real, Chromium real— en vez de duplicarla.
+  # ---------------------------------------------------------------------------
+  lab-cp2:
+    name: Lab · CP2 · sustrato efímero y fronteras
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Levantar la instancia efímera
+        run: npm run db:start
+
+      - name: Publicar la identidad del sustrato en el entorno del job
+        run: |
+          STATUS=$(npm run --silent db:status -- --output json)
+          {
+            echo "LAB_SUBSTRATE=ephemeral-ci"
+            echo "LAB_SUPABASE_URL=http://127.0.0.1:54321"
+            echo "LAB_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+            echo "LAB_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r '.ANON_KEY')"
+            echo "LAB_SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS" | jq -r '.SERVICE_ROLE_KEY')"
+          } >> "$GITHUB_ENV"
+
+      - name: Migraciones canónicas desde cero
+        env:
+          NEXT_PUBLIC_ENVIRONMENT: local
+        run: npm run db:reset
+
+      - name: Lab · fronteras y aislamiento (no necesitan sustrato)
+        run: npx vitest run --project unit tests/lab/
+
+      - name: Lab · sustrato efímero
+        run: npm run test:lab:substrate
+
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Lab · navegador real sobre la instancia efímera
+        env:
+          NEXT_PUBLIC_ENVIRONMENT: local
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.LAB_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.LAB_SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run test:lab:e2e
+
+      - name: Teardown · destruir la instancia efímera
+        if: always()
+        run: npm run db:stop
+
+      - name: Publicar informe del Lab
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab-cp2-report
+          path: playwright-report/
+          retention-days: 7

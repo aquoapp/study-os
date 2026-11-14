@@ -47,7 +47,9 @@
     "db:roundtrip": "node tools/db-roundtrip.mjs",
     "seed:preview": "node tools/seed-preview-corpus.mjs",
     "readout": "node tools/validation-readout.mjs",
-    "db:push": "node tools/db.mjs push"
+    "db:push": "node tools/db.mjs push",
+    "test:lab:substrate": "vitest run --project lab-substrate",
+    "test:lab:e2e": "playwright test --config playwright.lab.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

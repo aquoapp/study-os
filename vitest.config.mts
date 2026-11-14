@@ -99,6 +99,19 @@ export default defineConfig({
           testTimeout: 30_000,
         },
       },
+      {
+        extends: true,
+        test: {
+          /**
+           * Sustrato del laboratorio (CP2). Exige la instancia efímera declarada y **no** degrada
+           * a ningún otro destino: sin `LAB_SUBSTRATE` los casos se saltan. Proyecto aparte para
+           * que su fallo diga qué está roto sin leer el log, como los otros tres.
+           */
+          name: 'lab-substrate',
+          include: ['tests/lab-substrate/**/*.spec.ts'],
+          testTimeout: 60_000,
+        },
+      },
     ],
   },
 });

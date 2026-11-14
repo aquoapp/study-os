@@ -103,7 +103,9 @@ export default tseslint.config(
   // Scripts de Node: guardas y herramientas.
   // ---------------------------------------------------------------------------
   {
-    files: ['tools/**/*.mjs'],
+    // `lab/**/*.mjs` entra aquí por el mismo motivo: la sonda del proceso Actor es un script de
+    // Node que se ejecuta como proceso hijo, no código de aplicación.
+    files: ['tools/**/*.mjs', 'lab/**/*.mjs'],
     languageOptions: {
       globals: {
         process: 'readonly',
