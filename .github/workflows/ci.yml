@@ -10,7 +10,9 @@ name: CI
 
 on:
   push:
-    branches: ['phase/**', 'milestone/**']
+    # `lab/**` es el Synthetic Learner Lab: ramas de checkpoint del laboratorio. Entran aquí
+    # para que su job tenga evidencia de ejecución; **no** son required checks del ruleset.
+    branches: ['phase/**', 'milestone/**', 'lab/**']
   pull_request:
     branches: [main]
   workflow_dispatch:
