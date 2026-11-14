@@ -400,6 +400,31 @@ conserva su cuerpo v1.4 como artefacto de Phase 4A y recibe la supersesión por 
 hizo con ADR-003, ADR-007, ADR-008 y ADR-011. Lección de esta ronda: **hacer rara una señal puede
 retirar una ampliación semántica en vez de justificarla**.
 
+**Phase 4B · Product Integration · FROZEN · PASS WITH DEBT el 2026-11-14.** Aceptada por Ana tras
+un walkthrough humano longitudinal de **dos días reales**, sin manipular el reloj y sin teclear
+rutas: PR #23 integrado en `main` (`f7886a7`, árbol `0def22e9`), tag anotado `phase-4b-v1.0`
+(objeto `8231dd1c`). El candidato funcional aceptado es `7c08e8a`, y los subárboles `apps`,
+`packages`, `supabase` y `tools` del merge son byte a byte idénticos a los suyos.
+
+**HOY consume el plan real del Planner** —con su presupuesto y su razón—, el vertical es navegable
+de punta a punta para una cuenta nueva, y el Learning Engine pliega la evidencia por sus dos rutas.
+**Sin migraciones nuevas**: Phase 4B vive entera dentro de la frontera de esquema congelada.
+
+**La ruta A quedó demostrada por interacción humana**, no por inferencia: un pliegue `INCREMENTAL`
+por cada uno de los siete envíos, entre 1,8 y 2,8 s después de cada uno y antes de volver a HOY.
+
+Tres lecciones de esta fase, y las tres son la misma: **una ruta solo está probada cuando una
+prueba la recorre de verdad**. Ninguna prueba vio que una cuenta nueva no tuviera camino hasta HOY,
+porque todas abrían `/onboarding` tecleando la ruta. El onboarding ofrecía un diagnóstico cuyas dos
+respuestas producían el mismo recorrido (**OBS-4B-H05**, cerrada retirando la pregunta y **no** la
+infraestructura). Y el gate de base de datos llevaba días en rojo porque `deleteTestUser` perdía
+usuarios **en silencio**, y el fallo aparecía como una colisión de FK en la purga, lejos de su
+causa.
+
+Deuda viva: OBS-4B-HVIS-01, OBS-4B-HUX-01, OBS-4B-H02, OBS-4B-H04 y OBS-4B-CI-01. **Phase 5,
+Phase 1B, corpus oficial, readiness, Release y PRODUCTION siguen sin autorizar.**
+
 Estado real del repositorio: [`docs/ARCHITECTURE_STATE.md`](docs/ARCHITECTURE_STATE.md).
-Informes de fase: [`docs/PHASE_0_CHECKPOINT.md`](docs/PHASE_0_CHECKPOINT.md) y
-[`docs/PHASE_1A_CHECKPOINT.md`](docs/PHASE_1A_CHECKPOINT.md).
+Informes de fase: [`docs/PHASE_0_CHECKPOINT.md`](docs/PHASE_0_CHECKPOINT.md),
+[`docs/PHASE_1A_CHECKPOINT.md`](docs/PHASE_1A_CHECKPOINT.md) y
+[`docs/PHASE_4B_CHECKPOINT.md`](docs/PHASE_4B_CHECKPOINT.md).

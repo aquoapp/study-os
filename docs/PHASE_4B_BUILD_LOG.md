@@ -635,3 +635,53 @@ sintética. PRODUCTION sin tocar.
 **Deuda viva:** OBS-4B-HVIS-01, OBS-4B-HUX-01, OBS-4B-H02 y OBS-4B-H04, ninguna bloqueante y
 ninguna corregida en esta ronda. OBS-4B-H03 permanece retirada. OBS-4B-H05 queda **cerrada** por
 esta decisión, sin implementar el diagnóstico.
+
+### 2026-11-14 · correctivo de arnés y congelación de Phase 4B
+
+**El freeze se detuvo en el preflight, y con razón.** El check obligatorio «Base de datos ·
+migraciones, integración, RLS, E2E» llevaba en rojo desde el 12 de noviembre: **doce runs
+seguidos**, siempre con el mismo error, `purge_generated_pack` chocando con
+`question_attempts_answer_key_version_id_fkey`. El último verde estable de la rama era del 21 de
+septiembre.
+
+**La causa, demostrada por implicación y no por conjetura.** `ingest.purge_generated_pack` borra
+`content.answer_key_versions` pero **no** `question_attempts`, y los intentos solo desaparecen en
+cascada con su dueño. Por tanto «la purga choca con esa FK» equivale a «quedó un intento», que
+equivale a «un usuario con intentos sobrevivió al teardown». La FK hacía bien su trabajo; faltaba
+que alguien dijera qué había fallado de verdad.
+
+Y sobrevivía porque `deleteTestUser` hacía `await deleteUser(id)` **sin mirar el resultado**. Un
+borrado fallido volvía en silencio y el `afterAll` seguía hasta la purga, donde el error acusaba
+al sitio equivocado. Es la misma lección que el teardown global de los E2E ya tenía escrita —una
+limpieza que avisa y sigue deja cuentas huérfanas—; aquí ni siquiera avisaba.
+
+Se descartaron las alternativas: el **orden** del teardown ya era el correcto —usuarios y después
+pack, como en el resto de suites—, y **referencias de otra suite** no cabían, porque cada
+ejecución crea su propio pack con identificador único.
+
+**Corrección, estrictamente test-only (`fdaeb3e`).** El error se comprueba y se propaga con el
+usuario y la causa; el borrado se reintenta hasta `ERASE_ATTEMPTS`, porque bajo 34 ficheros contra
+el mismo proyecto una llamada puede fallar de forma transitoria; una excepción de transporte
+cuenta como intento fallido. `tests/unit/harness.teardown.spec.ts` lo fija con seis casos contra
+un doble, sin red. **Cero cambios en `apps/`**, ninguno funcional, ninguno de esquema ni de corpus.
+
+**Estabilidad, medida y no supuesta.** Cinco ejecuciones consecutivas del gate sobre `fdaeb3e`:
+`test:integration` en **verde las cinco veces**, y la condición observada no reaparece ni una.
+
+Dos hallazgos del camino que conviene no perder. **CI levanta su propio Supabase local**, no usa
+STAGING: por eso el patrón en CI era siempre la FK y en local siempre `statement timeout` por
+saturación: dos fenómenos distintos, y solo el primero rompía el gate. Y **lanzar pruebas locales
+contra STAGING mientras CI corre contamina ambas**: lo provoqué una vez y costó una ronda de
+diagnóstico.
+
+**OBS-4B-CI-01, nueva y no corregida.** `test:e2e:auth` falla de forma intermitente en CI al
+resolver `next/font/google` durante el build —dos de cinco ejecuciones—. Es de red del runner,
+vive en `apps/` y quedaba fuera de lo autorizado para esta congelación, así que **se registra y no
+se toca**.
+
+**Congelación.** PR #23 integrado en `main` con merge `f7886a76aa903619ee8e07a0e89fa26e95909bd7`
+(padres `852a9c99…` y `fdaeb3ec…`, árbol `0def22e9a81c1415bb000130f1102866e864a6fc`) y tag anotado
+`phase-4b-v1.0`, objeto `8231dd1c96b4c4748fbfcde3ab060bcc809fe9e8`. Los subárboles `apps`,
+`packages`, `supabase` y `tools` son byte a byte idénticos a los del candidato `7c08e8a`.
+
+**PHASE 4B · FROZEN · PASS WITH DEBT.**
