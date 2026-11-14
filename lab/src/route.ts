@@ -197,7 +197,7 @@ export function readSubmitMoments(
   const rows = observe(
     context,
     'select e.stream_position, ' +
-      'to_char(e.server_received_at at time zone \'UTC\', ' +
+      "to_char(e.server_received_at at time zone 'UTC', " +
       '\'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"\') as server_received_at ' +
       'from public.learning_events e ' +
       'join public.question_attempts a on a.submitted_event_id = e.event_id ' +
