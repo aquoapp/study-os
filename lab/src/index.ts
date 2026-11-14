@@ -6,8 +6,16 @@
  */
 
 export * from './contracts';
+export * from './corpus';
+export * from './corpus-install';
 export * from './credentials';
 export * from './environment';
 export * from './ledger';
+export * from './ledger-store';
+export * from './human-reference';
+export * from './preregistration';
+export * from './profile';
+export * from './scenario';
+export * from './substrate';
 export * from './observer';
 export * from './verdict';
