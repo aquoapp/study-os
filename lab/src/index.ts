@@ -19,6 +19,7 @@ export * from './ledger-store';
 export * from './human-reference';
 export * from './preregistration';
 export * from './profile';
+export * from './report';
 export * from './runner';
 export * from './scenario';
 export * from './substrate';
