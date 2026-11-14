@@ -91,11 +91,47 @@ export interface RunnerContext {
   readonly now: () => string;
 }
 
+/**
+ * Superficies de decisión de HOY que **no** ofrecen acción primaria.
+ *
+ * Son tres y no significan lo mismo: un presupuesto en el que nada cabe, un vacío veraz y un
+ * fallo. Tratarlas todas como «el producto cerró el día» convertiría un fallo de planificación
+ * en una ejecución satisfactoria, que es justo el autoengaño que este checkpoint prohíbe.
+ */
+export const TODAY_TERMINAL_SURFACES = {
+  'hoy-nada-cabe': 'NOTHING_FITS',
+  'hoy-nada-elegible': 'NOTHING_ELIGIBLE',
+  'hoy-sin-plan': 'CANNOT_PLAN',
+} as const;
+
+export type TodayTerminalState =
+  | (typeof TODAY_TERMINAL_SURFACES)[keyof typeof TODAY_TERMINAL_SURFACES]
+  | 'UNKNOWN'
+  | 'NOT_REACHED';
+
+/**
+ * Qué decisiones de HOY cuentan como día cerrado.
+ *
+ * `NOTHING_FITS` y `NOTHING_ELIGIBLE` son decisiones **veraces** del producto: con ese
+ * presupuesto no cabe nada, o con lo que se sabe no se puede justificar nada. `CANNOT_PLAN` es
+ * un fallo, y una superficie desconocida es una desviación: ninguno de los dos cierra el día.
+ */
+export const CLOSING_STATES: readonly TodayTerminalState[] = ['NOTHING_FITS', 'NOTHING_ELIGIBLE'];
+
+async function readTodayTerminalState(page: CampaignPage): Promise<TodayTerminalState> {
+  for (const [testId, state] of Object.entries(TODAY_TERMINAL_SURFACES)) {
+    if (await page.isVisible(`[data-testid="${testId}"]`)) return state;
+  }
+  return 'UNKNOWN';
+}
+
 export interface RunnerResult {
   readonly log: ActorLog;
   readonly completed: boolean;
   /** Última ruta observada: deja constancia de dónde terminó la ejecución. */
   readonly finalPath: string;
+  /** Qué decidió HOY al final. Se registra aunque no cierre el día. */
+  readonly todayTerminalState: TodayTerminalState;
   readonly visits: number;
 }
 
@@ -383,9 +419,16 @@ export async function runScenario(context: RunnerContext): Promise<RunnerResult>
       continue;
     }
 
-    // En HOY: si no hay acción primaria, el producto dio el día por terminado.
+    // En HOY sin acción primaria: hay que mirar **qué** decidió, no solo que no ofrece nada.
     if (!(await page.isVisible('[data-testid="hoy-primaria"]'))) {
-      return { log, completed: true, finalPath: path, visits };
+      const todayTerminalState = await readTodayTerminalState(page);
+      return {
+        log,
+        completed: CLOSING_STATES.includes(todayTerminalState),
+        finalPath: path,
+        todayTerminalState,
+        visits,
+      };
     }
     await clickAndAdvance(page, '[data-testid="hoy-primaria"]');
     visits += 1;
@@ -393,7 +436,13 @@ export async function runScenario(context: RunnerContext): Promise<RunnerResult>
     // HOY puede llevar a una superficie de configuración en vez de a una acción: el escenario
     // ya declaró objetivo y disponibilidad, de modo que volver ahí es un hallazgo, no un paso.
     if (pathOf(page) === '/ajustes' || pathOf(page) === '/onboarding') {
-      return { log, completed: false, finalPath: pathOf(page), visits };
+      return {
+        log,
+        completed: false,
+        finalPath: pathOf(page),
+        todayTerminalState: 'NOT_REACHED',
+        visits,
+      };
     }
   }
 

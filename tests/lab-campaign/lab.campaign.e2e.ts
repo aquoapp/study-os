@@ -159,6 +159,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
 
   let abortReason: string | null = null;
   let scenarioCompleted = false;
+  let todayTerminalState: string = 'NOT_REACHED';
   let log: ActorLog = emptyActorLog();
 
   try {
@@ -172,6 +173,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
     });
     log = result.log;
     scenarioCompleted = result.completed;
+    todayTerminalState = result.todayTerminalState;
   } catch (error) {
     abortReason =
       error instanceof ScenarioAborted
@@ -253,7 +255,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
   // §11 · notas no evaluativas. El Observer sigue NOT_ACTIVE.
   const notes: string[] = [
     `visitas del Actor: ${log.visits.length} · envíos: ${log.visits.filter((v) => v.submitted).length}`,
-    `escenario completado: ${scenarioCompleted ? 'sí' : 'no'}`,
+    `escenario completado: ${scenarioCompleted ? 'sí' : 'no'} · HOY decidió: ${todayTerminalState}`,
     `barrera estable entre lecturas: ${barrierStable ? 'sí' : 'no'}`,
     `ruta inferida · A: ${routes.inferredRouteA} · B: ${routes.inferredRouteB} · ` +
       `sin plegar: ${routes.notFolded} · no atribuible: ${routes.unattributable}`,

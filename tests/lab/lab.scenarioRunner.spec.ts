@@ -179,7 +179,7 @@ const HAPPY: readonly PageScript[] = [
     visible: ['[data-testid="feedback"]', '[data-testid="feedback-siguiente"]'],
     texts: { [QUESTION_STEM]: '¿Enunciado sintético 1?' },
   },
-  { path: '/hoy', visible: [] },
+  { path: '/hoy', visible: ['[data-testid="hoy-nada-elegible"]'] },
 ];
 
 describe('el recorrido pasa por superficies reales', () => {
@@ -294,11 +294,39 @@ describe('el diario registra lo que el aprendiz vio, y solo eso', () => {
 });
 
 describe('el runner no decide el final: lo observa', () => {
-  it('termina cuando HOY deja de ofrecer acción primaria', async () => {
+  it('termina cuando HOY decide un vacío veraz, y registra qué decidió', async () => {
     const { context } = contextFor(HAPPY);
     const result = await runScenario(context);
     expect(result.completed).toBe(true);
     expect(result.finalPath).toBe('/hoy');
+    expect(result.todayTerminalState).toBe('NOTHING_ELIGIBLE');
+  });
+
+  it('un presupuesto en el que nada cabe también cierra el día, y se distingue', async () => {
+    const script = HAPPY.map((page, index) =>
+      index === HAPPY.length - 1 ? { ...page, visible: ['[data-testid="hoy-nada-cabe"]'] } : page,
+    );
+    const result = await runScenario(contextFor(script).context);
+    expect(result.completed).toBe(true);
+    expect(result.todayTerminalState).toBe('NOTHING_FITS');
+  });
+
+  it('un fallo de planificación NO cierra el día: no es una ejecución satisfactoria', async () => {
+    const script = HAPPY.map((page, index) =>
+      index === HAPPY.length - 1 ? { ...page, visible: ['[data-testid="hoy-sin-plan"]'] } : page,
+    );
+    const result = await runScenario(contextFor(script).context);
+    expect(result.completed).toBe(false);
+    expect(result.todayTerminalState).toBe('CANNOT_PLAN');
+  });
+
+  it('una superficie de HOY que no reconocemos es desviación, no cierre', async () => {
+    const script = HAPPY.map((page, index) =>
+      index === HAPPY.length - 1 ? { ...page, visible: [] } : page,
+    );
+    const result = await runScenario(contextFor(script).context);
+    expect(result.completed).toBe(false);
+    expect(result.todayTerminalState).toBe('UNKNOWN');
   });
 
   it('no da por completada una ejecución que HOY devuelve a configuración', async () => {
