@@ -48,7 +48,17 @@ export default defineConfig({
            * de `apps/` ni `packages/` los importa. Corren aquí para que la comprobación
            * exhaustiva sea un check bloqueante y no una promesa.
            */
-          include: ['tests/unit/**/*.spec.ts', 'tests/governance/**/*.spec.ts'],
+          /**
+           * `tests/lab/` es el Synthetic Learner Lab (LAB-ARCH-DF-001). Mismo razonamiento que
+           * `tests/governance/`: no toca red ni base de datos, no es código de producción y nada
+           * de `apps/` ni `packages/` lo importa. Corre aquí para que sus guardas de aislamiento
+           * sean un check bloqueante y no una intención, y para no duplicar infraestructura de CI.
+           */
+          include: [
+            'tests/unit/**/*.spec.ts',
+            'tests/governance/**/*.spec.ts',
+            'tests/lab/**/*.spec.ts',
+          ],
           /**
            * Sin paralelismo entre ficheros.
            *

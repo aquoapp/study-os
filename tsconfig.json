@@ -18,6 +18,7 @@
     "packages/**/*.tsx",
     "tests/**/*.ts",
     "tools/**/*.ts",
+    "lab/**/*.ts",
     "*.ts",
     "apps/web/next-env.d.ts",
     "*.mts",
