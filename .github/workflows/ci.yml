@@ -292,3 +292,107 @@ jobs:
           name: lab-cp2-report
           path: playwright-report/
           retention-days: 7
+
+  lab-cp4:
+    name: Lab · CP4 · campaña Golden MVP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Levantar la instancia efímera
+        run: npm run db:start
+
+      - name: Publicar la identidad del sustrato en el entorno del job
+        run: |
+          STATUS=$(npm run --silent db:status -- --output json)
+          {
+            echo "LAB_SUBSTRATE=ephemeral-ci"
+            echo "LAB_SUPABASE_URL=http://127.0.0.1:54321"
+            echo "LAB_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+            echo "LAB_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r '.ANON_KEY')"
+            echo "LAB_SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS" | jq -r '.SERVICE_ROLE_KEY')"
+          } >> "$GITHUB_ENV"
+
+      - name: Mundo efímero desde cero · ejecución 1
+        env:
+          NEXT_PUBLIC_ENVIRONMENT: local
+        run: npm run db:reset
+
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+
+      # La campaña no falla por un FAIL contractual: un FAIL es su resultado, no su error.
+      # El veredicto se lee del informe, que es el artefacto citable.
+      - name: Campaña · ejecución 1
+        env:
+          NEXT_PUBLIC_ENVIRONMENT: local
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.LAB_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.LAB_SUPABASE_SERVICE_ROLE_KEY }}
+          LAB_RUN_ORDINAL: '1'
+        run: npm run test:lab:campaign
+
+      - name: Veredicto de la ejecución 1
+        run: cat test-results/lab-campaign/run-1.report.md
+
+      # §16 · una sola repetición idéntica, y solo si la primera fue VALID sin ningún FAIL.
+      - name: Decidir la repetición
+        id: repeat
+        run: |
+          REPORT=test-results/lab-campaign/run-1.machine.json
+          VALIDITY=$(jq -r '.run.validity' "$REPORT")
+          FAILS=$(jq -r '.contract.fail' "$REPORT")
+          CAMPAIGN=$(jq -r '.campaign.campaignId' "$REPORT")
+          echo "ejecución 1 · validez=$VALIDITY · fail=$FAILS"
+          if [ "$VALIDITY" = "VALID" ] && [ "$FAILS" = "0" ]; then
+            echo "repeat=yes" >> "$GITHUB_OUTPUT"
+            echo "campaign=$CAMPAIGN" >> "$GITHUB_OUTPUT"
+          else
+            echo "repeat=no" >> "$GITHUB_OUTPUT"
+            echo "no se repite: la repetición solo está autorizada tras una ejecución válida sin FAIL"
+          fi
+
+      - name: Mundo efímero desde cero · ejecución 2
+        if: steps.repeat.outputs.repeat == 'yes'
+        env:
+          NEXT_PUBLIC_ENVIRONMENT: local
+        run: npm run db:reset
+
+      - name: Campaña · ejecución 2
+        if: steps.repeat.outputs.repeat == 'yes'
+        env:
+          NEXT_PUBLIC_ENVIRONMENT: local
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.LAB_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.LAB_SUPABASE_SERVICE_ROLE_KEY }}
+          LAB_RUN_ORDINAL: '2'
+          LAB_CAMPAIGN_ID: ${{ steps.repeat.outputs.campaign }}
+        run: npm run test:lab:campaign
+
+      - name: Veredicto de la ejecución 2
+        if: steps.repeat.outputs.repeat == 'yes'
+        run: cat test-results/lab-campaign/run-2.report.md
+
+      - name: Teardown · destruir la instancia efímera
+        if: always()
+        run: npm run db:stop
+
+      # La evidencia se publica siempre: un run inválido es justamente el que hay que poder leer.
+      - name: Publicar la evidencia de la campaña
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab-cp4-campaign
+          path: |
+            test-results/lab-campaign/
+            playwright-report/
+          retention-days: 14

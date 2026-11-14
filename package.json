@@ -49,7 +49,8 @@
     "readout": "node tools/validation-readout.mjs",
     "db:push": "node tools/db.mjs push",
     "test:lab:substrate": "vitest run --project lab-substrate",
-    "test:lab:e2e": "playwright test --config playwright.lab.config.ts"
+    "test:lab:e2e": "playwright test --config playwright.lab.config.ts",
+    "test:lab:campaign": "playwright test --config playwright.campaign.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
