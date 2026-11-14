@@ -5,6 +5,7 @@
  * con `tests/governance/`. El laboratorio observa a STUDY OS; no adquiere autoridad sobre él.
  */
 
+export * from './campaign';
 export * from './contracts';
 export * from './corpus';
 export * from './corpus-install';
@@ -19,4 +20,5 @@ export * from './profile';
 export * from './scenario';
 export * from './substrate';
 export * from './observer';
+export * from './oracle';
 export * from './verdict';

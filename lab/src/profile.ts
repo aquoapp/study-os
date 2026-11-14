@@ -21,6 +21,8 @@
  * ---------------------------------------------------------------------------
  */
 
+import { createHash } from 'node:crypto';
+
 export const PROFILE_ID = 'SL-LAB-MVP';
 export const PROFILE_VERSION = '1.0.0';
 
@@ -127,10 +129,12 @@ export interface ProfileManifest {
   readonly feedbackBehaviour: typeof FEEDBACK_BEHAVIOUR;
   readonly prohibitedAdaptations: readonly string[];
   readonly seeded: false;
+  /** Hash del cuerpo del perfil: el manifiesto de campaña lo exige para ser reproducible. */
+  readonly profileHash: string;
 }
 
 export function profileManifest(): ProfileManifest {
-  return {
+  const body = {
     profileId: PROFILE_ID,
     profileVersion: PROFILE_VERSION,
     answerPolicy: 'siempre la primera opción ofrecida, sin mirar el contenido',
@@ -140,7 +144,11 @@ export function profileManifest(): ProfileManifest {
     feedbackBehaviour: FEEDBACK_BEHAVIOUR,
     prohibitedAdaptations: [...PROHIBITED_ADAPTATIONS],
     // Sin azar: no hay nada que sembrar. Dos ejecuciones dan la misma secuencia.
-    seeded: false,
+    seeded: false as const,
+  };
+  return {
+    ...body,
+    profileHash: createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 16),
   };
 }
 
