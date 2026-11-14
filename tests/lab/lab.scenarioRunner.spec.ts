@@ -88,7 +88,14 @@ class FakePage implements CampaignPage {
     return this.current.options ?? [];
   }
 
-  async waitForNavigation(): Promise<void> {}
+  /** El guion avanza con cada pulsación, así que aquí basta con no bloquear. */
+  async waitForUrlChange(): Promise<boolean> {
+    return true;
+  }
+
+  async waitForVisible(selector: string): Promise<boolean> {
+    return this.isVisible(selector);
+  }
 }
 
 const IDENTITY: SyntheticIdentity = {

@@ -93,9 +93,16 @@ function adapt(page: Page): CampaignPage {
       }
       return keys;
     },
-    waitForNavigation: async () => {
-      await page.waitForLoadState('domcontentloaded');
-    },
+    waitForUrlChange: async (previous, timeoutMs) =>
+      page
+        .waitForFunction((prev) => window.location.href !== prev, previous, { timeout: timeoutMs })
+        .then(() => true)
+        .catch(() => false),
+    waitForVisible: async (selector, timeoutMs) =>
+      page
+        .waitForSelector(selector, { state: 'visible', timeout: timeoutMs })
+        .then(() => true)
+        .catch(() => false),
   };
 }
 

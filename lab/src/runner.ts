@@ -61,7 +61,17 @@ export interface CampaignPage {
   isVisible(selector: string): Promise<boolean>;
   /** Claves de opción ofrecidas, en el orden presentado. */
   offeredOptionKeys(): Promise<readonly string[]>;
-  waitForNavigation(): Promise<void>;
+  /**
+   * Espera a que la URL cambie respecto a la dada. Devuelve si cambió; **no lanza**.
+   *
+   * Las acciones de servidor de Next redirigen por navegación RSC, **sin carga de documento**:
+   * esperar `domcontentloaded` vuelve de inmediato, porque el documento ya estaba cargado. El
+   * runner correría entonces una carrera contra el producto y leería el DOM anterior. Es la
+   * misma clase de error que D-26: creer probada una ruta que nadie recorrió de verdad.
+   */
+  waitForUrlChange(previous: string, timeoutMs: number): Promise<boolean>;
+  /** Espera a que un selector sea visible. Devuelve si apareció; **no lanza**. */
+  waitForVisible(selector: string, timeoutMs: number): Promise<boolean>;
 }
 
 export interface RunnerContext {
@@ -87,6 +97,30 @@ export interface RunnerResult {
   /** Última ruta observada: deja constancia de dónde terminó la ejecución. */
   readonly finalPath: string;
   readonly visits: number;
+}
+
+/** Cuánto se espera a que el producto reaccione a una pulsación que navega. */
+export const SETTLE_TIMEOUT_MS = 20_000;
+
+/**
+ * Espera a que el producto reaccione, sin lanzar.
+ *
+ * Si la URL no cambia no es necesariamente un fallo: hay pulsaciones que guardan y se quedan
+ * en la misma pantalla. Quien necesite una condición más fuerte la pide explícitamente.
+ */
+async function advance(page: CampaignPage, from: string, timeoutMs: number): Promise<void> {
+  await page.waitForUrlChange(from, timeoutMs);
+}
+
+/** Pulsa y espera. Captura la URL **antes** de pulsar: después ya sería la nueva. */
+async function clickAndAdvance(
+  page: CampaignPage,
+  selector: string,
+  timeoutMs: number = SETTLE_TIMEOUT_MS,
+): Promise<void> {
+  const before = page.url();
+  await page.click(selector);
+  await advance(page, before, timeoutMs);
 }
 
 function pathOf(page: CampaignPage): string {
@@ -126,8 +160,7 @@ async function register(context: RunnerContext): Promise<void> {
   await page.goto(`${context.baseUrl}/registro`);
   await page.fill('[data-testid="email-input"]', context.identity.email);
   await page.fill('[data-testid="password-input"]', context.identity.password);
-  await page.click('[data-testid="submit-button"]');
-  await page.waitForNavigation();
+  await clickAndAdvance(page, '[data-testid="submit-button"]');
   if (pathOf(page) !== '/hoy') {
     throw new ScenarioAborted(
       `el alta no llevó a HOY sino a «${pathOf(page)}»: una cuenta nueva debe tener camino`,
@@ -141,16 +174,14 @@ async function declareAvailability(context: RunnerContext): Promise<void> {
   await page.goto(`${context.baseUrl}/ajustes`);
   if (await page.isVisible('[data-testid="ajustes-zona-select"]')) {
     await page.selectOption('[data-testid="ajustes-zona-select"]', AVAILABILITY_INPUT.timezone);
-    await page.click('[data-testid="ajustes-zona-guardar"]');
-    await page.waitForNavigation();
+    await clickAndAdvance(page, '[data-testid="ajustes-zona-guardar"]');
   }
   if (await page.isVisible('[data-testid="ajustes-habitual"]')) {
     await page.fill(
       '[data-testid="ajustes-habitual"]',
       String(AVAILABILITY_INPUT.defaultDailyMinutes),
     );
-    await page.click('[data-testid="ajustes-guardar"]');
-    await page.waitForNavigation();
+    await clickAndAdvance(page, '[data-testid="ajustes-guardar"]');
   }
 }
 
@@ -175,8 +206,7 @@ async function chooseGoal(context: RunnerContext): Promise<void> {
   if (await page.isVisible('[data-testid="target-date-input"]')) {
     await page.fill('[data-testid="target-date-input"]', context.targetDate);
   }
-  await page.click('[data-testid="onboarding-submit"]');
-  await page.waitForNavigation();
+  await clickAndAdvance(page, '[data-testid="onboarding-submit"]');
 }
 
 // ---------------------------------------------------------------------------------------
@@ -238,10 +268,11 @@ async function walkCheck(
       answerKeyVisibleBeforeSubmit: false,
       feedbackSeen: true,
     });
+    const before = page.url();
     await page.click('[data-testid="feedback-siguiente"]').catch(async () => {
       await page.goto(`${context.baseUrl}/hoy`);
     });
-    await page.waitForNavigation();
+    await advance(page, before, SETTLE_TIMEOUT_MS);
     return appendVisit(log, visit);
   }
 
@@ -255,15 +286,21 @@ async function walkCheck(
     (await page.isVisible('[data-testid="respuesta-correcta"]')) ||
     (await page.isVisible('[data-testid="explicacion"]'));
 
+  // Elegir opción y confianza **no navega**: son botones de cliente con autoguardado. Esperar
+  // un cambio de URL aquí gastaría el tiempo de espera entero por pregunta sin ganar nada. El
+  // botón de comprobar está deshabilitado hasta que hay confianza, y la pulsación espera por sí
+  // misma a que sea accionable: la condición la impone el producto, no el runner.
   await page.click(`[data-testid="opcion-${decision.optionKey}"]`);
-  await page.waitForNavigation();
 
   const confidence = confidencePolicy(screen);
   await page.click(`[data-testid="confianza-${confidence}"]`);
-  await page.waitForNavigation();
 
+  // El envío sí cambia de estado: FEEDBACK es un estado de `/comprobar`, no una ruta, así que
+  // la URL puede no cambiar. Se espera la superficie de corrección, que es la condición real.
+  const beforeSubmit = page.url();
   await page.click('[data-testid="comprobar"]');
-  await page.waitForNavigation();
+  const feedbackShown = await page.waitForVisible('[data-testid="feedback"]', SETTLE_TIMEOUT_MS);
+  if (!feedbackShown) await advance(page, beforeSubmit, SETTLE_TIMEOUT_MS);
 
   const visit = await visitFor(context, screen, {
     chosenOptionKey: decision.optionKey ?? null,
@@ -290,12 +327,12 @@ async function walkLearn(
     feedbackSeen: false,
   });
 
-  if (decision.action === 'INTERRUPT') {
-    await page.click('[data-testid="dejarlo"]');
-  } else {
-    await page.click('[data-testid="aprender-continuar"]');
-  }
-  await page.waitForNavigation();
+  await clickAndAdvance(
+    page,
+    decision.action === 'INTERRUPT'
+      ? '[data-testid="dejarlo"]'
+      : '[data-testid="aprender-continuar"]',
+  );
   return appendVisit(log, visit);
 }
 
@@ -319,8 +356,7 @@ export async function runScenario(context: RunnerContext): Promise<RunnerResult>
 
     if (path === '/fin') {
       if (await page.isVisible('[data-testid="fin-volver"]')) {
-        await page.click('[data-testid="fin-volver"]');
-        await page.waitForNavigation();
+        await clickAndAdvance(page, '[data-testid="fin-volver"]');
         visits += 1;
         continue;
       }
@@ -351,8 +387,7 @@ export async function runScenario(context: RunnerContext): Promise<RunnerResult>
     if (!(await page.isVisible('[data-testid="hoy-primaria"]'))) {
       return { log, completed: true, finalPath: path, visits };
     }
-    await page.click('[data-testid="hoy-primaria"]');
-    await page.waitForNavigation();
+    await clickAndAdvance(page, '[data-testid="hoy-primaria"]');
     visits += 1;
 
     // HOY puede llevar a una superficie de configuración en vez de a una acción: el escenario
