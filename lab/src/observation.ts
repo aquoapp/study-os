@@ -193,6 +193,61 @@ export function observe(
   }
 }
 
+/** Por qué una observación no devolvió filas. Nunca incluye el texto del error. */
+export const OBSERVATION_FAILURES = [
+  'SIN_SALIDA_JSON',
+  'JSON_ILEGIBLE',
+  'EJECUCION_FALLIDA',
+  'SIN_FILA_ENVOLTORIO',
+] as const;
+export type ObservationFailure = (typeof OBSERVATION_FAILURES)[number];
+
+export type ObservationOutcome =
+  | { readonly ok: true; readonly rows: ReadonlyArray<Record<string, unknown>> }
+  | { readonly ok: false; readonly reason: ObservationFailure };
+
+/**
+ * Lee un conjunto de filas **sin ambigüedad entre «vacío» y «no se pudo leer»**.
+ *
+ * La primera versión decidía por la presencia de un array JSON en la salida del CLI. Un
+ * resultado legítimamente vacío no es distinguible así, y por eso una campaña entera se declaró
+ * con observación incompleta sin poder decir por qué: la lectura de intentos devolvía cero filas
+ * —correcto, el aprendiz no envió nada— y se interpretó como fallo.
+ *
+ * La consulta se envuelve en un `json_agg`, de modo que **siempre** vuelve exactamente una fila
+ * con un array, vacío o no. Entonces «no hay array» sí significa que no se pudo leer, y el
+ * motivo se nombra en vez de perderse.
+ */
+export function observeSet(context: ObservationContext, inner: string): ObservationOutcome {
+  const statement = `select coalesce(json_agg(r), '[]'::json)::text as rows from (${inner}) r`;
+  assertReadOnly(statement);
+
+  let output: string;
+  try {
+    const run = context.runQuery ?? defaultRunQuery;
+    output = run(context.credentials.databaseUrl, statement);
+  } catch {
+    // El error no se propaga con su texto: puede contener la cadena de conexión.
+    return { ok: false, reason: 'EJECUCION_FALLIDA' };
+  }
+
+  const start = output.indexOf('[');
+  const end = output.lastIndexOf(']');
+  if (start < 0 || end <= start) return { ok: false, reason: 'SIN_SALIDA_JSON' };
+
+  try {
+    const wrapper = JSON.parse(output.slice(start, end + 1)) as Array<{ rows?: unknown }>;
+    const raw = wrapper[0]?.['rows'];
+    if (raw === undefined) return { ok: false, reason: 'SIN_FILA_ENVOLTORIO' };
+    const rows = (typeof raw === 'string' ? JSON.parse(raw) : raw) as ReadonlyArray<
+      Record<string, unknown>
+    >;
+    return Array.isArray(rows) ? { ok: true, rows } : { ok: false, reason: 'JSON_ILEGIBLE' };
+  } catch {
+    return { ok: false, reason: 'JSON_ILEGIBLE' };
+  }
+}
+
 /**
  * Lee la barrera de un sujeto.
  *

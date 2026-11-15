@@ -235,7 +235,7 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
           () => resolveTestimony(observation, subjectRef, log),
           null,
         );
-  const snapshot =
+  const snapshotResult =
     subjectRef === null || resolved === null
       ? null
       : observing(
@@ -250,6 +250,8 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
             }),
           null,
         );
+  const snapshot = snapshotResult?.snapshot ?? null;
+  for (const failure of snapshotResult?.failures ?? []) observationFailures.push(failure);
 
   // Barrera **después**: si las dos lecturas no concuerdan, la proyección se movió mientras
   // observábamos y la completitud no puede declararse.
@@ -275,11 +277,19 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
   const folds =
     subjectRef === null
       ? null
-      : observing('historial de pliegues', () => readFolds(observation, subjectRef), null);
+      : observing(
+          'historial de pliegues',
+          () => readFolds(observation, subjectRef, observationFailures),
+          null,
+        );
   const submitMoments =
     subjectRef === null
       ? null
-      : observing('instantes de envío', () => readSubmitMoments(observation, subjectRef), null);
+      : observing(
+          'instantes de envío',
+          () => readSubmitMoments(observation, subjectRef, observationFailures),
+          null,
+        );
   const returnsToToday = log.visits
     .filter((visit) => visit.path === '/hoy')
     .map((visit) => visit.visitedAt);

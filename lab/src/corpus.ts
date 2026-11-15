@@ -26,7 +26,15 @@
 import { createHash } from 'node:crypto';
 
 export const CORPUS_ID = 'lab-core';
-export const CORPUS_VERSION = '1.0.0';
+/**
+ * Versión del corpus.
+ *
+ * 1.0.1 da preguntas a c4. En 1.0.0 ese concepto no tenía ni unidad ni preguntas, de modo que
+ * el Planner lo excluía como NO_ATTRIBUTED_QUESTION por su contrato §E.2 y P-08 no podía
+ * comprobar nunca lo que pretendía. El producto se comportó correctamente; el corpus declaraba
+ * dos escaseces a la vez.
+ */
+export const CORPUS_VERSION = '1.0.1';
 /**
  * Slug del pack en el producto.
  *
@@ -183,6 +191,39 @@ export const QUESTIONS: readonly CorpusQuestion[] = [
     options: ['Sí', 'No', 'Solo si son iguales', 'Falta información'],
     correct: 0,
     explanation: 'Sí: tienen el mismo número de lados.',
+  },
+  /*
+   * Preguntas de `c4`, el concepto **sin unidad publicada**.
+   *
+   * Existen para que la escasez sea de **una sola clase**. Sin ellas, el Planner clasifica el
+   * concepto como `NO_ATTRIBUTED_QUESTION` —§E.2 de su contrato: ni unidad ni pregunta— y nunca
+   * llega a `NO_PUBLISHED_UNIT`, que es la razón que P-08 y OBS-4A-B1 quieren comprobar. Con
+   * preguntas y sin unidad, la acción para un concepto NEW es APRENDER, no encuentra unidad y la
+   * razón es exactamente la que el experimento pretende aislar.
+   */
+  {
+    key: 'q-c4-1',
+    concept: 'c4',
+    stem: '¿Cuántas subunidades componen una unidad compuesta sintética?',
+    options: ['Cinco', 'Diez', 'Veinte', 'Cien'],
+    correct: 1,
+    explanation: 'Una unidad compuesta sintética se divide en diez subunidades.',
+  },
+  {
+    key: 'q-c4-2',
+    concept: 'c4',
+    stem: '¿Se puede componer una unidad sintética con elementos de distinta clase?',
+    options: ['Sí, siempre', 'No', 'Solo con dos', 'Solo con diez'],
+    correct: 1,
+    explanation: 'La composición exige elementos de la misma clase.',
+  },
+  {
+    key: 'q-c4-3',
+    concept: 'c4',
+    stem: 'Al componer dos unidades sintéticas, ¿qué se conserva?',
+    options: ['La clase', 'El color', 'El orden inverso', 'Nada'],
+    correct: 0,
+    explanation: 'Se conserva la clase de las unidades compuestas.',
   },
 ];
 

@@ -42,7 +42,10 @@ const CONCEPT_KEYS = new Map([
 /** Ejecutor de consultas que responde por reconocimiento de la sentencia. */
 function runner(
   overrides: Partial<
-    Record<'events' | 'attempts' | 'items' | 'planned' | 'audit' | 'barrier', string | Error>
+    Record<
+      'events' | 'attempts' | 'items' | 'planned' | 'audit' | 'barrier',
+      string | Error | { readonly raw: string }
+    >
   > = {},
 ) {
   const statements: string[] = [];
@@ -51,7 +54,20 @@ function runner(
     const pick = (key: keyof typeof overrides, fallback: string): string => {
       const override = overrides[key];
       if (override instanceof Error) throw override;
+      if (override && typeof override === 'object') return fallback;
       return override ?? fallback;
+    };
+    /**
+     * `observeSet` envuelve la consulta en un `json_agg`, de modo que el CLI devuelve siempre
+     * **una** fila con un array dentro. El doble imita esa forma: si devolviera arrays desnudos
+     * estaría probando un contrato que la consulta real no tiene.
+     */
+    const wrapped = (key: keyof typeof overrides, fallback: string): string => {
+      const override = overrides[key];
+      // Un override `{ raw }` es la salida **literal** del CLI, para poder ejercitar los
+      // caminos en los que no llega ni el envoltorio.
+      if (override && typeof override === 'object' && 'raw' in override) return override.raw;
+      return JSON.stringify([{ rows: pick(key, fallback) }]);
     };
     // La barrera se reconoce primero: su sentencia **también** menciona `learning_events`,
     // porque lee el máximo del stream como subconsulta.
@@ -59,7 +75,7 @@ function runner(
       return pick('barrier', JSON.stringify([{ max_position: 2, consumed_position: 2 }]));
     }
     if (statement.includes('from public.learning_events where')) {
-      return pick(
+      return wrapped(
         'events',
         JSON.stringify([
           { stream_position: 1, event_type: 'SESSION_STARTED', session_item_id: null },
@@ -68,7 +84,7 @@ function runner(
       );
     }
     if (statement.includes('from public.question_attempts')) {
-      return pick(
+      return wrapped(
         'attempts',
         JSON.stringify([
           {
@@ -88,7 +104,7 @@ function runner(
       );
     }
     if (statement.includes('from public.session_items')) {
-      return pick(
+      return wrapped(
         'items',
         JSON.stringify([
           {
@@ -102,10 +118,10 @@ function runner(
       );
     }
     if (statement.includes('from public.planner_items')) {
-      return pick('planned', JSON.stringify([{ concept_id: CONCEPT_C1 }]));
+      return wrapped('planned', JSON.stringify([{ concept_id: CONCEPT_C1 }]));
     }
     if (statement.includes('from public.planner_run_audit')) {
-      return pick(
+      return wrapped(
         'audit',
         JSON.stringify([
           {
@@ -133,14 +149,14 @@ function runner(
 
 function snapshot(overrides: Parameters<typeof runner>[0] = {}) {
   const { statements, context } = runner(overrides);
-  const result = readEvidenceSnapshot({
+  const outcome = readEvidenceSnapshot({
     context,
     subjectRef: SUBJECT,
     conceptKeyById: CONCEPT_KEYS,
     actor: ACTOR,
     structuralScarcityConcepts: ['c4'],
   });
-  return { result, statements };
+  return { result: outcome.snapshot, failures: outcome.failures, statements };
 }
 
 describe('toda consulta del snapshot es una lectura', () => {
@@ -192,14 +208,14 @@ describe('el snapshot completo refleja lo leído', () => {
     const { context } = runner({
       planned: JSON.stringify([{ concept_id: 'ffffffff-0000-0000-0000-000000000099' }]),
     });
-    const result = readEvidenceSnapshot({
+    const { snapshot } = readEvidenceSnapshot({
       context,
       subjectRef: SUBJECT,
       conceptKeyById: CONCEPT_KEYS,
       actor: ACTOR,
       structuralScarcityConcepts: ['c4'],
     });
-    expect(result.planner.plannedConceptKeys).toEqual([]);
+    expect(snapshot.planner.plannedConceptKeys).toEqual([]);
   });
 });
 
@@ -233,6 +249,29 @@ describe('un fallo de lectura nunca se convierte en una ausencia', () => {
     });
     expect(result.observationComplete).toBe(false);
     expect(result.planner.exclusions).toEqual([]);
+  });
+
+  it('cada fallo queda **nombrado**: el informe puede decir qué lectura y por qué', () => {
+    const { failures } = snapshot({ attempts: new Error('la consulta falló') });
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toMatch(/^intentos · EJECUCION_FALLIDA$/);
+  });
+
+  it('una salida sin array se nombra SIN_SALIDA_JSON', () => {
+    const { failures } = snapshot({ events: { raw: 'ERROR: el CLI no imprimió nada util' } });
+    expect(failures[0]).toMatch(/eventos · SIN_SALIDA_JSON/);
+  });
+
+  it('un array cuyo contenido no es JSON se nombra JSON_ILEGIBLE', () => {
+    expect(snapshot({ events: 'esto no es json' }).failures[0]).toMatch(/JSON_ILEGIBLE/);
+  });
+
+  it('ningún motivo arrastra el texto del error: podría llevar la cadena de conexión', () => {
+    const { failures } = snapshot({
+      events: new Error('postgresql://postgres:postgres@127.0.0.1:54322/postgres caído'),
+    });
+    expect(failures.join(' ')).not.toContain('postgres');
+    expect(failures.join(' ')).toContain('EJECUCION_FALLIDA');
   });
 
   it('y cero filas de verdad sí es un dato: el snapshot sigue completo', () => {

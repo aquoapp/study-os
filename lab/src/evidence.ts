@@ -16,7 +16,7 @@
  * ---------------------------------------------------------------------------------------
  */
 
-import { observe, readBarrier, type ObservationContext } from './observation';
+import { observeSet, readBarrier, type ObservationContext } from './observation';
 import type {
   AttemptObservation,
   EventObservation,
@@ -54,14 +54,36 @@ function asString(value: unknown): string | null {
 // Consultas. Una por concern, para que un fallo se localice donde ocurrió.
 // ---------------------------------------------------------------------------------------
 
+/**
+ * Lee filas y, si no puede, **nombra la lectura y el motivo**.
+ *
+ * Un snapshot que solo sabe decir «observación incompleta» no permite responder a §13: hay que
+ * poder decir *qué* lectura falló y *por qué*. El motivo es una etiqueta cerrada, nunca el texto
+ * del error, que podría arrastrar la cadena de conexión.
+ */
+function rowsOf(
+  context: ObservationContext,
+  label: string,
+  inner: string,
+  failures: string[],
+): ReadonlyArray<Record<string, unknown>> | null {
+  const outcome = observeSet(context, inner);
+  if (outcome.ok) return outcome.rows;
+  failures.push(`${label} · ${outcome.reason}`);
+  return null;
+}
+
 function readEvents(
   context: ObservationContext,
   subjectRef: string,
+  failures: string[],
 ): readonly EventObservation[] | null {
-  const rows = observe(
+  const rows = rowsOf(
     context,
+    'eventos',
     'select stream_position, event_type::text as event_type, session_item_id::text as session_item_id ' +
       `from public.learning_events where user_id = '${subjectRef}' order by stream_position`,
+    failures,
   );
   if (rows === null) return null;
   return rows.map((row) => ({
@@ -81,9 +103,11 @@ function readEvents(
 function readAttempts(
   context: ObservationContext,
   subjectRef: string,
+  failures: string[],
 ): readonly AttemptObservation[] | null {
-  const rows = observe(
+  const rows = rowsOf(
     context,
+    'intentos',
     'select a.session_item_id::text as session_item_id, a.question_id::text as question_id, ' +
       'a.question_representation_id::text as question_representation_id, ' +
       'a.submitted_event_id::text as submitted_event_id, a.answer_kind::text as answer_kind, ' +
@@ -93,6 +117,7 @@ function readAttempts(
       'left join public.question_options o on o.id = a.selected_option_id ' +
       'join content.answer_key_versions k on k.id = a.answer_key_version_id ' +
       `where a.user_id = '${subjectRef}' order by a.graded_at, a.attempt_number`,
+    failures,
   );
   if (rows === null) return null;
   return rows.map((row) => ({
@@ -113,14 +138,17 @@ function readAttempts(
 function readPresentedItems(
   context: ObservationContext,
   subjectRef: string,
+  failures: string[],
 ): readonly PresentedItemObservation[] | null {
-  const rows = observe(
+  const rows = rowsOf(
     context,
+    'items presentados',
     'select id::text as session_item_id, item_type::text as item_type, ' +
       'presented_representation_id::text as presented_representation_id, ' +
       'presented_learning_unit_version_id::text as presented_learning_unit_version_id, ' +
       `status::text as status from public.session_items where user_id = '${subjectRef}' ` +
       'order by session_id, sort_order',
+    failures,
   );
   if (rows === null) return null;
   return rows.map((row) => ({
@@ -143,20 +171,25 @@ function readPlanner(
   context: ObservationContext,
   subjectRef: string,
   conceptKeyById: ReadonlyMap<string, string>,
+  failures: string[],
 ): PlannerObservation | null {
-  const planned = observe(
+  const planned = rowsOf(
     context,
+    'plan',
     'select i.concept_id::text as concept_id from public.planner_items i ' +
       'join public.planner_runs r on r.id = i.run_id ' +
       `where i.user_id = '${subjectRef}' order by r.created_at, i.position`,
+    failures,
   );
   if (planned === null) return null;
 
-  const audits = observe(
+  const audits = rowsOf(
     context,
+    'auditoría de decisión',
     'select a.decision_canonical from public.planner_run_audit a ' +
       'join public.planner_runs r on r.id = a.run_id ' +
       `where a.user_id = '${subjectRef}' order by r.created_at`,
+    failures,
   );
   if (audits === null) return null;
 
@@ -168,7 +201,8 @@ function readPlanner(
     try {
       decision = JSON.parse(raw);
     } catch {
-      // Una decisión ilegible no se interpreta: se omite, y la completitud lo refleja.
+      // Una decisión ilegible no se interpreta, y se dice cuál no se pudo leer.
+      failures.push('auditoría de decisión · JSON_ILEGIBLE');
       return null;
     }
     const candidates = (decision as { candidates?: unknown }).candidates;
@@ -200,20 +234,40 @@ export interface SnapshotRequest {
   readonly structuralScarcityConcepts: readonly string[];
 }
 
+export interface SnapshotResult {
+  readonly snapshot: EvidenceSnapshot;
+  /**
+   * Lecturas que no salieron, con su motivo nombrado.
+   *
+   * Vacío significa que las cinco salieron. Es lo que permite responder a §13 —«¿se demostró
+   * completeness?»— con una causa en vez de con un «no».
+   */
+  readonly failures: readonly string[];
+}
+
 /**
  * Lee el snapshot completo.
  *
  * `observationComplete` es verdadero **solo** si las cuatro lecturas y la barrera salieron. Es
  * la precondición de cualquier aserción negativa, y por eso se calcula aquí y no se delega.
  */
-export function readEvidenceSnapshot(request: SnapshotRequest): EvidenceSnapshot {
+export function readEvidenceSnapshot(request: SnapshotRequest): SnapshotResult {
   assertUuid(request.subjectRef, 'subjectRef');
 
-  const events = readEvents(request.context, request.subjectRef);
-  const attempts = readAttempts(request.context, request.subjectRef);
-  const presentedItems = readPresentedItems(request.context, request.subjectRef);
-  const planner = readPlanner(request.context, request.subjectRef, request.conceptKeyById);
+  const failures: string[] = [];
+  const events = readEvents(request.context, request.subjectRef, failures);
+  const attempts = readAttempts(request.context, request.subjectRef, failures);
+  const presentedItems = readPresentedItems(request.context, request.subjectRef, failures);
+  const planner = readPlanner(
+    request.context,
+    request.subjectRef,
+    request.conceptKeyById,
+    failures,
+  );
   const barrier = readBarrier(request.context, request.subjectRef);
+  if (barrier.maxPosition === null || barrier.consumedPosition === null) {
+    failures.push('barrera · SIN_LECTURA');
+  }
 
   const complete =
     events !== null &&
@@ -224,7 +278,7 @@ export function readEvidenceSnapshot(request: SnapshotRequest): EvidenceSnapshot
     barrier.consumedPosition !== null &&
     barrier.pending !== null;
 
-  return {
+  const snapshot: EvidenceSnapshot = {
     subjectRef: request.subjectRef,
     events: events ?? [],
     attempts: attempts ?? [],
@@ -239,4 +293,6 @@ export function readEvidenceSnapshot(request: SnapshotRequest): EvidenceSnapshot
     structuralScarcityConcepts: request.structuralScarcityConcepts,
     observationComplete: complete,
   };
+
+  return { snapshot, failures };
 }

@@ -20,7 +20,7 @@
  * ---------------------------------------------------------------------------------------
  */
 
-import { observe, type ObservationContext } from './observation';
+import { observeSet, type ObservationContext } from './observation';
 
 /** Atribución de ruta. Todas las etiquetas dicen que son inferidas. */
 export const ROUTE_ATTRIBUTIONS = [
@@ -65,8 +65,9 @@ export interface RouteEvidence {
 export function readFolds(
   context: ObservationContext,
   subjectRef: string,
+  failures: string[] = [],
 ): readonly FoldObservation[] | null {
-  const rows = observe(
+  const outcome = observeSet(
     context,
     'select reason::text as reason, from_position, to_position, ' +
       // `OF` rinde «+00», que `Date.parse` no interpreta: daría NaN y toda ruta saldría
@@ -74,8 +75,11 @@ export function readFolds(
       'to_char(created_at at time zone \'UTC\', \'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"\') as created_at ' +
       `from engine.mastery_history where user_id = '${subjectRef}' order by created_at`,
   );
-  if (rows === null) return null;
-  return rows.map((row) => ({
+  if (!outcome.ok) {
+    failures.push(`historial de pliegues · ${outcome.reason}`);
+    return null;
+  }
+  return outcome.rows.map((row) => ({
     reason: typeof row['reason'] === 'string' ? row['reason'] : 'DESCONOCIDA',
     fromPosition: Number(row['from_position'] ?? -1),
     toPosition: Number(row['to_position'] ?? -1),
@@ -193,8 +197,9 @@ export function summarizeRoutes(evidence: readonly RouteEvidence[]): RouteSummar
 export function readSubmitMoments(
   context: ObservationContext,
   subjectRef: string,
+  failures: string[] = [],
 ): ReadonlyArray<{ streamPosition: number; serverReceivedAt: string }> | null {
-  const rows = observe(
+  const outcome = observeSet(
     context,
     'select e.stream_position, ' +
       "to_char(e.server_received_at at time zone 'UTC', " +
@@ -203,8 +208,11 @@ export function readSubmitMoments(
       'join public.question_attempts a on a.submitted_event_id = e.event_id ' +
       `where e.user_id = '${subjectRef}' order by e.stream_position`,
   );
-  if (rows === null) return null;
-  return rows.map((row) => ({
+  if (!outcome.ok) {
+    failures.push(`instantes de envío · ${outcome.reason}`);
+    return null;
+  }
+  return outcome.rows.map((row) => ({
     streamPosition: Number(row['stream_position'] ?? -1),
     serverReceivedAt:
       typeof row['server_received_at'] === 'string' ? row['server_received_at'] : '',
