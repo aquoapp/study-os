@@ -99,6 +99,17 @@ function readEvents(
  * `selected_option_id` apunta a la opción de la representación concreta; su `option_key` es la
  * letra que el aprendiz eligió. La clave correcta vive en `content.answer_key_versions`, que el
  * Data API no expone: se lee por SQL directo, como Observador.
+ *
+ * ---------------------------------------------------------------------------------------
+ * La clave almacenada es un **id**, no una letra
+ *
+ * `answer_key_versions` guarda `correct_option_id`. La primera versión de esta consulta pedía
+ * `correct_option_key`, que es el nombre que usa el **payload de ingestión** —la función de
+ * publicación lo resuelve a un id—, de modo que la consulta fallaba y la observación quedaba
+ * incompleta sin decir por qué. Se vio en cuanto cada lectura empezó a nombrar su propio fallo.
+ *
+ * La letra se obtiene uniendo ese id con `question_options`, igual que la elegida.
+ * ---------------------------------------------------------------------------------------
  */
 function readAttempts(
   context: ObservationContext,
@@ -111,11 +122,12 @@ function readAttempts(
     'select a.session_item_id::text as session_item_id, a.question_id::text as question_id, ' +
       'a.question_representation_id::text as question_representation_id, ' +
       'a.submitted_event_id::text as submitted_event_id, a.answer_kind::text as answer_kind, ' +
-      'o.option_key as selected_option_key, a.is_correct_at_submission, a.confidence_value, ' +
-      'a.confidence_scale_version, a.attempt_number, k.correct_option_key as server_correct_option_key ' +
+      'chosen.option_key as selected_option_key, a.is_correct_at_submission, a.confidence_value, ' +
+      'a.confidence_scale_version, a.attempt_number, keyopt.option_key as server_correct_option_key ' +
       'from public.question_attempts a ' +
-      'left join public.question_options o on o.id = a.selected_option_id ' +
+      'left join public.question_options chosen on chosen.id = a.selected_option_id ' +
       'join content.answer_key_versions k on k.id = a.answer_key_version_id ' +
+      'left join public.question_options keyopt on keyopt.id = k.correct_option_id ' +
       `where a.user_id = '${subjectRef}' order by a.graded_at, a.attempt_number`,
     failures,
   );

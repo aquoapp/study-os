@@ -247,6 +247,12 @@ describe('P-05 · la corrección la fija el servidor', () => {
   it('PASS cuando concuerda y el cliente no tuvo la clave', () => {
     expect(verdictOf(evaluate(healthy(), PREREG), 'P-05')).toBe('PASS');
   });
+
+  it('INCONCLUSIVE si la clave del servidor no se pudo leer: no es un incumplimiento', () => {
+    const base = healthy();
+    const roto = { ...base, attempts: [{ ...base.attempts[0]!, serverCorrectOptionKey: '' }] };
+    expect(verdictOf(evaluate(roto, PREREG), 'P-05')).toBe('INCONCLUSIVE');
+  });
 });
 
 describe('P-06 · la proyección alcanza la última posición aceptada', () => {

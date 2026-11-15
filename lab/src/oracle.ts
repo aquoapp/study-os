@@ -297,6 +297,14 @@ function evaluateP05(snapshot: EvidenceSnapshot): Finding {
     };
   }
   for (const attempt of withOption) {
+    // Una clave que no se pudo leer no es una clave distinta: concluir FAIL aquí convertiría un
+    // fallo de observación en un incumplimiento del producto.
+    if (attempt.serverCorrectOptionKey === '') {
+      return {
+        verdict: 'INCONCLUSIVE',
+        rationale: `no se pudo leer la clave del servidor del ítem ${attempt.sessionItemId}`,
+      };
+    }
     const expected = attempt.selectedOptionKey === attempt.serverCorrectOptionKey;
     if (attempt.isCorrectAtSubmission !== expected) {
       return {
