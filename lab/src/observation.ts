@@ -43,7 +43,7 @@ export class ObservationRefused extends Error {
 }
 
 /** Palabras que convierten una consulta en algo que no es una lectura. */
-const MUTATING = [
+export const MUTATING_VERBS = [
   'insert',
   'update',
   'delete',
@@ -55,8 +55,31 @@ const MUTATING = [
   'revoke',
   'copy',
   'call',
-  'do ',
-];
+  'do',
+] as const;
+
+/**
+ * La comprobación distingue **sufijo de palabra** de **separador**.
+ *
+ * La primera versión buscaba « create» y compañía como subcadenas y rechazaba
+ * `order by created_at`, que es una lectura legítima; lo mismo le pasaba a `updated_at` y
+ * `deleted_at`, tres de los nombres de columna más comunes del esquema.
+ *
+ * Pero `\b` a secas **debilita** la guarda, porque el subrayado es carácter de palabra: con
+ * `\balter\b`, `alter_table()` dejaría de ser rechazado, y el guarda anterior sí lo cazaba.
+ * Aflojar una guarda de seguridad por corregir un falso positivo es peor que el falso positivo.
+ *
+ * Así que la regla es precisa: el verbo cuenta cuando **no continúa en otra palabra**
+ * —`created` continúa en «d», luego no es `create`— pero sí cuando lo sigue un separador,
+ * subrayado incluido: `alter_table` es `alter`. Se rechaza de más (`update_count` cae) antes
+ * que de menos, y en este esquema no hay ninguna columna así.
+ *
+ * La tentación alternativa era cualificar las columnas para esquivar la guarda. Una guarda que
+ * se esquiva con formato acaba esquivándose siempre.
+ */
+const MUTATING_PATTERNS = MUTATING_VERBS.map(
+  (verb) => [verb, new RegExp(`(?<![a-z0-9_])${verb}(?![a-z0-9])`)] as const,
+);
 
 /**
  * Comprueba que una sentencia es de lectura.
@@ -73,9 +96,9 @@ export function assertReadOnly(statement: string): void {
   if (normalized.includes(';') && !normalized.endsWith(';')) {
     throw new ObservationRefused('varias sentencias en una observación');
   }
-  for (const verb of MUTATING) {
-    if (normalized.includes(` ${verb}`)) {
-      throw new ObservationRefused(`la sentencia contiene "${verb.trim()}": no es una lectura`);
+  for (const [verb, pattern] of MUTATING_PATTERNS) {
+    if (pattern.test(normalized)) {
+      throw new ObservationRefused(`la sentencia contiene "${verb}": no es una lectura`);
     }
   }
 }

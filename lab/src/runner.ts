@@ -182,7 +182,10 @@ async function readOrdinal(page: CampaignPage): Promise<number | null> {
   return matched?.[1] === undefined ? null : Number(matched[1]);
 }
 
-async function observeScreen(page: CampaignPage): Promise<ObservableScreen> {
+async function observeScreen(
+  page: CampaignPage,
+  interruptionsSpent: readonly number[],
+): Promise<ObservableScreen> {
   const path = pathOf(page);
   const offeredOptionKeys = path.startsWith('/comprobar') ? await page.offeredOptionKeys() : [];
   return {
@@ -192,6 +195,7 @@ async function observeScreen(page: CampaignPage): Promise<ObservableScreen> {
     canContinue:
       (await page.isVisible('[data-testid="aprender-continuar"]')) ||
       (await page.isVisible('[data-testid="comprobar"]')),
+    interruptionsSpent,
   };
 }
 
@@ -399,6 +403,9 @@ export async function runScenario(context: RunnerContext): Promise<RunnerResult>
   let visits = 0;
 
   const deviations: string[] = [];
+  // Las interrupciones se **gastan**: una por ordinal declarado. Sin esta cuenta, retomar
+  // devuelve al mismo punto, la política vuelve a interrumpir y el día no cierra nunca.
+  const interruptionsSpent: number[] = [];
   await register(context);
   // El paso 2 es preparación y es **redundante** con el onboarding, que pide zona horaria y
   // minutos y los exige. Si no se puede dar, se registra como desviación y el escenario sigue:
@@ -429,13 +436,21 @@ export async function runScenario(context: RunnerContext): Promise<RunnerResult>
     }
 
     if (path.startsWith('/aprender')) {
-      log = await walkLearn(context, await observeScreen(page), log);
+      // La pantalla recibe una **copia**: mutar el array que ya se le pasó haría que
+      // `decide` diera dos respuestas distintas para la misma pantalla, y la pureza del
+      // perfil es justo lo que hace reproducible el experimento.
+      const screen = await observeScreen(page, [...interruptionsSpent]);
+      log = await walkLearn(context, screen, log);
+      // La interrupción se anota **después** de ejecutarla: ya está gastada.
+      if (decide(screen).action === 'INTERRUPT' && screen.actionOrdinal !== null) {
+        interruptionsSpent.push(screen.actionOrdinal);
+      }
       visits += 1;
       continue;
     }
 
     if (path.startsWith('/comprobar')) {
-      log = await walkCheck(context, await observeScreen(page), log);
+      log = await walkCheck(context, await observeScreen(page, [...interruptionsSpent]), log);
       visits += 1;
       continue;
     }

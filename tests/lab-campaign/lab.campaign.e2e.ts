@@ -184,10 +184,36 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
     // Un aborto no borra lo ya recorrido: el diario parcial sigue siendo evidencia.
   }
 
+  /**
+   * La fase de observación **no puede tirar la campaña**.
+   *
+   * §9 dice que una observación incompleta da `INCONCLUSIVE`, no «no sabemos nada». Si una
+   * lectura falla y la excepción se propaga, se pierde el ledger, los informes y el recorrido
+   * que ya ocurrió: la ejecución deja de ser evidencia y pasa a ser una traza de error. Así
+   * que cada fallo de observación se convierte en una razón registrada, y el artefacto se
+   * escribe igual.
+   */
+  const observationFailures: string[] = [];
+  function observing<T>(label: string, read: () => T, fallback: T): T {
+    try {
+      return read();
+    } catch (error) {
+      observationFailures.push(
+        `${label}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return fallback;
+    }
+  }
+
   // §9 · el sujeto se resuelve observando, no desde el Actor.
-  const subjectRows = observe(
-    observation,
-    `select id::text as id from auth.users where email = '${synthetic.email}'`,
+  const subjectRows = observing(
+    'resolución del sujeto',
+    () =>
+      observe(
+        observation,
+        `select id::text as id from auth.users where email = '${synthetic.email}'`,
+      ),
+    null,
   );
   const subjectRef = typeof subjectRows?.[0]?.['id'] === 'string' ? subjectRows[0]['id'] : null;
   if (subjectRef === null) {
@@ -195,24 +221,42 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
   }
 
   // Barrera **antes** de observar el resto, para que la completitud no dependa de una lectura.
-  const barrierBefore = subjectRef === null ? null : readBarrier(observation, subjectRef);
+  const barrierBefore =
+    subjectRef === null
+      ? null
+      : observing('barrera antes', () => readBarrier(observation, subjectRef), null);
 
   const conceptKeyById = new Map([...installed.conceptIds.entries()].map(([key, id]) => [id, key]));
-  const resolved = subjectRef === null ? null : resolveTestimony(observation, subjectRef, log);
+  const resolved =
+    subjectRef === null
+      ? null
+      : observing(
+          'resolución del testimonio',
+          () => resolveTestimony(observation, subjectRef, log),
+          null,
+        );
   const snapshot =
     subjectRef === null || resolved === null
       ? null
-      : readEvidenceSnapshot({
-          context: observation,
-          subjectRef,
-          conceptKeyById,
-          actor: resolved.testimony,
-          structuralScarcityConcepts: [...corpus.structuralScarcityConcepts],
-        });
+      : observing(
+          'snapshot de evidencia',
+          () =>
+            readEvidenceSnapshot({
+              context: observation,
+              subjectRef,
+              conceptKeyById,
+              actor: resolved.testimony,
+              structuralScarcityConcepts: [...corpus.structuralScarcityConcepts],
+            }),
+          null,
+        );
 
   // Barrera **después**: si las dos lecturas no concuerdan, la proyección se movió mientras
   // observábamos y la completitud no puede declararse.
-  const barrierAfter = subjectRef === null ? null : readBarrier(observation, subjectRef);
+  const barrierAfter =
+    subjectRef === null
+      ? null
+      : observing('barrera después', () => readBarrier(observation, subjectRef), null);
   const barrierStable =
     barrierBefore !== null &&
     barrierAfter !== null &&
@@ -224,11 +268,18 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
     snapshot !== null &&
     snapshot.observationComplete &&
     (resolved?.resolved ?? false) &&
-    barrierStable;
+    barrierStable &&
+    observationFailures.length === 0;
 
   // §7–8 · procedencia de ruta. Inferida por tiempo: el producto no la registra.
-  const folds = subjectRef === null ? null : readFolds(observation, subjectRef);
-  const submitMoments = subjectRef === null ? null : readSubmitMoments(observation, subjectRef);
+  const folds =
+    subjectRef === null
+      ? null
+      : observing('historial de pliegues', () => readFolds(observation, subjectRef), null);
+  const submitMoments =
+    subjectRef === null
+      ? null
+      : observing('instantes de envío', () => readSubmitMoments(observation, subjectRef), null);
   const returnsToToday = log.visits
     .filter((visit) => visit.path === '/hoy')
     .map((visit) => visit.visitedAt);
@@ -263,6 +314,9 @@ test('Golden MVP · un aprendiz sintético recorre un día y el contrato se eval
       `sin plegar: ${routes.notFolded} · no atribuible: ${routes.unattributable}`,
     'el producto no registra qué ruta plegó: la atribución de ruta es inferencia temporal',
   ];
+  for (const failure of observationFailures) {
+    notes.push(`lectura de observación fallida · ${failure}`);
+  }
   if (resolved && !resolved.resolved) {
     notes.push(`enunciados vistos que la observación no situó: ${resolved.unresolvedStems.length}`);
   }

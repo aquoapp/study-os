@@ -247,6 +247,33 @@ describe('las decisiones las toma el perfil, no el runner', () => {
     expect(page.clicks).not.toContain('[data-testid="aprender-continuar"]');
   });
 
+  it('la interrupción se gasta: al retomar el mismo punto, continúa en vez de reinterrumpir', async () => {
+    const ordinal = INTERRUPTION_ORDINALS[0]!;
+    const lectura: PageScript = {
+      path: '/aprender/2',
+      visible: ['[data-testid="aprender-continuar"]', '[data-testid="dejarlo"]'],
+      texts: { '[data-testid="accion-posicion"]': `Acción ${ordinal} de 3` },
+    };
+    // El producto ofrece retomar justo donde se dejó, así que el aprendiz vuelve al mismo
+    // ordinal. Una política que reinterrumpiera sin condición no cerraría el día nunca.
+    const script: readonly PageScript[] = [
+      { path: '/registro', visible: ['[data-testid="submit-button"]'] },
+      { path: '/hoy', visible: [] },
+      { path: '/ajustes', visible: [] },
+      { path: '/onboarding', visible: [] },
+      { path: '/hoy', visible: ['[data-testid="hoy-primaria"]'] },
+      lectura,
+      { path: '/hoy', visible: ['[data-testid="hoy-primaria"]'] },
+      lectura,
+      { path: '/hoy', visible: ['[data-testid="hoy-nada-elegible"]'] },
+    ];
+    const { context, page } = contextFor(script);
+    const result = await runScenario(context);
+    expect(page.clicks.filter((c) => c === '[data-testid="dejarlo"]')).toHaveLength(1);
+    expect(page.clicks).toContain('[data-testid="aprender-continuar"]');
+    expect(result.completed).toBe(true);
+  });
+
   it('en una lectura sin ordinal de interrupción, continúa', async () => {
     const { context, page } = contextFor(HAPPY);
     await runScenario(context);

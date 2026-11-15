@@ -24,7 +24,17 @@
 import { createHash } from 'node:crypto';
 
 export const PROFILE_ID = 'SL-LAB-MVP';
-export const PROFILE_VERSION = '1.0.0';
+/**
+ * Versión del perfil.
+ *
+ * **1.0.1** corrige la semántica de la interrupción: ocurre una vez por ordinal declarado, no
+ * cada vez que se pasa por ese punto. La política declarada no cambia —`INTERRUPTION_ORDINALS`
+ * sigue siendo la misma y el escenario ya decía «interrumpir donde la política lo declara», en
+ * singular—, pero el comportamiento observable sí, y dos perfiles distintos no pueden compartir
+ * versión. Con la v1.0.0 el recorrido no terminaba: el producto ofrece retomar donde se dejó, el
+ * aprendiz volvía al mismo ordinal y lo interrumpía otra vez.
+ */
+export const PROFILE_VERSION = '1.0.1';
 
 /** Lo único que el perfil puede ver: lo que hay en la pantalla. */
 export interface ObservableScreen {
@@ -36,6 +46,16 @@ export interface ObservableScreen {
   readonly offeredOptionKeys: readonly string[];
   /** Si la pantalla ofrece continuar. */
   readonly canContinue: boolean;
+  /**
+   * Ordinales en los que este aprendiz **ya** interrumpió durante la ejecución.
+   *
+   * No es memoria del perfil —`decide` sigue siendo pura: misma pantalla, misma decisión— sino
+   * parte de la pantalla observada, igual que el ordinal. Existe porque una interrupción
+   * declarada ocurre **una vez** en el recorrido, no cada vez que se pasa por ese punto: el
+   * producto ofrece retomar justo donde se dejó, de modo que una política que reinterrumpe sin
+   * condición no interrumpe una vez, se queda a vivir ahí y el día nunca cierra.
+   */
+  readonly interruptionsSpent: readonly number[];
 }
 
 export const LAB_ACTIONS = [
@@ -90,9 +110,20 @@ export function confidencePolicy(screen: ObservableScreen): 1 | 2 | 3 | 4 {
 /** Puntos de interrupción declarados de antemano. */
 export const INTERRUPTION_ORDINALS = [2] as const;
 
+/**
+ * Semántica de la interrupción, declarada para que no vuelva a quedar implícita.
+ *
+ * Una interrupción declarada se gasta: ocurre **una vez** por ordinal. La primera versión
+ * devolvía verdadero cada vez que veía el ordinal, y como el producto ofrece retomar
+ * exactamente donde se dejó, el aprendiz volvía al mismo punto, lo interrumpía otra vez y el
+ * recorrido no terminaba nunca. Eso no era la política: era un defecto de su implementación.
+ */
+export const INTERRUPTION_SEMANTICS = 'una sola vez por ordinal declarado' as const;
+
 export function interruptionPolicy(screen: ObservableScreen): boolean {
   const ordinal = screen.actionOrdinal;
   if (ordinal === null) return false;
+  if (screen.interruptionsSpent.includes(ordinal)) return false;
   return (INTERRUPTION_ORDINALS as readonly number[]).includes(ordinal);
 }
 
@@ -125,6 +156,8 @@ export interface ProfileManifest {
   readonly answerPolicy: string;
   readonly confidencePolicy: string;
   readonly interruptionOrdinals: readonly number[];
+  /** Qué significa interrumpir: una vez, no cada vez que se pasa por el punto. */
+  readonly interruptionSemantics: typeof INTERRUPTION_SEMANTICS;
   readonly availability: typeof AVAILABILITY_INPUT;
   readonly feedbackBehaviour: typeof FEEDBACK_BEHAVIOUR;
   readonly prohibitedAdaptations: readonly string[];
@@ -140,6 +173,7 @@ export function profileManifest(): ProfileManifest {
     answerPolicy: 'siempre la primera opción ofrecida, sin mirar el contenido',
     confidencePolicy: '3 en ordinal impar, 2 en par',
     interruptionOrdinals: [...INTERRUPTION_ORDINALS],
+    interruptionSemantics: INTERRUPTION_SEMANTICS,
     availability: AVAILABILITY_INPUT,
     feedbackBehaviour: FEEDBACK_BEHAVIOUR,
     prohibitedAdaptations: [...PROHIBITED_ADAPTATIONS],

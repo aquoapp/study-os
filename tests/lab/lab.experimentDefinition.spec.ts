@@ -49,6 +49,7 @@ const SCREEN: ObservableScreen = {
   actionOrdinal: 1,
   offeredOptionKeys: ['A', 'B', 'C', 'D'],
   canContinue: false,
+  interruptionsSpent: [],
 };
 
 describe('A · el perfil es determinista', () => {
